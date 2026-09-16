@@ -239,7 +239,6 @@ function pn(v) {
 
 // ===== UNIT CONVERSION =====
 function g2l(g) { return Math.round(g * 3.78541 * 10) / 10; }
-function l2g(l) { return Math.round(l / 3.78541 * 10) / 10; }
 
 // ===== UNIT PREFERENCES =====
 function get_pref() {
@@ -262,6 +261,11 @@ function vol_flds(gv, lv) {
   var lf = fg('Litres',  '<input type="number" name="lit" step="0.1" value="' + (lv !== undefined ? lv : '') + '" placeholder="e.g. 75.7"' + (pl ? ' required' : '') + ' oninput="this.form.gal.value=Math.round(this.value/3.78541*10)/10">');
   return pl ? lf + gf : gf + lf;
 }
+// stored GPH → display flow value; LPH when vol pref is L
+function d_fl(gph) { return get_pref().vol === 'L' ? Math.round(gph * 3.78541) : gph; }
+function fl_lbl() { return get_pref().vol === 'L' ? 'LPH' : 'GPH'; }
+// user input flow → stored GPH
+function inp_fl(v) { var n = parseFloat(v) || 0; return get_pref().vol === 'L' ? Math.round(n / 3.78541) : n; }
 
 // ===== TANKS =====
 function add_tank(name, gal, setup, notes, rt_min, rt_max) {
@@ -376,7 +380,7 @@ function eq_cfg_txt(eq) {
     return [w, s, h].filter(function(x){return x;}).join(', ') || '-';
   }
   if (eq.type === 'Filter') {
-    var g = cfg.flow_gph ? cfg.flow_gph + ' GPH' : '';
+    var g = cfg.flow_gph ? d_fl(cfg.flow_gph) + ' ' + fl_lbl() : '';
     var st = cfg.style || '';
     return [g, st].filter(function(x){return x;}).join(', ') || '-';
   }
@@ -1057,9 +1061,7 @@ function r_wlog() {
 }
 function sub_water(e) {
   e.preventDefault(); var f = e.target, tid = at();
-  // Convert temperature input to stored °F
-  var tf_f = f.tf.value !== '' ? inp_t(f.tf.value) : '';
-  add_water(tid, f.date.value, tf_f, f.nh3.value, f.no2.value, f.no3.value, f.ph.value, f.gh.value, f.notes.value);
+  add_water(tid, f.date.value, inp_t(f.tf.value), f.nh3.value, f.no2.value, f.no3.value, f.ph.value, f.gh.value, f.notes.value);
   r_wlog();
 }
 
@@ -1194,9 +1196,9 @@ function r_recs() {
     var tgt_hi = Math.ceil((tank ? tank.gallons : 0) * 6);
     var fixes = [];
     if (filter_poor) {
-      fixes.push('upgrade filter to ' + tgt_lo + '-' + tgt_hi + ' GPH (low flow costs you 15% capacity)');
+      fixes.push('upgrade filter to ' + d_fl(tgt_lo) + '-' + d_fl(tgt_hi) + ' ' + fl_lbl() + ' (low flow costs you 15% capacity)');
     } else if (!filter_maxed) {
-      fixes.push('upgrade to a high-flow filter (6x+ turnover = ' + (tgt_hi) + '+ GPH) for a 10% boost');
+      fixes.push('upgrade to a high-flow filter (6x+ turnover = ' + d_fl(tgt_hi) + '+ ' + fl_lbl() + ') for a 10% boost');
     }
     if (!max_plants) {
       fixes.push(has_plants ? 'add more plants (5+ total for a 20% bonus, currently at 10%)' : 'add 5+ plant species for a 20% natural capacity boost');
@@ -1220,7 +1222,7 @@ function r_recs() {
   }
   h += '<p style="font-size:13px;color:' + bl_mc + ';margin-top:4px">' + bl_msg + '</p>';
   if (filter_mult !== 1.0) {
-    var fmsg = filter_mult < 1.0 ? 'Filter flow below 4x turnover: capacity reduced by 15%. Aim for 4-6x (GPH = ' + Math.ceil((tank ? tank.gallons : 0) * 4) + '-' + Math.ceil((tank ? tank.gallons : 0) * 6) + ').' : 'High-flow filter (6x+ turnover): +10% capacity bonus applied.';
+    var fmsg = filter_mult < 1.0 ? 'Filter flow below 4x turnover: capacity reduced by 15%. Aim for 4-6x (' + fl_lbl() + ' = ' + d_fl(Math.ceil((tank ? tank.gallons : 0) * 4)) + '-' + d_fl(Math.ceil((tank ? tank.gallons : 0) * 6)) + ').' : 'High-flow filter (6x+ turnover): +10% capacity bonus applied.';
     h += '<p style="font-size:12px;color:' + (filter_mult < 1.0 ? 'var(--danger)' : 'var(--ok)') + ';margin-top:4px">' + fmsg + '</p>';
   }
   if (pl_in_tank.length > 0) {
@@ -1245,10 +1247,10 @@ function r_recs() {
   if (total_gph > 0 && tank) {
     var turn_cls = turnover < 4 ? 'pdanger' : turnover < 6 ? 'pwarn' : 'pok';
     var turn_lbl = turnover < 4 ? 'Low flow' : turnover < 6 ? 'OK' : 'Excellent';
-    h += '<span>' + total_gph + ' GPH &mdash; ' + turnover + 'x turnover/hr</span> ' + pill_lbl(turn_cls, turn_lbl);
-    if (turnover < 4 && tank) h += '<span style="font-size:12px;color:var(--danger);margin-left:8px">Needs ' + Math.ceil(tank.gallons * 4) + '+ GPH</span>';
+    h += '<span>' + d_fl(total_gph) + ' ' + fl_lbl() + ' &mdash; ' + turnover + 'x turnover/hr</span> ' + pill_lbl(turn_cls, turn_lbl);
+    if (turnover < 4 && tank) h += '<span style="font-size:12px;color:var(--danger);margin-left:8px">Needs ' + d_fl(Math.ceil(tank.gallons * 4)) + '+ ' + fl_lbl() + '</span>';
   } else if (filters_eq.length) {
-    h += '<span style="color:var(--muted)">Filter added. Set GPH in equipment to see turnover rate.</span>';
+    h += '<span style="color:var(--muted)">Filter added. Set ' + fl_lbl() + ' in equipment to see turnover rate.</span>';
   } else {
     h += '<span style="color:var(--muted)">No filter configured.</span>';
   }
@@ -1482,7 +1484,7 @@ function build_equip_cfg_html(type, cfg) {
     '<div id="eq_filter_cfg" style="display:' + filt_d + '">' +
     '<div class="cfg-sep"></div><div style="font-size:12px;font-weight:600;color:var(--mid);margin-bottom:6px">Filter Settings</div>' +
     '<div class="frow">' +
-    fg('Flow Rate (GPH)', '<input type="number" name="filter_gph" value="' + (c.flow_gph||'') + '" placeholder="e.g. 180" min="0">') +
+    fg('Flow Rate (' + fl_lbl() + ')', '<input type="number" name="filter_gph" value="' + (c.flow_gph ? d_fl(c.flow_gph) : '') + '" placeholder="e.g. ' + d_fl(180) + '" min="0">') +
     fg('Filter Style', '<select name="filter_style">' + fst_opts + '</select>') +
     '</div></div>' +
     '<div id="eq_co2_cfg" style="display:' + co2_d + '">' +
@@ -1507,7 +1509,7 @@ function read_equip_cfg(f) {
     cfg.spectrum = f.light_spectrum.value;
     cfg.hours = parseFloat(f.light_hours.value) || 0;
   } else if (t === 'Filter') {
-    cfg.flow_gph = parseFloat(f.filter_gph.value) || 0;
+    cfg.flow_gph = inp_fl(f.filter_gph.value);
     cfg.style = f.filter_style.value;
   } else if (t === 'CO2 System') {
     cfg.co2_type = f.co2_type.value;
