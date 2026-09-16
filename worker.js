@@ -1512,6 +1512,95 @@ function r_recs() {
     h += '</table></div></div>';
   }
 
+  // ── Fish suggestions ──
+  var already_sp_ids = d.stock.filter(function(x){ return x.tank_id === tid; }).map(function(x){ return x.species_id; });
+  var exc_small = 0, exc_compat = 0;
+  Object.keys(SP).forEach(function(spid) {
+    if (already_sp_ids.indexOf(spid) !== -1) return;
+    var sp = SP[spid];
+    if (sp.min_gal && tank.gallons < sp.min_gal) { exc_small++; return; }
+    if (rng &&
+        ((rng.temp.ok && (sp.tmax < rng.temp.min || sp.tmin > rng.temp.max)) ||
+         (rng.ph.ok   && (sp.pmax < rng.ph.min   || sp.pmin > rng.ph.max))   ||
+         (rng.gh.ok   && (sp.gmax < rng.gh.min   || sp.gmin > rng.gh.max)))) { exc_compat++; }
+  });
+
+  var fish_sugg = Object.keys(SP).filter(function(spid) {
+    if (already_sp_ids.indexOf(spid) !== -1) return false;
+    var sp = SP[spid];
+    if (sp.min_gal && tank.gallons < sp.min_gal) return false;
+    if (rng) {
+      if (rng.temp.ok && (sp.tmax < rng.temp.min || sp.tmin > rng.temp.max)) return false;
+      if (rng.ph.ok   && (sp.pmax < rng.ph.min   || sp.pmin > rng.ph.max))   return false;
+      if (rng.gh.ok   && (sp.gmax < rng.gh.min   || sp.gmin > rng.gh.max))   return false;
+    }
+    return true;
+  }).map(function(spid) {
+    var sp = SP[spid];
+    var warns = [];
+    if (lr) {
+      if (lr.temp_f !== null && (lr.temp_f < sp.tmin || lr.temp_f > sp.tmax))
+        warns.push('Current temp ' + d_t(lr.temp_f) + t_lbl() + ' — needs ' + d_t(sp.tmin) + '-' + d_t(sp.tmax) + t_lbl());
+      if (lr.ph !== null && (lr.ph < sp.pmin || lr.ph > sp.pmax))
+        warns.push('Current pH ' + lr.ph + ' — needs ' + sp.pmin + '-' + sp.pmax);
+      if (lr.gh !== null && (lr.gh < sp.gmin || lr.gh > sp.gmax))
+        warns.push('Current GH ' + lr.gh + ' — needs ' + sp.gmin + '-' + sp.gmax);
+    }
+    if (cur_bl > 0 && max_bl > 0 && (cur_bl + sp.bioload) > max_bl)
+      warns.push('Would exceed bioload capacity');
+    else if (max_bl > 0 && (cur_bl + sp.bioload) > Math.round(max_bl * 0.9))
+      warns.push('Would push tank to ' + Math.round((cur_bl + sp.bioload) / max_bl * 100) + '% capacity');
+    return {id: spid, sp: sp, warns: warns};
+  }).sort(function(a, b) {
+    if (a.warns.length !== b.warns.length) return a.warns.length - b.warns.length;
+    var o = {Beginner: 0, Intermediate: 1, Advanced: 2};
+    return (o[a.sp.level] || 0) - (o[b.sp.level] || 0);
+  });
+
+  h += '<div class="card"><div class="ctitle">Suggested Fish</div>';
+  var fctx = [];
+  if (exc_small > 0)  fctx.push(exc_small + ' species excluded — tank too small');
+  if (exc_compat > 0) fctx.push(exc_compat + ' species excluded — water parameters conflict with current livestock');
+  fctx.push('species already in tank are hidden');
+  h += '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">' + fctx.join(' &middot; ') + '.</div>';
+
+  if (fish_sugg.length === 0) {
+    h += '<p class="emsg">No compatible species found for this tank setup.</p>';
+  } else {
+    h += '<div class="tw"><table>' +
+         '<tr><th>Species</th><th>Level</th><th>Size</th><th>Min Tank</th><th>Temp (' + t_lbl() + ')</th><th>pH</th><th>GH</th><th>Bioload</th><th>Compatibility</th></tr>';
+    fish_sugg.forEach(function(item) {
+      var sp = item.sp;
+      var lc = sp.level === 'Advanced' ? 'var(--danger)' : sp.level === 'Intermediate' ? 'var(--warn)' : 'var(--ok)';
+      var tank_warn = sp.min_gal && tank && tank.gallons < sp.min_gal * 1.2;
+      var compat;
+      if (item.warns.length === 0 && !sp.hard_reason) {
+        compat = pill_lbl('pok', '&#x2713; Good fit');
+      } else {
+        compat = (item.warns.length > 0 ? pill_lbl('pwarn', '&#x26A0; Notes') : pill_lbl('pok', '&#x2713; Good fit'));
+        if (sp.hard_reason) compat += '<div style="color:var(--muted);font-size:11px;margin-top:3px">' + esc(sp.hard_reason) + '</div>';
+        if (item.warns.length > 0) {
+          compat += '<ul style="margin:3px 0 0;padding-left:14px;font-size:11px;color:var(--warn)">';
+          item.warns.forEach(function(w){ compat += '<li>' + w + '</li>'; });
+          compat += '</ul>';
+        }
+      }
+      h += '<tr>' +
+           '<td><strong>' + esc(sp.name) + '</strong></td>' +
+           '<td style="color:' + lc + ';font-weight:700;font-size:12px">' + (sp.level || 'Beginner') + '</td>' +
+           '<td>' + (sp.size_in ? sp.size_in + '"' : '-') + '</td>' +
+           '<td>' + (sp.min_gal ? d_v(sp.min_gal) + ' ' + v_lbl() : '-') + '</td>' +
+           '<td>' + d_t(sp.tmin) + '-' + d_t(sp.tmax) + '</td>' +
+           '<td>' + sp.pmin + '-' + sp.pmax + '</td>' +
+           '<td>' + sp.gmin + '-' + sp.gmax + '</td>' +
+           '<td>' + sp.bioload + '</td>' +
+           '<td style="font-size:12px">' + compat + '</td>' +
+           '</tr>';
+    });
+    h += '</table></div>';
+  }
+  h += '</div>';
+
   // Plant suggestions
   var already_ids = pl_in_tank.map(function(p){ return p.plant_id; });
   var fish_tmin_s = rng.temp.ok ? rng.temp.min : null;
