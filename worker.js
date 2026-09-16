@@ -1082,6 +1082,7 @@ function calc_wc() {
   var lit = Math.round(gal * 3.78541 * 10) / 10;
   res_el.innerHTML = 'Remove <strong>' + gal + ' gal</strong> (' + lit + ' L) &mdash; treat replacement water with dechlorinator before adding to tank.';
 }
+function sub_task(e) {
   e.preventDefault(); var f = e.target, tid = at();
   add_task(tid, f.type.value, f.name.value, f.freq.value, f.last.value, f.notes.value);
   r_maint();
