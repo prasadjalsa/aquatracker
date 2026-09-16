@@ -190,11 +190,14 @@ var PL = {
 
 // ===== STORAGE =====
 function ld() {
-  try { return JSON.parse(localStorage.getItem('aq')) || mt(); }
-  catch(e) { return mt(); }
+  try {
+    var d = JSON.parse(localStorage.getItem('aq')) || mt();
+    if (!Array.isArray(d.feeding)) d.feeding = [];
+    return d;
+  } catch(e) { return mt(); }
 }
 function sv(d) { localStorage.setItem('aq', JSON.stringify(d)); }
-function mt() { return {tanks:[], equip:[], plants:[], stock:[], tasks:[], water:[]}; }
+function mt() { return {tanks:[], equip:[], plants:[], stock:[], tasks:[], water:[], feeding:[]}; }
 function gid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 function at() { return localStorage.getItem('aq_at') || ''; }
 function sat(id) { localStorage.setItem('aq_at', id); }
@@ -231,6 +234,65 @@ function del_tank(id) {
   sat(d.tanks.length ? d.tanks[0].id : '');
 }
 
+// ===== FEEDING LOG =====
+function add_feeding(tid) {
+  var d = ld(), now = new Date();
+  d.feeding.push({id:gid(), tank_id:tid, date:now.toISOString().slice(0,10), ts:now.getTime()});
+  sv(d);
+}
+function last_feeding(tid) {
+  var d = ld();
+  var f = d.feeding.filter(function(x){ return x.tank_id === tid; });
+  if (!f.length) return null;
+  return f.sort(function(a,b){ return b.ts - a.ts; })[0];
+}
+function feedings_today(tid) {
+  var d = ld(), today = today_str();
+  return d.feeding.filter(function(x){ return x.tank_id === tid && x.date === today; }).length;
+}
+function ts_ago(ts) {
+  var diff = Date.now() - ts;
+  var mins = Math.floor(diff / 60000);
+  if (mins < 60) return mins + 'm ago';
+  var hrs = Math.floor(diff / 3600000);
+  if (hrs < 24) return hrs + 'h ago';
+  return Math.floor(diff / 86400000) + 'd ago';
+}
+
+// ===== NITROGEN CYCLE TRACKER =====
+function cycle_status(tid) {
+  var entries = get_water(tid);
+  if (!entries.length) return {phase:0, pct:5, label:'Not started', color:'#9ca3af', desc:'Add an ammonia source (pure ammonia, fish food, or a few hardy starter fish) and log your first water test to begin tracking.'};
+  var last = entries[entries.length - 1];
+  var nh3 = last.ammonia, no2 = last.nitrite, no3 = last.nitrate;
+  if (nh3 === null && no2 === null) return {phase:0, pct:10, label:'Monitoring', color:'#9ca3af', desc:'Log ammonia and nitrite readings to track cycle progress.'};
+  if (nh3 !== null && nh3 <= 0.25 && no2 !== null && no2 <= 0.25 && no3 !== null && no3 > 0) return {phase:4, pct:100, label:'Cycle complete!', color:'#3ab87a', desc:'NH3 and NO2 are at 0 ppm, nitrate detected. Your tank is ready. Add fish slowly — 2-3 at a time, wait 1-2 weeks between additions.'};
+  if (nh3 !== null && nh3 <= 0.5 && no2 !== null && no2 > 0) return {phase:3, pct:75, label:'Almost there', color:'#e8a838', desc:'Ammonia is falling and nitrite-eating bacteria are multiplying. Keep testing every 2-3 days. 1-2 more weeks typically.'};
+  if (no2 !== null && no2 > 0) return {phase:2, pct:50, label:'Nitrite spike', color:'#e05252', desc:'Ammonia-eating bacteria are established. Nitrite-eating bacteria are growing now. Both are still toxic — do not add fish. Avoid large water changes.'};
+  if (nh3 !== null && nh3 > 0) return {phase:1, pct:25, label:'Ammonia spike', color:'#e8a838', desc:'Beneficial bacteria are starting to colonise the filter. This is normal. Do NOT do water changes yet. Test every 2-3 days and wait.'};
+  return {phase:0, pct:10, label:'Monitoring', color:'#9ca3af', desc:'Keep logging water tests to track cycle progress.'};
+}
+function mark_cycled(tid) {
+  var d = ld();
+  d.tanks = d.tanks.map(function(t){ return t.id === tid ? Object.assign({}, t, {cycled:true}) : t; });
+  sv(d); r_dash();
+}
+function upd_checklist(tid, key, val) {
+  var d = ld();
+  d.tanks = d.tanks.map(function(t) {
+    if (t.id !== tid) return t;
+    var chk = Object.assign({}, t.setup_chk || {});
+    chk[key] = val;
+    return Object.assign({}, t, {setup_chk: chk});
+  });
+  sv(d); r_dash();
+}
+function dismiss_setup(tid) {
+  var d = ld();
+  d.tanks = d.tanks.map(function(t){ return t.id === tid ? Object.assign({}, t, {setup_dismissed:true}) : t; });
+  sv(d); r_dash();
+}
+
 // ===== EQUIPMENT =====
 function add_equip(tid, type, name, brand, notes, config) {
   var d = ld();
@@ -265,7 +327,18 @@ function eq_cfg_txt(eq) {
     var cb = cfg.bps ? cfg.bps + ' BPS' : '';
     return [ct, ch, cb].filter(function(x){return x;}).join(', ') || '-';
   }
+  if (eq.type === 'Heater') {
+    var hw = cfg.watts ? cfg.watts + 'W' : '';
+    var ht = cfg.heater_type || '';
+    return [hw, ht].filter(function(x){return x;}).join(', ') || '-';
+  }
   return '-';
+}
+function get_heater_watts(tid) {
+  var d = ld(), total = 0;
+  d.equip.filter(function(x){ return x.tank_id === tid && x.type === 'Heater' && x.config && x.config.watts; })
+    .forEach(function(h){ total += (h.config.watts || 0); });
+  return total;
 }
 
 // ===== PLANTS =====
@@ -529,6 +602,87 @@ function today_str() { return new Date().toISOString().slice(0,10); }
 function scard(l, v, s) {
   return '<div class="scard"><div class="slbl">' + l + '</div><div class="sval">' + v + '</div>' + (s ? '<div class="ssub">' + s + '</div>' : '') + '</div>';
 }
+function fgh(lbl, inp_html, hint) {
+  return '<div class="fg"><label>' + lbl + '</label>' + inp_html +
+    (hint ? '<small style="font-size:11px;color:var(--muted);margin-top:2px">' + hint + '</small>' : '') + '</div>';
+}
+
+// ===== CYCLE CARD =====
+function r_cycle_card(tid) {
+  var d = ld();
+  var tank = d.tanks.find(function(t){ return t.id === tid; }); if (!tank) return '';
+  if (tank.cycled) return '';
+  var age = Math.floor((Date.now() - new Date(tank.setup_date + 'T00:00:00').getTime()) / 86400000);
+  var cyc = cycle_status(tid);
+  if (cyc.phase === 4) {
+    var d2 = ld();
+    d2.tanks = d2.tanks.map(function(t){ return t.id === tid ? Object.assign({}, t, {cycled:true}) : t; });
+    sv(d2);
+  }
+  if (age > 180 && cyc.phase === 4) return '';
+  var steps = ['No source', 'NH3 spike', 'NO2 spike', 'NO2 falling', 'Cycled'];
+  var h = '<div class="card" style="border-left:4px solid ' + cyc.color + '">';
+  h += '<div class="ctitle">Nitrogen Cycle Tracker' +
+       '<span class="pill" style="background:' + cyc.color + ';color:#fff;font-size:12px">' + cyc.label + '</span></div>';
+  h += '<div class="bl-bar"><div class="bl-fill" style="width:' + cyc.pct + '%;background:' + cyc.color + '"></div></div>';
+  h += '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin:3px 0 8px">';
+  steps.forEach(function(s, i) {
+    var cur = i === cyc.phase, done = i < cyc.phase;
+    h += '<span style="' + (cur ? 'color:'+cyc.color+';font-weight:700' : done ? 'color:var(--ok)' : '') + '">' + s + '</span>';
+  });
+  h += '</div>';
+  h += '<p style="font-size:13px;line-height:1.5">' + esc(cyc.desc) + '</p>';
+  if (cyc.phase < 4) {
+    h += '<p style="font-size:12px;color:var(--muted);margin-top:6px;background:#f5f8fb;padding:8px 10px;border-radius:6px">Typical timeline: 4-6 weeks total. Test every 2-3 days. Do not add fish until NH3 and NO2 both read 0 ppm.</p>';
+    h += '<div style="margin-top:8px"><button class="btn bg bs" onclick="mark_cycled(at())">Mark as Cycled Manually</button></div>';
+  }
+  h += '</div>';
+  return h;
+}
+
+// ===== SETUP CHECKLIST CARD =====
+function r_setup_card(tid) {
+  var d = ld();
+  var tank = d.tanks.find(function(t){ return t.id === tid; }); if (!tank) return '';
+  if (tank.setup_dismissed) return '';
+  var age = Math.floor((Date.now() - new Date(tank.setup_date + 'T00:00:00').getTime()) / 86400000);
+  if (age > 90) return '';
+  var chk = tank.setup_chk || {};
+  var has_filter = d.equip.some(function(e){ return e.tank_id === tid && e.type === 'Filter'; });
+  var has_heater = d.equip.some(function(e){ return e.tank_id === tid && e.type === 'Heater'; });
+  var has_test   = d.water.some(function(w){ return w.tank_id === tid; });
+  var cyc = cycle_status(tid);
+  var cycle_started = chk.cycle_src || (cyc.phase >= 1);
+  var items = [
+    {key:'rinsed',    auto:false, done:chk.rinsed||false,  label:'Tank, gravel, and decorations rinsed with no soap'},
+    {key:'dechlo',    auto:false, done:chk.dechlo||false,  label:'Water dechlorinator purchased (Prime, Stress Coat, etc.)'},
+    {key:'_filter',   auto:true,  done:has_filter,          label:'Filter installed and running'},
+    {key:'_heater',   auto:true,  done:has_heater,          label:'Heater installed and set to target temperature'},
+    {key:'_tested',   auto:true,  done:has_test,            label:'First water test logged'},
+    {key:'cycle_src', auto:false, done:cycle_started,       label:'Ammonia source added to start the cycle'},
+    {key:'_cycled',   auto:true,  done:cyc.phase===4||tank.cycled||false, label:'Tank fully cycled — safe to add fish'}
+  ];
+  var done_count = items.filter(function(i){ return i.done; }).length;
+  var color = done_count === items.length ? 'var(--ok)' : 'var(--surf)';
+  var h = '<div class="card" style="border-left:4px solid ' + color + '">';
+  h += '<div class="ctitle">New Tank Setup Checklist <span style="font-weight:400;font-size:12px;color:var(--muted)">(' + done_count + '/' + items.length + ')</span>' +
+       '<button class="btn bg bs" onclick="dismiss_setup(at())">Dismiss</button></div>';
+  items.forEach(function(item) {
+    var style = item.done ? 'text-decoration:line-through;color:var(--muted)' : '';
+    var icon = item.done ? '<span style="color:var(--ok);font-size:15px">&#x2713;</span>' : '<span style="color:#ccc;font-size:15px">&#x25CB;</span>';
+    if (item.auto) {
+      h += '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px">' +
+           icon + '<span style="' + style + '">' + esc(item.label) + '</span>' +
+           '<span style="font-size:10px;color:var(--muted)">(auto)</span></div>';
+    } else {
+      h += '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px">' +
+           '<input type="checkbox" ' + (item.done ? 'checked' : '') + ' data-key="' + item.key + '" onchange="upd_checklist(at(),this.dataset.key,this.checked)" style="width:auto;cursor:pointer">' +
+           '<label style="cursor:pointer;' + style + '">' + esc(item.label) + '</label></div>';
+    }
+  });
+  h += '</div>';
+  return h;
+}
 
 // ===== TANK SELECTOR =====
 function build_sel() {
@@ -586,6 +740,9 @@ function r_dash() {
          '<button class="btn bd bs" data-sw="maint" onclick="switch_tab(this.dataset.sw)">View Tasks</button></div>';
   }
 
+  // Setup checklist
+  h += r_setup_card(tid);
+
   h += '<div class="dgrid">';
   h += scard('Tank Size', tank.gallons + ' gal', tank.liters + ' L');
   var age = Math.max(0, Math.floor((Date.now() - new Date(tank.setup_date + 'T00:00:00').getTime()) / 86400000));
@@ -595,7 +752,19 @@ function r_dash() {
        '<div class="sval" style="color:' + bl_color + '">' + cur_bl + '<span style="font-size:14px;font-weight:400;color:var(--muted)"> / ' + max_bl + '</span></div>' +
        '<div class="ssub">' + bl_pct + '% full' + (cur_bl > max_bl ? ' - OVER LIMIT' : '') + '</div></div>';
   h += scard('Next Task', nt_txt, '');
+  // Feeding card
+  var last_f = last_feeding(tid), ft = feedings_today(tid);
+  var fed_txt = last_f ? ts_ago(last_f.ts) : 'Never';
+  var feed_sub = ft > 0 ? 'Today: ' + ft + 'x' + (ft > 2 ? ' &#x26A0; Overfeeding!' : '') : 'Not fed today';
+  var feed_color = ft > 2 ? 'var(--danger)' : 'var(--deep)';
+  h += '<div class="scard"><div class="slbl">LAST FED</div>' +
+       '<div class="sval" style="font-size:16px;color:' + feed_color + '">' + fed_txt + '</div>' +
+       '<div class="ssub">' + feed_sub + '</div>' +
+       '<button class="btn bp bs" style="margin-top:8px;width:100%" onclick="add_feeding(at());r_dash()">Log Feeding</button></div>';
   h += '</div>';
+
+  // Cycle tracker
+  h += r_cycle_card(tid);
 
   h += '<div class="card"><div class="ctitle">Last Water Reading';
   if (lr) h += '<small style="font-weight:400;color:var(--muted)"> ' + lr.date + '</small>';
@@ -696,15 +865,15 @@ function r_wlog() {
   var h = '<div class="card"><div class="ctitle">Add Water Reading</div>' +
     '<form id="wf" onsubmit="sub_water(event)">' +
     '<div class="frow">' +
-    fg('Date', '<input type="date" name="date" value="' + td + '" required>') +
-    fg('Temperature (F)', '<input type="number" name="tf" step="0.1" placeholder="e.g. 76">') +
-    fg('Ammonia (ppm)', '<input type="number" name="nh3" step="0.01" placeholder="e.g. 0">') +
-    fg('Nitrite (ppm)', '<input type="number" name="no2" step="0.01" placeholder="e.g. 0">') +
+    fgh('Date', '<input type="date" name="date" value="' + td + '" required>', '') +
+    fgh('Temperature (F)', '<input type="number" name="tf" step="0.1" placeholder="e.g. 76">', 'Stable temp is as important as the number itself.') +
+    fgh('Ammonia (ppm)', '<input type="number" name="nh3" step="0.01" placeholder="e.g. 0">', 'Target: 0 ppm. Any reading above 0 is harmful to fish.') +
+    fgh('Nitrite (ppm)', '<input type="number" name="no2" step="0.01" placeholder="e.g. 0">', 'Target: 0 ppm. Toxic even at 0.25 ppm. Spikes during cycling.') +
     '</div><div class="frow">' +
-    fg('Nitrate (ppm)', '<input type="number" name="no3" step="0.1" placeholder="e.g. 10">') +
-    fg('pH', '<input type="number" name="ph" step="0.01" placeholder="e.g. 7.0">') +
-    fg('Hardness (GH)', '<input type="number" name="gh" step="0.1" placeholder="e.g. 8">') +
-    fg('Notes', '<input type="text" name="notes" placeholder="Optional notes">') +
+    fgh('Nitrate (ppm)', '<input type="number" name="no3" step="0.1" placeholder="e.g. 10">', 'Keep below 20 ppm. Reduced by regular water changes.') +
+    fgh('pH', '<input type="number" name="ph" step="0.01" placeholder="e.g. 7.0">', 'Stability matters more than exact value. Avoid sudden changes.') +
+    fgh('Hardness (GH)', '<input type="number" name="gh" step="0.1" placeholder="e.g. 8">', 'Most tropical fish prefer 4-12 dGH (soft to medium water).') +
+    fgh('Notes', '<input type="text" name="notes" placeholder="Optional notes">', '') +
     '</div><button type="submit" class="btn bp">Save Reading</button></form></div>';
   var entries = get_water(tid);
   if (entries.length >= 2) {
@@ -741,7 +910,17 @@ function r_maint() {
   var td = today_str();
   var existing_types = d.tasks.filter(function(x){ return x.tank_id === tid; }).map(function(t){ return t.type; });
   var rec_tasks = get_rec_tasks(tid);
+  var tank = d.tanks.find(function(t){ return t.id === tid; });
   var h = '';
+
+  // Water change calculator
+  h += '<div class="card"><div class="ctitle">Water Change Calculator</div>' +
+       '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:13px">' +
+       '<span>Tank: <strong>' + (tank ? tank.gallons : 0) + ' gal</strong></span>' +
+       '<span>Change:</span>' +
+       '<input type="number" id="wc_pct" value="25" min="1" max="100" style="width:70px" oninput="calc_wc()">' +
+       '<span>%</span>' +
+       '</div><div id="wc_result" style="margin-top:8px;font-size:13px;color:var(--text)"></div></div>';
 
   // Recommended tasks card
   h += '<div class="card"><div class="ctitle">Recommended Schedule <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:6px">Based on your setup</span></div>';
@@ -800,8 +979,19 @@ function r_maint() {
     '<button type="submit" class="btn bp" style="margin-top:8px">Add Task</button></form></div>';
 
   el.innerHTML = h;
+  calc_wc();
 }
-function sub_task(e) {
+function calc_wc() {
+  var pct_el = document.getElementById('wc_pct');
+  var res_el = document.getElementById('wc_result');
+  if (!pct_el || !res_el) return;
+  var d = ld(), tank = d.tanks.find(function(t){ return t.id === at(); });
+  if (!tank) return;
+  var pct = parseFloat(pct_el.value) || 25;
+  var gal = Math.round(tank.gallons * pct / 100 * 10) / 10;
+  var lit = Math.round(gal * 3.78541 * 10) / 10;
+  res_el.innerHTML = 'Remove <strong>' + gal + ' gal</strong> (' + lit + ' L) &mdash; treat replacement water with dechlorinator before adding to tank.';
+}
   e.preventDefault(); var f = e.target, tid = at();
   add_task(tid, f.type.value, f.name.value, f.freq.value, f.last.value, f.notes.value);
   r_maint();
@@ -895,6 +1085,26 @@ function r_recs() {
     h += '<span style="color:var(--danger)">No CO2 system added, but plants require it.</span>';
   } else {
     h += '<span style="color:var(--muted)">No CO2 system.</span>';
+  }
+  h += '</div>';
+  // Heater row
+  var heater_w = get_heater_watts(tid);
+  var rec_w = tank ? Math.ceil(tank.gallons * 5) : 0;
+  h += '<div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px">';
+  h += '<span style="font-weight:600;min-width:50px">Heater:</span>';
+  var heaters_eq = d.equip.filter(function(x){ return x.tank_id === tid && x.type === 'Heater'; });
+  if (heater_w > 0) {
+    h += '<span>' + heater_w + 'W installed</span> ';
+    if (heater_w >= rec_w) {
+      h += pill_lbl('pok', 'Good');
+    } else {
+      h += pill_lbl('pdanger', 'Underpowered');
+      h += '<span style="font-size:12px;color:var(--danger);margin-left:8px">Recommend ' + rec_w + 'W+ for a ' + (tank ? tank.gallons : 0) + 'g tank (5W/gal rule)</span>';
+    }
+  } else if (heaters_eq.length) {
+    h += '<span style="color:var(--muted)">Heater added — set wattage in equipment config to check sizing.</span>';
+  } else {
+    h += '<span style="color:var(--muted)">No heater configured. Tropical fish need stable warm water.</span>';
   }
   h += '</div></div>';
 
@@ -1036,9 +1246,11 @@ function upd_equip_form(sel) {
   var ld_div = document.getElementById('eq_light_cfg');
   var fi_div = document.getElementById('eq_filter_cfg');
   var co_div = document.getElementById('eq_co2_cfg');
+  var he_div = document.getElementById('eq_heater_cfg');
   if (ld_div) ld_div.style.display = t === 'Light' ? 'block' : 'none';
   if (fi_div) fi_div.style.display = t === 'Filter' ? 'block' : 'none';
   if (co_div) co_div.style.display = t === 'CO2 System' ? 'block' : 'none';
+  if (he_div) he_div.style.display = t === 'Heater' ? 'block' : 'none';
 }
 
 function build_equip_cfg_html(type, cfg) {
@@ -1071,6 +1283,12 @@ function build_equip_cfg_html(type, cfg) {
     fg('CO2 Type', '<select name="co2_type">' + co2_opts + '</select>') +
     fg('Hours / Day', '<input type="number" name="co2_hours" value="' + (c.hours||'') + '" placeholder="e.g. 5" min="0" max="24">') +
     fg('Bubble Rate (BPS)', '<input type="number" name="co2_bps" value="' + (c.bps||'') + '" placeholder="e.g. 2" min="0" step="0.5">') +
+    '</div></div>' +
+    '<div id="eq_heater_cfg" style="display:' + (type==='Heater'?'block':'none') + '">' +
+    '<div class="cfg-sep"></div><div style="font-size:12px;font-weight:600;color:var(--mid);margin-bottom:6px">Heater Settings</div>' +
+    '<div class="frow">' +
+    fg('Wattage (W)', '<input type="number" name="heater_watts" value="' + (c.watts||'') + '" placeholder="e.g. 100 (5W per gallon)" min="0">') +
+    fg('Heater Type', '<select name="heater_type"><option' + (c.heater_type==='Submersible'?' selected':'') + '>Submersible</option><option' + (c.heater_type==='Inline'?' selected':'') + '>Inline</option><option' + (c.heater_type==='Clip-on'?' selected':'') + '>Clip-on</option></select>') +
     '</div></div>';
 }
 
@@ -1087,6 +1305,9 @@ function read_equip_cfg(f) {
     cfg.co2_type = f.co2_type.value;
     cfg.hours = parseFloat(f.co2_hours.value) || 0;
     cfg.bps = parseFloat(f.co2_bps.value) || 0;
+  } else if (t === 'Heater') {
+    cfg.watts = parseFloat(f.heater_watts.value) || 0;
+    cfg.heater_type = f.heater_type.value;
   }
   return cfg;
 }
@@ -1193,26 +1414,63 @@ function sub_add_plant(e) {
 }
 
 // ===== LIVESTOCK MODAL =====
+function upd_stock_compat(sel) {
+  var sid = sel.value, d = ld(), tid = at();
+  var result_el = document.getElementById('stk_compat');
+  if (!result_el || !SP[sid]) return;
+  var new_sp = SP[sid];
+  var existing = d.stock.filter(function(s){ return s.tank_id === tid; });
+  if (!existing.length) {
+    result_el.innerHTML = '<span style="color:var(--muted);font-size:12px">First fish — no compatibility check needed.</span>';
+    return;
+  }
+  var conflicts = [];
+  existing.forEach(function(s) {
+    var sp = SP[s.species_id]; if (!sp) return;
+    var iss = [];
+    if (Math.max(new_sp.tmin,sp.tmin) > Math.min(new_sp.tmax,sp.tmax)) iss.push('temp');
+    if (Math.max(new_sp.pmin,sp.pmin) > Math.min(new_sp.pmax,sp.pmax)) iss.push('pH');
+    if (Math.max(new_sp.gmin,sp.gmin) > Math.min(new_sp.gmax,sp.gmax)) iss.push('hardness');
+    if (iss.length) conflicts.push(sp.name + ' (' + iss.join(', ') + ')');
+  });
+  if (conflicts.length) {
+    result_el.innerHTML = '<span style="color:var(--danger);font-size:12px;font-weight:700">&#x26A0; Conflicts with: ' + esc(conflicts.join(', ')) + '</span>';
+  } else {
+    result_el.innerHTML = '<span style="color:var(--ok);font-size:12px;font-weight:700">&#x2713; Compatible with all current livestock</span>';
+  }
+}
 function do_add_stock() {
-  var td = today_str();
+  var td = today_str(), d = ld(), tid = at();
   var sopts = Object.keys(SP).sort(function(a,b){ return SP[a].name.localeCompare(SP[b].name); })
     .map(function(k){
       var bl = SP[k].bioload;
       var bl_lbl = bl <= 1 ? 'Low' : bl <= 3 ? 'Med' : 'High';
       return '<option value="' + k + '">' + SP[k].name + ' (Bioload: ' + bl_lbl + ')</option>';
     }).join('');
+  // Stocking speed check
+  var recent = d.stock.filter(function(s){
+    if (s.tank_id !== tid) return false;
+    return Math.floor((Date.now() - new Date(s.added_date + 'T00:00:00').getTime()) / 86400000) < 14;
+  });
+  var speed_warn = recent.length > 0 ? '<div style="background:#fef3d5;border-radius:6px;padding:8px 10px;font-size:12px;color:#8a5a00;margin-bottom:10px">&#x26A0; You added livestock in the last 14 days. Adding more too quickly can spike ammonia. Consider waiting a bit longer.</div>' : '';
   om('<div class="mtitle">Add Livestock</div>' +
+    speed_warn +
     '<form onsubmit="sub_add_stock(event)">' +
     '<div class="frow">' +
-    fg('Species', '<select name="sid">' + sopts + '</select>') +
+    fg('Species', '<select name="sid" onchange="upd_stock_compat(this)">' + sopts + '</select>') +
     fg('Display Name', '<input type="text" name="dname" placeholder="Leave blank for species name">') +
-    '</div><div class="frow">' +
+    '</div>' +
+    '<div id="stk_compat" style="min-height:18px;margin:4px 0 8px"></div>' +
+    '<div class="frow">' +
     fg('Quantity', '<input type="number" name="qty" value="1" min="1">') +
     fg('Date Added', '<input type="date" name="added" value="' + td + '">') +
     '</div>' +
     fg('Notes', '<input type="text" name="notes" placeholder="Optional">') +
+    '<div style="background:#e8f4fb;border-radius:6px;padding:8px 10px;font-size:12px;color:#1a5a7a;margin:10px 0">&#x1F4A1; <strong>Quarantine tip:</strong> New fish should be quarantined in a separate tank for 2-4 weeks before adding to your main tank. This prevents disease spreading to your existing livestock.</div>' +
     '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Add</button></div>' +
     '</form>');
+  var sel_el = document.querySelector('#mb select[name=sid]');
+  if (sel_el) upd_stock_compat(sel_el);
 }
 function sub_add_stock(e) {
   e.preventDefault(); var f = e.target;
