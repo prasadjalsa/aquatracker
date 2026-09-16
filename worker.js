@@ -206,29 +206,86 @@ var SP = {
   flying_fox:           {name:'Flying Fox',            tmin:72,tmax:79,pmin:6.0,pmax:7.5,gmin:5, gmax:15,bioload:2,size_in:5,  min_gal:30,  level:'Intermediate', hard_reason:'Territorial with own kind and similar-shaped fish. Often confused with false siamese algae eater which is more aggressive.',note:'Good algae eater. One per tank unless very large.'},
   bolivian_ram:         {name:'Bolivian Ram',          tmin:72,tmax:79,pmin:6.5,pmax:7.5,gmin:5, gmax:15,bioload:2,size_in:3.5,min_gal:20,  level:'Beginner',     note:'Hardier and more forgiving than German Blue Ram. Great beginner cichlid.'},
 };
+// assign livestock types (override per species, default Fish)
+['cherry_shrimp','crystal_shrimp','amano_shrimp'].forEach(function(k){ if(SP[k]) SP[k].type='Shrimp'; });
+['nerite_snail','mystery_snail'].forEach(function(k){ if(SP[k]) SP[k].type='Snail'; });
+['african_dwarf_frog'].forEach(function(k){ if(SP[k]) SP[k].type='Amphibian'; });
+Object.keys(SP).forEach(function(k){ if(!SP[k].type) SP[k].type='Fish'; });
 
 // ===== PLANT DATABASE (20 species) =====
 var PL = {
-  amazon_sword:   {name:'Amazon Sword',       tmin:60,tmax:82,light:'Medium',co2:false,diff:'Easy',   note:'Background plant. Needs root tabs for nutrients.'},
-  anubias:        {name:'Anubias',            tmin:60,tmax:84,light:'Low',   co2:false,diff:'Easy',   note:'Attach to hardscape. Burying rhizome causes rot.'},
-  bacopa:         {name:'Bacopa',             tmin:68,tmax:82,light:'Medium',co2:false,diff:'Easy',   note:'Compact stem plant. Slightly acidic water preferred.'},
-  bucephalandra:  {name:'Bucephalandra',      tmin:68,tmax:86,light:'Low',   co2:false,diff:'Easy',   note:'Many color variants. Attach to hardscape. Slow grower.'},
-  cryptocoryne:   {name:'Cryptocoryne',       tmin:68,tmax:82,light:'Low',   co2:false,diff:'Easy',   note:'Melts when moved. Will recover within weeks.'},
-  duckweed:       {name:'Duckweed',           tmin:60,tmax:86,light:'Low',   co2:false,diff:'Easy',   note:'Tiny floating plant. Spreads extremely fast.'},
-  dwarf_hairgrass:{name:'Dwarf Hairgrass',    tmin:60,tmax:80,light:'Medium',co2:false,diff:'Medium', note:'Carpet plant. Slow to establish without CO2.'},
-  dwarf_lily:     {name:'Dwarf Lily',         tmin:68,tmax:82,light:'Medium',co2:false,diff:'Medium', note:'Grows from bulb. Beautiful broad lily pad leaves.'},
-  frogbit:        {name:'Frogbit',            tmin:60,tmax:78,light:'Medium',co2:false,diff:'Easy',   note:'Floating plant. Provides shade and surface cover.'},
-  hornwort:       {name:'Hornwort',           tmin:59,tmax:86,light:'Medium',co2:false,diff:'Easy',   note:'Very fast grower. Great natural nitrate filter.'},
-  java_fern:      {name:'Java Fern',          tmin:60,tmax:82,light:'Low',   co2:false,diff:'Easy',   note:'Tie to driftwood. Never bury rhizome.'},
-  java_moss:      {name:'Java Moss',          tmin:60,tmax:82,light:'Low',   co2:false,diff:'Easy',   note:'Great for shrimp and fry cover. Attach to surfaces.'},
-  ludwigia:       {name:'Ludwigia',           tmin:68,tmax:82,light:'High',  co2:true, diff:'Medium', note:'Red/orange color with high light and CO2.'},
-  moneywort:      {name:'Moneywort',          tmin:60,tmax:82,light:'Medium',co2:false,diff:'Easy',   note:'Round leaves on stems. Can also grow above water.'},
-  monte_carlo:    {name:'Monte Carlo',        tmin:68,tmax:82,light:'Medium',co2:true, diff:'Medium', note:'Dense carpet. CO2 greatly accelerates growth.'},
-  pennywort:      {name:'Pennywort',          tmin:68,tmax:82,light:'Medium',co2:false,diff:'Easy',   note:'Fast growing trailing stems. Easy for beginners.'},
-  rotala:         {name:'Rotala',             tmin:72,tmax:82,light:'High',  co2:true, diff:'Medium', note:'Pink/red stems need CO2 and high light to develop.'},
-  vallisneria:    {name:'Vallisneria',        tmin:60,tmax:86,light:'Medium',co2:false,diff:'Easy',   note:'Spreads via runners. Tall background plant.'},
-  water_sprite:   {name:'Water Sprite',       tmin:60,tmax:87,light:'Medium',co2:false,diff:'Easy',   note:'Can float or plant in substrate. Trim regularly.'},
-  water_wisteria: {name:'Water Wisteria',     tmin:60,tmax:86,light:'Medium',co2:false,diff:'Easy',   note:'Fast grower. Delicate lacy leaves. Trim regularly.'}
+  // ── Anubias ──
+  anubias:               {group:'Anubias',            name:'Anubias (Generic)',         tmin:60,tmax:84,light:'Low',   co2:false,diff:'Easy',    note:'Attach to hardscape. Burying rhizome causes rot.'},
+  anubias_barteri:       {group:'Anubias',            name:'Anubias Barteri',           tmin:60,tmax:84,light:'Low',   co2:false,diff:'Easy',    note:'Large oval leaves. Robust and undemanding. Attach to hardscape.'},
+  anubias_nana:          {group:'Anubias',            name:'Anubias Nana',              tmin:60,tmax:84,light:'Low',   co2:false,diff:'Easy',    note:'Most popular Anubias. Compact and very hardy. Great for midground.'},
+  anubias_nana_petite:   {group:'Anubias',            name:'Anubias Nana Petite',       tmin:60,tmax:84,light:'Low',   co2:false,diff:'Easy',    note:'Tiny variant of Nana. Ideal for nano tanks and small driftwood.'},
+  anubias_coffeefolia:   {group:'Anubias',            name:'Anubias Coffeefolia',       tmin:60,tmax:84,light:'Low',   co2:false,diff:'Easy',    note:'Deeply ridged dark leaves with brown new growth. Striking midground.'},
+  anubias_congensis:     {group:'Anubias',            name:'Anubias Congensis',         tmin:62,tmax:84,light:'Low',   co2:false,diff:'Easy',    note:'Long narrow leaves. Less common but very hardy.'},
+  // ── Bucephalandra ──
+  bucephalandra:         {group:'Bucephalandra',      name:'Bucephalandra',             tmin:68,tmax:86,light:'Low',   co2:false,diff:'Easy',    note:'Many color variants. Attach to hardscape. Slow grower.'},
+  // ── Cryptocoryne ──
+  cryptocoryne:          {group:'Cryptocoryne',       name:'Cryptocoryne (Generic)',    tmin:68,tmax:82,light:'Low',   co2:false,diff:'Easy',    note:'Melts when moved. Will recover within weeks.'},
+  crypt_wendtii:         {group:'Cryptocoryne',       name:'Crypt. Wendtii',            tmin:68,tmax:82,light:'Low',   co2:false,diff:'Easy',    note:'Most common Crypt. Comes in green and bronze. Very adaptable.'},
+  crypt_parva:           {group:'Cryptocoryne',       name:'Crypt. Parva',              tmin:68,tmax:82,light:'Low',   co2:false,diff:'Medium',  note:'Smallest Crypt. Very slow grower. Excellent foreground plant.'},
+  crypt_balansae:        {group:'Cryptocoryne',       name:'Crypt. Balansae',           tmin:68,tmax:82,light:'Low',   co2:false,diff:'Easy',    note:'Tall plant with long ruffled leaves. Good background plant.'},
+  crypt_spiralis:        {group:'Cryptocoryne',       name:'Crypt. Spiralis',           tmin:68,tmax:82,light:'Low',   co2:false,diff:'Easy',    note:'Narrow spiraling leaves. Tall background plant.'},
+  crypt_lucens:          {group:'Cryptocoryne',       name:'Crypt. Lucens',             tmin:68,tmax:82,light:'Low',   co2:false,diff:'Easy',    note:'Compact and sturdy. Green leaves with reddish undersides.'},
+  crypt_undulata:        {group:'Cryptocoryne',       name:'Crypt. Undulata',           tmin:68,tmax:82,light:'Low',   co2:false,diff:'Easy',    note:'Wavy-edged leaves. Reddish-brown tone in lower light.'},
+  // ── Swords & Rosettes ──
+  amazon_sword:          {group:'Swords & Rosettes',  name:'Amazon Sword',              tmin:60,tmax:82,light:'Medium',co2:false,diff:'Easy',    note:'Classic background plant. Heavy root feeder — use root tabs.'},
+  echinodorus_parviflorus:{group:'Swords & Rosettes', name:'Black Amazon Sword',        tmin:60,tmax:82,light:'Medium',co2:false,diff:'Easy',    note:'Darker and more compact than the standard Amazon Sword.'},
+  echinodorus_osiris:    {group:'Swords & Rosettes',  name:'Melon Sword',               tmin:60,tmax:82,light:'Medium',co2:false,diff:'Easy',    note:'Large reddish-brown leaves. Statement background plant. Root feeder.'},
+  dwarf_lily:            {group:'Swords & Rosettes',  name:'Dwarf Lily',                tmin:68,tmax:82,light:'Medium',co2:false,diff:'Medium',  note:'Grows from a bulb. Produces broad lily-pad leaves above water.'},
+  vallisneria:           {group:'Swords & Rosettes',  name:'Vallisneria',               tmin:60,tmax:86,light:'Medium',co2:false,diff:'Easy',    note:'Spreads via runners. Tall grass-like background plant.'},
+  vallisneria_nana:      {group:'Swords & Rosettes',  name:'Vallisneria Nana',          tmin:60,tmax:86,light:'Medium',co2:false,diff:'Easy',    note:'Shorter and narrower than standard Val. Good for medium tanks.'},
+  sagittaria_subulata:   {group:'Swords & Rosettes',  name:'Sagittaria Subulata',       tmin:60,tmax:82,light:'Medium',co2:false,diff:'Easy',    note:'Grass-like spreader. Easy alternative to dwarf hairgrass.'},
+  blyxa_japonica:        {group:'Swords & Rosettes',  name:'Blyxa Japonica',            tmin:68,tmax:82,light:'Medium',co2:false,diff:'Medium',  note:'Grass-like rosette with a reddish hue. Benefits from CO2.'},
+  // ── Java Fern ──
+  java_fern:             {group:'Java Fern',          name:'Java Fern',                 tmin:60,tmax:82,light:'Low',   co2:false,diff:'Easy',    note:'Tie to driftwood or hardscape. Never bury the rhizome.'},
+  java_fern_narrow:      {group:'Java Fern',          name:'Java Fern Narrow Leaf',     tmin:60,tmax:82,light:'Low',   co2:false,diff:'Easy',    note:'Slender leaves. Same care as standard Java Fern.'},
+  java_fern_windelov:    {group:'Java Fern',          name:'Java Fern Windelov',        tmin:60,tmax:82,light:'Low',   co2:false,diff:'Easy',    note:'Lacy trident-tipped leaves. Stunning attached to hardscape.'},
+  java_fern_trident:     {group:'Java Fern',          name:'Java Fern Trident',         tmin:60,tmax:82,light:'Low',   co2:false,diff:'Easy',    note:'Deeply lobed finger-like leaves. Less common but very easy.'},
+  bolbitis_heudelotii:   {group:'Java Fern',          name:'Bolbitis (African Fern)',   tmin:68,tmax:80,light:'Medium',co2:false,diff:'Medium',  note:'Delicate translucent green leaves. Attach to hardscape. Needs water flow.'},
+  // ── Mosses ──
+  java_moss:             {group:'Mosses',             name:'Java Moss',                 tmin:60,tmax:82,light:'Low',   co2:false,diff:'Easy',    note:'Great for shrimp and fry cover. Attach to surfaces.'},
+  christmas_moss:        {group:'Mosses',             name:'Christmas Moss',            tmin:65,tmax:79,light:'Low',   co2:false,diff:'Easy',    note:'Triangular branching resembles fir branches. Attach to hardscape.'},
+  flame_moss:            {group:'Mosses',             name:'Flame Moss',                tmin:65,tmax:82,light:'Low',   co2:false,diff:'Easy',    note:'Distinctive upward-twisting growth pattern. Very unique look.'},
+  riccia_fluitans:       {group:'Mosses',             name:'Riccia (Crystalwort)',      tmin:65,tmax:82,light:'High',  co2:true, diff:'Medium',  note:'Dense bright-green mat. Needs high light and CO2 to stay submerged.'},
+  // ── Floating ──
+  duckweed:              {group:'Floating',           name:'Duckweed',                  tmin:60,tmax:86,light:'Low',   co2:false,diff:'Easy',    note:'Tiny floating plant. Spreads extremely fast — hard to remove.'},
+  frogbit:               {group:'Floating',           name:'Frogbit',                   tmin:60,tmax:78,light:'Medium',co2:false,diff:'Easy',    note:'Floating plant with round leaves. Provides shade and surface cover.'},
+  salvinia:              {group:'Floating',           name:'Salvinia',                  tmin:64,tmax:82,light:'Medium',co2:false,diff:'Easy',    note:'Small floating fern. Fast grower and excellent nitrate absorber.'},
+  water_sprite:          {group:'Floating',           name:'Water Sprite',              tmin:60,tmax:87,light:'Medium',co2:false,diff:'Easy',    note:'Can float or be planted in substrate. Trim regularly.'},
+  water_lettuce:         {group:'Floating',           name:'Water Lettuce',             tmin:68,tmax:86,light:'High',  co2:false,diff:'Easy',    note:'Large floating rosette. Needs strong light and high humidity.'},
+  // ── Stem Plants ──
+  bacopa:                {group:'Stem Plants',        name:'Bacopa Caroliniana',        tmin:68,tmax:82,light:'Medium',co2:false,diff:'Easy',    note:'Round leaves on upright stems. Slightly acidic water preferred.'},
+  bacopa_monnieri:       {group:'Stem Plants',        name:'Bacopa Monnieri',           tmin:64,tmax:86,light:'Medium',co2:false,diff:'Easy',    note:'Smaller leaves than caroliniana. Tolerates harder water well.'},
+  hornwort:              {group:'Stem Plants',        name:'Hornwort',                  tmin:59,tmax:86,light:'Medium',co2:false,diff:'Easy',    note:'Very fast grower. Great natural nitrate filter.'},
+  moneywort:             {group:'Stem Plants',        name:'Moneywort',                 tmin:60,tmax:82,light:'Medium',co2:false,diff:'Easy',    note:'Round leaves on stems. Can also grow emersed above water.'},
+  pennywort:             {group:'Stem Plants',        name:'Pennywort',                 tmin:68,tmax:82,light:'Medium',co2:false,diff:'Easy',    note:'Fast growing trailing stems. Easy for beginners.'},
+  water_wisteria:        {group:'Stem Plants',        name:'Water Wisteria',            tmin:60,tmax:86,light:'Medium',co2:false,diff:'Easy',    note:'Fast grower with delicate lacy leaves. Trim regularly.'},
+  hygrophila_corymbosa:  {group:'Stem Plants',        name:'Giant Hygro',               tmin:64,tmax:86,light:'Medium',co2:false,diff:'Easy',    note:'Large leaves on tall stems. One of the most undemanding backgrounds.'},
+  hygrophila_polysperma: {group:'Stem Plants',        name:'Sunset Hygro',              tmin:64,tmax:86,light:'Medium',co2:false,diff:'Easy',    note:'Pinkish-orange tips under good light. One of the easiest stem plants.'},
+  limnophila_sessiliflora:{group:'Stem Plants',       name:'Ambulia',                   tmin:64,tmax:82,light:'Medium',co2:false,diff:'Easy',    note:'Fine feathery whorled leaves. Fast grower. Good beginner plant.'},
+  cabomba:               {group:'Stem Plants',        name:'Cabomba',                   tmin:64,tmax:82,light:'Medium',co2:false,diff:'Medium',  note:'Fan-shaped whorled leaves. Needs good light and soft water.'},
+  najas_guadalupensis:   {group:'Stem Plants',        name:'Guppy Grass',               tmin:60,tmax:82,light:'Low',   co2:false,diff:'Easy',    note:'Extremely fast grower. Excellent breeding cover and nitrate sink.'},
+  hemianthus_micranthemoides:{group:'Stem Plants',   name:'Pearl Weed',                tmin:68,tmax:82,light:'Medium',co2:false,diff:'Easy',    note:'Tiny round leaves. Can carpet low or grow upright as a stem plant.'},
+  ludwigia:              {group:'Stem Plants',        name:'Ludwigia Repens',           tmin:68,tmax:82,light:'High',  co2:true, diff:'Medium',  note:'Red/orange color intensifies with high light and CO2.'},
+  ludwigia_arcuata:      {group:'Stem Plants',        name:'Ludwigia Arcuata',          tmin:68,tmax:82,light:'High',  co2:true, diff:'Medium',  note:'Needle-like leaves. Vibrant orange-red with CO2 and high light.'},
+  ludwigia_super_red:    {group:'Stem Plants',        name:'Ludwigia Super Red',        tmin:68,tmax:82,light:'High',  co2:true, diff:'Medium',  note:'Deep blood-red color when conditions are ideal. Very striking.'},
+  rotala:                {group:'Stem Plants',        name:'Rotala Rotundifolia',       tmin:72,tmax:82,light:'High',  co2:true, diff:'Medium',  note:'Pink stems develop best color with CO2 and high light.'},
+  rotala_macrandra:      {group:'Stem Plants',        name:'Rotala Macrandra',          tmin:72,tmax:82,light:'High',  co2:true, diff:'Advanced',note:'Very demanding red plant. Requires CO2, high light, and soft water.'},
+  rotala_wallichii:      {group:'Stem Plants',        name:'Rotala Wallichii',          tmin:72,tmax:80,light:'High',  co2:true, diff:'Medium',  note:'Feathery pink stems. Delicate looking but very beautiful.'},
+  alternanthera_reineckii:{group:'Stem Plants',       name:'Alternanthera Reineckii',   tmin:72,tmax:82,light:'High',  co2:true, diff:'Medium',  note:'Striking pink-red leaves. Needs strong light and CO2 for best color.'},
+  myriophyllum_tuberculatum:{group:'Stem Plants',     name:'Red Milfoil',               tmin:65,tmax:80,light:'High',  co2:true, diff:'Advanced',note:'Fine-textured red stems. Very demanding — needs CO2, high light, soft water.'},
+  // ── Foreground & Carpet ──
+  dwarf_hairgrass:       {group:'Foreground & Carpet',name:'Dwarf Hairgrass',           tmin:60,tmax:80,light:'Medium',co2:false,diff:'Medium',  note:'Classic carpet plant. Slow to spread without CO2.'},
+  eleocharis_acicularis: {group:'Foreground & Carpet',name:'Micro Hairgrass',           tmin:60,tmax:80,light:'Medium',co2:false,diff:'Medium',  note:'Finer and shorter than dwarf hairgrass. Dense low carpet.'},
+  staurogyne_repens:     {group:'Foreground & Carpet',name:'Staurogyne Repens',         tmin:68,tmax:82,light:'Medium',co2:false,diff:'Easy',    note:'Compact bushy foreground. Very undemanding for a carpet plant.'},
+  marsilea_hirsuta:      {group:'Foreground & Carpet',name:'Marsilea Hirsuta',          tmin:64,tmax:82,light:'Medium',co2:false,diff:'Easy',    note:'Four-leaf clover appearance. Easy low carpet without CO2.'},
+  monte_carlo:           {group:'Foreground & Carpet',name:'Monte Carlo',               tmin:68,tmax:82,light:'Medium',co2:true, diff:'Medium',  note:'Dense carpet. CO2 greatly accelerates spreading.'},
+  hemianthus_callitrichoides:{group:'Foreground & Carpet',name:'HC Cuba',               tmin:68,tmax:78,light:'High',  co2:true, diff:'Advanced',note:'Demanding mini carpet. Needs high light, CO2, and soft water.'},
+  pogostemon_helferi:    {group:'Foreground & Carpet',name:'Pogostemon Helferi (Downoi)',tmin:68,tmax:82,light:'Medium',co2:false,diff:'Medium', note:'Unique star-shaped leaves forming low dense clusters.'},
 };
 
 // ===== FERTILIZER PRESETS =====
@@ -1371,6 +1428,7 @@ function r_recs() {
   var turnover = tank && tank.gallons && total_gph > 0 ? Math.round(total_gph / tank.gallons * 10) / 10 : 0;
   var needs_co2_plant = pl_in_tank.some(function(p){ return PL[p.plant_id] && PL[p.plant_id].co2; });
   var needs_high_light = pl_in_tank.some(function(p){ return PL[p.plant_id] && PL[p.plant_id].light === 'High'; });
+  var needs_med_light  = !needs_high_light && pl_in_tank.some(function(p){ return PL[p.plant_id] && PL[p.plant_id].light === 'Medium'; });
   var heater_needed;
   if (tank && tank.room_tmin != null) {
     heater_needed = sk.length === 0 ? tank.room_tmin < 72 : sk.some(function(s){ var sp = SP[s.species_id]; return sp && tank.room_tmin < sp.tmin; });
@@ -1394,14 +1452,31 @@ function r_recs() {
   }
   h += '</div>';
   // Light row
-  h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:13px">';
-  h += '<span style="font-weight:600;min-width:50px">Light:</span>';
+  h += '<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;font-size:13px">';
+  h += '<span style="font-weight:600;min-width:50px;padding-top:1px">Light:</span>';
   if (light_hours > 0) {
-    var light_ok = !needs_high_light || light_hours >= 8;
-    h += '<span>' + light_hours + ' hours/day</span>';
-    if (needs_high_light && light_hours < 8) h += ' <span style="color:var(--danger);font-size:12px">High-light plants need 8+ hours</span>';
-    else if (light_hours >= 8) h += ' ' + pill_lbl('pok', 'Good');
-    else h += ' ' + pill_lbl('pwarn', 'Moderate');
+    var light_cls, light_lbl, light_note;
+    var has_co2 = !!co2_info;
+    if (needs_high_light) {
+      if      (light_hours < 6)  { light_cls = 'pdanger'; light_lbl = 'Insufficient'; light_note = 'High-light plants need 8-10 h/day.'; }
+      else if (light_hours < 8)  { light_cls = 'pwarn';   light_lbl = 'Too low';      light_note = 'Increase to 8-10 h for high-light plants.'; }
+      else if (light_hours <= 10){ light_cls = 'pok';     light_lbl = 'Sufficient';   light_note = null; }
+      else if (has_co2)          { light_cls = 'pwarn';   light_lbl = 'Overkill';     light_note = 'Above 10 h — CO2 helps but algae risk is elevated.'; }
+      else                       { light_cls = 'pdanger'; light_lbl = 'Algae risk';   light_note = 'Above 10 h without CO2 will cause heavy algae growth.'; }
+    } else if (needs_med_light) {
+      if      (light_hours < 4)  { light_cls = 'pdanger'; light_lbl = 'Insufficient'; light_note = 'Medium-light plants need 6-8 h/day.'; }
+      else if (light_hours < 6)  { light_cls = 'pwarn';   light_lbl = 'Too low';      light_note = 'Aim for 6-8 h for medium-light plants.'; }
+      else if (light_hours <= 8) { light_cls = 'pok';     light_lbl = 'Sufficient';   light_note = null; }
+      else if (light_hours <= 10){ light_cls = 'pwarn';   light_lbl = 'Overkill';     light_note = has_co2 ? 'Above 8 h — plants can use it with CO2, but watch for algae.' : 'Above 8 h without CO2 increases algae risk.'; }
+      else                       { light_cls = 'pdanger'; light_lbl = 'Algae risk';   light_note = 'Reduce to 8 h max — excess light without CO2 causes algae.'; }
+    } else {
+      if      (light_hours <= 8) { light_cls = 'pok';     light_lbl = 'Good';         light_note = null; }
+      else if (light_hours <= 10){ light_cls = 'pwarn';   light_lbl = 'Overkill';     light_note = 'Above 8 h for low-light plants — monitor for algae.'; }
+      else                       { light_cls = 'pdanger'; light_lbl = 'Algae risk';   light_note = 'Reduce to 6-8 h — extended photoperiod promotes algae growth.'; }
+    }
+    h += '<div><span>' + light_hours + ' h/day</span> ' + pill_lbl(light_cls, light_lbl);
+    if (light_note) h += '<div style="font-size:11px;color:var(--muted);margin-top:3px">' + light_note + '</div>';
+    h += '</div>';
   } else if (lights_eq.length) {
     h += '<span style="color:var(--muted)">Light added. Set hours/day in equipment config.</span>';
   } else {
@@ -1962,34 +2037,51 @@ function upd_plant_form(sel) {
     }
   }
 }
+function build_plant_opts(co2_f, light_f, search) {
+  var groups = ['Anubias','Bucephalandra','Cryptocoryne','Swords & Rosettes','Java Fern','Mosses','Floating','Stem Plants','Foreground & Carpet'];
+  var q = search ? search.toLowerCase() : '';
+  var h = '';
+  groups.forEach(function(g) {
+    var items = Object.keys(PL).filter(function(k) {
+      var p = PL[k];
+      if (p.group !== g) return false;
+      if (co2_f === 'Yes' && !p.co2) return false;
+      if (co2_f === 'No'  &&  p.co2) return false;
+      if (light_f !== 'All' && p.light !== light_f) return false;
+      if (q && p.name.toLowerCase().indexOf(q) === -1) return false;
+      return true;
+    });
+    if (!items.length) return;
+    h += '<optgroup label="' + g + '">';
+    items.forEach(function(k) {
+      var p = PL[k];
+      h += '<option value="' + k + '">' + p.name + ' (' + p.light + ' light' + (p.co2 ? ', CO2' : '') + ')</option>';
+    });
+    h += '</optgroup>';
+  });
+  h += '<option value="_custom">-- Other / Custom Plant --</option>';
+  return h;
+}
 function filter_plants() {
   var sel = document.querySelector('#mb select[name=pid]');
   var co2_sel = document.getElementById('pl_co2_filter');
   var light_sel = document.getElementById('pl_light_filter');
+  var search_el = document.getElementById('pl_search');
   if (!sel) return;
-  var co2_f = co2_sel ? co2_sel.value : 'All';
+  var co2_f   = co2_sel   ? co2_sel.value   : 'All';
   var light_f = light_sel ? light_sel.value : 'All';
-  var opts = Object.keys(PL).filter(function(k) {
-    var p = PL[k];
-    if (co2_f === 'Yes' && !p.co2) return false;
-    if (co2_f === 'No' && p.co2) return false;
-    if (light_f !== 'All' && p.light !== light_f) return false;
-    return true;
-  }).map(function(k) {
-    return '<option value="' + k + '">' + PL[k].name + ' (' + PL[k].light + ' light' + (PL[k].co2 ? ', CO2' : '') + ')</option>';
-  }).join('') + '<option value="_custom">-- Other / Custom Plant --</option>';
-  sel.innerHTML = opts;
+  var q       = search_el ? search_el.value : '';
+  sel.innerHTML = build_plant_opts(co2_f, light_f, q);
   upd_plant_form(sel);
 }
 function do_add_plant() {
   var td = today_str();
-  var popts = Object.keys(PL)
-    .map(function(k){ return '<option value="' + k + '">' + PL[k].name + ' (' + PL[k].light + ' light' + (PL[k].co2 ? ', CO2' : '') + ')</option>'; })
-    .join('') + '<option value="_custom">-- Other / Custom Plant --</option>';
+  var popts = build_plant_opts('All', 'All');
   om('<div class="mtitle">Add Plant</div>' +
     '<form onsubmit="sub_add_plant(event)">' +
-    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">' +
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">' +
     '<label style="font-size:12px;color:var(--muted);font-weight:600">Filter:</label>' +
+    '<input type="text" id="pl_search" placeholder="Search plants..." oninput="filter_plants()" style="flex:1;min-width:120px;padding:5px 8px;border:1px solid #ccd5de;border-radius:4px;font-size:12px">' +
     '<select id="pl_light_filter" onchange="filter_plants()" style="width:auto">' +
     '<option value="All">Any light</option><option value="Low">Low light</option><option value="Medium">Medium light</option><option value="High">High light</option>' +
     '</select>' +
@@ -2088,16 +2180,18 @@ function upd_stock_compat(sel) {
   result_el.innerHTML = parts.join('');
 }
 
-function build_stock_opts(level_filter, heater_filter) {
+function build_stock_opts(level_filter, heater_filter, type_filter, search) {
   var d = ld(), tank = d.tanks.find(function(t){ return t.id === at(); });
   var rt_min = tank && tank.room_tmin != null ? tank.room_tmin : null;
+  var q = search ? search.toLowerCase() : '';
   return Object.keys(SP)
     .filter(function(k) {
       var sp = SP[k];
       if (level_filter && level_filter !== 'All' && sp.level !== level_filter) return false;
-      // Filter by heater need only when room_tmin is known
       if (rt_min != null && heater_filter === 'no_heater' && rt_min < sp.tmin) return false;
       if (rt_min != null && heater_filter === 'heater_req' && rt_min >= sp.tmin) return false;
+      if (type_filter && type_filter !== 'All' && sp.type !== type_filter) return false;
+      if (q && sp.name.toLowerCase().indexOf(q) === -1) return false;
       return true;
     })
     .sort(function(a,b){ return SP[a].name.localeCompare(SP[b].name); })
@@ -2105,27 +2199,27 @@ function build_stock_opts(level_filter, heater_filter) {
       var sp = SP[k], bl = sp.bioload, bl_lbl = bl <= 1 ? 'Low' : bl <= 3 ? 'Med' : 'High';
       var lvl = sp.level === 'Intermediate' ? ' ★★' : sp.level === 'Advanced' ? ' ★★★' : '';
       var heat_tag = rt_min != null ? (rt_min >= sp.tmin ? ' · no heater' : ' · heater') : '';
-      return '<option value="' + k + '">' + sp.name + ' (Bioload: ' + bl_lbl + lvl + heat_tag + ')</option>';
+      return '<option value="' + k + '">' + sp.name + ' (' + sp.type + ' · Bioload: ' + bl_lbl + lvl + heat_tag + ')</option>';
     }).join('');
 }
 
-function filter_stock_level(sel) {
+function filter_stock_all() {
+  var level_sel  = document.querySelector('#mb select[name=level_f]');
   var heater_sel = document.querySelector('#mb select[name=heater_f]');
+  var type_sel   = document.getElementById('sp_type_filter');
+  var search_el  = document.getElementById('sp_search');
+  var lf = level_sel  ? level_sel.value  : 'All';
   var hf = heater_sel ? heater_sel.value : 'All';
+  var tf = type_sel   ? type_sel.value   : 'All';
+  var q  = search_el  ? search_el.value  : '';
   var species_sel = document.querySelector('#mb select[name=sid]');
   if (!species_sel) return;
-  species_sel.innerHTML = build_stock_opts(sel.value, hf);
+  species_sel.innerHTML = build_stock_opts(lf, hf, tf, q);
   upd_stock_compat(species_sel);
 }
 
-function filter_stock_heater(sel) {
-  var level_sel = document.querySelector('#mb select[name=level_f]');
-  var lf = level_sel ? level_sel.value : 'Beginner';
-  var species_sel = document.querySelector('#mb select[name=sid]');
-  if (!species_sel) return;
-  species_sel.innerHTML = build_stock_opts(lf, sel.value);
-  upd_stock_compat(species_sel);
-}
+function filter_stock_level(sel) { filter_stock_all(); }
+function filter_stock_heater(sel) { filter_stock_all(); }
 
 function do_add_stock() {
   var td = today_str(), d = ld(), tid = at();
@@ -2145,19 +2239,26 @@ function do_add_stock() {
   om('<div class="mtitle">Add Livestock</div>' +
     speed_warn +
     '<form onsubmit="sub_add_stock(event)">' +
-    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">' +
-    '<label style="font-size:12px;color:var(--muted);font-weight:600">Show:</label>' +
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">' +
+    '<label style="font-size:12px;color:var(--muted);font-weight:600">Filter:</label>' +
+    '<input type="text" id="sp_search" placeholder="Search species..." oninput="filter_stock_all()" style="flex:1;min-width:120px;padding:5px 8px;border:1px solid #ccd5de;border-radius:4px;font-size:12px">' +
+    '<select id="sp_type_filter" onchange="filter_stock_all()" style="width:auto">' +
+    '<option value="All">All types</option>' +
+    '<option value="Fish">Fish</option>' +
+    '<option value="Shrimp">Shrimp</option>' +
+    '<option value="Snail">Snail</option>' +
+    '<option value="Amphibian">Amphibian</option>' +
+    '</select>' +
     '<select name="level_f" onchange="filter_stock_level(this)" style="width:auto">' +
-    '<option value="All">All species</option>' +
+    '<option value="All">All levels</option>' +
     '<option value="Beginner" selected>Beginner only</option>' +
     '<option value="Intermediate">Intermediate</option>' +
     '<option value="Advanced">Advanced</option>' +
     '</select>' +
     heater_row +
-    '<span style="font-size:11px;color:var(--muted)">★★ Intermediate &nbsp; ★★★ Advanced</span>' +
     '</div>' +
     '<div class="frow">' +
-    fg('Species', '<select name="sid" onchange="upd_stock_compat(this)">' + build_stock_opts('Beginner', 'All') + '</select>') +
+    fg('Species', '<select name="sid" onchange="upd_stock_compat(this)">' + build_stock_opts('Beginner', 'All', 'All', '') + '</select>') +
     fg('Display Name', '<input type="text" name="dname" placeholder="Leave blank for species name">') +
     '</div>' +
     '<div id="stk_compat" style="min-height:18px;margin:4px 0 8px;padding:0 2px"></div>' +
