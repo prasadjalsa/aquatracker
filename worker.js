@@ -205,11 +205,25 @@ var SP = {
   peacock_cichlid:      {name:'Peacock Cichlid',       tmin:76,tmax:82,pmin:7.8,pmax:8.5,gmin:10,gmax:25,bioload:3,size_in:6,  min_gal:55,  level:'Advanced',     hard_reason:'Requires Lake Malawi water chemistry: very alkaline and hard. Still shows cichlid territorial behavior.',note:'Stunning Lake Malawi cichlid. Less aggressive than mbuna.'},
   flying_fox:           {name:'Flying Fox',            tmin:72,tmax:79,pmin:6.0,pmax:7.5,gmin:5, gmax:15,bioload:2,size_in:5,  min_gal:30,  level:'Intermediate', hard_reason:'Territorial with own kind and similar-shaped fish. Often confused with false siamese algae eater which is more aggressive.',note:'Good algae eater. One per tank unless very large.'},
   bolivian_ram:         {name:'Bolivian Ram',          tmin:72,tmax:79,pmin:6.5,pmax:7.5,gmin:5, gmax:15,bioload:2,size_in:3.5,min_gal:20,  level:'Beginner',     note:'Hardier and more forgiving than German Blue Ram. Great beginner cichlid.'},
+  // --- Shrimp ---
+  ghost_shrimp:         {name:'Ghost Shrimp',          tmin:65,tmax:80,pmin:6.5,pmax:8.0,gmin:3, gmax:15,bioload:1,size_in:1.5,min_gal:5,   level:'Beginner',     inv:true, note:'Very cheap and hardy. Great tank cleaners. Avoid copper-based meds.'},
+  blue_velvet_shrimp:   {name:'Blue Velvet Shrimp',    tmin:65,tmax:80,pmin:6.5,pmax:8.0,gmin:4, gmax:12,bioload:1,size_in:1.5,min_gal:5,   level:'Beginner',     inv:true, note:'Color variant of Neocaridina. Same easy care as Cherry Shrimp.'},
+  snowball_shrimp:      {name:'Snowball Shrimp',        tmin:65,tmax:80,pmin:6.5,pmax:8.0,gmin:4, gmax:12,bioload:1,size_in:1.5,min_gal:5,   level:'Beginner',     inv:true, note:'White Neocaridina variant. Beginner-friendly. Avoid copper meds.'},
+  bamboo_shrimp:        {name:'Bamboo Shrimp',          tmin:72,tmax:82,pmin:6.5,pmax:7.5,gmin:3, gmax:12,bioload:1,size_in:3,  min_gal:20,  level:'Intermediate', inv:true, hard_reason:'Filter feeder — needs good flow and fine particles in the water. Will starve without regular feeding of powdered food.',note:'Fan-feeds from the current. Needs good water flow and fine food.'},
+  // --- Snails ---
+  assassin_snail:       {name:'Assassin Snail',        tmin:70,tmax:80,pmin:7.0,pmax:8.0,gmin:5, gmax:15,bioload:1,size_in:1,  min_gal:10,  level:'Beginner',     inv:true, note:'Hunts and eats pest snails. Peaceful with fish and shrimp.'},
+  trumpet_snail:        {name:'Malaysian Trumpet Snail',tmin:65,tmax:82,pmin:7.0,pmax:8.0,gmin:5, gmax:20,bioload:1,size_in:1,  min_gal:5,   level:'Beginner',     inv:true, note:'Burrows in substrate and aerates it. Multiplies quickly if overfed.'},
+  ramshorn_snail:       {name:'Ramshorn Snail',         tmin:65,tmax:82,pmin:7.0,pmax:8.0,gmin:5, gmax:15,bioload:1,size_in:1,  min_gal:5,   level:'Beginner',     inv:true, note:'Eats algae and decaying plant matter. Can multiply rapidly if overfed.'},
+  // --- Turtles ---
+  red_eared_slider:     {name:'Red-eared Slider',       tmin:72,tmax:80,pmin:6.5,pmax:8.0,gmin:5, gmax:20,bioload:5,size_in:12, min_gal:120, level:'Intermediate', hard_reason:'Grows to 10-12 inches and needs 120g+ as an adult. Requires a dry basking area with UVB lighting, a powerful external filter, and regular large water changes. Cannot be kept with fish.',note:'Semi-aquatic. Needs basking dock + UVB light. Very heavy bioload.'},
+  indian_flapshell:     {name:'Indian Flapshell Turtle',tmin:72,tmax:82,pmin:6.5,pmax:8.0,gmin:5, gmax:20,bioload:4,size_in:9,  min_gal:75,  level:'Intermediate', hard_reason:'Soft-shelled turtle that can bite. Needs deep water, a basking area, and a powerful filter. Omnivore needing varied diet.',note:'Soft shell. Semi-aquatic. Needs deep water and basking area.'},
+  painted_turtle:       {name:'Painted Turtle',         tmin:60,tmax:75,pmin:6.5,pmax:8.0,gmin:5, gmax:20,bioload:4,size_in:7,  min_gal:75,  level:'Intermediate', hard_reason:'Prefers cooler water. Needs basking area with UVB, powerful filtration, and varied diet including live food and vegetation.',note:'Cooler water turtle. Needs basking area and UVB lighting.'},
 };
 // assign livestock types (override per species, default Fish)
-['cherry_shrimp','crystal_shrimp','amano_shrimp'].forEach(function(k){ if(SP[k]) SP[k].type='Shrimp'; });
-['nerite_snail','mystery_snail'].forEach(function(k){ if(SP[k]) SP[k].type='Snail'; });
+['cherry_shrimp','crystal_shrimp','amano_shrimp','ghost_shrimp','blue_velvet_shrimp','snowball_shrimp','bamboo_shrimp'].forEach(function(k){ if(SP[k]) SP[k].type='Shrimp'; });
+['nerite_snail','mystery_snail','assassin_snail','trumpet_snail','ramshorn_snail'].forEach(function(k){ if(SP[k]) SP[k].type='Snail'; });
 ['african_dwarf_frog'].forEach(function(k){ if(SP[k]) SP[k].type='Amphibian'; });
+['red_eared_slider','indian_flapshell','painted_turtle'].forEach(function(k){ if(SP[k]) SP[k].type='Turtle'; });
 Object.keys(SP).forEach(function(k){ if(!SP[k].type) SP[k].type='Fish'; });
 
 // ===== PLANT DATABASE (20 species) =====
@@ -2247,6 +2261,7 @@ function do_add_stock() {
     '<option value="Fish">Fish</option>' +
     '<option value="Shrimp">Shrimp</option>' +
     '<option value="Snail">Snail</option>' +
+    '<option value="Turtle">Turtle</option>' +
     '<option value="Amphibian">Amphibian</option>' +
     '</select>' +
     '<select name="level_f" onchange="filter_stock_level(this)" style="width:auto">' +
