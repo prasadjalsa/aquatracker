@@ -1392,6 +1392,57 @@ function r_recs() {
     h += '</table></div></div>';
   }
 
+  // Plant suggestions
+  var already_ids = pl_in_tank.map(function(p){ return p.plant_id; });
+  var fish_tmin_s = rng.temp.ok ? rng.temp.min : null;
+  var fish_tmax_s = rng.temp.ok ? rng.temp.max : null;
+
+  var suggested = Object.keys(PL).filter(function(k) {
+    var p = PL[k];
+    if (already_ids.indexOf(k) !== -1) return false;
+    // Skip CO2-requiring plants when no CO2 system is set up
+    if (p.co2 && !co2_info) return false;
+    // Skip plants that need more light than available
+    if (p.light === 'High'   && light_hours < 8) return false;
+    if (p.light === 'Medium' && light_hours > 0 && light_hours < 4) return false;
+    // Must overlap with the fish temperature range
+    if (fish_tmin_s !== null && fish_tmax_s !== null) {
+      if (p.tmax < fish_tmin_s || p.tmin > fish_tmax_s) return false;
+    }
+    return true;
+  }).sort(function(a, b) {
+    var o = {Easy: 0, Medium: 1, Hard: 2};
+    return (o[PL[a].diff] || 0) - (o[PL[b].diff] || 0);
+  });
+
+  var ctx = [];
+  if (light_hours > 0) ctx.push(light_hours + 'h/day light');
+  else if (lights_eq.length) ctx.push('light configured — set hours in equipment');
+  else ctx.push('no light configured — showing low-light plants only');
+  if (co2_info) ctx.push('CO2 active');
+  else ctx.push('no CO2 — CO2-requiring plants hidden');
+
+  h += '<div class="card"><div class="ctitle">Suggested Plants</div>';
+  h += '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">Plants that suit your current setup (' + ctx.join(' &middot; ') + '). Plants already in your tank are excluded.</div>';
+  if (suggested.length === 0) {
+    h += '<p class="emsg">All compatible plants are already in your tank, or none match your current light and CO2 setup.</p>';
+  } else {
+    h += '<div class="tw"><table><tr><th>Plant</th><th>Difficulty</th><th>Light</th><th>CO2</th><th>Temp (' + t_lbl() + ')</th><th>Care Note</th></tr>';
+    suggested.forEach(function(k) {
+      var p = PL[k];
+      var dc = p.diff === 'Easy' ? 'var(--ok)' : p.diff === 'Medium' ? 'var(--warn)' : 'var(--danger)';
+      h += '<tr>' +
+           '<td><strong>' + esc(p.name) + '</strong></td>' +
+           '<td style="color:' + dc + ';font-weight:700;font-size:12px">' + p.diff + '</td>' +
+           '<td>' + p.light + '</td>' +
+           '<td>' + (p.co2 ? '<strong style="color:var(--warn)">Yes</strong>' : 'No') + '</td>' +
+           '<td>' + d_t(p.tmin) + '-' + d_t(p.tmax) + '</td>' +
+           '<td style="font-size:12px;color:var(--muted)">' + esc(p.note) + '</td></tr>';
+    });
+    h += '</table></div>';
+  }
+  h += '</div>';
+
   el.innerHTML = h;
 }
 
