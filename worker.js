@@ -110,6 +110,7 @@ tr:hover td{background:#f9fbfc}
   <button class="tab" data-t="wlog">Water Log</button>
   <button class="tab" data-t="maint">Maintenance</button>
   <button class="tab" data-t="recs">Recommendations</button>
+  <button class="tab" data-t="tools">Toolkit</button>
 </div>
 
 <div id="p-dash"  class="panel on"></div>
@@ -117,6 +118,7 @@ tr:hover td{background:#f9fbfc}
 <div id="p-wlog"  class="panel"></div>
 <div id="p-maint" class="panel"></div>
 <div id="p-recs"  class="panel"></div>
+<div id="p-tools" class="panel"></div>
 
 <div id="ov" class="overlay" onclick="if(event.target===this)cm()">
   <div class="mbox" id="mb"></div>
@@ -218,16 +220,28 @@ var PL = {
   water_wisteria: {name:'Water Wisteria',     tmin:60,tmax:86,light:'Medium',co2:false,diff:'Easy',   note:'Fast grower. Delicate lacy leaves. Trim regularly.'}
 };
 
+// ===== FERTILIZER PRESETS =====
+var FERT = {
+  flourish:      {name:'Seachem Flourish',         ml_per_gal:0.042, freq:3, note:'Comprehensive planted aquarium supplement'},
+  flourish_iron: {name:'Seachem Flourish Iron',    ml_per_gal:0.042, freq:3, note:'Iron and manganese supplement for green plants'},
+  flourish_excel:{name:'Seachem Flourish Excel',   ml_per_gal:0.125, freq:2, note:'Liquid carbon — daily or every other day'},
+  easy_green:    {name:'Easy Green All-in-One',    ml_per_gal:0.1,   freq:7, note:'Popular all-in-one liquid fertilizer'},
+  thrive:        {name:'NilocG Thrive',            ml_per_gal:0.05,  freq:7, note:'Complete macro and micro fertilizer'},
+  thrive_plus:   {name:'NilocG Thrive+',           ml_per_gal:0.05,  freq:3, note:'High-light tank all-in-one'},
+  custom:        {name:'Custom Fertilizer',        ml_per_gal:null,  freq:7, note:'Enter your own dose and schedule'},
+};
+
 // ===== STORAGE =====
 function ld() {
   try {
     var d = JSON.parse(localStorage.getItem('aq')) || mt();
     if (!Array.isArray(d.feeding)) d.feeding = [];
+    if (!Array.isArray(d.ferts))   d.ferts   = [];
     return d;
   } catch(e) { return mt(); }
 }
 function sv(d) { localStorage.setItem('aq', JSON.stringify(d)); }
-function mt() { return {tanks:[], equip:[], plants:[], stock:[], tasks:[], water:[], feeding:[]}; }
+function mt() { return {tanks:[], equip:[], plants:[], stock:[], tasks:[], water:[], feeding:[], ferts:[]}; }
 function gid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 function at() { return localStorage.getItem('aq_at') || ''; }
 function sat(id) { localStorage.setItem('aq_at', id); }
@@ -290,7 +304,7 @@ function upd_tank(id, name, gal, setup, notes, rt_min, rt_max) {
 function del_tank(id) {
   var d = ld();
   d.tanks = d.tanks.filter(function(x) { return x.id !== id; });
-  ['equip','plants','stock','tasks','water','feeding'].forEach(function(k) {
+  ['equip','plants','stock','tasks','water','feeding','ferts'].forEach(function(k) {
     d[k] = d[k].filter(function(x) { return x.tank_id !== id; });
   });
   sv(d);
@@ -427,6 +441,50 @@ function add_stock(tid, sid, dname, qty, added, notes) {
   sv(d);
 }
 function del_stock(id) { var d = ld(); d.stock = d.stock.filter(function(x){return x.id!==id;}); sv(d); }
+
+// ===== FERTILIZERS =====
+var _fert_gal = 0;
+function add_fert(tid, preset, name, dose_ml, freq_days, notes) {
+  var d = ld();
+  d.ferts.push({id:gid(), tank_id:tid, preset:preset, name:name, dose_ml:parseFloat(dose_ml)||0, freq_days:parseInt(freq_days)||7, notes:notes||''});
+  sv(d); r_life();
+}
+function del_fert(id) { var d = ld(); d.ferts = d.ferts.filter(function(x){return x.id!==id;}); sv(d); r_life(); }
+function calc_fert_dose(sel) {
+  var f = document.getElementById('fert_frm');
+  var fp = FERT[sel.value];
+  if (!fp) return;
+  f.fert_name.value = fp.name;
+  f.fert_freq.value = fp.freq;
+  if (fp.ml_per_gal !== null) {
+    f.fert_dose.value = Math.round(fp.ml_per_gal * _fert_gal * 10) / 10;
+  } else {
+    f.fert_dose.value = '';
+  }
+}
+function do_add_fert() {
+  var d = ld();
+  var tank = d.tanks.find(function(t){ return t.id === at(); });
+  if (!tank) return;
+  _fert_gal = tank.gallons || 0;
+  var opts = Object.keys(FERT).map(function(k) {
+    return '<option value="' + k + '">' + FERT[k].name + '</option>';
+  }).join('');
+  om('<div class="mtitle">Add Fertilizer</div>' +
+    '<form id="fert_frm" onsubmit="event.preventDefault();sub_fert()">' +
+    fg('Preset', '<select name="fert_preset" onchange="calc_fert_dose(this)">' + opts + '</select>') +
+    fg('Name', '<input type="text" name="fert_name" value="' + esc(FERT[Object.keys(FERT)[0]].name) + '" required>') +
+    fg('Dose per application (ml)', '<input type="number" name="fert_dose" step="0.1" min="0" value="' + (Math.round(FERT[Object.keys(FERT)[0]].ml_per_gal * _fert_gal * 10) / 10) + '" required placeholder="e.g. 2.5"><small style="color:var(--muted);font-size:11px">Calculated from ' + Math.round(_fert_gal) + ' gal tank — edit if needed</small>') +
+    fg('Dose every (days)', '<input type="number" name="fert_freq" min="1" value="' + FERT[Object.keys(FERT)[0]].freq + '" required>') +
+    fg('Notes', '<input type="text" name="fert_notes" placeholder="Optional">') +
+    '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Add Fertilizer</button></div>' +
+    '</form>');
+}
+function sub_fert() {
+  var f = document.getElementById('fert_frm');
+  add_fert(at(), f.fert_preset.value, f.fert_name.value.trim(), f.fert_dose.value, f.fert_freq.value, f.fert_notes.value.trim());
+  cm();
+}
 
 // ===== MAINTENANCE =====
 function next_due(last, freq) {
@@ -567,6 +625,12 @@ function get_rec_tasks(tid) {
     recs.push({type:'Other', name:'CO2 Bottle Level Check', freq:30,
       why:'Monthly check prevents unexpected CO2 loss mid-day'});
   }
+
+  d.ferts.filter(function(x){ return x.tank_id === tid; }).forEach(function(f) {
+    var dose_str = f.dose_ml ? f.dose_ml + ' ml per dose' : 'see bottle for dose';
+    recs.push({type:'Fertilizer', name:f.name, freq:f.freq_days,
+      why:dose_str + ' — based on ' + Math.round(d_v(tank.gallons)) + ' ' + v_lbl() + ' tank'});
+  });
 
   return recs;
 }
@@ -1011,6 +1075,21 @@ function r_life() {
     });
     h += '</table></div>';
   } else h += '<p class="emsg">No plants added yet.</p>';
+  h += '</div>';
+
+  var fr = d.ferts.filter(function(x){return x.tank_id===tid;});
+  h += '<div class="card"><div class="ctitle">Fertilizers <button class="btn bp bs" onclick="do_add_fert()">+ Add</button></div>';
+  if (fr.length) {
+    h += '<div class="tw"><table><tr><th>Name</th><th>Dose</th><th>Every</th><th>Notes</th><th></th></tr>';
+    fr.forEach(function(f) {
+      h += '<tr><td><strong>' + esc(f.name) + '</strong></td>' +
+           '<td>' + (f.dose_ml || '—') + ' ml</td>' +
+           '<td>' + f.freq_days + ' days</td>' +
+           '<td>' + esc(f.notes) + '</td>' +
+           '<td><button class="btn bd bs" data-id="' + f.id + '" onclick="del_fert(this.dataset.id)">&#x2715;</button></td></tr>';
+    });
+    h += '</table></div>';
+  } else h += '<p class="emsg">No fertilizers added. Add one to get dosing reminders in the Recommended Schedule.</p>';
   h += '</div>';
 
   h += '<div class="card"><div class="ctitle">Livestock <button class="btn bp bs" onclick="do_add_stock()">+ Add</button></div>';
@@ -1885,6 +1964,129 @@ function sub_add_stock(e) {
   cm(); r_life();
 }
 
+// ===== TOOLKIT TAB =====
+function r_tools() {
+  var tid = at(), d = ld(), el = document.getElementById('p-tools');
+  if (!el) return;
+  var tank = d.tanks.find(function(t){ return t.id === tid; });
+  if (!tank) { el.innerHTML = '<p class="emsg">Add a tank first to see toolkit guidance.</p>'; return; }
+  var cyc = cycle_status(tid);
+  var is_cycling = !tank.cycled && cyc.phase < 4;
+  var h = '';
+
+  // === Water Testing Tools ===
+  h += '<div class="card">';
+  h += '<div class="ctitle">Water Testing Tools</div>';
+  h += '<p style="font-size:13px;color:var(--muted);margin-bottom:12px">Physical items needed to accurately measure each parameter you log in the app.</p>';
+  h += '<div class="tw"><table><tr><th>Parameter</th><th>What You Need</th><th>Tip</th></tr>';
+  [
+    ['NH3 &mdash; Ammonia',   'API Freshwater Master Test Kit', 'Compare colour in natural daylight, not yellow or LED light'],
+    ['NO2 &mdash; Nitrite',   'API Freshwater Master Test Kit', 'Same kit &mdash; included in one box'],
+    ['NO3 &mdash; Nitrate',   'API Freshwater Master Test Kit', 'Shake bottle #2 vigorously for 30 seconds &mdash; this is critical'],
+    ['pH',                    'API Freshwater Master Test Kit', 'Test at the same time each day for consistency'],
+    ['GH &mdash; Hardness',   'API GH &amp; KH Test Kit',      'Count drops until colour changes; each drop = 1&deg;dH (17.9 ppm)'],
+    ['Temperature',           'Digital aquarium thermometer',   'Stick-on strip thermometers are inaccurate. Use a digital probe.'],
+  ].forEach(function(r) {
+    h += '<tr><td><strong>' + r[0] + '</strong></td><td>' + r[1] + '</td><td style="color:var(--muted);font-size:12px">' + r[2] + '</td></tr>';
+  });
+  h += '</table></div>';
+  h += '<div style="margin-top:10px;background:#f0f8ff;border-radius:6px;padding:10px 12px;font-size:13px">' +
+       '<strong>Starter recommendation:</strong> The API Freshwater Master Test Kit covers NH3, NO2, NO3, and pH in one box. ' +
+       'Pick up the API GH &amp; KH Kit separately for hardness. Both are available at most fish stores and online.</div>';
+  h += '</div>';
+
+  // === Water Change Equipment ===
+  h += '<div class="card">';
+  h += '<div class="ctitle">Water Change Equipment</div>';
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">';
+
+  // Left: what you need
+  h += '<div><div style="font-weight:600;font-size:13px;margin-bottom:10px">What you need</div>';
+  [
+    ['🪣', 'Gravel siphon / vacuum',      'Python No Spill, EHEIM, or any standard siphon hose'],
+    ['🪣', 'Dedicated bucket',             '5&ndash;10 gal &mdash; never used with soap or cleaning products'],
+    ['🧪', 'Dechlorinator',                'Seachem Prime or API Stress Coat+ &mdash; always treat tap water first'],
+    ['🌡', 'Thermometer',                  'Match new water temperature to tank before adding'],
+    ['🫧', 'Algae scraper (optional)',     'Wipe glass before the water change so debris gets siphoned out'],
+  ].forEach(function(e) {
+    h += '<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:9px">' +
+         '<span style="font-size:17px;flex-shrink:0">' + e[0] + '</span>' +
+         '<div><div style="font-size:13px;font-weight:500">' + e[1] + '</div>' +
+         '<div style="font-size:12px;color:var(--muted)">' + e[2] + '</div></div></div>';
+  });
+  h += '</div>';
+
+  // Right: step-by-step
+  h += '<div><div style="font-weight:600;font-size:13px;margin-bottom:10px">Step-by-step</div>';
+  [
+    'Turn off the heater and filter',
+    'Siphon from the substrate &mdash; vacuum gravel as you drain',
+    'Remove 25&ndash;50% of the tank water into your bucket',
+    'Fill a clean bucket with tap water close to tank temperature',
+    'Add dechlorinator to the new water (Prime: 1 ml per 10 gal)',
+    'Pour treated water slowly &mdash; avoid disturbing substrate',
+    'Turn filter and heater back on',
+    'Log the water change in the Maintenance tab',
+  ].forEach(function(s, i) {
+    h += '<div style="display:flex;gap:8px;margin-bottom:7px;font-size:13px">' +
+         '<span style="font-weight:700;color:var(--surf);flex-shrink:0;min-width:18px">' + (i + 1) + '.</span>' +
+         '<span>' + s + '</span></div>';
+  });
+  h += '</div></div></div>';
+
+  // === Cycling Supplies (only while cycling) ===
+  if (is_cycling) {
+    h += '<div class="card" style="border-left:4px solid ' + cyc.color + '">';
+    h += '<div class="ctitle">Cycling Supplies <span class="pill" style="background:' + cyc.color + ';color:#fff;font-size:12px">' + cyc.label + '</span></div>';
+    h += '<p style="font-size:13px;color:var(--muted);margin-bottom:12px">Your tank is still cycling. Here is what to have on hand.</p>';
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">';
+
+    h += '<div><div style="font-weight:600;font-size:13px;margin-bottom:10px">Fishless cycle</div>';
+    [
+      ['🧪', 'Pure ammonia (Dr. Tim\'s or ACE)',  'Must be clear &mdash; no surfactants, no scents, no dyes. Dose to 2&ndash;4 ppm.'],
+      ['📊', 'Test kit',                          'Re-dose to 2 ppm when NH3 drops to 0. Cycle is done when NH3 and NO2 both hit 0 within 24 h of dosing.'],
+    ].forEach(function(e) {
+      h += '<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:9px">' +
+           '<span style="font-size:17px;flex-shrink:0">' + e[0] + '</span>' +
+           '<div><div style="font-size:13px;font-weight:500">' + e[1] + '</div>' +
+           '<div style="font-size:12px;color:var(--muted)">' + e[2] + '</div></div></div>';
+    });
+    h += '</div>';
+
+    h += '<div><div style="font-weight:600;font-size:13px;margin-bottom:10px">Fish-in cycle</div>';
+    [
+      ['💧', 'Seachem Prime',  'Detoxifies NH3 and NO2 for 24&ndash;48 h. Dose the full tank volume daily during spikes.'],
+      ['🧪', 'Test kit',       'Test every 2 days. Do 25% water changes when NH3 or NO2 exceed 1 ppm.'],
+    ].forEach(function(e) {
+      h += '<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:9px">' +
+           '<span style="font-size:17px;flex-shrink:0">' + e[0] + '</span>' +
+           '<div><div style="font-size:13px;font-weight:500">' + e[1] + '</div>' +
+           '<div style="font-size:12px;color:var(--muted)">' + e[2] + '</div></div></div>';
+    });
+    h += '</div></div></div>';
+  }
+
+  // === Quick Reference Tips ===
+  h += '<div class="card">';
+  h += '<div class="ctitle">Quick Reference Tips</div>';
+  [
+    ['❌', 'Never rinse filter media in tap water',        'Chlorine and chloramine kill the beneficial bacteria living in your filter. Always rinse in tank water only.'],
+    ['❌', 'Never add untreated tap water directly',       'Treat with dechlorinator first. Even a small dose of chloramine can wipe out your cycle and harm fish.'],
+    ['✅', 'Match temperature before adding water',        'Temperature shock stresses fish. Check the bucket temperature with a thermometer before pouring in.'],
+    ['✅', 'Test in natural or white light',               'Colour-comparison test kits read wrong under yellow or warm LED lighting. Use daylight or cool white light.'],
+    ['✅', 'Dose dechlorinator for the full tank volume',  'Seachem Prime can be dosed for the entire tank each time, not just the water being changed &mdash; it won\'t harm fish at normal doses.'],
+    ['✅', 'Log every test and water change',              'The app tracks trends over time. A single reading is less useful than a history of readings.'],
+  ].forEach(function(t) {
+    h += '<div style="display:flex;align-items:flex-start;gap:9px;margin-bottom:11px">' +
+         '<span style="font-size:16px;flex-shrink:0">' + t[0] + '</span>' +
+         '<div><div style="font-size:13px;font-weight:500">' + t[1] + '</div>' +
+         '<div style="font-size:12px;color:var(--muted);margin-top:2px">' + t[2] + '</div></div></div>';
+  });
+  h += '</div>';
+
+  el.innerHTML = h;
+}
+
 // ===== APP CORE =====
 var cur_tab = 'dash';
 function render_tab() {
@@ -1893,6 +2095,7 @@ function render_tab() {
   else if (cur_tab === 'wlog')  r_wlog();
   else if (cur_tab === 'maint') r_maint();
   else if (cur_tab === 'recs')  r_recs();
+  else if (cur_tab === 'tools') r_tools();
 }
 function init() {
   build_sel();
