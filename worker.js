@@ -2075,25 +2075,7 @@ function sub_edit_equip(e) {
 }
 
 // ===== PLANT MODAL =====
-function fetch_wiki_img(name, target_id) {
-  var el = document.getElementById(target_id);
-  if (!el) return;
-  el.innerHTML = '<span style="font-size:11px;color:var(--muted)">Loading image...</span>';
-  var url = 'https://en.wikipedia.org/w/api.php?action=query&titles=' + encodeURIComponent(name) + '&prop=pageimages&pithumbsize=280&format=json&origin=*';
-  fetch(url)
-    .then(function(r){ return r.json(); })
-    .then(function(data) {
-      var pages = data.query && data.query.pages;
-      if (!pages) { el.innerHTML = ''; return; }
-      var page = pages[Object.keys(pages)[0]];
-      if (page && page.thumbnail) {
-        el.innerHTML = '<img src="' + page.thumbnail.source + '" alt="' + esc(name) + '" style="max-width:200px;max-height:160px;border-radius:6px;margin-top:6px;display:block">';
-      } else {
-        el.innerHTML = '<span style="font-size:11px;color:var(--muted)">No image found on Wikipedia.</span>';
-      }
-    })
-    .catch(function(){ el.innerHTML = ''; });
-}
+
 function upd_plant_form(sel) {
   var pid = sel.value;
   var cname_row = document.getElementById('pl_cname_row');
@@ -2104,7 +2086,6 @@ function upd_plant_form(sel) {
     if (cname_row) cname_row.style.display = 'block';
     if (cname_inp) cname_inp.required = true;
     if (info_row) info_row.style.display = 'none';
-    var wi = document.getElementById('pl_wiki_img'); if (wi) wi.innerHTML = '';
   } else {
     if (cname_row) cname_row.style.display = 'none';
     if (cname_inp) cname_inp.required = false;
@@ -2113,7 +2094,6 @@ function upd_plant_form(sel) {
       var co2_str = p.co2 ? 'Required' : 'Not needed';
       req_el.innerHTML = 'Temp: ' + d_t(p.tmin) + '-' + d_t(p.tmax) + t_lbl() + ' &nbsp;|&nbsp; Light: <strong>' + p.light + '</strong> &nbsp;|&nbsp; CO2: <strong>' + co2_str + '</strong> &nbsp;|&nbsp; ' + p.diff + '<br><span style="color:var(--muted)">' + esc(p.note) + '</span>';
       if (info_row) info_row.style.display = 'block';
-      fetch_wiki_img(p.name, 'pl_wiki_img');
     }
   }
 }
@@ -2170,7 +2150,7 @@ function do_add_plant() {
     '</select>' +
     '</div>' +
     fg('Plant Species', '<select name="pid" onchange="upd_plant_form(this)">' + popts + '</select>') +
-    '<div id="pl_info_row" class="cfg-box" style="margin-bottom:10px"><div id="pl_req"></div><div id="pl_wiki_img"></div></div>' +
+    '<div id="pl_info_row" class="cfg-box" style="margin-bottom:10px"><div id="pl_req"></div></div>' +
     '<div id="pl_cname_row" style="display:none;margin-bottom:10px">' +
     fg('Custom Name', '<input type="text" name="cname" id="pl_cname" placeholder="Enter plant name">') +
     '</div>' +
@@ -2258,7 +2238,6 @@ function upd_stock_compat(sel) {
   }
 
   result_el.innerHTML = parts.join('');
-  fetch_wiki_img(new_sp.name, 'sp_wiki_img');
 }
 function build_stock_opts(level_filter, heater_filter, type_filter, search) {
   var d = ld(), tank = d.tanks.find(function(t){ return t.id === at(); });
@@ -2343,7 +2322,6 @@ function do_add_stock() {
     fg('Display Name', '<input type="text" name="dname" placeholder="Leave blank for species name">') +
     '</div>' +
     '<div id="stk_compat" style="min-height:18px;margin:4px 0 0;padding:0 2px"></div>' +
-    '<div id="sp_wiki_img" style="margin-bottom:8px"></div>' +
     '<div class="frow">' +
     fg('Quantity', '<input type="number" name="qty" value="1" min="1">') +
     fg('Date Added', '<input type="date" name="added" value="' + td + '">') +
