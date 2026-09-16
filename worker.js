@@ -847,7 +847,8 @@ function do_export() {
     tasks:   d.tasks.filter(function(x){ return prev_ids.indexOf(x.tank_id) === -1; }),
     water:   d.water.filter(function(x){ return prev_ids.indexOf(x.tank_id) === -1; }),
     feeding: d.feeding.filter(function(x){ return prev_ids.indexOf(x.tank_id) === -1; }),
-    ferts:   d.ferts.filter(function(x){ return prev_ids.indexOf(x.tank_id) === -1; })
+    ferts:   d.ferts.filter(function(x){ return prev_ids.indexOf(x.tank_id) === -1; }),
+    pref:    get_pref()
   };
   var blob = new Blob([JSON.stringify(exp, null, 2)], {type:'application/json'});
   var url = URL.createObjectURL(blob), a = document.createElement('a');
@@ -863,6 +864,7 @@ function do_import(inp) {
       var ok = ['tanks','equip','plants','stock','tasks','water'].every(function(k){ return Array.isArray(p[k]); });
       if (!ok) { alert('Invalid backup file format.'); return; }
       sv(p); inp.value = '';
+      if (p.pref) sv_pref(p.pref);
       if (p.tanks.length) sat(p.tanks[0].id);
       init();
     } catch(err) { alert('Could not read file: ' + err.message); }
