@@ -1,16 +1,61 @@
 export default {
   async fetch(request) {
-    return new Response(APP_HTML, {
-      headers: { 'Content-Type': 'text/html; charset=utf-8' }
-    });
+    const url = new URL(request.url);
+    if (url.pathname === '/manifest.json')
+      return new Response(MANIFEST, { headers: {'Content-Type':'application/manifest+json','Cache-Control':'public,max-age=86400'} });
+    if (url.pathname === '/sw.js')
+      return new Response(SW_JS, { headers: {'Content-Type':'application/javascript','Cache-Control':'no-cache'} });
+    if (url.pathname === '/icon.svg')
+      return new Response(ICON_SVG, { headers: {'Content-Type':'image/svg+xml','Cache-Control':'public,max-age=86400'} });
+    return new Response(APP_HTML, { headers: {'Content-Type':'text/html; charset=utf-8'} });
   }
 };
+
+const ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="100" fill="#0a2342"/><text x="256" y="365" font-size="310" text-anchor="middle" font-family="Apple Color Emoji,Segoe UI Emoji,Noto Color Emoji,sans-serif">&#x1F420;</text></svg>`;
+
+const MANIFEST = JSON.stringify({
+  name: 'AquaTracker',
+  short_name: 'AquaTracker',
+  description: 'Aquarium tracking and management',
+  start_url: '/',
+  display: 'standalone',
+  background_color: '#0a2342',
+  theme_color: '#0a2342',
+  icons: [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' }]
+});
+
+const SW_JS = `
+const CACHE = 'aq-v1';
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.add('/')));
+  self.skipWaiting();
+});
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))));
+  self.clients.claim();
+});
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
+  e.respondWith(
+    caches.match(e.request).then(cached => cached || fetch(e.request).then(r => {
+      if (r.ok) { var rc = r.clone(); caches.open(CACHE).then(c => c.put(e.request, rc)); }
+      return r;
+    }))
+  );
+});
+`;
 
 const APP_HTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a2342">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AquaTracker">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon.svg">
 <title>AquaTracker</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"><\/script>
 <style>
@@ -2214,7 +2259,8 @@ function upd_stock_compat(sel) {
 
   result_el.innerHTML = parts.join('');
   fetch_wiki_img(new_sp.name, 'sp_wiki_img');
-}(level_filter, heater_filter, type_filter, search) {
+}
+function build_stock_opts(level_filter, heater_filter, type_filter, search) {
   var d = ld(), tank = d.tanks.find(function(t){ return t.id === at(); });
   var rt_min = tank && tank.room_tmin != null ? tank.room_tmin : null;
   var q = search ? search.toLowerCase() : '';
@@ -2719,6 +2765,7 @@ document.querySelectorAll('.tab').forEach(function(btn) {
     render_tab();
   });
 });
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
 window.addEventListener('DOMContentLoaded', init);
 <\/script>
 </body>
