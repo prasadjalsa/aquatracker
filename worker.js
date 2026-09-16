@@ -2175,7 +2175,7 @@ function r_howto() {
       '<strong>Nitrogen Cycle Tracker:</strong> shows the current cycle phase, testing frequency, and what to do next. Disappears once the cycle is complete.',
       '<strong>New Tank Setup Checklist:</strong> tracks your first-time setup steps. Auto-checks filter, heater, and water tests when you add them in other tabs.',
       '<strong>Water readings card:</strong> last logged values with status indicators. Ammonia and nitrite show a warning at any level above 0.',
-      '<strong>Bioload gauge:</strong> shows what percentage of your tank\'s capacity is used by your current stocking.',
+      '<strong>Bioload gauge:</strong> shows what percentage of your tank\\'s capacity is used by your current stocking.',
       '<strong>Upcoming tasks:</strong> next three maintenance tasks with days remaining.',
     ])
   );
@@ -2305,7 +2305,7 @@ function r_tools() {
 
     h += '<div><div style="font-weight:600;font-size:13px;margin-bottom:10px">Fishless cycle</div>';
     [
-      ['🧪', 'Pure ammonia (Dr. Tim\'s or ACE)',  'Must be clear &mdash; no surfactants, no scents, no dyes. Dose to 2&ndash;4 ppm.'],
+      ['🧪', 'Pure ammonia (Dr. Tim\\'s or ACE)',  'Must be clear &mdash; no surfactants, no scents, no dyes. Dose to 2&ndash;4 ppm.'],
       ['📊', 'Test kit',                          'Re-dose to 2 ppm when NH3 drops to 0. Cycle is done when NH3 and NO2 both hit 0 within 24 h of dosing.'],
     ].forEach(function(e) {
       h += '<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:9px">' +
@@ -2336,7 +2336,7 @@ function r_tools() {
     ['❌', 'Never add untreated tap water directly',       'Treat with dechlorinator first. Even a small dose of chloramine can wipe out your cycle and harm fish.'],
     ['✅', 'Match temperature before adding water',        'Temperature shock stresses fish. Check the bucket temperature with a thermometer before pouring in.'],
     ['✅', 'Test in natural or white light',               'Colour-comparison test kits read wrong under yellow or warm LED lighting. Use daylight or cool white light.'],
-    ['✅', 'Dose dechlorinator for the full tank volume',  'Seachem Prime can be dosed for the entire tank each time, not just the water being changed &mdash; it won\'t harm fish at normal doses.'],
+    ['✅', 'Dose dechlorinator for the full tank volume',  'Seachem Prime can be dosed for the entire tank each time, not just the water being changed &mdash; it won\\'t harm fish at normal doses.'],
     ['✅', 'Log every test and water change',              'The app tracks trends over time. A single reading is less useful than a history of readings.'],
   ].forEach(function(t) {
     h += '<div style="display:flex;align-items:flex-start;gap:9px;margin-bottom:11px">' +
