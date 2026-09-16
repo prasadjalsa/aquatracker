@@ -111,6 +111,7 @@ tr:hover td{background:#f9fbfc}
   <button class="tab" data-t="maint">Maintenance</button>
   <button class="tab" data-t="recs">Recommendations</button>
   <button class="tab" data-t="tools">Toolkit</button>
+  <button class="tab" data-t="howto">How To</button>
 </div>
 
 <div id="p-dash"  class="panel on"></div>
@@ -119,6 +120,7 @@ tr:hover td{background:#f9fbfc}
 <div id="p-maint" class="panel"></div>
 <div id="p-recs"  class="panel"></div>
 <div id="p-tools" class="panel"></div>
+<div id="p-howto" class="panel"></div>
 
 <div id="ov" class="overlay" onclick="if(event.target===this)cm()">
   <div class="mbox" id="mb"></div>
@@ -1347,6 +1349,12 @@ function r_recs() {
   var turnover = tank && tank.gallons && total_gph > 0 ? Math.round(total_gph / tank.gallons * 10) / 10 : 0;
   var needs_co2_plant = pl_in_tank.some(function(p){ return PL[p.plant_id] && PL[p.plant_id].co2; });
   var needs_high_light = pl_in_tank.some(function(p){ return PL[p.plant_id] && PL[p.plant_id].light === 'High'; });
+  var heater_needed;
+  if (tank && tank.room_tmin != null) {
+    heater_needed = sk.length === 0 ? tank.room_tmin < 72 : sk.some(function(s){ var sp = SP[s.species_id]; return sp && tank.room_tmin < sp.tmin; });
+  } else {
+    heater_needed = sk.length === 0 || sk.some(function(s){ var sp = SP[s.species_id]; return sp && sp.tmin >= 70; });
+  }
 
   h += '<div class="card"><div class="ctitle">Equipment Check</div>';
   // Filter row
@@ -1389,7 +1397,7 @@ function r_recs() {
   } else if (needs_co2_plant) {
     h += '<span style="color:var(--danger)">No CO2 system added, but plants require it.</span>';
   } else {
-    h += '<span style="color:var(--muted)">No CO2 system.</span>';
+    h += '<span style="color:var(--muted)">Not required for your current plants.</span> ' + pill_lbl('pok', 'Not needed');
   }
   h += '</div>';
   // Heater row
@@ -1409,7 +1417,11 @@ function r_recs() {
   } else if (heaters_eq.length) {
     h += '<span style="color:var(--muted)">Heater added — set wattage in equipment config to check sizing.</span>';
   } else {
-    h += '<span style="color:var(--muted)">No heater configured. Tropical fish need stable warm water.</span>';
+    if (heater_needed) {
+      h += '<span style="color:var(--muted)">No heater configured. Tropical fish need stable warm water.</span>';
+    } else {
+      h += '<span style="color:var(--muted)">Not required for your fish and room temperature.</span> ' + pill_lbl('pok', 'Not needed');
+    }
   }
   h += '</div></div>';
 
@@ -1964,6 +1976,256 @@ function sub_add_stock(e) {
   cm(); r_life();
 }
 
+
+// ===== HOW TO TAB =====
+function r_howto() {
+  var el = document.getElementById('p-howto');
+  if (!el) return;
+  var h = '';
+
+  // ── PART 1 header ──
+  h += '<div style="background:linear-gradient(135deg,var(--deep),var(--mid));color:#fff;border-radius:10px;padding:20px 22px;margin-bottom:18px">' +
+       '<div style="font-size:18px;font-weight:700;margin-bottom:4px">Part 1 &mdash; Starting and Running a Freshwater Aquarium</div>' +
+       '<div style="font-size:13px;opacity:.85">The right order matters. Follow these five stages and your tank will thrive from day one.</div>' +
+       '</div>';
+
+  // ── Step tracker bar ──
+  var stage_labels = ['Setup','Nitrogen Cycle','Cleaner Crew','Add Fish','Routine Care'];
+  h += '<div style="display:flex;gap:0;margin-bottom:20px;border-radius:8px;overflow:hidden">';
+  stage_labels.forEach(function(s, i) {
+    var bg = ['#1a6b8a','#4db8d4','#e8a838','#3ab87a','#6b7280'][i];
+    h += '<div style="flex:1;background:' + bg + ';color:#fff;text-align:center;padding:8px 4px;font-size:11px;font-weight:600">' +
+         '<div style="font-size:16px">' + ['&#x1F4E6;','&#x1F9EA;','&#x1F422;','&#x1F420;','&#x1F504;'][i] + '</div>' + s + '</div>';
+  });
+  h += '</div>';
+
+  // helper: step card
+  function step(num, color, icon, title, sub, body) {
+    return '<div class="card" style="border-left:4px solid ' + color + ';margin-bottom:14px">' +
+           '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">' +
+           '<div style="background:' + color + ';color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0">' + num + '</div>' +
+           '<div><div style="font-size:15px;font-weight:700">' + icon + ' ' + title + '</div>' +
+           '<div style="font-size:12px;color:var(--muted)">' + sub + '</div></div></div>' +
+           body + '</div>';
+  }
+
+  function bullets(items) {
+    var r = '<ul style="margin:0;padding-left:18px">';
+    items.forEach(function(i){ r += '<li style="font-size:13px;margin-bottom:5px">' + i + '</li>'; });
+    return r + '</ul>';
+  }
+
+  function warn_box(txt) {
+    return '<div style="background:#fde0e0;border-left:3px solid var(--danger);border-radius:0 6px 6px 0;padding:8px 12px;margin-top:10px;font-size:12px;color:#a01818;font-weight:600">&#x26A0; ' + txt + '</div>';
+  }
+
+  function tip_box(txt) {
+    return '<div style="background:#e8f4fd;border-left:3px solid #4db8d4;border-radius:0 6px 6px 0;padding:8px 12px;margin-top:10px;font-size:12px;color:#0a2342">&#x1F4A1; ' + txt + '</div>';
+  }
+
+  function ok_box(txt) {
+    return '<div style="background:#eaf8f1;border-left:3px solid var(--ok);border-radius:0 6px 6px 0;padding:8px 12px;margin-top:10px;font-size:12px;color:#1a5c3a;font-weight:600">&#x2705; ' + txt + '</div>';
+  }
+
+  // Step 1: Setup
+  h += step(1, '#1a6b8a', '&#x1F4E6;', 'Tank Setup', 'Day 1 — before any water goes in',
+    bullets([
+      'Rinse the tank, substrate, and all decorations with <strong>clean water only</strong> — never soap or detergent',
+      'Add substrate (2-3 inches for planted tanks, 1 inch for bare-bottom)',
+      'Place decorations, driftwood, or rocks',
+      'Fill slowly — put a plate on the substrate and pour onto it to avoid clouding',
+      'Add <strong>dechlorinator</strong> to the water before or immediately after filling (e.g. Seachem Prime)',
+      'Install and start the <strong>filter and heater</strong>',
+      'Set heater to your target species temperature and let it stabilise for 24 hours',
+    ]) +
+    warn_box('Do not add fish or cycle starter yet. Let the water temperature and chemistry settle for 24 hours first.') +
+    tip_box('Tap water contains chlorine and chloramine that kill beneficial bacteria. Always dechlorinate before the filter starts, so you protect the good bacteria from day one.')
+  );
+
+  // Step 2: Nitrogen Cycle
+  h += step(2, '#4db8d4', '&#x1F9EA;', 'The Nitrogen Cycle', 'Weeks 1&ndash;6 — the most important phase',
+    '<p style="font-size:13px;margin:0 0 10px">Fish waste and uneaten food produce <strong>ammonia (NH3)</strong> — toxic to fish. Beneficial bacteria in your filter convert it first to <strong>nitrite (NO2)</strong>, then to the less-harmful <strong>nitrate (NO3)</strong>. A fully cycled tank does this conversion automatically and constantly.</p>' +
+    '<p style="font-size:13px;font-weight:600;margin:0 0 8px">The four phases:</p>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
+    ['NH3 spikes — bacteria start colonising the filter|#e8a838',
+     'NO2 spikes — first bacteria are established|#e05252',
+     'NH3 and NO2 both falling — almost done|#f59e0b',
+     'NH3 = 0, NO2 = 0, NO3 detectable — cycled!|#3ab87a'].map(function(s,i){
+      var parts = s.split('|');
+      return '<div style="background:' + parts[1] + '18;border:1px solid ' + parts[1] + '44;border-radius:6px;padding:8px 10px;font-size:12px">' +
+             '<span style="font-weight:700;color:' + parts[1] + '">Phase ' + (i+1) + ':</span> ' + parts[0] + '</div>';
+    }).join('') +
+    '</div>' +
+    '<p style="font-size:13px;font-weight:600;margin:0 0 6px">How to start the cycle:</p>' +
+    bullets([
+      '<strong>Fishless (recommended):</strong> add pure ammonia (no surfactants) to 2&ndash;4 ppm. Re-dose to 2 ppm each time it drops to 0.',
+      '<strong>Fish-in:</strong> add 1&ndash;2 very hardy fish (danios, guppies). Dose Seachem Prime daily to detoxify NH3 and NO2. Do 25% water changes when NH3 or NO2 exceeds 1 ppm.',
+      'Test <strong>every 2 days</strong>. Log every result in this app.',
+      'Cycle is complete when NH3 and NO2 both hit 0 within 24 hours of dosing, and NO3 is detectable.',
+      'Then do a 30&ndash;50% water change to flush accumulated nitrates before adding livestock.',
+    ]) +
+    warn_box('Never do large water changes during the cycle — you will wash away the bacteria you are growing. Small changes only if NH3 or NO2 exceed 2 ppm.') +
+    tip_box('Seeding the filter with media or gravel from an established tank cuts the cycle time from 6 weeks to as little as 1&ndash;2 weeks.')
+  );
+
+  // Step 3: Cleaner Crew
+  h += step(3, '#e8a838', '&#x1F422;', 'Introduce the Cleaner Crew', 'After the cycle is complete',
+    '<p style="font-size:13px;margin:0 0 10px">Before adding fish, put a <strong>small clean-up crew</strong> in place. They eat algae, leftover food, and detritus, keeping the tank balanced.</p>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">' +
+    [
+      ['&#x1F422;','Nerite Snails','Best algae scrapers. Cannot breed in freshwater.'],
+      ['&#x1F422;','Mystery Snails','Clean up detritus and leftover food.'],
+      ['&#x1F990;','Cherry Shrimp','Scavengers. Eat biofilm and algae off plants.'],
+      ['&#x1F41F;','Corydoras','Bottom cleaners. Work the substrate.'],
+      ['&#x1F40C;','Amano Shrimp','Strong algae eaters, especially hair algae.'],
+      ['&#x1F422;','Nerite Snail','1 snail per 5 gal is a good starting ratio.'],
+    ].slice(0,5).map(function(e){
+      return '<div style="background:#f5f8fb;border-radius:6px;padding:8px 10px;font-size:12px">' +
+             '<div style="font-size:18px">' + e[0] + '</div>' +
+             '<div style="font-weight:600">' + e[1] + '</div>' +
+             '<div style="color:var(--muted);margin-top:2px">' + e[2] + '</div></div>';
+    }).join('') +
+    '</div>' +
+    bullets([
+      'Add 2&ndash;3 animals at a time — do not overload the tank in one go',
+      'Let them settle for <strong>1 week</strong> before adding any fish',
+      'Watch for signs of stress (hiding completely, not moving) for 48 hours after adding',
+    ]) +
+    tip_box('Snails are great early indicators — if they stay clamped shut or stop moving within 24 hours, test your water immediately.')
+  );
+
+  // Step 4: Introduce Fish
+  h += step(4, '#3ab87a', '&#x1F420;', 'Introduce Your Fish', '1&ndash;2 weeks after the cleaner crew',
+    '<p style="font-size:13px;margin:0 0 10px">Adding too many fish at once spikes ammonia and can crash a new cycle. Go slowly and watch closely.</p>' +
+    bullets([
+      '<strong>Research first:</strong> check that temperature, pH, and GH ranges overlap for every species you plan to keep',
+      '<strong>Acclimate properly:</strong> float the bag in the tank for 15 minutes, then add small amounts of tank water to the bag every 5 minutes for 30 minutes before releasing',
+      '<strong>Add 2&ndash;3 fish at a time</strong>, maximum — even in large tanks',
+      '<strong>Wait 2 weeks</strong> before adding the next group — your cycle needs time to catch up',
+      'Test water 48 hours after each addition to confirm NH3 and NO2 stay at 0',
+      'Quarantine new fish in a separate tank for 2&ndash;4 weeks if you can — prevents disease spread',
+    ]) +
+    warn_box('Never add fish from the pet store bag water into your tank. Net them out or tip the bag sideways and let them swim out. Store bag water can carry disease and parasites.') +
+    ok_box('Use the Recommendations tab in this app to check that all your species parameters overlap before you buy.')
+  );
+
+  // Step 5: Routine Maintenance
+  h += step(5, '#6b7280', '&#x1F504;', 'Routine Maintenance', 'Ongoing — what keeps a tank healthy long-term',
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+    [
+      ['Weekly','#4db8d4','&#x1F9EA; Test water parameters — NH3, NO2, NO3, pH<br>&#x1FAE7; Wipe the inside glass<br>&#x1F4CA; Log readings in the app'],
+      ['Every 1&ndash;2 weeks','#1a6b8a','&#x1F4A7; 25&ndash;30% water change<br>&#x1FA79; Gravel vacuum while draining<br>&#x1F4DD; Log the water change in Maintenance'],
+      ['Monthly','#e8a838','&#x1F9F9; Rinse filter media <strong>in tank water only</strong><br>&#x1F321; Check heater accuracy with thermometer<br>&#x1F4A1; Top up fertilisers if planted'],
+      ['Every 2&ndash;4 weeks','#3ab87a','&#x2702;&#xFE0F; Trim plants and remove dead leaves<br>&#x1F50D; Inspect fish for spots, torn fins, clamped fins<br>&#x1F4CB; Update the app with any new livestock'],
+    ].map(function(s){
+      return '<div style="border:1px solid ' + s[1] + '44;border-radius:8px;padding:12px">' +
+             '<div style="font-weight:700;color:' + s[1] + ';font-size:13px;margin-bottom:8px">' + s[0] + '</div>' +
+             '<div style="font-size:12px;line-height:1.8">' + s[2] + '</div></div>';
+    }).join('') +
+    '</div>' +
+    tip_box('The single biggest mistake new fishkeepers make is skipping water changes. Even in a healthy tank, nitrates build up. Regular partial changes are the foundation of fish health.')
+  );
+
+  // ── PART 2 header ──
+  h += '<div style="background:linear-gradient(135deg,#1a5c3a,#3ab87a);color:#fff;border-radius:10px;padding:20px 22px;margin:24px 0 18px">' +
+       '<div style="font-size:18px;font-weight:700;margin-bottom:4px">Part 2 &mdash; Using AquaTracker</div>' +
+       '<div style="font-size:13px;opacity:.85">How each feature in this app supports your hobby, from day one through long-term care.</div>' +
+       '</div>';
+
+  function app_step(num, color, icon, title, body) {
+    return '<div style="display:flex;gap:12px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #f0f0f0">' +
+           '<div style="background:' + color + ';color:#fff;border-radius:8px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">' + num + '</div>' +
+           '<div style="flex:1"><div style="font-size:14px;font-weight:700;margin-bottom:6px">' + icon + ' ' + title + '</div>' + body + '</div></div>';
+  }
+
+  h += '<div class="card">';
+
+  h += app_step(1, '#1a6b8a', '&#x1F4E6;', 'Add Your Tank',
+    '<p style="font-size:13px;margin:0 0 6px">Everything in the app is tied to a tank. Click <strong>+ Add Tank</strong> in the top nav bar to create your first one.</p>' +
+    bullets([
+      'Enter the tank name, volume (gallons or litres), and setup date',
+      'The setup date starts the <strong>New Tank Setup Checklist</strong> on the Dashboard',
+      'You can have multiple tanks — switch between them using the dropdown in the nav bar',
+    ])
+  );
+
+  h += app_step(2, '#4db8d4', '&#x1F527;', 'Equipment &amp; Life Tab',
+    '<p style="font-size:13px;margin:0 0 6px">This is where you record everything in and around the tank.</p>' +
+    bullets([
+      '<strong>Equipment:</strong> log your filter, heater, light, CO2 system. The app uses filter type to adjust bioload capacity, and heater presence to check if your fish need one.',
+      '<strong>Plants:</strong> choose from 20 common species. The app tracks light and CO2 requirements and uses your plant list to filter fish and plant suggestions in Recommendations.',
+      '<strong>Fertilizers:</strong> pick a preset (Seachem Flourish, Easy Green, etc.) and the app calculates your dose from your tank volume. Each fertilizer appears as a scheduled task in your Recommended Schedule.',
+      '<strong>Livestock:</strong> add each species individually. The app checks bioload, tank size, and compatibility with every other species in the tank.',
+    ])
+  );
+
+  h += app_step(3, '#e8a838', '&#x1F9EA;', 'Water Log Tab',
+    '<p style="font-size:13px;margin:0 0 6px">Log water test results here every time you test. Date, temperature, NH3, NO2, NO3, pH, and GH.</p>' +
+    bullets([
+      'The app draws a line chart so you can see parameter trends over time',
+      'The Dashboard shows your latest readings with colour-coded status (green = safe, amber = watch, red = act now)',
+      'During the nitrogen cycle, log every 2 days — the Cycle Tracker on the Dashboard reads directly from these entries',
+      'All data stays in your browser (localStorage) — export a backup from the nav bar regularly',
+    ])
+  );
+
+  h += app_step(4, '#4db8d4', '&#x1F4CA;', 'Dashboard',
+    '<p style="font-size:13px;margin:0 0 6px">Your daily snapshot. Check this every time you sit down at the tank.</p>' +
+    bullets([
+      '<strong>Nitrogen Cycle Tracker:</strong> shows the current cycle phase, testing frequency, and what to do next. Disappears once the cycle is complete.',
+      '<strong>New Tank Setup Checklist:</strong> tracks your first-time setup steps. Auto-checks filter, heater, and water tests when you add them in other tabs.',
+      '<strong>Water readings card:</strong> last logged values with status indicators. Ammonia and nitrite show a warning at any level above 0.',
+      '<strong>Bioload gauge:</strong> shows what percentage of your tank\'s capacity is used by your current stocking.',
+      '<strong>Upcoming tasks:</strong> next three maintenance tasks with days remaining.',
+    ])
+  );
+
+  h += app_step(5, '#6b7280', '&#x1F4CB;', 'Maintenance Tab',
+    '<p style="font-size:13px;margin:0 0 6px">Your personal task list. Add tasks manually or import them from the Recommended Schedule.</p>' +
+    bullets([
+      'Tasks are sorted by urgency: <span style="color:var(--danger);font-weight:600">overdue</span> → <span style="color:var(--warn);font-weight:600">due soon</span> → upcoming',
+      'Click <strong>Mark Done</strong> to reset the timer — the next due date is recalculated automatically',
+      'Set a frequency that matches your real routine — the app nudges you when you are overdue',
+      'Water changes, filter rinses, glass wipes, fertilizing, pruning, and custom tasks are all supported',
+    ])
+  );
+
+  h += app_step(6, '#1a6b8a', '&#x1F4A1;', 'Recommendations Tab',
+    '<p style="font-size:13px;margin:0 0 6px">The app analyses your tank and gives you personalised suggestions.</p>' +
+    bullets([
+      '<strong>Recommended Schedule:</strong> water change frequency, filter clean, water test, glass wipe, gravel vac, plant trimming, fertilizer doses — all tuned to your bioload and setup. Click <em>Add Task</em> to send any recommendation to Maintenance.',
+      '<strong>Livestock Compatibility:</strong> shows the safe temperature, pH, and GH range that all your current fish agree on. Flags any incompatible pairs.',
+      '<strong>Suggested Fish:</strong> fish from the database that fit your water parameters and do not conflict with existing livestock.',
+      '<strong>Suggested Plants:</strong> plants that match your lighting, CO2, and fish temperature range, sorted by difficulty.',
+    ])
+  );
+
+  h += app_step(7, '#e8a838', '&#x1F9F0;', 'Toolkit Tab',
+    '<p style="font-size:13px;margin:0 0 6px">A physical equipment reference so you know exactly what to buy and have on hand.</p>' +
+    bullets([
+      'Lists which test kits to use for each parameter (with tips on reading them accurately)',
+      'Water change equipment checklist with a step-by-step guide',
+      'Cycling supplies section visible while your tank is still cycling (fishless and fish-in options)',
+      'Quick reference tips: what to never do (soap, tap water on filter media) and what always helps',
+    ])
+  );
+
+  h += app_step(8, '#3ab87a', '&#x1F4BE;', 'Backup Your Data',
+    '<p style="font-size:13px;margin:0 0 6px">All data is stored in your browser. If you clear your browser data, it is gone.</p>' +
+    bullets([
+      'Click <strong>Export</strong> in the nav bar regularly to download a JSON backup file',
+      'To restore: click <strong>Import</strong> and select your backup file',
+      'Back up before browser updates, device changes, or clearing history',
+      'The export file is human-readable — you can open it in any text editor',
+    ]) +
+    warn_box('This app has no server or cloud sync. Your data lives only in this browser on this device. Export a backup at least monthly.')
+  );
+
+  h += '</div>'; // close card
+
+  el.innerHTML = h;
+}
+
 // ===== TOOLKIT TAB =====
 function r_tools() {
   var tid = at(), d = ld(), el = document.getElementById('p-tools');
@@ -2096,6 +2358,7 @@ function render_tab() {
   else if (cur_tab === 'maint') r_maint();
   else if (cur_tab === 'recs')  r_recs();
   else if (cur_tab === 'tools') r_tools();
+  else if (cur_tab === 'howto') r_howto();
 }
 function init() {
   build_sel();
