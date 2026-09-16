@@ -122,46 +122,75 @@ tr:hover td{background:#f9fbfc}
 </div>
 
 <script>
-// ===== SPECIES DATABASE (37 species) =====
-// bioload: 1=very low (shrimp/snails), 2=low, 3=medium, 4=high, 5=very high
+// ===== SPECIES DATABASE (63 species) =====
+// bioload: 1=very low, 2=low, 3=medium, 4=high, 5=very high
+// level: Beginner / Intermediate / Advanced
+// hard_reason: why non-beginners should research first (omit for Beginner)
 var SP = {
-  betta:             {name:'Betta',              tmin:72,tmax:86,pmin:6.0,pmax:8.0,gmin:1, gmax:15,bioload:2,note:'Keep males alone or in a sorority.'},
-  neon_tetra:        {name:'Neon Tetra',          tmin:70,tmax:77,pmin:4.0,pmax:7.5,gmin:1, gmax:12,bioload:1,note:'School of 6+. Sensitive to nitrates.'},
-  cardinal_tetra:    {name:'Cardinal Tetra',      tmin:73,tmax:79,pmin:4.5,pmax:7.5,gmin:1, gmax:12,bioload:1,note:'School of 6+. Similar to neon tetra.'},
-  guppy:             {name:'Guppy',               tmin:63,tmax:82,pmin:7.0,pmax:8.5,gmin:8, gmax:30,bioload:2,note:'Hardy livebearer. Prefers hard water.'},
-  molly:             {name:'Molly',               tmin:72,tmax:82,pmin:7.0,pmax:8.5,gmin:15,gmax:35,bioload:3,note:'Needs hard water. Shimmies in soft water.'},
-  platy:             {name:'Platy',               tmin:68,tmax:79,pmin:7.0,pmax:8.2,gmin:14,gmax:30,bioload:2,note:'Hardy livebearer. Avoid acidic water.'},
-  corydoras:         {name:'Corydoras',           tmin:70,tmax:81,pmin:6.0,pmax:8.0,gmin:2, gmax:15,bioload:2,note:'Group of 4+. Fine sand substrate needed.'},
-  angelfish:         {name:'Angelfish',           tmin:75,tmax:86,pmin:6.0,pmax:7.4,gmin:0, gmax:15,bioload:3,note:'Tall tank needed. May eat small fish.'},
-  discus:            {name:'Discus',              tmin:80,tmax:86,pmin:4.5,pmax:7.0,gmin:1, gmax:8, bioload:4,note:'Expert level. Needs pristine water quality.'},
-  ram_cichlid:       {name:'Ram Cichlid',         tmin:81,tmax:86,pmin:4.0,pmax:7.0,gmin:1, gmax:10,bioload:2,note:'Very sensitive to water quality issues.'},
-  african_cichlid:   {name:'African Cichlid',     tmin:75,tmax:81,pmin:7.5,pmax:8.5,gmin:12,gmax:25,bioload:4,note:'Alkaline hard water essential.'},
-  goldfish:          {name:'Goldfish',            tmin:50,tmax:72,pmin:7.0,pmax:8.0,gmin:6, gmax:16,bioload:5,note:'Cold water. Very high bioload. Needs large tank.'},
-  cherry_shrimp:     {name:'Cherry Shrimp',       tmin:65,tmax:80,pmin:6.2,pmax:8.0,gmin:4, gmax:8, bioload:1,note:'Forgiving. Avoid copper-based medications.'},
-  crystal_shrimp:    {name:'Crystal Shrimp',      tmin:62,tmax:72,pmin:5.5,pmax:6.5,gmin:4, gmax:6, bioload:1,note:'Advanced keeper. RO water + remineralizer.'},
-  hillstream_loach:  {name:'Hillstream Loach',    tmin:62,tmax:72,pmin:6.5,pmax:7.5,gmin:4, gmax:8, bioload:1,note:'Needs very high flow and oxygenation.'},
-  nerite_snail:      {name:'Nerite Snail',        tmin:72,tmax:82,pmin:6.5,pmax:8.0,gmin:6, gmax:15,bioload:1,note:'Great algae eater. Needs calcium for shell.'},
-  mystery_snail:     {name:'Mystery Snail',       tmin:72,tmax:82,pmin:6.5,pmax:8.0,gmin:5, gmax:15,bioload:1,note:'Peaceful. Supplement calcium for shell health.'},
-  zebra_danio:       {name:'Zebra Danio',         tmin:64,tmax:75,pmin:6.0,pmax:8.0,gmin:2, gmax:20,bioload:2,note:'Active schooler of 6+. Very hardy beginner fish.'},
-  harlequin_rasbora: {name:'Harlequin Rasbora',   tmin:72,tmax:82,pmin:6.0,pmax:7.5,gmin:1, gmax:12,bioload:1,note:'School of 6+. Peaceful community fish.'},
-  rummy_nose_tetra:  {name:'Rummy Nose Tetra',    tmin:75,tmax:82,pmin:5.5,pmax:7.0,gmin:1, gmax:10,bioload:1,note:'School of 8+. Red head intensifies in good water.'},
-  black_skirt_tetra: {name:'Black Skirt Tetra',   tmin:70,tmax:81,pmin:6.0,pmax:7.5,gmin:4, gmax:15,bioload:2,note:'School of 6+. May nip long-finned tankmates.'},
-  dwarf_gourami:     {name:'Dwarf Gourami',       tmin:72,tmax:82,pmin:6.0,pmax:7.5,gmin:4, gmax:10,bioload:2,note:'Males territorial with each other. Peaceful otherwise.'},
-  kuhli_loach:       {name:'Kuhli Loach',         tmin:74,tmax:86,pmin:5.5,pmax:7.0,gmin:1, gmax:10,bioload:2,note:'Nocturnal. Needs hiding spots and soft substrate.'},
-  bristlenose_pleco: {name:'Bristlenose Pleco',   tmin:73,tmax:81,pmin:6.5,pmax:7.5,gmin:2, gmax:20,bioload:3,note:'Great algae eater. Needs driftwood in diet.'},
-  otocinclus:        {name:'Otocinclus',          tmin:72,tmax:79,pmin:6.0,pmax:7.5,gmin:4, gmax:15,bioload:1,note:'Groups of 4+. Feeds on soft algae and blanched veg.'},
-  ember_tetra:       {name:'Ember Tetra',         tmin:73,tmax:84,pmin:5.0,pmax:7.0,gmin:1, gmax:10,bioload:1,note:'Tiny nano fish. School of 8+. Loves planted tanks.'},
-  chili_rasbora:     {name:'Chili Rasbora',       tmin:68,tmax:82,pmin:4.0,pmax:7.0,gmin:1, gmax:8, bioload:1,note:'Micro fish (0.7 in). School of 10+. Nano tank gem.'},
-  white_cloud_minnow:{name:'White Cloud Minnow',  tmin:59,tmax:72,pmin:6.0,pmax:8.0,gmin:5, gmax:19,bioload:1,note:'Cold water fish. Do not keep with tropical species.'},
-  swordtail:         {name:'Swordtail',           tmin:65,tmax:82,pmin:7.0,pmax:8.3,gmin:12,gmax:30,bioload:3,note:'Active jumper - use a lid. Males aggressive together.'},
-  tiger_barb:        {name:'Tiger Barb',          tmin:68,tmax:79,pmin:6.0,pmax:7.0,gmin:5, gmax:15,bioload:2,note:'Semi-aggressive fin nipper. Keep 8+ to spread chasing.'},
-  endlers_livebearer:{name:'Endler Livebearer',   tmin:72,tmax:82,pmin:6.5,pmax:8.5,gmin:10,gmax:30,bioload:1,note:'Hardy livebearer. Males are brilliantly colored.'},
-  electric_blue_ram: {name:'Electric Blue Ram',   tmin:78,tmax:85,pmin:5.0,pmax:7.0,gmin:1, gmax:8, bioload:2,note:'Very temperature sensitive. Needs stable warm water.'},
-  boesemani_rainbow: {name:'Boesemani Rainbow',   tmin:75,tmax:86,pmin:7.0,pmax:8.0,gmin:9, gmax:19,bioload:3,note:'School of 6+. Active swimmer. Grows to 4.5 inches.'},
-  amano_shrimp:      {name:'Amano Shrimp',        tmin:65,tmax:80,pmin:6.0,pmax:8.0,gmin:4, gmax:12,bioload:1,note:'Best algae-eating shrimp. Safe with most fish.'},
-  panda_corydoras:   {name:'Panda Corydoras',     tmin:68,tmax:77,pmin:6.0,pmax:7.4,gmin:2, gmax:12,bioload:1,note:'Smaller cory species. Cooler water. Group of 4+.'},
-  red_cherry_barb:   {name:'Red Cherry Barb',     tmin:72,tmax:79,pmin:6.0,pmax:7.5,gmin:5, gmax:19,bioload:2,note:'Peaceful despite the barb name. Males are bright red.'},
-  honey_gourami:     {name:'Honey Gourami',       tmin:72,tmax:82,pmin:6.0,pmax:7.5,gmin:4, gmax:10,bioload:1,note:'Very peaceful and shy. Good beginner community fish.'}
+  betta:             {name:'Betta',              tmin:72,tmax:86,pmin:6.0,pmax:8.0,gmin:1, gmax:15,bioload:2,size_in:3,  min_gal:5,  level:'Beginner',     note:'Keep males alone or in a sorority.'},
+  neon_tetra:        {name:'Neon Tetra',          tmin:70,tmax:77,pmin:4.0,pmax:7.5,gmin:1, gmax:12,bioload:1,size_in:1.5,min_gal:10, level:'Beginner',     note:'School of 6+. Sensitive to nitrates.'},
+  cardinal_tetra:    {name:'Cardinal Tetra',      tmin:73,tmax:79,pmin:4.5,pmax:7.5,gmin:1, gmax:12,bioload:1,size_in:2,  min_gal:20, level:'Intermediate', hard_reason:'More sensitive to water chemistry than neon tetras. Needs consistently soft, acidic water.',note:'School of 6+. Similar to neon tetra.'},
+  guppy:             {name:'Guppy',               tmin:63,tmax:82,pmin:7.0,pmax:8.5,gmin:8, gmax:30,bioload:2,size_in:2,  min_gal:10, level:'Beginner',     note:'Hardy livebearer. Prefers hard water.'},
+  molly:             {name:'Molly',               tmin:72,tmax:82,pmin:7.0,pmax:8.5,gmin:15,gmax:35,bioload:3,size_in:4,  min_gal:20, level:'Beginner',     note:'Needs hard water. Shimmies in soft water.'},
+  platy:             {name:'Platy',               tmin:68,tmax:79,pmin:7.0,pmax:8.2,gmin:14,gmax:30,bioload:2,size_in:2.5,min_gal:15, level:'Beginner',     note:'Hardy livebearer. Avoid acidic water.'},
+  corydoras:         {name:'Corydoras',           tmin:70,tmax:81,pmin:6.0,pmax:8.0,gmin:2, gmax:15,bioload:2,size_in:2.5,min_gal:20, level:'Beginner',     note:'Group of 4+. Fine sand substrate needed.'},
+  angelfish:         {name:'Angelfish',           tmin:75,tmax:86,pmin:6.0,pmax:7.4,gmin:0, gmax:15,bioload:3,size_in:6,  min_gal:30, level:'Intermediate', hard_reason:'Grows large (6 in body, taller with fins). May eat small fish. Needs tall tank.',note:'Tall tank needed. May eat small fish.'},
+  discus:            {name:'Discus',              tmin:80,tmax:86,pmin:4.5,pmax:7.0,gmin:1, gmax:8, bioload:4,size_in:8,  min_gal:55, level:'Advanced',     hard_reason:'Requires expert-level care. Extremely sensitive to all water parameters. Daily water changes often needed.',note:'Expert level. Needs pristine water quality.'},
+  ram_cichlid:       {name:'Ram Cichlid',         tmin:81,tmax:86,pmin:4.0,pmax:7.0,gmin:1, gmax:10,bioload:2,size_in:3,  min_gal:20, level:'Intermediate', hard_reason:'Very sensitive to water quality and temperature drops. Not forgiving of new-tank mistakes.',note:'Very sensitive to water quality issues.'},
+  african_cichlid:   {name:'African Cichlid',     tmin:75,tmax:81,pmin:7.5,pmax:8.5,gmin:12,gmax:25,bioload:4,size_in:5,  min_gal:55, level:'Intermediate', hard_reason:'Aggressive. Requires alkaline hard water and specific rockwork setup. Overstocking is deliberate.',note:'Alkaline hard water essential.'},
+  goldfish:          {name:'Goldfish',            tmin:50,tmax:72,pmin:7.0,pmax:8.0,gmin:6, gmax:16,bioload:5,size_in:12, min_gal:40, level:'Beginner',     note:'Cold water. Very high bioload. Needs large tank. Not compatible with tropical fish.'},
+  cherry_shrimp:     {name:'Cherry Shrimp',       tmin:65,tmax:80,pmin:6.2,pmax:8.0,gmin:4, gmax:8, bioload:1,size_in:1.5,min_gal:5,  level:'Beginner',     inv:true, note:'Forgiving. Avoid copper-based medications.'},
+  crystal_shrimp:    {name:'Crystal Shrimp',      tmin:62,tmax:72,pmin:5.5,pmax:6.5,gmin:4, gmax:6, bioload:1,size_in:1.2,min_gal:10, level:'Advanced',     inv:true, hard_reason:'Requires RO water with remineralizer. Narrow pH and GH range. Very sensitive to any parameter shift.',note:'Advanced keeper. RO water + remineralizer.'},
+  hillstream_loach:  {name:'Hillstream Loach',    tmin:62,tmax:72,pmin:6.5,pmax:7.5,gmin:4, gmax:8, bioload:1,size_in:3,  min_gal:20, level:'Intermediate', hard_reason:'Needs very high flow, strong oxygenation, and cooler water. Standard setups do not suit them.',note:'Needs very high flow and oxygenation.'},
+  nerite_snail:      {name:'Nerite Snail',        tmin:72,tmax:82,pmin:6.5,pmax:8.0,gmin:6, gmax:15,bioload:1,size_in:1,  min_gal:5,  level:'Beginner',     inv:true, note:'Great algae eater. Needs calcium for shell.'},
+  mystery_snail:     {name:'Mystery Snail',       tmin:72,tmax:82,pmin:6.5,pmax:8.0,gmin:5, gmax:15,bioload:1,size_in:2,  min_gal:5,  level:'Beginner',     inv:true, note:'Peaceful. Supplement calcium for shell health.'},
+  zebra_danio:       {name:'Zebra Danio',         tmin:64,tmax:75,pmin:6.0,pmax:8.0,gmin:2, gmax:20,bioload:2,size_in:2,  min_gal:10, level:'Beginner',     note:'Active schooler of 6+. Very hardy beginner fish.'},
+  harlequin_rasbora: {name:'Harlequin Rasbora',   tmin:72,tmax:82,pmin:6.0,pmax:7.5,gmin:1, gmax:12,bioload:1,size_in:2,  min_gal:10, level:'Beginner',     note:'School of 6+. Peaceful community fish.'},
+  rummy_nose_tetra:  {name:'Rummy Nose Tetra',    tmin:75,tmax:82,pmin:5.5,pmax:7.0,gmin:1, gmax:10,bioload:1,size_in:2,  min_gal:20, level:'Intermediate', hard_reason:'Red nose fades quickly with any water quality issue. Sensitive to nitrates and pH. Needs aged, soft water.',note:'School of 8+. Red head intensifies in good water.'},
+  black_skirt_tetra: {name:'Black Skirt Tetra',   tmin:70,tmax:81,pmin:6.0,pmax:7.5,gmin:4, gmax:15,bioload:2,size_in:2.5,min_gal:20, level:'Beginner',     note:'School of 6+. May nip long-finned tankmates.'},
+  dwarf_gourami:     {name:'Dwarf Gourami',       tmin:72,tmax:82,pmin:6.0,pmax:7.5,gmin:4, gmax:10,bioload:2,size_in:3.5,min_gal:15, level:'Beginner',     note:'Males territorial with each other. Peaceful otherwise.'},
+  kuhli_loach:       {name:'Kuhli Loach',         tmin:74,tmax:86,pmin:5.5,pmax:7.0,gmin:1, gmax:10,bioload:2,size_in:4,  min_gal:20, level:'Beginner',     note:'Nocturnal. Needs hiding spots and soft substrate.'},
+  bristlenose_pleco: {name:'Bristlenose Pleco',   tmin:73,tmax:81,pmin:6.5,pmax:7.5,gmin:2, gmax:20,bioload:4,size_in:5,  min_gal:30, level:'Beginner',     note:'Great algae eater. Needs driftwood in diet.'},
+  otocinclus:        {name:'Otocinclus',          tmin:72,tmax:79,pmin:6.0,pmax:7.5,gmin:4, gmax:15,bioload:1,size_in:2,  min_gal:10, level:'Intermediate', hard_reason:'Often starve if insufficient algae. Sensitive initially. Keep in groups of 4+.',note:'Groups of 4+. Feeds on soft algae and blanched veg.'},
+  ember_tetra:       {name:'Ember Tetra',         tmin:73,tmax:84,pmin:5.0,pmax:7.0,gmin:1, gmax:10,bioload:1,size_in:0.8,min_gal:10, level:'Beginner',     note:'Tiny nano fish. School of 8+. Loves planted tanks.'},
+  chili_rasbora:     {name:'Chili Rasbora',       tmin:68,tmax:82,pmin:4.0,pmax:7.0,gmin:1, gmax:8, bioload:1,size_in:0.7,min_gal:5,  level:'Intermediate', hard_reason:'Tiny fish needing soft, acidic water. Sensitive to hard water and high pH.',note:'Micro fish (0.7 in). School of 10+. Nano tank gem.'},
+  white_cloud_minnow:{name:'White Cloud Minnow',  tmin:59,tmax:72,pmin:6.0,pmax:8.0,gmin:5, gmax:19,bioload:1,size_in:1.5,min_gal:10, level:'Beginner',     note:'Cold water fish. Do not keep with tropical species.'},
+  swordtail:         {name:'Swordtail',           tmin:65,tmax:82,pmin:7.0,pmax:8.3,gmin:12,gmax:30,bioload:3,size_in:5,  min_gal:20, level:'Beginner',     note:'Active jumper - use a lid. Males aggressive together.'},
+  tiger_barb:        {name:'Tiger Barb',          tmin:68,tmax:79,pmin:6.0,pmax:7.0,gmin:5, gmax:15,bioload:2,size_in:3,  min_gal:20, level:'Intermediate', hard_reason:'Notorious fin nippers. Must be kept in large groups (8+) or they terrorise tankmates.',note:'Semi-aggressive fin nipper. Keep 8+ to spread chasing.'},
+  endlers_livebearer:{name:'Endler Livebearer',   tmin:72,tmax:82,pmin:6.5,pmax:8.5,gmin:10,gmax:30,bioload:1,size_in:1.5,min_gal:5,  level:'Beginner',     note:'Hardy livebearer. Males are brilliantly colored.'},
+  electric_blue_ram: {name:'Electric Blue Ram',   tmin:78,tmax:85,pmin:5.0,pmax:7.0,gmin:1, gmax:8, bioload:2,size_in:3,  min_gal:20, level:'Advanced',     hard_reason:'Selectively bred variety with weaker immunity. Extremely sensitive to temperature swings and poor water quality.',note:'Very temperature sensitive. Needs stable warm water.'},
+  boesemani_rainbow: {name:'Boesemani Rainbow',   tmin:75,tmax:86,pmin:7.0,pmax:8.0,gmin:9, gmax:19,bioload:3,size_in:4.5,min_gal:55, level:'Intermediate', hard_reason:'Grows to 4.5 inches and needs a school of 6+ in a 55g+ tank. Specific water chemistry needed.',note:'School of 6+. Active swimmer. Grows to 4.5 inches.'},
+  amano_shrimp:      {name:'Amano Shrimp',        tmin:65,tmax:80,pmin:6.0,pmax:8.0,gmin:4, gmax:12,bioload:1,size_in:2,  min_gal:10, level:'Beginner',     inv:true, note:'Best algae-eating shrimp. Safe with most fish.'},
+  panda_corydoras:   {name:'Panda Corydoras',     tmin:68,tmax:77,pmin:6.0,pmax:7.4,gmin:2, gmax:12,bioload:1,size_in:2,  min_gal:15, level:'Beginner',     note:'Smaller cory species. Cooler water. Group of 4+.'},
+  red_cherry_barb:   {name:'Red Cherry Barb',     tmin:72,tmax:79,pmin:6.0,pmax:7.5,gmin:5, gmax:19,bioload:2,size_in:2,  min_gal:20, level:'Beginner',     note:'Peaceful despite the barb name. Males are bright red.'},
+  honey_gourami:     {name:'Honey Gourami',       tmin:72,tmax:82,pmin:6.0,pmax:7.5,gmin:4, gmax:10,bioload:1,size_in:2,  min_gal:10, level:'Beginner',     note:'Very peaceful and shy. Good beginner community fish.'},
+  // --- Additional species ---
+  oscar:                {name:'Oscar',                 tmin:74,tmax:81,pmin:6.0,pmax:8.0,gmin:5, gmax:20,bioload:5,size_in:14, min_gal:75,  level:'Intermediate', hard_reason:'Grows to 14 inches and produces enormous waste. Needs 75g+ and frequent large water changes.',note:'Highly intelligent. Very messy feeder. Needs 75g minimum.'},
+  convict_cichlid:      {name:'Convict Cichlid',       tmin:68,tmax:82,pmin:6.5,pmax:8.0,gmin:9, gmax:20,bioload:3,size_in:5,  min_gal:30,  level:'Intermediate', hard_reason:'Extremely aggressive, especially when breeding. Will attack fish twice its size. Best as a species pair.',note:'Hardy but aggressive. Prolific breeder.'},
+  firemouth_cichlid:    {name:'Firemouth Cichlid',     tmin:75,tmax:86,pmin:6.5,pmax:8.0,gmin:5, gmax:25,bioload:3,size_in:5,  min_gal:30,  level:'Intermediate', hard_reason:'Semi-aggressive, especially when breeding. Pair bond strongly and defend territory vigorously.',note:'Brilliant red throat display. Semi-aggressive when breeding.'},
+  clown_loach:          {name:'Clown Loach',           tmin:77,tmax:86,pmin:6.0,pmax:7.5,gmin:5, gmax:12,bioload:3,size_in:12, min_gal:75,  level:'Intermediate', hard_reason:'Sold small but grows to 12 inches over years. Needs a school of 5+ and a large tank long term.',note:'Grows very large slowly. Great snail eater. School of 5+.'},
+  yoyo_loach:           {name:'Yo-yo Loach',           tmin:75,tmax:86,pmin:6.0,pmax:7.5,gmin:3, gmax:12,bioload:2,size_in:3,  min_gal:20,  level:'Beginner',     note:'Active snail eater. Playful and social. Keep in groups of 4+.'},
+  siamese_algae_eater:  {name:'Siamese Algae Eater',   tmin:75,tmax:79,pmin:6.5,pmax:7.5,gmin:5, gmax:20,bioload:2,size_in:5,  min_gal:30,  level:'Beginner',     note:'One of the few fish that eats black beard algae. Peaceful. Best in schools or alone.'},
+  red_tail_shark:       {name:'Red-tail Black Shark',  tmin:72,tmax:79,pmin:6.5,pmax:7.5,gmin:5, gmax:20,bioload:2,size_in:6,  min_gal:30,  level:'Intermediate', hard_reason:'Highly territorial with own kind and similar-shaped fish. Only one per tank. Aggression increases with age.',note:'Only one per tank. Territorial with similar-shaped fish.'},
+  pearl_gourami:        {name:'Pearl Gourami',         tmin:77,tmax:82,pmin:6.0,pmax:8.0,gmin:5, gmax:25,bioload:2,size_in:4.5,min_gal:30,  level:'Beginner',     note:'Peaceful and beautiful. One of the best community gouramis. Hardy.'},
+  blue_gourami:         {name:'Blue Gourami',          tmin:72,tmax:82,pmin:6.0,pmax:8.5,gmin:5, gmax:35,bioload:2,size_in:5,  min_gal:20,  level:'Beginner',     note:'Very hardy and adaptable. Males can be aggressive with each other. Keep one male.'},
+  sparkling_gourami:    {name:'Sparkling Gourami',     tmin:72,tmax:82,pmin:6.0,pmax:7.5,gmin:5, gmax:15,bioload:1,size_in:1.5,min_gal:10,  level:'Beginner',     note:'Tiny gourami that makes audible clicking sounds. Peaceful nano fish.'},
+  congo_tetra:          {name:'Congo Tetra',           tmin:73,tmax:82,pmin:6.0,pmax:7.5,gmin:3, gmax:18,bioload:2,size_in:3.5,min_gal:30,  level:'Beginner',     note:'Large, spectacular tetra. Males develop flowing fins. School of 6+.'},
+  serpae_tetra:         {name:'Serpae Tetra',          tmin:72,tmax:79,pmin:5.5,pmax:7.5,gmin:5, gmax:15,bioload:1,size_in:1.5,min_gal:20,  level:'Intermediate', hard_reason:'Notorious fin nippers with slow or long-finned fish. Must be in large groups (8+) to reduce nipping behavior.',note:'School of 8+. Do not keep with slow or long-finned fish.'},
+  lemon_tetra:          {name:'Lemon Tetra',           tmin:72,tmax:82,pmin:6.0,pmax:7.5,gmin:5, gmax:20,bioload:1,size_in:1.5,min_gal:15,  level:'Beginner',     note:'Peaceful schooler of 6+. Yellow color intensifies in good water.'},
+  glowlight_tetra:      {name:'Glowlight Tetra',       tmin:72,tmax:80,pmin:5.5,pmax:7.5,gmin:4, gmax:15,bioload:1,size_in:1.5,min_gal:10,  level:'Beginner',     note:'Peaceful schooler of 6+. Bright orange stripe glows under aquarium lighting.'},
+  rosy_barb:            {name:'Rosy Barb',             tmin:64,tmax:75,pmin:6.5,pmax:7.5,gmin:5, gmax:19,bioload:2,size_in:4,  min_gal:30,  level:'Beginner',     note:'Cooler water barb. Active schooler of 6+. Males turn rosy-red when breeding.'},
+  pygmy_corydoras:      {name:'Pygmy Corydoras',       tmin:68,tmax:77,pmin:6.0,pmax:7.8,gmin:2, gmax:15,bioload:1,size_in:1,  min_gal:10,  level:'Beginner',     note:'Tiny cory (1 in). Mid-water swimmer unlike most corys. Group of 8+.'},
+  neon_rainbowfish:     {name:'Neon Rainbowfish',      tmin:72,tmax:82,pmin:7.0,pmax:8.0,gmin:8, gmax:18,bioload:2,size_in:2.5,min_gal:20,  level:'Beginner',     note:'Vivid red and blue coloration. Active schooler of 6+. Easy to keep.'},
+  celestial_pearl_danio:{name:'Celestial Pearl Danio', tmin:73,tmax:79,pmin:6.5,pmax:7.5,gmin:2, gmax:15,bioload:1,size_in:1,  min_gal:10,  level:'Intermediate', hard_reason:'Shy and easily outcompeted for food. Needs a calm, planted nano setup away from boisterous fish.',note:'Stunning nano fish. Calm planted tank only. School of 8+.'},
+  pearl_danio:          {name:'Pearl Danio',           tmin:64,tmax:77,pmin:6.5,pmax:7.5,gmin:5, gmax:20,bioload:1,size_in:2,  min_gal:15,  level:'Beginner',     note:'Hardy active schooler. Very forgiving beginner fish. Group of 6+.'},
+  african_dwarf_frog:   {name:'African Dwarf Frog',    tmin:72,tmax:82,pmin:6.5,pmax:7.5,gmin:5, gmax:20,bioload:1,size_in:1.5,min_gal:10,  level:'Beginner',     note:'Fully aquatic amphibian. Peaceful. Must surface for air. Avoid strong flow.'},
+  dwarf_puffer:         {name:'Dwarf Puffer',          tmin:74,tmax:82,pmin:6.5,pmax:7.5,gmin:5, gmax:15,bioload:2,size_in:1,  min_gal:5,   level:'Advanced',     hard_reason:'Nips fins of any tankmate including its own kind. Needs live snails or frozen foods — will not eat dry food.',note:'Keep alone or in species tank. Needs live snails or frozen food.'},
+  scarlet_badis:        {name:'Scarlet Badis',         tmin:72,tmax:82,pmin:6.5,pmax:7.5,gmin:5, gmax:15,bioload:1,size_in:0.8,min_gal:5,   level:'Intermediate', hard_reason:'Refuses dry food in most cases. Needs live or frozen micro foods. Males highly territorial with each other.',note:'Micro fish. Needs live or frozen food. One male per tank.'},
+  clown_killifish:      {name:'Clown Killifish',       tmin:72,tmax:79,pmin:5.5,pmax:7.0,gmin:1, gmax:10,bioload:1,size_in:1.5,min_gal:5,   level:'Intermediate', hard_reason:'Needs soft, slightly acidic water. Surface-dwelling and will jump — a tight-fitting lid is essential.',note:'Beautiful surface fish. Must have a tight lid — it jumps.'},
+  peacock_cichlid:      {name:'Peacock Cichlid',       tmin:76,tmax:82,pmin:7.8,pmax:8.5,gmin:10,gmax:25,bioload:3,size_in:6,  min_gal:55,  level:'Advanced',     hard_reason:'Requires Lake Malawi water chemistry: very alkaline and hard. Still shows cichlid territorial behavior.',note:'Stunning Lake Malawi cichlid. Less aggressive than mbuna.'},
+  flying_fox:           {name:'Flying Fox',            tmin:72,tmax:79,pmin:6.0,pmax:7.5,gmin:5, gmax:15,bioload:2,size_in:5,  min_gal:30,  level:'Intermediate', hard_reason:'Territorial with own kind and similar-shaped fish. Often confused with false siamese algae eater which is more aggressive.',note:'Good algae eater. One per tank unless very large.'},
+  bolivian_ram:         {name:'Bolivian Ram',          tmin:72,tmax:79,pmin:6.5,pmax:7.5,gmin:5, gmax:15,bioload:2,size_in:3.5,min_gal:20,  level:'Beginner',     note:'Hardier and more forgiving than German Blue Ram. Great beginner cichlid.'},
 };
 
 // ===== PLANT DATABASE (20 species) =====
@@ -227,7 +256,7 @@ function upd_tank(id, name, gal, setup, notes) {
 function del_tank(id) {
   var d = ld();
   d.tanks = d.tanks.filter(function(x) { return x.id !== id; });
-  ['equip','plants','stock','tasks','water'].forEach(function(k) {
+  ['equip','plants','stock','tasks','water','feeding'].forEach(function(k) {
     d[k] = d[k].filter(function(x) { return x.tank_id !== id; });
   });
   sv(d);
@@ -398,9 +427,10 @@ function calc_bioload(tid) {
   var d = ld(), total = 0;
   d.stock.filter(function(x){ return x.tank_id === tid; }).forEach(function(s) {
     var sp = SP[s.species_id];
-    if (sp) total += (sp.bioload || 2) * s.qty;
+    // Invertebrates (shrimps, snails) produce ~30% of the waste fish do at equivalent size
+    if (sp) total += (sp.bioload || 2) * s.qty * (sp.inv ? 0.3 : 1);
   });
-  return total;
+  return Math.round(total * 10) / 10;
 }
 function max_bioload(gallons, plant_count) {
   var mult = plant_count >= 5 ? 1.2 : plant_count >= 1 ? 1.1 : 1.0;
@@ -607,6 +637,42 @@ function fgh(lbl, inp_html, hint) {
     (hint ? '<small style="font-size:11px;color:var(--muted);margin-top:2px">' + hint + '</small>' : '') + '</div>';
 }
 
+// ===== PARAMETER TREND ALERTS =====
+function get_param_alerts(tid) {
+  var entries = get_water(tid);
+  if (entries.length < 2) return [];
+  var alerts = [];
+  var last3 = entries.slice(-3);
+  var last = last3[last3.length - 1];
+  var prev = last3[last3.length - 2];
+
+  // Persistent ammonia
+  if (last.ammonia !== null && last.ammonia > 0 && prev.ammonia !== null && prev.ammonia > 0) {
+    alerts.push({level:'danger', msg:'Ammonia has been elevated across multiple tests (' + prev.ammonia + ' ppm → ' + last.ammonia + ' ppm). Do a 25-50% water change immediately and recheck in 24h.'});
+  }
+  // Persistent nitrite
+  if (last.nitrite !== null && last.nitrite > 0 && prev.nitrite !== null && prev.nitrite > 0) {
+    alerts.push({level:'danger', msg:'Nitrite remains elevated across multiple tests (' + prev.nitrite + ' ppm → ' + last.nitrite + ' ppm). Tank may not be fully cycled. Hold off adding fish.'});
+  }
+  // High nitrate
+  if (last.nitrate !== null && last.nitrate > 40) {
+    alerts.push({level:'warn', msg:'Nitrate is high (' + last.nitrate + ' ppm). Do a 25-30% water change to reduce it. Target is below 20 ppm.'});
+  }
+  // Rising nitrate trend
+  if (last.nitrate !== null && prev.nitrate !== null && last.nitrate > prev.nitrate + 15) {
+    alerts.push({level:'warn', msg:'Nitrate rising fast (' + prev.nitrate + ' → ' + last.nitrate + ' ppm). Consider increasing water change frequency.'});
+  }
+  // pH drop
+  if (last.ph !== null && prev.ph !== null && prev.ph - last.ph >= 0.3) {
+    alerts.push({level:'warn', msg:'pH dropped ' + (prev.ph - last.ph).toFixed(2) + ' units between tests (' + prev.ph + ' → ' + last.ph + '). Sudden pH swings stress fish. Check buffering capacity (KH).'});
+  }
+  // Temperature drop
+  if (last.temp_f !== null && prev.temp_f !== null && Math.abs(last.temp_f - prev.temp_f) >= 4) {
+    alerts.push({level:'warn', msg:'Temperature changed ' + Math.abs(last.temp_f - prev.temp_f).toFixed(1) + '\xB0F between tests (' + prev.temp_f + ' → ' + last.temp_f + '). Rapid swings cause stress and disease.'});
+  }
+  return alerts;
+}
+
 // ===== CYCLE CARD =====
 function r_cycle_card(tid) {
   var d = ld();
@@ -743,6 +809,15 @@ function r_dash() {
   // Setup checklist
   h += r_setup_card(tid);
 
+  // Parameter trend alerts
+  var p_alerts = get_param_alerts(tid);
+  if (p_alerts.length) {
+    p_alerts.forEach(function(a) {
+      h += '<div class="' + (a.level === 'danger' ? 'cwarn' : 'cinfo') + '" style="margin-bottom:10px;font-weight:400;font-size:13px">' +
+           '<strong>' + (a.level === 'danger' ? '&#x1F6A8; Alert:' : '&#x26A0; Trend:') + '</strong> ' + esc(a.msg) + '</div>';
+    });
+  }
+
   h += '<div class="dgrid">';
   h += scard('Tank Size', tank.gallons + ' gal', tank.liters + ' L');
   var age = Math.max(0, Math.floor((Date.now() - new Date(tank.setup_date + 'T00:00:00').getTime()) / 86400000));
@@ -839,15 +914,30 @@ function r_life() {
 
   h += '<div class="card"><div class="ctitle">Livestock <button class="btn bp bs" onclick="do_add_stock()">+ Add</button></div>';
   if (sk.length) {
-    h += '<div class="tw"><table><tr><th>Species</th><th>Name</th><th>Qty</th><th>Bioload</th><th>Added</th><th>Notes</th><th></th></tr>';
+    var tank_life = d.tanks.find(function(t){ return t.id === tid; });
+    var small_tank_warns = [];
+    sk.forEach(function(s) {
+      var sp = SP[s.species_id];
+      if (sp && sp.min_gal && tank_life && tank_life.gallons < sp.min_gal) {
+        small_tank_warns.push(sp.name + ' needs ' + sp.min_gal + 'g min');
+      }
+    });
+    if (small_tank_warns.length) {
+      h += '<div style="background:#fde0e0;border-radius:6px;padding:8px 10px;font-size:12px;color:#a01818;font-weight:600;margin-bottom:10px">&#x26A0; Tank may be too small: ' + small_tank_warns.join('; ') + '</div>';
+    }
+    h += '<div class="tw"><table><tr><th>Species</th><th>Name</th><th>Qty</th><th>Adult Size</th><th>Bioload</th><th>Added</th><th>Notes</th><th></th></tr>';
     sk.forEach(function(s) {
       var sp = SP[s.species_id];
       var bl = sp ? sp.bioload : 0;
       var bl_color = bl <= 1 ? 'var(--ok)' : bl <= 3 ? 'var(--warn)' : 'var(--danger)';
       var bl_lbl = bl <= 1 ? 'Low' : bl <= 3 ? 'Med' : 'High';
-      h += '<tr><td>' + (sp ? sp.name : 'Unknown') + '</td>' +
+      var bl_contrib = sp && sp.inv ? Math.round(bl * s.qty * 0.3 * 10) / 10 : bl * s.qty;
+      var bl_inv_tag = sp && sp.inv ? ' <span style="font-size:10px;color:var(--muted)">(Inv.)</span>' : '';
+      var too_small = sp && sp.min_gal && tank_life && tank_life.gallons < sp.min_gal;
+      h += '<tr><td>' + (sp ? sp.name : 'Unknown') + (too_small ? ' <span style="color:var(--danger)" title="Tank too small">&#x26A0;</span>' : '') + '</td>' +
            '<td>' + esc(s.display_name) + '</td><td>' + s.qty + '</td>' +
-           '<td><span style="font-size:12px;font-weight:700;color:' + bl_color + '">' + bl_lbl + ' (' + bl + ')</span></td>' +
+           '<td style="font-size:12px">' + (sp && sp.size_in ? sp.size_in + '"' : '-') + '</td>' +
+           '<td><span style="font-size:12px;font-weight:700;color:' + bl_color + '">' + bl_lbl + bl_inv_tag + ' (' + bl_contrib + ')</span></td>' +
            '<td>' + s.added_date + '</td><td>' + esc(s.notes) + '</td>' +
            '<td><button class="btn bd bs" data-id="' + s.id + '" onclick="del_stock(this.dataset.id);r_life()">&#x2715;</button></td></tr>';
     });
@@ -1020,12 +1110,44 @@ function r_recs() {
   h += '<span style="font-size:22px;font-weight:700;color:var(--deep)">' + cur_bl + '</span>';
   h += '<span style="font-size:14px;color:var(--muted)">/ ' + max_bl + ' units (' + bl_pct + '% capacity)</span></div>';
   h += '<div class="bl-bar"><div class="bl-fill" style="width:' + bl_pct + '%;background:' + bl_bar_color + '"></div></div>';
-  var bl_msg = bl_cls === 'danger' ? 'Overstocked! Reduce fish count or upgrade filtration.' :
-               bl_cls === 'warn'   ? 'Nearing capacity. Monitor water quality closely.' : 'Bioload is within safe range.';
-  var bl_mc = bl_cls === 'danger' ? 'var(--danger)' : bl_cls === 'warn' ? 'var(--warn)' : 'var(--ok)';
+  var bl_msg, bl_mc;
+  if (bl_cls === 'danger') {
+    bl_mc = 'var(--danger)';
+    var has_plants      = pl_in_tank.length >= 1;
+    var max_plants      = pl_in_tank.length >= 5;
+    var filter_poor     = filter_mult < 1.0;
+    var filter_maxed    = filter_mult > 1.0;
+    var tgt_lo = Math.ceil((tank ? tank.gallons : 0) * 4);
+    var tgt_hi = Math.ceil((tank ? tank.gallons : 0) * 6);
+    var fixes = [];
+    if (filter_poor) {
+      fixes.push('upgrade filter to ' + tgt_lo + '-' + tgt_hi + ' GPH (low flow costs you 15% capacity)');
+    } else if (!filter_maxed) {
+      fixes.push('upgrade to a high-flow filter (6x+ turnover = ' + (tgt_hi) + '+ GPH) for a 10% boost');
+    }
+    if (!max_plants) {
+      fixes.push(has_plants ? 'add more plants (5+ total for a 20% bonus, currently at 10%)' : 'add 5+ plant species for a 20% natural capacity boost');
+    }
+    var already = [];
+    if (filter_maxed)  already.push('filtration excellent');
+    if (max_plants)    already.push('heavily planted +20%');
+    else if (has_plants) already.push('planted +10%');
+    var already_txt = already.length ? ' (' + already.join(', ') + ' already applied)' : '';
+    if (!fixes.length) {
+      bl_msg = 'Overstocked' + already_txt + '. Your setup is fully optimised — the only fix is to reduce fish count.';
+    } else {
+      bl_msg = 'Overstocked' + already_txt + '. Options: ' + fixes.join('; or ') + '. If still over after changes, reduce fish count.';
+    }
+  } else if (bl_cls === 'warn') {
+    bl_mc = 'var(--warn)';
+    bl_msg = 'Nearing capacity. Hold off adding more fish and monitor water quality closely.';
+  } else {
+    bl_mc = 'var(--ok)';
+    bl_msg = 'Bioload is within safe range.';
+  }
   h += '<p style="font-size:13px;color:' + bl_mc + ';margin-top:4px">' + bl_msg + '</p>';
   if (filter_mult !== 1.0) {
-    var fmsg = filter_mult < 1.0 ? 'Filter underperforming: capacity reduced by 15%. Upgrade filter to increase capacity.' : 'High-flow filter: +10% capacity bonus applied.';
+    var fmsg = filter_mult < 1.0 ? 'Filter flow below 4x turnover: capacity reduced by 15%. Aim for 4-6x (GPH = ' + Math.ceil((tank ? tank.gallons : 0) * 4) + '-' + Math.ceil((tank ? tank.gallons : 0) * 6) + ').' : 'High-flow filter (6x+ turnover): +10% capacity bonus applied.';
     h += '<p style="font-size:12px;color:' + (filter_mult < 1.0 ? 'var(--danger)' : 'var(--ok)') + ';margin-top:4px">' + fmsg + '</p>';
   }
   if (pl_in_tank.length > 0) {
@@ -1148,12 +1270,19 @@ function r_recs() {
   h += '</table></div></div>';
 
   h += '<div class="card"><div class="ctitle">Per-Species Requirements</div>' +
-    '<div class="tw"><table><tr><th>Species</th><th>Temp (F)</th><th>pH</th><th>Hardness</th><th>Bioload</th><th>Notes</th></tr>';
+    '<div class="tw"><table><tr><th>Species</th><th>Level</th><th>Adult Size</th><th>Min Tank</th><th>Temp (F)</th><th>pH</th><th>Hardness</th><th>Bioload</th><th>Notes</th></tr>';
   rng.sl.forEach(function(sp) {
     var bl_lbl = sp.bioload <= 1 ? 'Very Low' : sp.bioload <= 2 ? 'Low' : sp.bioload <= 3 ? 'Medium' : sp.bioload <= 4 ? 'High' : 'Very High';
-    h += '<tr><td><strong>' + esc(sp.name) + '</strong></td><td>' + sp.tmin + '-' + sp.tmax + '</td>' +
+    var bl_inv_note = sp.inv ? ' <span style="font-size:10px;color:var(--muted)">(×0.3 inv.)</span>' : '';
+    var lvl_color = sp.level === 'Advanced' ? 'var(--danger)' : sp.level === 'Intermediate' ? 'var(--warn)' : 'var(--ok)';
+    var tank_warn = tank && sp.min_gal && tank.gallons < sp.min_gal;
+    h += '<tr><td><strong>' + esc(sp.name) + '</strong></td>' +
+         '<td style="color:' + lvl_color + ';font-weight:700;font-size:12px">' + (sp.level || 'Beginner') + '</td>' +
+         '<td>' + (sp.size_in ? sp.size_in + '"' : '-') + '</td>' +
+         '<td style="' + (tank_warn ? 'color:var(--danger);font-weight:700' : '') + '">' + (sp.min_gal ? sp.min_gal + 'g' : '-') + (tank_warn ? ' &#x26A0;' : '') + '</td>' +
+         '<td>' + sp.tmin + '-' + sp.tmax + '</td>' +
          '<td>' + sp.pmin + '-' + sp.pmax + '</td><td>' + sp.gmin + '-' + sp.gmax + '</td>' +
-         '<td>' + bl_lbl + ' (' + sp.bioload + ')</td>' +
+         '<td>' + bl_lbl + bl_inv_note + ' (' + sp.bioload + ')</td>' +
          '<td style="font-size:12px;color:var(--muted)">' + esc(sp.note) + '</td></tr>';
   });
   h += '</table></div></div>';
@@ -1378,6 +1507,25 @@ function upd_plant_form(sel) {
     }
   }
 }
+function filter_plants() {
+  var sel = document.querySelector('#mb select[name=pid]');
+  var co2_sel = document.getElementById('pl_co2_filter');
+  var light_sel = document.getElementById('pl_light_filter');
+  if (!sel) return;
+  var co2_f = co2_sel ? co2_sel.value : 'All';
+  var light_f = light_sel ? light_sel.value : 'All';
+  var opts = Object.keys(PL).filter(function(k) {
+    var p = PL[k];
+    if (co2_f === 'Yes' && !p.co2) return false;
+    if (co2_f === 'No' && p.co2) return false;
+    if (light_f !== 'All' && p.light !== light_f) return false;
+    return true;
+  }).map(function(k) {
+    return '<option value="' + k + '">' + PL[k].name + ' (' + PL[k].light + ' light' + (PL[k].co2 ? ', CO2' : '') + ')</option>';
+  }).join('') + '<option value="_custom">-- Other / Custom Plant --</option>';
+  sel.innerHTML = opts;
+  upd_plant_form(sel);
+}
 function do_add_plant() {
   var td = today_str();
   var popts = Object.keys(PL)
@@ -1385,6 +1533,15 @@ function do_add_plant() {
     .join('') + '<option value="_custom">-- Other / Custom Plant --</option>';
   om('<div class="mtitle">Add Plant</div>' +
     '<form onsubmit="sub_add_plant(event)">' +
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">' +
+    '<label style="font-size:12px;color:var(--muted);font-weight:600">Filter:</label>' +
+    '<select id="pl_light_filter" onchange="filter_plants()" style="width:auto">' +
+    '<option value="All">Any light</option><option value="Low">Low light</option><option value="Medium">Medium light</option><option value="High">High light</option>' +
+    '</select>' +
+    '<select id="pl_co2_filter" onchange="filter_plants()" style="width:auto">' +
+    '<option value="All">CO2: Any</option><option value="No">No CO2 needed</option><option value="Yes">CO2 required</option>' +
+    '</select>' +
+    '</div>' +
     fg('Plant Species', '<select name="pid" onchange="upd_plant_form(this)">' + popts + '</select>') +
     '<div id="pl_info_row" class="cfg-box" style="margin-bottom:10px"><div id="pl_req"></div></div>' +
     '<div id="pl_cname_row" style="display:none;margin-bottom:10px">' +
@@ -1418,55 +1575,97 @@ function upd_stock_compat(sel) {
   var sid = sel.value, d = ld(), tid = at();
   var result_el = document.getElementById('stk_compat');
   if (!result_el || !SP[sid]) return;
-  var new_sp = SP[sid];
+  var new_sp = SP[sid], parts = [];
+
+  // Difficulty level warning
+  if (new_sp.level !== 'Beginner') {
+    var lc = new_sp.level === 'Advanced' ? 'var(--danger)' : 'var(--warn)';
+    parts.push('<div style="color:' + lc + ';font-size:12px;font-weight:700">&#x26A0; ' + new_sp.level + ' species</div>');
+    if (new_sp.hard_reason) {
+      parts.push('<div style="color:' + lc + ';font-size:12px;margin-top:2px">' + esc(new_sp.hard_reason) + '</div>');
+    }
+  }
+
+  // Min tank size
+  var tank = d.tanks.find(function(t){ return t.id === tid; });
+  if (tank && new_sp.min_gal && tank.gallons < new_sp.min_gal) {
+    parts.push('<div style="color:var(--danger);font-size:12px;font-weight:700;margin-top:2px">&#x1F4CF; Tank too small: needs ' + new_sp.min_gal + 'g min, yours is ' + tank.gallons + 'g</div>');
+  }
+
+  // Compatibility with existing stock
   var existing = d.stock.filter(function(s){ return s.tank_id === tid; });
   if (!existing.length) {
-    result_el.innerHTML = '<span style="color:var(--muted);font-size:12px">First fish — no compatibility check needed.</span>';
-    return;
-  }
-  var conflicts = [];
-  existing.forEach(function(s) {
-    var sp = SP[s.species_id]; if (!sp) return;
-    var iss = [];
-    if (Math.max(new_sp.tmin,sp.tmin) > Math.min(new_sp.tmax,sp.tmax)) iss.push('temp');
-    if (Math.max(new_sp.pmin,sp.pmin) > Math.min(new_sp.pmax,sp.pmax)) iss.push('pH');
-    if (Math.max(new_sp.gmin,sp.gmin) > Math.min(new_sp.gmax,sp.gmax)) iss.push('hardness');
-    if (iss.length) conflicts.push(sp.name + ' (' + iss.join(', ') + ')');
-  });
-  if (conflicts.length) {
-    result_el.innerHTML = '<span style="color:var(--danger);font-size:12px;font-weight:700">&#x26A0; Conflicts with: ' + esc(conflicts.join(', ')) + '</span>';
+    parts.push('<div style="color:var(--muted);font-size:12px">First fish — no compatibility check needed.</div>');
   } else {
-    result_el.innerHTML = '<span style="color:var(--ok);font-size:12px;font-weight:700">&#x2713; Compatible with all current livestock</span>';
+    var conflicts = [];
+    existing.forEach(function(s) {
+      var sp = SP[s.species_id]; if (!sp) return;
+      var iss = [];
+      if (Math.max(new_sp.tmin,sp.tmin) > Math.min(new_sp.tmax,sp.tmax)) iss.push('temp');
+      if (Math.max(new_sp.pmin,sp.pmin) > Math.min(new_sp.pmax,sp.pmax)) iss.push('pH');
+      if (Math.max(new_sp.gmin,sp.gmin) > Math.min(new_sp.gmax,sp.gmax)) iss.push('hardness');
+      if (iss.length) conflicts.push(sp.name + ' (' + iss.join(', ') + ')');
+    });
+    if (conflicts.length) {
+      parts.push('<div style="color:var(--danger);font-size:12px;font-weight:700">&#x26A0; Conflicts with: ' + esc(conflicts.join(', ')) + '</div>');
+    } else {
+      parts.push('<div style="color:var(--ok);font-size:12px;font-weight:700">&#x2713; Compatible with all current livestock</div>');
+    }
   }
+
+  result_el.innerHTML = parts.join('');
 }
+
+function build_stock_opts(level_filter) {
+  return Object.keys(SP)
+    .filter(function(k){ return !level_filter || level_filter === 'All' || SP[k].level === level_filter; })
+    .sort(function(a,b){ return SP[a].name.localeCompare(SP[b].name); })
+    .map(function(k) {
+      var sp = SP[k], bl = sp.bioload, bl_lbl = bl <= 1 ? 'Low' : bl <= 3 ? 'Med' : 'High';
+      var lvl = sp.level === 'Intermediate' ? ' ★★' : sp.level === 'Advanced' ? ' ★★★' : '';
+      return '<option value="' + k + '">' + sp.name + ' (Bioload: ' + bl_lbl + lvl + ')</option>';
+    }).join('');
+}
+
+function filter_stock_level(sel) {
+  var species_sel = document.querySelector('#mb select[name=sid]');
+  if (!species_sel) return;
+  species_sel.innerHTML = build_stock_opts(sel.value);
+  upd_stock_compat(species_sel);
+}
+
 function do_add_stock() {
   var td = today_str(), d = ld(), tid = at();
-  var sopts = Object.keys(SP).sort(function(a,b){ return SP[a].name.localeCompare(SP[b].name); })
-    .map(function(k){
-      var bl = SP[k].bioload;
-      var bl_lbl = bl <= 1 ? 'Low' : bl <= 3 ? 'Med' : 'High';
-      return '<option value="' + k + '">' + SP[k].name + ' (Bioload: ' + bl_lbl + ')</option>';
-    }).join('');
-  // Stocking speed check
-  var recent = d.stock.filter(function(s){
+  var recent = d.stock.filter(function(s) {
     if (s.tank_id !== tid) return false;
     return Math.floor((Date.now() - new Date(s.added_date + 'T00:00:00').getTime()) / 86400000) < 14;
   });
-  var speed_warn = recent.length > 0 ? '<div style="background:#fef3d5;border-radius:6px;padding:8px 10px;font-size:12px;color:#8a5a00;margin-bottom:10px">&#x26A0; You added livestock in the last 14 days. Adding more too quickly can spike ammonia. Consider waiting a bit longer.</div>' : '';
+  var speed_warn = recent.length ? '<div style="background:#fef3d5;border-radius:6px;padding:8px 10px;font-size:12px;color:#8a5a00;margin-bottom:10px">&#x26A0; You added livestock within the last 14 days. Adding more too quickly can spike ammonia. Consider waiting a bit longer.</div>' : '';
   om('<div class="mtitle">Add Livestock</div>' +
     speed_warn +
     '<form onsubmit="sub_add_stock(event)">' +
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">' +
+    '<label style="font-size:12px;color:var(--muted);font-weight:600">Show:</label>' +
+    '<select onchange="filter_stock_level(this)" style="width:auto">' +
+    '<option value="All">All species</option>' +
+    '<option value="Beginner" selected>Beginner only</option>' +
+    '<option value="Intermediate">Intermediate</option>' +
+    '<option value="Advanced">Advanced</option>' +
+    '</select>' +
+    '<span style="font-size:11px;color:var(--muted)">★★ Intermediate &nbsp; ★★★ Advanced</span>' +
+    '</div>' +
     '<div class="frow">' +
-    fg('Species', '<select name="sid" onchange="upd_stock_compat(this)">' + sopts + '</select>') +
+    fg('Species', '<select name="sid" onchange="upd_stock_compat(this)">' + build_stock_opts('Beginner') + '</select>') +
     fg('Display Name', '<input type="text" name="dname" placeholder="Leave blank for species name">') +
     '</div>' +
-    '<div id="stk_compat" style="min-height:18px;margin:4px 0 8px"></div>' +
+    '<div id="stk_compat" style="min-height:18px;margin:4px 0 8px;padding:0 2px"></div>' +
     '<div class="frow">' +
     fg('Quantity', '<input type="number" name="qty" value="1" min="1">') +
     fg('Date Added', '<input type="date" name="added" value="' + td + '">') +
     '</div>' +
     fg('Notes', '<input type="text" name="notes" placeholder="Optional">') +
-    '<div style="background:#e8f4fb;border-radius:6px;padding:8px 10px;font-size:12px;color:#1a5a7a;margin:10px 0">&#x1F4A1; <strong>Quarantine tip:</strong> New fish should be quarantined in a separate tank for 2-4 weeks before adding to your main tank. This prevents disease spreading to your existing livestock.</div>' +
+    '<div style="background:#fef3d5;border-radius:6px;padding:8px 10px;font-size:12px;color:#8a5a00;margin:10px 0"><strong>&#x1F41F; Acclimation:</strong> Float the sealed bag in your tank for 15-20 min to equalise temperature. Then add a small cup of tank water to the bag every 5 minutes for 30 minutes. Net the fish out — do not pour store water into your tank.</div>' +
+    '<div style="background:#e8f4fb;border-radius:6px;padding:8px 10px;font-size:12px;color:#1a5a7a;margin-bottom:10px"><strong>&#x1F4A1; Quarantine tip:</strong> Ideally quarantine new fish in a separate tank for 2-4 weeks before adding to your main tank. This prevents disease from spreading to existing livestock.</div>' +
     '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Add</button></div>' +
     '</form>');
   var sel_el = document.querySelector('#mb select[name=sid]');
