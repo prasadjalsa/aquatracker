@@ -241,15 +241,22 @@ function g2l(g) { return Math.round(g * 3.78541 * 10) / 10; }
 function l2g(l) { return Math.round(l / 3.78541 * 10) / 10; }
 
 // ===== TANKS =====
-function add_tank(name, gal, setup, notes) {
+function add_tank(name, gal, setup, notes, rt_min, rt_max) {
   var d = ld(), g = parseFloat(gal) || 0;
-  var t = {id:gid(), name:name, gallons:g, liters:g2l(g), setup_date:setup, notes:notes||''};
+  var t = {id:gid(), name:name, gallons:g, liters:g2l(g), setup_date:setup, notes:notes||'',
+           room_tmin: rt_min ? parseFloat(rt_min) : null,
+           room_tmax: rt_max ? parseFloat(rt_max) : null};
   d.tanks.push(t); sv(d); sat(t.id); return t.id;
 }
-function upd_tank(id, name, gal, setup, notes) {
+function upd_tank(id, name, gal, setup, notes, rt_min, rt_max) {
   var d = ld(), g = parseFloat(gal) || 0;
   d.tanks = d.tanks.map(function(t) {
-    return t.id === id ? {id:id, name:name, gallons:g, liters:g2l(g), setup_date:setup, notes:notes||''} : t;
+    if (t.id !== id) return t;
+    return Object.assign({}, t, {
+      name:name, gallons:g, liters:g2l(g), setup_date:setup, notes:notes||'',
+      room_tmin: rt_min ? parseFloat(rt_min) : null,
+      room_tmax: rt_max ? parseFloat(rt_max) : null
+    });
   });
   sv(d);
 }
@@ -716,18 +723,38 @@ function r_setup_card(tid) {
   var chk = tank.setup_chk || {};
   var has_filter = d.equip.some(function(e){ return e.tank_id === tid && e.type === 'Filter'; });
   var has_heater = d.equip.some(function(e){ return e.tank_id === tid && e.type === 'Heater'; });
+  var has_co2    = d.equip.some(function(e){ return e.tank_id === tid && e.type === 'CO2 System'; });
   var has_test   = d.water.some(function(w){ return w.tank_id === tid; });
   var cyc = cycle_status(tid);
   var cycle_started = chk.cycle_src || (cyc.phase >= 1);
+  var stock_in_tank = d.stock.filter(function(s){ return s.tank_id === tid; });
+  var needs_heater;
+  if (tank.room_tmin != null) {
+    // Room temp known: heater needed only if room min is below any fish's minimum temp
+    needs_heater = stock_in_tank.length === 0
+      ? tank.room_tmin < 72
+      : stock_in_tank.some(function(s){ var sp = SP[s.species_id]; return sp && tank.room_tmin < sp.tmin; });
+  } else {
+    // Room temp unknown: fall back to species tmin threshold
+    needs_heater = stock_in_tank.length === 0 ||
+      stock_in_tank.some(function(s){ var sp = SP[s.species_id]; return sp && sp.tmin >= 70; });
+  }
+  var heater_label = tank.room_tmin != null
+    ? 'Heater installed — room min (' + tank.room_tmin + 'F) is below some fish requirements'
+    : 'Heater installed and set to target temperature';
+  // CO2 only needed when the tank contains plants that require it.
+  var plants_in_tank = d.plants.filter(function(p){ return p.tank_id === tid; });
+  var needs_co2 = plants_in_tank.some(function(p){ return PL[p.plant_id] && PL[p.plant_id].co2; });
   var items = [
     {key:'rinsed',    auto:false, done:chk.rinsed||false,  label:'Tank, gravel, and decorations rinsed with no soap'},
     {key:'dechlo',    auto:false, done:chk.dechlo||false,  label:'Water dechlorinator purchased (Prime, Stress Coat, etc.)'},
     {key:'_filter',   auto:true,  done:has_filter,          label:'Filter installed and running'},
-    {key:'_heater',   auto:true,  done:has_heater,          label:'Heater installed and set to target temperature'},
+    needs_heater && {key:'_heater', auto:true, done:has_heater, label:heater_label},
+    needs_co2    && {key:'_co2',    auto:true, done:has_co2,    label:'CO2 system installed and running (required by your plants)'},
     {key:'_tested',   auto:true,  done:has_test,            label:'First water test logged'},
     {key:'cycle_src', auto:false, done:cycle_started,       label:'Ammonia source added to start the cycle'},
     {key:'_cycled',   auto:true,  done:cyc.phase===4||tank.cycled||false, label:'Tank fully cycled — safe to add fish'}
-  ];
+  ].filter(Boolean);
   var done_count = items.filter(function(i){ return i.done; }).length;
   var color = done_count === items.length ? 'var(--ok)' : 'var(--surf)';
   var h = '<div class="card" style="border-left:4px solid ' + color + '">';
@@ -1335,13 +1362,19 @@ function do_add_tank() {
     fg('Litres',  '<input type="number" name="lit" step="0.1" placeholder="75.7"       oninput="this.form.gal.value=Math.round(this.value/3.78541*10)/10">') +
     '</div>' +
     fg('Setup Date', '<input type="date" name="setup" value="' + td + '" required>') +
+    '<div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:2px">Room Temperature — without any heater (°F)</div>' +
+    '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Used to suggest fish that suit your climate and determine if a heater is needed.</div>' +
+    '<div class="frow">' +
+    fg('Min °F', '<input type="number" name="room_tmin" placeholder="e.g. 68" min="40" max="110">') +
+    fg('Max °F', '<input type="number" name="room_tmax" placeholder="e.g. 82" min="40" max="110">') +
+    '</div>' +
     fg('Notes', '<textarea name="notes" placeholder="Optional notes about your tank"></textarea>') +
     '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Add Tank</button></div>' +
     '</form>');
 }
 function sub_add_tank(e) {
   e.preventDefault(); var f = e.target;
-  add_tank(f.name.value, f.gal.value, f.setup.value, f.notes.value);
+  add_tank(f.name.value, f.gal.value, f.setup.value, f.notes.value, f.room_tmin.value, f.room_tmax.value);
   cm(); init();
 }
 function do_edit_tank() {
@@ -1354,13 +1387,18 @@ function do_edit_tank() {
     fg('Litres',  '<input type="number" name="lit" step="0.1" value="' + t.liters  + '"       oninput="this.form.gal.value=Math.round(this.value/3.78541*10)/10">') +
     '</div>' +
     fg('Setup Date', '<input type="date" name="setup" value="' + t.setup_date + '" required>') +
+    '<div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:2px">Room Temperature — without any heater (°F)</div>' +
+    '<div class="frow">' +
+    fg('Min °F', '<input type="number" name="room_tmin" value="' + (t.room_tmin != null ? t.room_tmin : '') + '" placeholder="e.g. 68" min="40" max="110">') +
+    fg('Max °F', '<input type="number" name="room_tmax" value="' + (t.room_tmax != null ? t.room_tmax : '') + '" placeholder="e.g. 82" min="40" max="110">') +
+    '</div>' +
     fg('Notes', '<textarea name="notes">' + esc(t.notes) + '</textarea>') +
     '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Save</button></div>' +
     '</form>');
 }
 function sub_edit_tank(e) {
   e.preventDefault(); var f = e.target;
-  upd_tank(at(), f.name.value, f.gal.value, f.setup.value, f.notes.value);
+  upd_tank(at(), f.name.value, f.gal.value, f.setup.value, f.notes.value, f.room_tmin.value, f.room_tmax.value);
   cm(); init();
 }
 function do_del_tank() {
@@ -1593,6 +1631,23 @@ function upd_stock_compat(sel) {
     parts.push('<div style="color:var(--danger);font-size:12px;font-weight:700;margin-top:2px">&#x1F4CF; Tank too small: needs ' + new_sp.min_gal + 'g min, yours is ' + tank.gallons + 'g</div>');
   }
 
+  // Room temperature compatibility
+  if (tank && tank.room_tmin != null) {
+    var rt_min = tank.room_tmin, rt_max = tank.room_tmax;
+    var too_cold = rt_min < new_sp.tmin;
+    var too_hot  = rt_max != null && rt_max > new_sp.tmax;
+    if (too_hot) {
+      parts.push('<div style="color:var(--danger);font-size:12px;font-weight:700;margin-top:2px">' +
+        '&#x1F321; Room too hot: your max (' + rt_max + 'F) exceeds this fish max (' + new_sp.tmax + 'F). Needs a chiller or AC.</div>');
+    } else if (too_cold) {
+      parts.push('<div style="color:var(--warn);font-size:12px;margin-top:2px">' +
+        '&#x1F321; Heater required: room min (' + rt_min + 'F) is below this fish minimum (' + new_sp.tmin + 'F).</div>');
+    } else {
+      parts.push('<div style="color:var(--ok);font-size:12px;margin-top:2px">' +
+        '&#x2713; Fits your room temperature (' + rt_min + '-' + (rt_max != null ? rt_max : '?') + 'F) — no heater needed.</div>');
+    }
+  }
+
   // Compatibility with existing stock
   var existing = d.stock.filter(function(s){ return s.tank_id === tid; });
   if (!existing.length) {
@@ -1617,46 +1672,76 @@ function upd_stock_compat(sel) {
   result_el.innerHTML = parts.join('');
 }
 
-function build_stock_opts(level_filter) {
+function build_stock_opts(level_filter, heater_filter) {
+  var d = ld(), tank = d.tanks.find(function(t){ return t.id === at(); });
+  var rt_min = tank && tank.room_tmin != null ? tank.room_tmin : null;
   return Object.keys(SP)
-    .filter(function(k){ return !level_filter || level_filter === 'All' || SP[k].level === level_filter; })
+    .filter(function(k) {
+      var sp = SP[k];
+      if (level_filter && level_filter !== 'All' && sp.level !== level_filter) return false;
+      // Filter by heater need only when room_tmin is known
+      if (rt_min != null && heater_filter === 'no_heater' && rt_min < sp.tmin) return false;
+      if (rt_min != null && heater_filter === 'heater_req' && rt_min >= sp.tmin) return false;
+      return true;
+    })
     .sort(function(a,b){ return SP[a].name.localeCompare(SP[b].name); })
     .map(function(k) {
       var sp = SP[k], bl = sp.bioload, bl_lbl = bl <= 1 ? 'Low' : bl <= 3 ? 'Med' : 'High';
       var lvl = sp.level === 'Intermediate' ? ' ★★' : sp.level === 'Advanced' ? ' ★★★' : '';
-      return '<option value="' + k + '">' + sp.name + ' (Bioload: ' + bl_lbl + lvl + ')</option>';
+      var heat_tag = rt_min != null ? (rt_min >= sp.tmin ? ' · no heater' : ' · heater') : '';
+      return '<option value="' + k + '">' + sp.name + ' (Bioload: ' + bl_lbl + lvl + heat_tag + ')</option>';
     }).join('');
 }
 
 function filter_stock_level(sel) {
+  var heater_sel = document.querySelector('#mb select[name=heater_f]');
+  var hf = heater_sel ? heater_sel.value : 'All';
   var species_sel = document.querySelector('#mb select[name=sid]');
   if (!species_sel) return;
-  species_sel.innerHTML = build_stock_opts(sel.value);
+  species_sel.innerHTML = build_stock_opts(sel.value, hf);
+  upd_stock_compat(species_sel);
+}
+
+function filter_stock_heater(sel) {
+  var level_sel = document.querySelector('#mb select[name=level_f]');
+  var lf = level_sel ? level_sel.value : 'Beginner';
+  var species_sel = document.querySelector('#mb select[name=sid]');
+  if (!species_sel) return;
+  species_sel.innerHTML = build_stock_opts(lf, sel.value);
   upd_stock_compat(species_sel);
 }
 
 function do_add_stock() {
   var td = today_str(), d = ld(), tid = at();
+  var tank = d.tanks.find(function(t){ return t.id === tid; });
   var recent = d.stock.filter(function(s) {
     if (s.tank_id !== tid) return false;
     return Math.floor((Date.now() - new Date(s.added_date + 'T00:00:00').getTime()) / 86400000) < 14;
   });
   var speed_warn = recent.length ? '<div style="background:#fef3d5;border-radius:6px;padding:8px 10px;font-size:12px;color:#8a5a00;margin-bottom:10px">&#x26A0; You added livestock within the last 14 days. Adding more too quickly can spike ammonia. Consider waiting a bit longer.</div>' : '';
+  var heater_row = (tank && tank.room_tmin != null)
+    ? '<select name="heater_f" onchange="filter_stock_heater(this)" style="width:auto">' +
+      '<option value="All">All temps</option>' +
+      '<option value="no_heater">No heater needed</option>' +
+      '<option value="heater_req">Heater required</option>' +
+      '</select>'
+    : '';
   om('<div class="mtitle">Add Livestock</div>' +
     speed_warn +
     '<form onsubmit="sub_add_stock(event)">' +
     '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">' +
     '<label style="font-size:12px;color:var(--muted);font-weight:600">Show:</label>' +
-    '<select onchange="filter_stock_level(this)" style="width:auto">' +
+    '<select name="level_f" onchange="filter_stock_level(this)" style="width:auto">' +
     '<option value="All">All species</option>' +
     '<option value="Beginner" selected>Beginner only</option>' +
     '<option value="Intermediate">Intermediate</option>' +
     '<option value="Advanced">Advanced</option>' +
     '</select>' +
+    heater_row +
     '<span style="font-size:11px;color:var(--muted)">★★ Intermediate &nbsp; ★★★ Advanced</span>' +
     '</div>' +
     '<div class="frow">' +
-    fg('Species', '<select name="sid" onchange="upd_stock_compat(this)">' + build_stock_opts('Beginner') + '</select>') +
+    fg('Species', '<select name="sid" onchange="upd_stock_compat(this)">' + build_stock_opts('Beginner', 'All') + '</select>') +
     fg('Display Name', '<input type="text" name="dname" placeholder="Leave blank for species name">') +
     '</div>' +
     '<div id="stk_compat" style="min-height:18px;margin:4px 0 8px;padding:0 2px"></div>' +
