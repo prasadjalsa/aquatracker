@@ -331,17 +331,17 @@ function cycle_status(tid) {
   var has_source = has_fish || chk.cycle_src;
 
   if (!entries.length) {
-    if (!has_source) return {phase:0, pct:5, label:'Not started', color:'#9ca3af', desc:'Add an ammonia source (pure ammonia, fish food, or a few hardy starter fish) and log your first water test to begin tracking.'};
-    return {phase:0, pct:15, label:'Cycling', color:'#4db8d4', desc:'Ammonia source detected (fish or manual). Log your first water test to start tracking cycle progress.'};
+    if (!has_source) return {phase:0, pct:5, label:'Not started', color:'#9ca3af', test_freq:null, desc:'Add an ammonia source (pure ammonia, fish food, or a few hardy starter fish) and log your first water test to begin tracking.'};
+    return {phase:0, pct:15, label:'Cycling', color:'#4db8d4', test_freq:2, desc:'Ammonia source detected (fish or manual). Log your first water test to start tracking cycle progress.'};
   }
   var last = entries[entries.length - 1];
   var nh3 = last.ammonia, no2 = last.nitrite, no3 = last.nitrate;
-  if (nh3 === null && no2 === null) return {phase:0, pct:10, label:'Monitoring', color:'#9ca3af', desc:'Log ammonia and nitrite readings to track cycle progress.'};
-  if (nh3 !== null && nh3 <= 0.25 && no2 !== null && no2 <= 0.25 && no3 !== null && no3 > 0) return {phase:4, pct:100, label:'Cycle complete!', color:'#3ab87a', desc:'NH3 and NO2 are at 0 ppm, nitrate detected. Your tank is ready. Add fish slowly — 2-3 at a time, wait 1-2 weeks between additions.'};
-  if (nh3 !== null && nh3 <= 0.5 && no2 !== null && no2 > 0) return {phase:3, pct:75, label:'Almost there', color:'#e8a838', desc:'Ammonia is falling and nitrite-eating bacteria are multiplying. Keep testing every 2-3 days. 1-2 more weeks typically.'};
-  if (no2 !== null && no2 > 0) return {phase:2, pct:50, label:'Nitrite spike', color:'#e05252', desc:'Ammonia-eating bacteria are established. Nitrite-eating bacteria are growing now. Both are still toxic — do not add fish. Avoid large water changes.'};
-  if (nh3 !== null && nh3 > 0) return {phase:1, pct:25, label:'Ammonia spike', color:'#e8a838', desc:'Beneficial bacteria are starting to colonise the filter. This is normal. Do NOT do water changes yet. Test every 2-3 days and wait.'};
-  return {phase:0, pct:10, label:'Monitoring', color:'#9ca3af', desc:'Keep logging water tests to track cycle progress.'};
+  if (nh3 === null && no2 === null) return {phase:0, pct:10, label:'Monitoring', color:'#9ca3af', test_freq:3, desc:'Log ammonia and nitrite readings to track cycle progress.'};
+  if (nh3 !== null && nh3 <= 0.25 && no2 !== null && no2 <= 0.25 && no3 !== null && no3 > 0) return {phase:4, pct:100, label:'Cycle complete!', color:'#3ab87a', test_freq:null, desc:'NH3 and NO2 are at 0 ppm, nitrate detected. Your tank is ready. Add fish slowly — 2-3 at a time, wait 1-2 weeks between additions.'};
+  if (nh3 !== null && nh3 <= 0.5 && no2 !== null && no2 > 0) return {phase:3, pct:75, label:'Almost there', color:'#e8a838', test_freq:2, desc:'Ammonia is falling and nitrite-eating bacteria are multiplying. Keep testing every 2-3 days. 1-2 more weeks typically.'};
+  if (no2 !== null && no2 > 0) return {phase:2, pct:50, label:'Nitrite spike', color:'#e05252', test_freq:2, desc:'Ammonia-eating bacteria are established. Nitrite-eating bacteria are growing now. Both are still toxic — do not add fish. Avoid large water changes.'};
+  if (nh3 !== null && nh3 > 0) return {phase:1, pct:25, label:'Ammonia spike', color:'#e8a838', test_freq:2, desc:'Beneficial bacteria are starting to colonise the filter. This is normal. Do NOT do water changes yet. Test every 2-3 days and wait.'};
+  return {phase:0, pct:10, label:'Monitoring', color:'#9ca3af', test_freq:3, desc:'Keep logging water tests to track cycle progress.'};
 }
 function mark_cycled(tid) {
   var d = ld();
@@ -538,8 +538,15 @@ function get_rec_tasks(tid) {
     why:'Rinse in tank water (not tap) to preserve beneficial bacteria'});
 
   var wt_freq = bl_ratio >= 0.7 ? 7 : 14;
-  recs.push({type:'Water Test', name:'Water Parameter Test', freq:wt_freq,
-    why:'Test NH3, NO2, NO3 and pH to catch issues early'});
+  var cyc_stat = cycle_status(tid);
+  var is_cycling = !tank.cycled && cyc_stat.phase < 4 && cyc_stat.test_freq !== null;
+  if (is_cycling) {
+    recs.push({type:'Water Test', name:'Cycle Monitoring Test', freq:cyc_stat.test_freq,
+      why:'Tank is cycling — test NH3, NO2, NO3 every ' + cyc_stat.test_freq + ' days until both read 0 ppm with detectable nitrate'});
+  } else {
+    recs.push({type:'Water Test', name:'Water Parameter Test', freq:wt_freq,
+      why:'Test NH3, NO2, NO3 and pH to catch issues early'});
+  }
 
   recs.push({type:'Glass Wipe', name:'Glass and Algae Clean', freq:7,
     why:'Weekly wipe prevents algae from taking hold'});
@@ -758,8 +765,21 @@ function r_cycle_card(tid) {
   h += '</div>';
   h += '<p style="font-size:13px;line-height:1.5">' + esc(cyc.desc) + '</p>';
   if (cyc.phase < 4) {
-    h += '<p style="font-size:12px;color:var(--muted);margin-top:6px;background:#f5f8fb;padding:8px 10px;border-radius:6px">Typical timeline: 4-6 weeks total. Test every 2-3 days. Do not add fish until NH3 and NO2 both read 0 ppm.</p>';
+    if (cyc.test_freq) {
+      h += '<div style="display:flex;align-items:center;gap:8px;margin-top:8px;background:#e8f4fd;border-left:3px solid #4db8d4;padding:8px 10px;border-radius:0 6px 6px 0">' +
+           '<span style="font-size:16px">&#x1F9EA;</span>' +
+           '<span style="font-size:13px;font-weight:600">Test every ' + cyc.test_freq + ' days</span>' +
+           '<span style="font-size:12px;color:var(--muted)">— test NH3, NO2, NO3 and pH</span>' +
+           '</div>';
+    }
+    h += '<p style="font-size:12px;color:var(--muted);margin-top:6px;background:#f5f8fb;padding:8px 10px;border-radius:6px">Typical timeline: 4-6 weeks total. Do not add fish until NH3 and NO2 both read 0 ppm.</p>';
     h += '<div style="margin-top:8px"><button class="btn bg bs" onclick="mark_cycled(at())">Mark as Cycled Manually</button></div>';
+  } else {
+    h += '<div style="display:flex;align-items:flex-start;gap:8px;margin-top:8px;background:#eaf8f1;border-left:3px solid var(--ok);padding:10px 12px;border-radius:0 6px 6px 0">' +
+         '<span style="font-size:18px">&#x1F4A7;</span>' +
+         '<div><div style="font-size:13px;font-weight:600;color:var(--ok)">Do a 30-50% water change now</div>' +
+         '<div style="font-size:12px;color:#555;margin-top:2px">Nitrates have built up during the cycle. Flush them out before adding your first fish. Treat the new water with dechlorinator first.</div></div>' +
+         '</div>';
   }
   h += '</div>';
   return h;
@@ -805,7 +825,8 @@ function r_setup_card(tid) {
     needs_co2    && {key:'_co2',    auto:true, done:has_co2,    label:'CO2 system installed and running (required by your plants)'},
     {key:'_tested',   auto:true,  done:has_test,            label:'First water test logged'},
     {key:'cycle_src', auto:false, done:cycle_started,       label:'Ammonia source added to start the cycle'},
-    {key:'_cycled',   auto:true,  done:cyc.phase===4||tank.cycled||false, label:'Tank fully cycled — safe to add fish'}
+    {key:'_cycled',   auto:true,  done:cyc.phase===4||tank.cycled||false, label:'Tank fully cycled — safe to add fish'},
+    (cyc.phase===4 || tank.cycled) && {key:'post_wc', auto:false, done:chk.post_wc||false, label:'30-50% water change done — flush accumulated nitrates before adding first fish'}
   ].filter(Boolean);
   var done_count = items.filter(function(i){ return i.done; }).length;
   var color = done_count === items.length ? 'var(--ok)' : 'var(--surf)';
