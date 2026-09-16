@@ -110,7 +110,7 @@ tr:hover td{background:#f9fbfc}
 
 <div class="tabs">
   <button class="tab on" data-t="dash">Dashboard</button>
-  <button class="tab" data-t="life">Equipment &amp; Life</button>
+  <button class="tab" data-t="life">My Tank</button>
   <button class="tab" data-t="wlog">Water Log</button>
   <button class="tab" data-t="maint">Maintenance</button>
   <button class="tab" data-t="recs">Recommendations</button>
@@ -1173,20 +1173,6 @@ function r_life() {
   h += '</div>';
 
   var fr = d.ferts.filter(function(x){return x.tank_id===tid;});
-  h += '<div class="card"><div class="ctitle">Fertilizers <button class="btn bp bs" onclick="do_add_fert()">+ Add</button></div>';
-  if (fr.length) {
-    h += '<div class="tw"><table><tr><th>Name</th><th>Dose</th><th>Every</th><th>Notes</th><th></th></tr>';
-    fr.forEach(function(f) {
-      h += '<tr><td><strong>' + esc(f.name) + '</strong></td>' +
-           '<td>' + (f.dose_ml || '—') + ' ml</td>' +
-           '<td>' + f.freq_days + ' days</td>' +
-           '<td>' + esc(f.notes) + '</td>' +
-           '<td><button class="btn bd bs" data-id="' + f.id + '" onclick="del_fert(this.dataset.id)">&#x2715;</button></td></tr>';
-    });
-    h += '</table></div>';
-  } else h += '<p class="emsg">No fertilizers added. Add one to get dosing reminders in the Recommended Schedule.</p>';
-  h += '</div>';
-
   h += '<div class="card"><div class="ctitle">Livestock <button class="btn bp bs" onclick="do_add_stock()">+ Add</button></div>';
   if (sk.length) {
     var tank_life = d.tanks.find(function(t){ return t.id === tid; });
@@ -1218,6 +1204,20 @@ function r_life() {
     });
     h += '</table></div>';
   } else h += '<p class="emsg">No livestock added yet.</p>';
+  h += '</div>';
+
+  h += '<div class="card"><div class="ctitle">Fertilizers <button class="btn bp bs" onclick="do_add_fert()">+ Add</button></div>';
+  if (fr.length) {
+    h += '<div class="tw"><table><tr><th>Name</th><th>Dose</th><th>Every</th><th>Notes</th><th></th></tr>';
+    fr.forEach(function(f) {
+      h += '<tr><td><strong>' + esc(f.name) + '</strong></td>' +
+           '<td>' + (f.dose_ml || '—') + ' ml</td>' +
+           '<td>' + f.freq_days + ' days</td>' +
+           '<td>' + esc(f.notes) + '</td>' +
+           '<td><button class="btn bd bs" data-id="' + f.id + '" onclick="del_fert(this.dataset.id)">&#x2715;</button></td></tr>';
+    });
+    h += '</table></div>';
+  } else h += '<p class="emsg">No fertilizers added. Add one to get dosing reminders in the Recommended Schedule.</p>';
   h += '</div>';
   el.innerHTML = h;
 }
@@ -2030,6 +2030,25 @@ function sub_edit_equip(e) {
 }
 
 // ===== PLANT MODAL =====
+function fetch_wiki_img(name, target_id) {
+  var el = document.getElementById(target_id);
+  if (!el) return;
+  el.innerHTML = '<span style="font-size:11px;color:var(--muted)">Loading image...</span>';
+  var url = 'https://en.wikipedia.org/w/api.php?action=query&titles=' + encodeURIComponent(name) + '&prop=pageimages&pithumbsize=280&format=json&origin=*';
+  fetch(url)
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      var pages = data.query && data.query.pages;
+      if (!pages) { el.innerHTML = ''; return; }
+      var page = pages[Object.keys(pages)[0]];
+      if (page && page.thumbnail) {
+        el.innerHTML = '<img src="' + page.thumbnail.source + '" alt="' + esc(name) + '" style="max-width:200px;max-height:160px;border-radius:6px;margin-top:6px;display:block">';
+      } else {
+        el.innerHTML = '<span style="font-size:11px;color:var(--muted)">No image found on Wikipedia.</span>';
+      }
+    })
+    .catch(function(){ el.innerHTML = ''; });
+}
 function upd_plant_form(sel) {
   var pid = sel.value;
   var cname_row = document.getElementById('pl_cname_row');
@@ -2040,6 +2059,7 @@ function upd_plant_form(sel) {
     if (cname_row) cname_row.style.display = 'block';
     if (cname_inp) cname_inp.required = true;
     if (info_row) info_row.style.display = 'none';
+    var wi = document.getElementById('pl_wiki_img'); if (wi) wi.innerHTML = '';
   } else {
     if (cname_row) cname_row.style.display = 'none';
     if (cname_inp) cname_inp.required = false;
@@ -2048,6 +2068,7 @@ function upd_plant_form(sel) {
       var co2_str = p.co2 ? 'Required' : 'Not needed';
       req_el.innerHTML = 'Temp: ' + d_t(p.tmin) + '-' + d_t(p.tmax) + t_lbl() + ' &nbsp;|&nbsp; Light: <strong>' + p.light + '</strong> &nbsp;|&nbsp; CO2: <strong>' + co2_str + '</strong> &nbsp;|&nbsp; ' + p.diff + '<br><span style="color:var(--muted)">' + esc(p.note) + '</span>';
       if (info_row) info_row.style.display = 'block';
+      fetch_wiki_img(p.name, 'pl_wiki_img');
     }
   }
 }
@@ -2104,7 +2125,7 @@ function do_add_plant() {
     '</select>' +
     '</div>' +
     fg('Plant Species', '<select name="pid" onchange="upd_plant_form(this)">' + popts + '</select>') +
-    '<div id="pl_info_row" class="cfg-box" style="margin-bottom:10px"><div id="pl_req"></div></div>' +
+    '<div id="pl_info_row" class="cfg-box" style="margin-bottom:10px"><div id="pl_req"></div><div id="pl_wiki_img"></div></div>' +
     '<div id="pl_cname_row" style="display:none;margin-bottom:10px">' +
     fg('Custom Name', '<input type="text" name="cname" id="pl_cname" placeholder="Enter plant name">') +
     '</div>' +
@@ -2192,9 +2213,8 @@ function upd_stock_compat(sel) {
   }
 
   result_el.innerHTML = parts.join('');
-}
-
-function build_stock_opts(level_filter, heater_filter, type_filter, search) {
+  fetch_wiki_img(new_sp.name, 'sp_wiki_img');
+}(level_filter, heater_filter, type_filter, search) {
   var d = ld(), tank = d.tanks.find(function(t){ return t.id === at(); });
   var rt_min = tank && tank.room_tmin != null ? tank.room_tmin : null;
   var q = search ? search.toLowerCase() : '';
@@ -2276,7 +2296,8 @@ function do_add_stock() {
     fg('Species', '<select name="sid" onchange="upd_stock_compat(this)">' + build_stock_opts('Beginner', 'All', 'All', '') + '</select>') +
     fg('Display Name', '<input type="text" name="dname" placeholder="Leave blank for species name">') +
     '</div>' +
-    '<div id="stk_compat" style="min-height:18px;margin:4px 0 8px;padding:0 2px"></div>' +
+    '<div id="stk_compat" style="min-height:18px;margin:4px 0 0;padding:0 2px"></div>' +
+    '<div id="sp_wiki_img" style="margin-bottom:8px"></div>' +
     '<div class="frow">' +
     fg('Quantity', '<input type="number" name="qty" value="1" min="1">') +
     fg('Date Added', '<input type="date" name="added" value="' + td + '">') +
