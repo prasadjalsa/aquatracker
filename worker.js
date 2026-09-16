@@ -100,6 +100,7 @@ tr:hover td{background:#f9fbfc}
     <button class="btn bg bs" onclick="do_add_tank()">+ Tank</button>
     <button class="btn bg bs" onclick="do_export()">Export</button>
     <label class="btn bg bs" style="cursor:pointer">Import<input type="file" id="imp_file" accept=".json" style="display:none" onchange="do_import(this)"></label>
+    <button class="btn bg bs" onclick="do_settings()">&#x2699; Units</button>
   </div>
 </nav>
 
@@ -239,6 +240,28 @@ function pn(v) {
 // ===== UNIT CONVERSION =====
 function g2l(g) { return Math.round(g * 3.78541 * 10) / 10; }
 function l2g(l) { return Math.round(l / 3.78541 * 10) / 10; }
+
+// ===== UNIT PREFERENCES =====
+function get_pref() {
+  try { var p = JSON.parse(localStorage.getItem('aq_pref')); return (p && p.temp) ? p : {temp:'F',vol:'gal'}; }
+  catch(e) { return {temp:'F',vol:'gal'}; }
+}
+function sv_pref(p) { localStorage.setItem('aq_pref', JSON.stringify(p)); }
+function t_lbl() { return get_pref().temp === 'C' ? '\xB0C' : '\xB0F'; }
+function v_lbl() { return get_pref().vol === 'L' ? 'L' : 'gal'; }
+// stored \xB0F value → display value
+function d_t(f) { if (f === null || f === undefined) return null; return get_pref().temp === 'C' ? Math.round((f - 32) * 5/9 * 10) / 10 : f; }
+// stored gallons → display value
+function d_v(g) { if (!g) return 0; return get_pref().vol === 'L' ? Math.round(g * 3.78541 * 10) / 10 : g; }
+// user input temp → stored \xB0F
+function inp_t(v) { var n = parseFloat(v); if (isNaN(n)) return null; return get_pref().temp === 'C' ? Math.round((n * 9/5 + 32) * 10) / 10 : n; }
+// two volume fields in preference order (gal_val and lit_val are existing values or '' for new)
+function vol_flds(gv, lv) {
+  var pl = get_pref().vol === 'L';
+  var gf = fg('Gallons', '<input type="number" name="gal" step="0.1" value="' + (gv !== undefined ? gv : '') + '" placeholder="e.g. 20"' + (pl ? '' : ' required') + ' oninput="this.form.lit.value=Math.round(this.value*3.78541*10)/10">');
+  var lf = fg('Litres',  '<input type="number" name="lit" step="0.1" value="' + (lv !== undefined ? lv : '') + '" placeholder="e.g. 75.7"' + (pl ? ' required' : '') + ' oninput="this.form.gal.value=Math.round(this.value/3.78541*10)/10">');
+  return pl ? lf + gf : gf + lf;
+}
 
 // ===== TANKS =====
 function add_tank(name, gal, setup, notes, rt_min, rt_max) {
@@ -582,14 +605,14 @@ function draw_chart(tid, param) {
   if (ch_inst) { ch_inst.destroy(); ch_inst = null; }
   var cv = document.getElementById('wc');
   if (!cv || entries.length < 2) return;
-  var lmap = {temp_f:'Temperature (F)', ammonia:'Ammonia (ppm)', nitrite:'Nitrite (ppm)', nitrate:'Nitrate (ppm)', ph:'pH', gh:'Hardness (GH)'};
+  var lmap = {temp_f:'Temperature (' + t_lbl() + ')', ammonia:'Ammonia (ppm)', nitrite:'Nitrite (ppm)', nitrate:'Nitrate (ppm)', ph:'pH', gh:'Hardness (GH)'};
   ch_inst = new Chart(cv.getContext('2d'), {
     type: 'line',
     data: {
       labels: entries.map(function(e) { return e.date; }),
       datasets: [{
         label: lmap[param] || param,
-        data: entries.map(function(e) { return e[param]; }),
+        data: entries.map(function(e) { return param === 'temp_f' ? d_t(e[param]) : e[param]; }),
         borderColor: '#4db8d4', backgroundColor: 'rgba(77,184,212,0.12)',
         tension: 0.3, fill: true, pointRadius: 4, spanGaps: true
       }]
@@ -623,6 +646,23 @@ function do_import(inp) {
     } catch(err) { alert('Could not read file: ' + err.message); }
   };
   reader.readAsText(file);
+}
+function do_settings() {
+  var p = get_pref();
+  om('<div class="mtitle">Units &amp; Preferences</div>' +
+    fg('Temperature', '<select id="pref_temp">' +
+      '<option value="F"' + (p.temp === 'F' ? ' selected' : '') + '>Fahrenheit (\xB0F)</option>' +
+      '<option value="C"' + (p.temp === 'C' ? ' selected' : '') + '>Celsius (\xB0C)</option>' +
+      '</select>') +
+    fg('Volume', '<select id="pref_vol">' +
+      '<option value="gal"' + (p.vol === 'gal' ? ' selected' : '') + '>Gallons (gal)</option>' +
+      '<option value="L"' + (p.vol === 'L' ? ' selected' : '') + '>Litres (L)</option>' +
+      '</select>') +
+    '<div class="mact"><button class="btn bg" onclick="cm()">Cancel</button><button class="btn bp" onclick="sub_pref()">Save</button></div>');
+}
+function sub_pref() {
+  sv_pref({temp: document.getElementById('pref_temp').value, vol: document.getElementById('pref_vol').value});
+  cm(); init();
 }
 
 // ===== HELPERS =====
@@ -675,7 +715,7 @@ function get_param_alerts(tid) {
   }
   // Temperature drop
   if (last.temp_f !== null && prev.temp_f !== null && Math.abs(last.temp_f - prev.temp_f) >= 4) {
-    alerts.push({level:'warn', msg:'Temperature changed ' + Math.abs(last.temp_f - prev.temp_f).toFixed(1) + '\xB0F between tests (' + prev.temp_f + ' → ' + last.temp_f + '). Rapid swings cause stress and disease.'});
+    alerts.push({level:'warn', msg:'Temperature changed ' + Math.abs(d_t(last.temp_f) - d_t(prev.temp_f)).toFixed(1) + t_lbl() + ' between tests (' + d_t(prev.temp_f) + ' → ' + d_t(last.temp_f) + t_lbl() + '). Rapid swings cause stress and disease.'});
   }
   return alerts;
 }
@@ -740,7 +780,7 @@ function r_setup_card(tid) {
       stock_in_tank.some(function(s){ var sp = SP[s.species_id]; return sp && sp.tmin >= 70; });
   }
   var heater_label = tank.room_tmin != null
-    ? 'Heater installed — room min (' + tank.room_tmin + 'F) is below some fish requirements'
+    ? 'Heater installed — room min (' + d_t(tank.room_tmin) + t_lbl() + ') is below some fish requirements'
     : 'Heater installed and set to target temperature';
   // CO2 only needed when the tank contains plants that require it.
   var plants_in_tank = d.plants.filter(function(p){ return p.tank_id === tid; });
@@ -784,7 +824,7 @@ function build_sel() {
   if (!d.tanks.length) { sel.innerHTML = '<option value="">No tanks yet</option>'; return; }
   d.tanks.forEach(function(t) {
     var o = document.createElement('option');
-    o.value = t.id; o.textContent = t.name + ' (' + t.gallons + 'g)';
+    o.value = t.id; o.textContent = t.name + ' (' + d_v(t.gallons) + ' ' + v_lbl() + ')';
     if (t.id === cur) o.selected = true;
     sel.appendChild(o);
   });
@@ -846,7 +886,7 @@ function r_dash() {
   }
 
   h += '<div class="dgrid">';
-  h += scard('Tank Size', tank.gallons + ' gal', tank.liters + ' L');
+  h += scard('Tank Size', d_v(tank.gallons) + ' ' + v_lbl(), get_pref().vol === 'L' ? tank.gallons + ' gal' : tank.liters + ' L');
   var age = Math.max(0, Math.floor((Date.now() - new Date(tank.setup_date + 'T00:00:00').getTime()) / 86400000));
   h += scard('Tank Age', age + ' days', 'since ' + tank.setup_date);
   h += scard('Livestock', d.stock.filter(function(x){return x.tank_id===tid;}).length + ' entries', pl_count + ' plant species');
@@ -873,16 +913,17 @@ function r_dash() {
   h += '</div>';
   if (lr) {
     var ps = [
-      {k:'temp_f',  l:'Temperature',   u:'F',  mn:rng&&rng.temp.ok?rng.temp.min:null, mx:rng&&rng.temp.ok?rng.temp.max:null, tox:false},
-      {k:'ammonia', l:'Ammonia',       u:'ppm', mn:0, mx:0, tox:true},
-      {k:'nitrite', l:'Nitrite',       u:'ppm', mn:0, mx:0, tox:true},
-      {k:'nitrate', l:'Nitrate',       u:'ppm', mn:0, mx:40, tox:false},
-      {k:'ph',      l:'pH',            u:'',    mn:rng&&rng.ph.ok?rng.ph.min:null, mx:rng&&rng.ph.ok?rng.ph.max:null, tox:false},
-      {k:'gh',      l:'Hardness (GH)', u:'',    mn:rng&&rng.gh.ok?rng.gh.min:null, mx:rng&&rng.gh.ok?rng.gh.max:null, tox:false}
+      {k:'temp_f',  l:'Temperature',   u:t_lbl(), mn:rng&&rng.temp.ok?d_t(rng.temp.min):null, mx:rng&&rng.temp.ok?d_t(rng.temp.max):null, tox:false, conv:d_t},
+      {k:'ammonia', l:'Ammonia',       u:'ppm', mn:0, mx:0, tox:true,  conv:null},
+      {k:'nitrite', l:'Nitrite',       u:'ppm', mn:0, mx:0, tox:true,  conv:null},
+      {k:'nitrate', l:'Nitrate',       u:'ppm', mn:0, mx:40, tox:false, conv:null},
+      {k:'ph',      l:'pH',            u:'',    mn:rng&&rng.ph.ok?rng.ph.min:null, mx:rng&&rng.ph.ok?rng.ph.max:null, tox:false, conv:null},
+      {k:'gh',      l:'Hardness (GH)', u:'',    mn:rng&&rng.gh.ok?rng.gh.min:null, mx:rng&&rng.gh.ok?rng.gh.max:null, tox:false, conv:null}
     ];
     h += '<div class="tw"><table><tr><th>Parameter</th><th>Reading</th><th>Safe Range</th><th>Status</th></tr>';
     ps.forEach(function(p) {
-      var val = lr[p.k], c = cls_val(val, p.mn, p.mx, p.tox);
+      var raw = lr[p.k], val = (p.conv && raw !== null) ? p.conv(raw) : raw;
+      var c = cls_val(raw, p.k === 'temp_f' ? (rng&&rng.temp.ok?rng.temp.min:null) : p.mn, p.k === 'temp_f' ? (rng&&rng.temp.ok?rng.temp.max:null) : p.mx, p.tox);
       var rng_txt = p.tox ? '0 ppm' : (p.mn !== null && p.mx !== null ? p.mn + '-' + p.mx + (p.u?' '+p.u:'') : '-');
       h += '<tr><td>' + p.l + '</td><td>' + (val !== null ? val + (p.u?' '+p.u:'') : '-') + '</td><td style="color:var(--muted)">' + rng_txt + '</td><td>' + pill(c) + '</td></tr>';
     });
@@ -946,7 +987,7 @@ function r_life() {
     sk.forEach(function(s) {
       var sp = SP[s.species_id];
       if (sp && sp.min_gal && tank_life && tank_life.gallons < sp.min_gal) {
-        small_tank_warns.push(sp.name + ' needs ' + sp.min_gal + 'g min');
+        small_tank_warns.push(sp.name + ' needs ' + d_v(sp.min_gal) + ' ' + v_lbl() + ' min');
       }
     });
     if (small_tank_warns.length) {
@@ -983,7 +1024,7 @@ function r_wlog() {
     '<form id="wf" onsubmit="sub_water(event)">' +
     '<div class="frow">' +
     fgh('Date', '<input type="date" name="date" value="' + td + '" required>', '') +
-    fgh('Temperature (F)', '<input type="number" name="tf" step="0.1" placeholder="e.g. 76">', 'Stable temp is as important as the number itself.') +
+    fgh('Temperature (' + t_lbl() + ')', '<input type="number" name="tf" step="0.1" placeholder="e.g. ' + (get_pref().temp === 'C' ? '24' : '76') + '">', 'Stable temp is as important as the number itself.') +
     fgh('Ammonia (ppm)', '<input type="number" name="nh3" step="0.01" placeholder="e.g. 0">', 'Target: 0 ppm. Any reading above 0 is harmful to fish.') +
     fgh('Nitrite (ppm)', '<input type="number" name="no2" step="0.01" placeholder="e.g. 0">', 'Target: 0 ppm. Toxic even at 0.25 ppm. Spikes during cycling.') +
     '</div><div class="frow">' +
@@ -1003,9 +1044,9 @@ function r_wlog() {
   }
   if (entries.length) {
     h += '<div class="card"><div class="ctitle">History</div><div class="tw"><table>' +
-      '<tr><th>Date</th><th>Temp F</th><th>NH3</th><th>NO2</th><th>NO3</th><th>pH</th><th>GH</th><th>Notes</th><th></th></tr>';
+      '<tr><th>Date</th><th>Temp ' + t_lbl() + '</th><th>NH3</th><th>NO2</th><th>NO3</th><th>pH</th><th>GH</th><th>Notes</th><th></th></tr>';
     entries.slice().reverse().slice(0, 30).forEach(function(e) {
-      h += '<tr><td>' + e.date + '</td><td>' + nv(e.temp_f) + '</td><td>' + nv(e.ammonia) + '</td><td>' + nv(e.nitrite) + '</td>' +
+      h += '<tr><td>' + e.date + '</td><td>' + nv(d_t(e.temp_f)) + '</td><td>' + nv(e.ammonia) + '</td><td>' + nv(e.nitrite) + '</td>' +
            '<td>' + nv(e.nitrate) + '</td><td>' + nv(e.ph) + '</td><td>' + nv(e.gh) + '</td><td>' + esc(e.notes) + '</td>' +
            '<td><button class="btn bd bs" data-id="' + e.id + '" onclick="del_water(this.dataset.id);r_wlog()">&#x2715;</button></td></tr>';
     });
@@ -1016,7 +1057,9 @@ function r_wlog() {
 }
 function sub_water(e) {
   e.preventDefault(); var f = e.target, tid = at();
-  add_water(tid, f.date.value, f.tf.value, f.nh3.value, f.no2.value, f.no3.value, f.ph.value, f.gh.value, f.notes.value);
+  // Convert temperature input to stored °F
+  var tf_f = f.tf.value !== '' ? inp_t(f.tf.value) : '';
+  add_water(tid, f.date.value, tf_f, f.nh3.value, f.no2.value, f.no3.value, f.ph.value, f.gh.value, f.notes.value);
   r_wlog();
 }
 
@@ -1033,7 +1076,7 @@ function r_maint() {
   // Water change calculator
   h += '<div class="card"><div class="ctitle">Water Change Calculator</div>' +
        '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:13px">' +
-       '<span>Tank: <strong>' + (tank ? tank.gallons : 0) + ' gal</strong></span>' +
+       '<span>Tank: <strong>' + d_v(tank ? tank.gallons : 0) + ' ' + v_lbl() + '</strong></span>' +
        '<span>Change:</span>' +
        '<input type="number" id="wc_pct" value="25" min="1" max="100" style="width:70px" oninput="calc_wc()">' +
        '<span>%</span>' +
@@ -1107,7 +1150,9 @@ function calc_wc() {
   var pct = parseFloat(pct_el.value) || 25;
   var gal = Math.round(tank.gallons * pct / 100 * 10) / 10;
   var lit = Math.round(gal * 3.78541 * 10) / 10;
-  res_el.innerHTML = 'Remove <strong>' + gal + ' gal</strong> (' + lit + ' L) &mdash; treat replacement water with dechlorinator before adding to tank.';
+  var primary = get_pref().vol === 'L' ? lit + ' L' : gal + ' gal';
+  var secondary = get_pref().vol === 'L' ? gal + ' gal' : lit + ' L';
+  res_el.innerHTML = 'Remove <strong>' + primary + '</strong> (' + secondary + ') &mdash; treat replacement water with dechlorinator before adding to tank.';
 }
 function sub_task(e) {
   e.preventDefault(); var f = e.target, tid = at();
@@ -1249,7 +1294,7 @@ function r_recs() {
       h += pill_lbl('pok', 'Good');
     } else {
       h += pill_lbl('pdanger', 'Underpowered');
-      h += '<span style="font-size:12px;color:var(--danger);margin-left:8px">Recommend ' + rec_w + 'W+ for a ' + (tank ? tank.gallons : 0) + 'g tank (5W/gal rule)</span>';
+      h += '<span style="font-size:12px;color:var(--danger);margin-left:8px">Recommend ' + rec_w + 'W+ for a ' + d_v(tank ? tank.gallons : 0) + ' ' + v_lbl() + ' tank (5W/gal rule)</span>';
     }
   } else if (heaters_eq.length) {
     h += '<span style="color:var(--muted)">Heater added — set wattage in equipment config to check sizing.</span>';
@@ -1283,22 +1328,23 @@ function r_recs() {
   h += '<div class="card"><div class="ctitle">Recommended Water Parameters</div>' +
     '<div class="tw"><table><tr><th>Parameter</th><th>Safe Range</th><th>Current Reading</th><th>Status</th></tr>';
   var rp = [
-    {l:'Temperature', u:'F',   mn:rng.temp.ok?rng.temp.min:null, mx:rng.temp.ok?rng.temp.max:null, k:'temp_f',  tox:false},
-    {l:'Ammonia',     u:'ppm', mn:0, mx:0, k:'ammonia', tox:true},
-    {l:'Nitrite',     u:'ppm', mn:0, mx:0, k:'nitrite', tox:true},
-    {l:'Nitrate',     u:'ppm', mn:0, mx:20, k:'nitrate', tox:false},
-    {l:'pH',          u:'',    mn:rng.ph.ok?rng.ph.min:null, mx:rng.ph.ok?rng.ph.max:null, k:'ph', tox:false},
-    {l:'Hardness (GH)',u:'',   mn:rng.gh.ok?rng.gh.min:null, mx:rng.gh.ok?rng.gh.max:null, k:'gh', tox:false}
+    {l:'Temperature', u:t_lbl(), mn:rng.temp.ok?d_t(rng.temp.min):null, mx:rng.temp.ok?d_t(rng.temp.max):null, k:'temp_f', tox:false, conv:d_t},
+    {l:'Ammonia',     u:'ppm', mn:0, mx:0, k:'ammonia', tox:true,  conv:null},
+    {l:'Nitrite',     u:'ppm', mn:0, mx:0, k:'nitrite', tox:true,  conv:null},
+    {l:'Nitrate',     u:'ppm', mn:0, mx:20, k:'nitrate', tox:false, conv:null},
+    {l:'pH',          u:'',    mn:rng.ph.ok?rng.ph.min:null, mx:rng.ph.ok?rng.ph.max:null, k:'ph', tox:false, conv:null},
+    {l:'Hardness (GH)',u:'',   mn:rng.gh.ok?rng.gh.min:null, mx:rng.gh.ok?rng.gh.max:null, k:'gh', tox:false, conv:null}
   ];
   rp.forEach(function(p) {
-    var cur = lr ? lr[p.k] : null, c = cls_val(cur, p.mn, p.mx, p.tox);
+    var raw = lr ? lr[p.k] : null, cur = (p.conv && raw !== null) ? p.conv(raw) : raw;
+    var c = cls_val(raw, p.k === 'temp_f' ? (rng.temp.ok?rng.temp.min:null) : p.mn, p.k === 'temp_f' ? (rng.temp.ok?rng.temp.max:null) : p.mx, p.tox);
     var rt = p.tox ? '0 ppm' : (p.mn !== null && p.mx !== null ? p.mn + '-' + p.mx + (p.u?' '+p.u:'') : '-');
     h += '<tr><td>' + p.l + '</td><td>' + rt + '</td><td>' + (cur !== null ? cur + (p.u?' '+p.u:'') : '-') + '</td><td>' + pill(c) + '</td></tr>';
   });
   h += '</table></div></div>';
 
   h += '<div class="card"><div class="ctitle">Per-Species Requirements</div>' +
-    '<div class="tw"><table><tr><th>Species</th><th>Level</th><th>Adult Size</th><th>Min Tank</th><th>Temp (F)</th><th>pH</th><th>Hardness</th><th>Bioload</th><th>Notes</th></tr>';
+    '<div class="tw"><table><tr><th>Species</th><th>Level</th><th>Adult Size</th><th>Min Tank</th><th>Temp (' + t_lbl() + ')</th><th>pH</th><th>Hardness</th><th>Bioload</th><th>Notes</th></tr>';
   rng.sl.forEach(function(sp) {
     var bl_lbl = sp.bioload <= 1 ? 'Very Low' : sp.bioload <= 2 ? 'Low' : sp.bioload <= 3 ? 'Medium' : sp.bioload <= 4 ? 'High' : 'Very High';
     var bl_inv_note = sp.inv ? ' <span style="font-size:10px;color:var(--muted)">(×0.3 inv.)</span>' : '';
@@ -1307,8 +1353,8 @@ function r_recs() {
     h += '<tr><td><strong>' + esc(sp.name) + '</strong></td>' +
          '<td style="color:' + lvl_color + ';font-weight:700;font-size:12px">' + (sp.level || 'Beginner') + '</td>' +
          '<td>' + (sp.size_in ? sp.size_in + '"' : '-') + '</td>' +
-         '<td style="' + (tank_warn ? 'color:var(--danger);font-weight:700' : '') + '">' + (sp.min_gal ? sp.min_gal + 'g' : '-') + (tank_warn ? ' &#x26A0;' : '') + '</td>' +
-         '<td>' + sp.tmin + '-' + sp.tmax + '</td>' +
+         '<td style="' + (tank_warn ? 'color:var(--danger);font-weight:700' : '') + '">' + (sp.min_gal ? d_v(sp.min_gal) + ' ' + v_lbl() : '-') + (tank_warn ? ' &#x26A0;' : '') + '</td>' +
+         '<td>' + d_t(sp.tmin) + '-' + d_t(sp.tmax) + '</td>' +
          '<td>' + sp.pmin + '-' + sp.pmax + '</td><td>' + sp.gmin + '-' + sp.gmax + '</td>' +
          '<td>' + bl_lbl + bl_inv_note + ' (' + sp.bioload + ')</td>' +
          '<td style="font-size:12px;color:var(--muted)">' + esc(sp.note) + '</td></tr>';
@@ -1322,7 +1368,7 @@ function r_recs() {
     if (needs_co2_plant && !co2_info) {
       h += '<div style="background:#fef3d5;border-radius:6px;padding:8px 12px;color:#8a5a00;font-size:13px;font-weight:600;margin-bottom:10px">&#x26A0; One or more plants require CO2 injection. Add CO2 System equipment.</div>';
     }
-    h += '<div class="tw"><table><tr><th>Plant</th><th>Temp (F)</th><th>Light Needed</th><th>CO2</th><th>Difficulty</th><th>Care Note</th></tr>';
+    h += '<div class="tw"><table><tr><th>Plant</th><th>Temp (' + t_lbl() + ')</th><th>Light Needed</th><th>CO2</th><th>Difficulty</th><th>Care Note</th></tr>';
     pl_in_tank.forEach(function(p) {
       var pd = PL[p.plant_id];
       if (pd) {
@@ -1332,7 +1378,7 @@ function r_recs() {
         }
         var light_warn = (pd.light === 'High' && light_hours > 0 && light_hours < 8) ? ' &#x26A0;' : '';
         h += '<tr><td><strong>' + esc(p.name) + '</strong></td>' +
-             '<td' + (temp_ok ? '' : ' style="color:var(--danger);font-weight:700"') + '>' + pd.tmin + '-' + pd.tmax + (temp_ok ? '' : ' &#x26A0;') + '</td>' +
+             '<td' + (temp_ok ? '' : ' style="color:var(--danger);font-weight:700"') + '>' + d_t(pd.tmin) + '-' + d_t(pd.tmax) + (temp_ok ? '' : ' &#x26A0;') + '</td>' +
              '<td>' + pd.light + light_warn + '</td>' +
              '<td>' + (pd.co2 ? '<strong style="color:var(--warn)">Yes</strong>' : 'No') + '</td>' +
              '<td>' + pd.diff + '</td>' +
@@ -1357,16 +1403,13 @@ function do_add_tank() {
   om('<div class="mtitle">Add Tank</div>' +
     '<form onsubmit="sub_add_tank(event)">' +
     fg('Tank Name', '<input type="text" name="name" placeholder="e.g. Living Room 20G" required>') +
-    '<div class="frow">' +
-    fg('Gallons', '<input type="number" name="gal" step="0.1" placeholder="20" required oninput="this.form.lit.value=Math.round(this.value*3.78541*10)/10">') +
-    fg('Litres',  '<input type="number" name="lit" step="0.1" placeholder="75.7"       oninput="this.form.gal.value=Math.round(this.value/3.78541*10)/10">') +
-    '</div>' +
+    '<div class="frow">' + vol_flds('', '') + '</div>' +
     fg('Setup Date', '<input type="date" name="setup" value="' + td + '" required>') +
-    '<div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:2px">Room Temperature — without any heater (°F)</div>' +
+    '<div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:2px">Room Temperature — without any heater (' + t_lbl() + ')</div>' +
     '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Used to suggest fish that suit your climate and determine if a heater is needed.</div>' +
     '<div class="frow">' +
-    fg('Min °F', '<input type="number" name="room_tmin" placeholder="e.g. 68" min="40" max="110">') +
-    fg('Max °F', '<input type="number" name="room_tmax" placeholder="e.g. 82" min="40" max="110">') +
+    fg('Min ' + t_lbl(), '<input type="number" name="room_tmin" placeholder="e.g. ' + (get_pref().temp === 'C' ? '20' : '68') + '">') +
+    fg('Max ' + t_lbl(), '<input type="number" name="room_tmax" placeholder="e.g. ' + (get_pref().temp === 'C' ? '28' : '82') + '">') +
     '</div>' +
     fg('Notes', '<textarea name="notes" placeholder="Optional notes about your tank"></textarea>') +
     '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Add Tank</button></div>' +
@@ -1374,7 +1417,7 @@ function do_add_tank() {
 }
 function sub_add_tank(e) {
   e.preventDefault(); var f = e.target;
-  add_tank(f.name.value, f.gal.value, f.setup.value, f.notes.value, f.room_tmin.value, f.room_tmax.value);
+  add_tank(f.name.value, f.gal.value, f.setup.value, f.notes.value, inp_t(f.room_tmin.value), inp_t(f.room_tmax.value));
   cm(); init();
 }
 function do_edit_tank() {
@@ -1382,15 +1425,12 @@ function do_edit_tank() {
   om('<div class="mtitle">Edit Tank</div>' +
     '<form onsubmit="sub_edit_tank(event)">' +
     fg('Tank Name', '<input type="text" name="name" value="' + esc(t.name) + '" required>') +
-    '<div class="frow">' +
-    fg('Gallons', '<input type="number" name="gal" step="0.1" value="' + t.gallons + '" required oninput="this.form.lit.value=Math.round(this.value*3.78541*10)/10">') +
-    fg('Litres',  '<input type="number" name="lit" step="0.1" value="' + t.liters  + '"       oninput="this.form.gal.value=Math.round(this.value/3.78541*10)/10">') +
-    '</div>' +
+    '<div class="frow">' + vol_flds(t.gallons, t.liters) + '</div>' +
     fg('Setup Date', '<input type="date" name="setup" value="' + t.setup_date + '" required>') +
-    '<div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:2px">Room Temperature — without any heater (°F)</div>' +
+    '<div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:2px">Room Temperature — without any heater (' + t_lbl() + ')</div>' +
     '<div class="frow">' +
-    fg('Min °F', '<input type="number" name="room_tmin" value="' + (t.room_tmin != null ? t.room_tmin : '') + '" placeholder="e.g. 68" min="40" max="110">') +
-    fg('Max °F', '<input type="number" name="room_tmax" value="' + (t.room_tmax != null ? t.room_tmax : '') + '" placeholder="e.g. 82" min="40" max="110">') +
+    fg('Min ' + t_lbl(), '<input type="number" name="room_tmin" value="' + (t.room_tmin != null ? d_t(t.room_tmin) : '') + '" placeholder="e.g. ' + (get_pref().temp === 'C' ? '20' : '68') + '">') +
+    fg('Max ' + t_lbl(), '<input type="number" name="room_tmax" value="' + (t.room_tmax != null ? d_t(t.room_tmax) : '') + '" placeholder="e.g. ' + (get_pref().temp === 'C' ? '28' : '82') + '">') +
     '</div>' +
     fg('Notes', '<textarea name="notes">' + esc(t.notes) + '</textarea>') +
     '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Save</button></div>' +
@@ -1398,7 +1438,7 @@ function do_edit_tank() {
 }
 function sub_edit_tank(e) {
   e.preventDefault(); var f = e.target;
-  upd_tank(at(), f.name.value, f.gal.value, f.setup.value, f.notes.value, f.room_tmin.value, f.room_tmax.value);
+  upd_tank(at(), f.name.value, f.gal.value, f.setup.value, f.notes.value, inp_t(f.room_tmin.value), inp_t(f.room_tmax.value));
   cm(); init();
 }
 function do_del_tank() {
@@ -1541,7 +1581,7 @@ function upd_plant_form(sel) {
     var p = PL[pid];
     if (p && req_el) {
       var co2_str = p.co2 ? 'Required' : 'Not needed';
-      req_el.innerHTML = 'Temp: ' + p.tmin + '-' + p.tmax + 'F &nbsp;|&nbsp; Light: <strong>' + p.light + '</strong> &nbsp;|&nbsp; CO2: <strong>' + co2_str + '</strong> &nbsp;|&nbsp; ' + p.diff + '<br><span style="color:var(--muted)">' + esc(p.note) + '</span>';
+      req_el.innerHTML = 'Temp: ' + d_t(p.tmin) + '-' + d_t(p.tmax) + t_lbl() + ' &nbsp;|&nbsp; Light: <strong>' + p.light + '</strong> &nbsp;|&nbsp; CO2: <strong>' + co2_str + '</strong> &nbsp;|&nbsp; ' + p.diff + '<br><span style="color:var(--muted)">' + esc(p.note) + '</span>';
       if (info_row) info_row.style.display = 'block';
     }
   }
@@ -1628,7 +1668,7 @@ function upd_stock_compat(sel) {
   // Min tank size
   var tank = d.tanks.find(function(t){ return t.id === tid; });
   if (tank && new_sp.min_gal && tank.gallons < new_sp.min_gal) {
-    parts.push('<div style="color:var(--danger);font-size:12px;font-weight:700;margin-top:2px">&#x1F4CF; Tank too small: needs ' + new_sp.min_gal + 'g min, yours is ' + tank.gallons + 'g</div>');
+    parts.push('<div style="color:var(--danger);font-size:12px;font-weight:700;margin-top:2px">&#x1F4CF; Tank too small: needs ' + d_v(new_sp.min_gal) + ' ' + v_lbl() + ' min, yours is ' + d_v(tank.gallons) + ' ' + v_lbl() + '</div>');
   }
 
   // Room temperature compatibility
@@ -1638,13 +1678,13 @@ function upd_stock_compat(sel) {
     var too_hot  = rt_max != null && rt_max > new_sp.tmax;
     if (too_hot) {
       parts.push('<div style="color:var(--danger);font-size:12px;font-weight:700;margin-top:2px">' +
-        '&#x1F321; Room too hot: your max (' + rt_max + 'F) exceeds this fish max (' + new_sp.tmax + 'F). Needs a chiller or AC.</div>');
+        '&#x1F321; Room too hot: your max (' + d_t(rt_max) + t_lbl() + ') exceeds this fish max (' + d_t(new_sp.tmax) + t_lbl() + '). Needs a chiller or AC.</div>');
     } else if (too_cold) {
       parts.push('<div style="color:var(--warn);font-size:12px;margin-top:2px">' +
-        '&#x1F321; Heater required: room min (' + rt_min + 'F) is below this fish minimum (' + new_sp.tmin + 'F).</div>');
+        '&#x1F321; Heater required: room min (' + d_t(rt_min) + t_lbl() + ') is below this fish minimum (' + d_t(new_sp.tmin) + t_lbl() + ').</div>');
     } else {
       parts.push('<div style="color:var(--ok);font-size:12px;margin-top:2px">' +
-        '&#x2713; Fits your room temperature (' + rt_min + '-' + (rt_max != null ? rt_max : '?') + 'F) — no heater needed.</div>');
+        '&#x2713; Fits your room temperature (' + d_t(rt_min) + '-' + (rt_max != null ? d_t(rt_max) : '?') + t_lbl() + ') — no heater needed.</div>');
     }
   }
 
