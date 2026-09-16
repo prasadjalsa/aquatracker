@@ -28,6 +28,9 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min
 .nav select{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:5px 8px;font-size:13px;max-width:200px}
 .nav select option{background:var(--deep)}
 .tabs{display:flex;background:var(--mid);overflow-x:auto;padding:0 8px}
+.prev-bar{background:#fef3d5;border-bottom:2px solid #e8a838;padding:8px 16px;font-size:13px;color:#7a4f00;display:flex;align-items:center;gap:10px}
+.prev-bar strong{font-weight:700}
+.prev-bar .btn-del-prev{background:none;border:1px solid #c8870a;color:#7a4f00;border-radius:4px;padding:3px 10px;font-size:12px;cursor:pointer}
 .tab{background:none;border:none;color:rgba(255,255,255,.7);padding:11px 14px;font-size:13px;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;transition:.15s;font-family:inherit}
 .tab:hover{color:#fff}
 .tab.on{color:#fff;border-bottom-color:var(--accent)}
@@ -98,6 +101,7 @@ tr:hover td{background:#f9fbfc}
   <div class="nav-r">
     <select id="t_sel" title="Switch active tank"></select>
     <button class="btn bg bs" onclick="do_add_tank()">+ Tank</button>
+    <button class="btn bg bs" onclick="do_add_preview()">&#x1F9EA; Preview</button>
     <button class="btn bg bs" onclick="do_export()">Export</button>
     <label class="btn bg bs" style="cursor:pointer">Import<input type="file" id="imp_file" accept=".json" style="display:none" onchange="do_import(this)"></label>
     <button class="btn bg bs" onclick="do_settings()">&#x2699; Units</button>
@@ -112,6 +116,11 @@ tr:hover td{background:#f9fbfc}
   <button class="tab" data-t="recs">Recommendations</button>
   <button class="tab" data-t="tools">Toolkit</button>
   <button class="tab" data-t="howto">How To</button>
+</div>
+
+<div id="prev_bar" class="prev-bar" style="display:none">
+  &#x1F9EA; <strong>Preview Tank</strong> &mdash; This tank is for testing only and is excluded from exports.
+  <button class="btn-del-prev" onclick="do_del_preview()">Delete Preview</button>
 </div>
 
 <div id="p-dash"  class="panel on"></div>
@@ -712,7 +721,19 @@ function draw_chart(tid, param) {
 
 // ===== EXPORT / IMPORT =====
 function do_export() {
-  var blob = new Blob([JSON.stringify(ld(), null, 2)], {type:'application/json'});
+  var d = ld();
+  var prev_ids = d.tanks.filter(function(t){ return t.preview; }).map(function(t){ return t.id; });
+  var exp = {
+    tanks:   d.tanks.filter(function(t){ return !t.preview; }),
+    equip:   d.equip.filter(function(x){ return prev_ids.indexOf(x.tank_id) === -1; }),
+    plants:  d.plants.filter(function(x){ return prev_ids.indexOf(x.tank_id) === -1; }),
+    stock:   d.stock.filter(function(x){ return prev_ids.indexOf(x.tank_id) === -1; }),
+    tasks:   d.tasks.filter(function(x){ return prev_ids.indexOf(x.tank_id) === -1; }),
+    water:   d.water.filter(function(x){ return prev_ids.indexOf(x.tank_id) === -1; }),
+    feeding: d.feeding.filter(function(x){ return prev_ids.indexOf(x.tank_id) === -1; }),
+    ferts:   d.ferts.filter(function(x){ return prev_ids.indexOf(x.tank_id) === -1; })
+  };
+  var blob = new Blob([JSON.stringify(exp, null, 2)], {type:'application/json'});
   var url = URL.createObjectURL(blob), a = document.createElement('a');
   a.href = url; a.download = 'aquatracker-' + new Date().toISOString().slice(0,10) + '.json';
   a.click(); URL.revokeObjectURL(url);
@@ -923,7 +944,8 @@ function build_sel() {
   if (!d.tanks.length) { sel.innerHTML = '<option value="">No tanks yet</option>'; return; }
   d.tanks.forEach(function(t) {
     var o = document.createElement('option');
-    o.value = t.id; o.textContent = t.name + ' (' + d_v(t.gallons) + ' ' + v_lbl() + ')';
+    var label = (t.preview ? '[Preview] ' : '') + t.name + ' (' + d_v(t.gallons) + ' ' + v_lbl() + ')';
+    o.value = t.id; o.textContent = label;
     if (t.id === cur) o.selected = true;
     sel.appendChild(o);
   });
@@ -1681,6 +1703,98 @@ function sub_add_tank(e) {
   e.preventDefault(); var f = e.target;
   add_tank(f.name.value, f.gal.value, f.setup.value, f.notes.value, inp_t(f.room_tmin.value), inp_t(f.room_tmax.value));
   cm(); init();
+}
+
+// ===== PREVIEW TANK =====
+function upd_prev_bar() {
+  var bar = document.getElementById('prev_bar');
+  if (!bar) return;
+  var d = ld(), tid = at();
+  var t = d.tanks.find(function(x){ return x.id === tid; });
+  bar.style.display = (t && t.preview) ? '' : 'none';
+}
+
+function copy_tank_data(src_id, dst_id) {
+  var d = ld();
+  ['equip','plants','stock','ferts'].forEach(function(k) {
+    d[k].filter(function(x){ return x.tank_id === src_id; }).forEach(function(x) {
+      var copy = JSON.parse(JSON.stringify(x));
+      copy.id = gid(); copy.tank_id = dst_id;
+      d[k].push(copy);
+    });
+  });
+  sv(d);
+}
+
+function do_add_preview() {
+  var d = ld();
+  var real_tanks = d.tanks.filter(function(t){ return !t.preview; });
+  var opts = '<option value="">-- Start fresh --</option>' +
+    real_tanks.map(function(t){ return '<option value="' + t.id + '">' + esc(t.name) + '</option>'; }).join('');
+  var td = today_str();
+  om('<div class="mtitle">&#x1F9EA; Create Preview Tank</div>' +
+    '<p style="font-size:13px;color:var(--muted);margin-bottom:14px">A preview tank lets you test fish and plant combinations without affecting your real data. It is excluded from exports.</p>' +
+    '<form onsubmit="sub_add_preview(event)">' +
+    fg('Copy setup from', '<select name="copy_from" onchange="prev_fill_name(this)">' + opts + '</select>') +
+    fg('Preview name', '<input type="text" name="name" placeholder="e.g. Preview: Living Room 20G" required>') +
+    '<div class="frow">' + vol_flds('', '') + '</div>' +
+    fg('Setup Date', '<input type="date" name="setup" value="' + td + '" required>') +
+    '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Create Preview</button></div>' +
+    '</form>');
+}
+
+function prev_fill_name(sel) {
+  var d = ld();
+  var t = d.tanks.find(function(x){ return x.id === sel.value; });
+  var f = sel.form;
+  if (t) {
+    f.name.value = 'Preview: ' + t.name;
+    f.gal.value  = Math.round(t.gallons * 10) / 10;
+    f.lit.value  = Math.round(t.gallons * 3.78541 * 10) / 10;
+    f.setup.value = t.setup_date;
+  } else {
+    f.name.value = '';
+    f.gal.value  = '';
+    f.lit.value  = '';
+  }
+}
+
+function sub_add_preview(e) {
+  e.preventDefault(); var f = e.target;
+  var copy_from = f.copy_from ? f.copy_from.value : '';
+  var g = parseFloat(f.gal.value) || 0;
+  var l = parseFloat(f.lit.value) || 0;
+  if (!g && l) g = l / 3.78541;
+  if (!g) {
+    var src = copy_from ? ld().tanks.find(function(t){ return t.id === copy_from; }) : null;
+    if (src) g = src.gallons;
+  }
+  if (!g) { alert('Enter tank volume'); return; }
+  g = Math.round(g * 100) / 100;
+  var src_tank = copy_from ? ld().tanks.find(function(t){ return t.id === copy_from; }) : null;
+  var t = {
+    id: gid(),
+    name: f.name.value.trim(),
+    gallons: g,
+    liters: g2l(g),
+    setup_date: f.setup.value,
+    notes: '',
+    room_tmin: src_tank ? src_tank.room_tmin : null,
+    room_tmax: src_tank ? src_tank.room_tmax : null,
+    preview: true
+  };
+  var d = ld();
+  d.tanks.push(t); sv(d); sat(t.id);
+  if (copy_from) copy_tank_data(copy_from, t.id);
+  cm(); init();
+}
+
+function do_del_preview() {
+  var t = ld().tanks.find(function(x){ return x.id === at(); });
+  if (!t || !t.preview) return;
+  if (!confirm('Delete preview tank "' + t.name + '" and all its data?')) return;
+  del_tank(t.id);
+  init();
 }
 function do_edit_tank() {
   var t = ld().tanks.find(function(x){ return x.id === at(); }); if (!t) return;
@@ -2441,6 +2555,7 @@ function r_tools() {
 // ===== APP CORE =====
 var cur_tab = 'dash';
 function render_tab() {
+  upd_prev_bar();
   if      (cur_tab === 'dash')  r_dash();
   else if (cur_tab === 'life')  r_life();
   else if (cur_tab === 'wlog')  r_wlog();
