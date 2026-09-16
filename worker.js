@@ -70,7 +70,7 @@ tr:hover td{background:#f9fbfc}
 .empty-s{text-align:center;padding:40px 16px;color:var(--muted)}
 .empty-s h2{color:var(--deep);margin-bottom:8px;font-size:20px}
 .empty-s p{margin-bottom:18px;font-size:14px}
-.dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:14px}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:14px}
 .scard{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);padding:14px 18px}
 .slbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
 .sval{font-size:24px;font-weight:700;color:var(--deep);margin-top:2px}
@@ -78,6 +78,9 @@ tr:hover td{background:#f9fbfc}
 .cok{background:#d4f5e5;border-radius:var(--r);padding:10px 14px;color:#1a7a4a;font-weight:600;margin-bottom:12px;font-size:14px}
 .cwarn{background:#fde0e0;border-radius:var(--r);padding:10px 14px;color:#a01818;font-weight:600;margin-bottom:12px;font-size:14px}
 .emsg{color:var(--muted);font-size:13px;padding:4px 0}
+.bl-bar{background:#eef0f3;border-radius:20px;height:10px;overflow:hidden;margin:6px 0 4px}
+.bl-fill{height:100%;border-radius:20px;transition:width .3s}
+.req-info{background:#f5f8fb;border-radius:6px;padding:8px 10px;font-size:12px;color:var(--muted);margin-top:4px}
 @media(max-width:600px){
   .logo{font-size:14px}
   .panel{padding:10px}
@@ -117,25 +120,70 @@ tr:hover td{background:#f9fbfc}
 </div>
 
 <script>
-// ===== SPECIES DATABASE =====
+// ===== SPECIES DATABASE (37 species) =====
+// bioload scale: 1=very low (shrimp/snails), 2=low (small fish), 3=medium, 4=high, 5=very high
 var SP = {
-  betta:           {name:'Betta',           tmin:72,tmax:86,pmin:6.0,pmax:8.0,gmin:1, gmax:15,note:'Keep males alone or in a sorority.'},
-  neon_tetra:      {name:'Neon Tetra',       tmin:70,tmax:77,pmin:4.0,pmax:7.5,gmin:1, gmax:12,note:'School of 6+. Sensitive to nitrates.'},
-  cardinal_tetra:  {name:'Cardinal Tetra',   tmin:73,tmax:79,pmin:4.5,pmax:7.5,gmin:1, gmax:12,note:'School of 6+. Similar to neon tetra.'},
-  guppy:           {name:'Guppy',            tmin:63,tmax:82,pmin:7.0,pmax:8.5,gmin:8, gmax:30,note:'Hardy livebearer. Prefers hard water.'},
-  molly:           {name:'Molly',            tmin:72,tmax:82,pmin:7.0,pmax:8.5,gmin:15,gmax:35,note:'Needs hard water; shimmies in soft water.'},
-  platy:           {name:'Platy',            tmin:68,tmax:79,pmin:7.0,pmax:8.2,gmin:14,gmax:30,note:'Hardy livebearer. Avoid acidic water.'},
-  corydoras:       {name:'Corydoras',        tmin:70,tmax:81,pmin:6.0,pmax:8.0,gmin:2, gmax:15,note:'Group of 4+. Fine sand substrate needed.'},
-  angelfish:       {name:'Angelfish',        tmin:75,tmax:86,pmin:6.0,pmax:7.4,gmin:0, gmax:15,note:'Tall tank needed. May eat small fish.'},
-  discus:          {name:'Discus',           tmin:80,tmax:86,pmin:4.5,pmax:7.0,gmin:1, gmax:8, note:'Expert level. Needs pristine water quality.'},
-  ram_cichlid:     {name:'Ram Cichlid',      tmin:81,tmax:86,pmin:4.0,pmax:7.0,gmin:1, gmax:10,note:'Very sensitive to any water quality issues.'},
-  african_cichlid: {name:'African Cichlid',  tmin:75,tmax:81,pmin:7.5,pmax:8.5,gmin:12,gmax:25,note:'Alkaline hard water essential.'},
-  goldfish:        {name:'Goldfish',         tmin:50,tmax:72,pmin:7.0,pmax:8.0,gmin:6, gmax:16,note:'Cold water, high bioload. Large tank needed.'},
-  cherry_shrimp:   {name:'Cherry Shrimp',    tmin:65,tmax:80,pmin:6.2,pmax:8.0,gmin:4, gmax:8, note:'Forgiving. Avoid copper-based medications.'},
-  crystal_shrimp:  {name:'Crystal Shrimp',   tmin:62,tmax:72,pmin:5.5,pmax:6.5,gmin:4, gmax:6, note:'Advanced keeper. RO water + remineralizer.'},
-  hillstream_loach:{name:'Hillstream Loach', tmin:62,tmax:72,pmin:6.5,pmax:7.5,gmin:4, gmax:8, note:'Needs very high flow and oxygenation.'},
-  nerite_snail:    {name:'Nerite Snail',     tmin:72,tmax:82,pmin:6.5,pmax:8.0,gmin:6, gmax:15,note:'Great algae eater. Needs calcium for shell.'},
-  mystery_snail:   {name:'Mystery Snail',    tmin:72,tmax:82,pmin:6.5,pmax:8.0,gmin:5, gmax:15,note:'Peaceful. Supplement calcium for shell health.'}
+  betta:             {name:'Betta',              tmin:72,tmax:86,pmin:6.0,pmax:8.0,gmin:1, gmax:15,bioload:2,note:'Keep males alone or in a sorority.'},
+  neon_tetra:        {name:'Neon Tetra',          tmin:70,tmax:77,pmin:4.0,pmax:7.5,gmin:1, gmax:12,bioload:1,note:'School of 6+. Sensitive to nitrates.'},
+  cardinal_tetra:    {name:'Cardinal Tetra',      tmin:73,tmax:79,pmin:4.5,pmax:7.5,gmin:1, gmax:12,bioload:1,note:'School of 6+. Similar to neon tetra.'},
+  guppy:             {name:'Guppy',               tmin:63,tmax:82,pmin:7.0,pmax:8.5,gmin:8, gmax:30,bioload:2,note:'Hardy livebearer. Prefers hard water.'},
+  molly:             {name:'Molly',               tmin:72,tmax:82,pmin:7.0,pmax:8.5,gmin:15,gmax:35,bioload:3,note:'Needs hard water. Shimmies in soft water.'},
+  platy:             {name:'Platy',               tmin:68,tmax:79,pmin:7.0,pmax:8.2,gmin:14,gmax:30,bioload:2,note:'Hardy livebearer. Avoid acidic water.'},
+  corydoras:         {name:'Corydoras',           tmin:70,tmax:81,pmin:6.0,pmax:8.0,gmin:2, gmax:15,bioload:2,note:'Group of 4+. Fine sand substrate needed.'},
+  angelfish:         {name:'Angelfish',           tmin:75,tmax:86,pmin:6.0,pmax:7.4,gmin:0, gmax:15,bioload:3,note:'Tall tank needed. May eat small fish.'},
+  discus:            {name:'Discus',              tmin:80,tmax:86,pmin:4.5,pmax:7.0,gmin:1, gmax:8, bioload:4,note:'Expert level. Needs pristine water quality.'},
+  ram_cichlid:       {name:'Ram Cichlid',         tmin:81,tmax:86,pmin:4.0,pmax:7.0,gmin:1, gmax:10,bioload:2,note:'Very sensitive to water quality issues.'},
+  african_cichlid:   {name:'African Cichlid',     tmin:75,tmax:81,pmin:7.5,pmax:8.5,gmin:12,gmax:25,bioload:4,note:'Alkaline hard water essential.'},
+  goldfish:          {name:'Goldfish',            tmin:50,tmax:72,pmin:7.0,pmax:8.0,gmin:6, gmax:16,bioload:5,note:'Cold water. Very high bioload. Needs large tank.'},
+  cherry_shrimp:     {name:'Cherry Shrimp',       tmin:65,tmax:80,pmin:6.2,pmax:8.0,gmin:4, gmax:8, bioload:1,note:'Forgiving. Avoid copper-based medications.'},
+  crystal_shrimp:    {name:'Crystal Shrimp',      tmin:62,tmax:72,pmin:5.5,pmax:6.5,gmin:4, gmax:6, bioload:1,note:'Advanced keeper. RO water + remineralizer.'},
+  hillstream_loach:  {name:'Hillstream Loach',    tmin:62,tmax:72,pmin:6.5,pmax:7.5,gmin:4, gmax:8, bioload:1,note:'Needs very high flow and oxygenation.'},
+  nerite_snail:      {name:'Nerite Snail',        tmin:72,tmax:82,pmin:6.5,pmax:8.0,gmin:6, gmax:15,bioload:1,note:'Great algae eater. Needs calcium for shell.'},
+  mystery_snail:     {name:'Mystery Snail',       tmin:72,tmax:82,pmin:6.5,pmax:8.0,gmin:5, gmax:15,bioload:1,note:'Peaceful. Supplement calcium for shell health.'},
+  zebra_danio:       {name:'Zebra Danio',         tmin:64,tmax:75,pmin:6.0,pmax:8.0,gmin:2, gmax:20,bioload:2,note:'Active schooler of 6+. Very hardy beginner fish.'},
+  harlequin_rasbora: {name:'Harlequin Rasbora',   tmin:72,tmax:82,pmin:6.0,pmax:7.5,gmin:1, gmax:12,bioload:1,note:'School of 6+. Peaceful community fish.'},
+  rummy_nose_tetra:  {name:'Rummy Nose Tetra',    tmin:75,tmax:82,pmin:5.5,pmax:7.0,gmin:1, gmax:10,bioload:1,note:'School of 8+. Red head intensifies in good water.'},
+  black_skirt_tetra: {name:'Black Skirt Tetra',   tmin:70,tmax:81,pmin:6.0,pmax:7.5,gmin:4, gmax:15,bioload:2,note:'School of 6+. May nip long-finned tankmates.'},
+  dwarf_gourami:     {name:'Dwarf Gourami',       tmin:72,tmax:82,pmin:6.0,pmax:7.5,gmin:4, gmax:10,bioload:2,note:'Males territorial with each other. Peaceful otherwise.'},
+  kuhli_loach:       {name:'Kuhli Loach',         tmin:74,tmax:86,pmin:5.5,pmax:7.0,gmin:1, gmax:10,bioload:2,note:'Nocturnal. Needs hiding spots and soft substrate.'},
+  bristlenose_pleco: {name:'Bristlenose Pleco',   tmin:73,tmax:81,pmin:6.5,pmax:7.5,gmin:2, gmax:20,bioload:3,note:'Great algae eater. Needs driftwood in diet.'},
+  otocinclus:        {name:'Otocinclus',          tmin:72,tmax:79,pmin:6.0,pmax:7.5,gmin:4, gmax:15,bioload:1,note:'Groups of 4+. Feeds on soft algae and blanched veg.'},
+  ember_tetra:       {name:'Ember Tetra',         tmin:73,tmax:84,pmin:5.0,pmax:7.0,gmin:1, gmax:10,bioload:1,note:'Tiny nano fish. School of 8+. Loves planted tanks.'},
+  chili_rasbora:     {name:'Chili Rasbora',       tmin:68,tmax:82,pmin:4.0,pmax:7.0,gmin:1, gmax:8, bioload:1,note:'Micro fish (0.7 in). School of 10+. Nano tank gem.'},
+  white_cloud_minnow:{name:'White Cloud Minnow',  tmin:59,tmax:72,pmin:6.0,pmax:8.0,gmin:5, gmax:19,bioload:1,note:'Cold water fish. Do not keep with tropical species.'},
+  swordtail:         {name:'Swordtail',           tmin:65,tmax:82,pmin:7.0,pmax:8.3,gmin:12,gmax:30,bioload:3,note:'Active jumper - use a lid. Males aggressive together.'},
+  tiger_barb:        {name:'Tiger Barb',          tmin:68,tmax:79,pmin:6.0,pmax:7.0,gmin:5, gmax:15,bioload:2,note:'Semi-aggressive fin nipper. Keep 8+ to spread chasing.'},
+  endlers_livebearer:{name:'Endler Livebearer',   tmin:72,tmax:82,pmin:6.5,pmax:8.5,gmin:10,gmax:30,bioload:1,note:'Hardy livebearer. Males are brilliantly colored.'},
+  electric_blue_ram: {name:'Electric Blue Ram',   tmin:78,tmax:85,pmin:5.0,pmax:7.0,gmin:1, gmax:8, bioload:2,note:'Very temperature sensitive. Needs stable warm water.'},
+  boesemani_rainbow: {name:'Boesemani Rainbow',   tmin:75,tmax:86,pmin:7.0,pmax:8.0,gmin:9, gmax:19,bioload:3,note:'School of 6+. Active swimmer. Grows to 4.5 inches.'},
+  amano_shrimp:      {name:'Amano Shrimp',        tmin:65,tmax:80,pmin:6.0,pmax:8.0,gmin:4, gmax:12,bioload:1,note:'Best algae-eating shrimp. Safe with most fish.'},
+  panda_corydoras:   {name:'Panda Corydoras',     tmin:68,tmax:77,pmin:6.0,pmax:7.4,gmin:2, gmax:12,bioload:1,note:'Smaller cory species. Cooler water. Group of 4+.'},
+  red_cherry_barb:   {name:'Red Cherry Barb',     tmin:72,tmax:79,pmin:6.0,pmax:7.5,gmin:5, gmax:19,bioload:2,note:'Peaceful despite the barb name. Males are bright red.'},
+  honey_gourami:     {name:'Honey Gourami',       tmin:72,tmax:82,pmin:6.0,pmax:7.5,gmin:4, gmax:10,bioload:1,note:'Very peaceful and shy. Good beginner community fish.'}
+};
+
+// ===== PLANT DATABASE (20 species) =====
+var PL = {
+  amazon_sword:   {name:'Amazon Sword',       tmin:60,tmax:82,light:'Medium',co2:false,diff:'Easy',   note:'Background plant. Needs root tabs for nutrients.'},
+  anubias:        {name:'Anubias',            tmin:60,tmax:84,light:'Low',   co2:false,diff:'Easy',   note:'Attach to hardscape. Burying rhizome causes rot.'},
+  bacopa:         {name:'Bacopa',             tmin:68,tmax:82,light:'Medium',co2:false,diff:'Easy',   note:'Compact stem plant. Slightly acidic water preferred.'},
+  bucephalandra:  {name:'Bucephalandra',      tmin:68,tmax:86,light:'Low',   co2:false,diff:'Easy',   note:'Many color variants. Attach to hardscape. Slow grower.'},
+  cryptocoryne:   {name:'Cryptocoryne',       tmin:68,tmax:82,light:'Low',   co2:false,diff:'Easy',   note:'Melts when moved. Will recover within weeks.'},
+  duckweed:       {name:'Duckweed',           tmin:60,tmax:86,light:'Low',   co2:false,diff:'Easy',   note:'Tiny floating plant. Spreads extremely fast.'},
+  dwarf_hairgrass:{name:'Dwarf Hairgrass',    tmin:60,tmax:80,light:'Medium',co2:false,diff:'Medium', note:'Carpet plant. Slow to establish without CO2.'},
+  dwarf_lily:     {name:'Dwarf Lily',         tmin:68,tmax:82,light:'Medium',co2:false,diff:'Medium', note:'Grows from bulb. Beautiful broad lily pad leaves.'},
+  frogbit:        {name:'Frogbit',            tmin:60,tmax:78,light:'Medium',co2:false,diff:'Easy',   note:'Floating plant. Provides shade and surface cover.'},
+  hornwort:       {name:'Hornwort',           tmin:59,tmax:86,light:'Medium',co2:false,diff:'Easy',   note:'Very fast grower. Great natural nitrate filter.'},
+  java_fern:      {name:'Java Fern',          tmin:60,tmax:82,light:'Low',   co2:false,diff:'Easy',   note:'Tie to driftwood. Never bury rhizome.'},
+  java_moss:      {name:'Java Moss',          tmin:60,tmax:82,light:'Low',   co2:false,diff:'Easy',   note:'Great for shrimp and fry cover. Attach to surfaces.'},
+  ludwigia:       {name:'Ludwigia',           tmin:68,tmax:82,light:'High',  co2:true, diff:'Medium', note:'Red/orange color with high light and CO2.'},
+  moneywort:      {name:'Moneywort',          tmin:60,tmax:82,light:'Medium',co2:false,diff:'Easy',   note:'Round leaves on stems. Can also grow above water.'},
+  monte_carlo:    {name:'Monte Carlo',        tmin:68,tmax:82,light:'Medium',co2:true, diff:'Medium', note:'Dense carpet. CO2 greatly accelerates growth.'},
+  pennywort:      {name:'Pennywort',          tmin:68,tmax:82,light:'Medium',co2:false,diff:'Easy',   note:'Fast growing trailing stems. Easy for beginners.'},
+  rotala:         {name:'Rotala',             tmin:72,tmax:82,light:'High',  co2:true, diff:'Medium', note:'Pink/red stems need CO2 and high light to develop.'},
+  vallisneria:    {name:'Vallisneria',        tmin:60,tmax:86,light:'Medium',co2:false,diff:'Easy',   note:'Spreads via runners. Tall background plant.'},
+  water_sprite:   {name:'Water Sprite',       tmin:60,tmax:87,light:'Medium',co2:false,diff:'Easy',   note:'Can float or plant in substrate. Trim regularly.'},
+  water_wisteria: {name:'Water Wisteria',     tmin:60,tmax:86,light:'Medium',co2:false,diff:'Easy',   note:'Fast grower. Delicate lacy leaves. Trim regularly.'}
 };
 
 // ===== STORAGE =====
@@ -190,9 +238,9 @@ function add_equip(tid, type, name, brand, notes) {
 function del_equip(id) { var d = ld(); d.equip = d.equip.filter(function(x){return x.id!==id;}); sv(d); }
 
 // ===== PLANTS =====
-function add_plant(tid, name, qty, added, notes) {
+function add_plant(tid, plant_id, pname, qty, added, notes) {
   var d = ld();
-  d.plants.push({id:gid(), tank_id:tid, name:name, qty:parseInt(qty)||1, added_date:added, notes:notes||''});
+  d.plants.push({id:gid(), tank_id:tid, plant_id:plant_id||'', name:pname, qty:parseInt(qty)||1, added_date:added, notes:notes||''});
   sv(d);
 }
 function del_plant(id) { var d = ld(); d.plants = d.plants.filter(function(x){return x.id!==id;}); sv(d); }
@@ -241,7 +289,29 @@ function get_water(tid) {
 }
 function last_r(tid) { var w = get_water(tid); return w.length ? w[w.length-1] : null; }
 
-// ===== RECOMMENDATIONS =====
+// ===== BIOLOAD =====
+function calc_bioload(tid) {
+  var d = ld(), total = 0;
+  d.stock.filter(function(x){ return x.tank_id === tid; }).forEach(function(s) {
+    var sp = SP[s.species_id];
+    if (sp) total += (sp.bioload || 2) * s.qty;
+  });
+  return total;
+}
+function max_bioload(gallons, plant_count) {
+  // Base: 1.5 units per gallon; planted tanks handle more
+  var mult = plant_count >= 5 ? 1.2 : plant_count >= 1 ? 1.1 : 1.0;
+  return Math.max(1, Math.round(gallons * 1.5 * mult));
+}
+function bioload_cls(cur, max_val) {
+  if (max_val === 0) return 'muted';
+  var pct = cur / max_val;
+  if (pct <= 0.7) return 'ok';
+  if (pct <= 1.0) return 'warn';
+  return 'danger';
+}
+
+// ===== RECOMMENDATIONS ENGINE =====
 function overlap(tid) {
   var d = ld(), items = d.stock.filter(function(x){return x.tank_id===tid;});
   if (!items.length) return null;
@@ -340,6 +410,9 @@ function no_tank() {
          '<button class="btn bp" onclick="do_add_tank()">Add Your First Tank</button></div>';
 }
 function today_str() { return new Date().toISOString().slice(0,10); }
+function scard(l, v, s) {
+  return '<div class="scard"><div class="slbl">' + l + '</div><div class="sval">' + v + '</div>' + (s ? '<div class="ssub">' + s + '</div>' : '') + '</div>';
+}
 
 // ===== TANK SELECTOR =====
 function build_sel() {
@@ -365,29 +438,41 @@ function r_dash() {
   var nt = tasks.length ? tasks[0] : null;
   var nt_txt = nt ? (esc(nt.name) + ' in ' + days_til(nt.next_due) + 'd') : 'None set';
   var lr = last_r(tid), rng = overlap(tid);
+  var pl_count = d.plants.filter(function(x){ return x.tank_id === tid; }).length;
+  var cur_bl = calc_bioload(tid);
+  var max_bl = max_bioload(tank.gallons, pl_count);
+  var bl_pct = max_bl > 0 ? Math.min(100, Math.round(cur_bl / max_bl * 100)) : 0;
+  var bl_cls = bioload_cls(cur_bl, max_bl);
+  var bl_color = bl_cls === 'ok' ? 'var(--ok)' : bl_cls === 'warn' ? 'var(--warn)' : 'var(--danger)';
+  var bl_sub = bl_pct + '% full' + (cur_bl > max_bl ? ' - OVER LIMIT' : '');
+
   var h = '<div class="dgrid">';
   h += scard('Tank Size', tank.gallons + ' gal', tank.liters + ' L');
   h += scard('Tank Age', age + ' days', 'since ' + tank.setup_date);
-  h += scard('Species', d.stock.filter(function(x){return x.tank_id===tid;}).length + ' added', '');
+  h += scard('Livestock', d.stock.filter(function(x){return x.tank_id===tid;}).length + ' entries', pl_count + ' plant species');
+  h += '<div class="scard"><div class="slbl">BIOLOAD</div>' +
+       '<div class="sval" style="color:' + bl_color + '">' + cur_bl + '<span style="font-size:14px;font-weight:400;color:var(--muted)"> / ' + max_bl + '</span></div>' +
+       '<div class="ssub">' + bl_sub + '</div></div>';
   h += scard('Next Task', nt_txt, '');
   h += '</div>';
+
   h += '<div class="card"><div class="ctitle">Last Water Reading';
   if (lr) h += '<small style="font-weight:400;color:var(--muted)"> ' + lr.date + '</small>';
   h += '</div>';
   if (lr) {
     var ps = [
-      {k:'temp_f',  l:'Temperature',  u:'°F', mn:rng&&rng.temp.ok?rng.temp.min:null, mx:rng&&rng.temp.ok?rng.temp.max:null, tox:false},
-      {k:'ammonia', l:'Ammonia',      u:'ppm',     mn:0,  mx:0,  tox:true},
-      {k:'nitrite', l:'Nitrite',      u:'ppm',     mn:0,  mx:0,  tox:true},
-      {k:'nitrate', l:'Nitrate',      u:'ppm',     mn:0,  mx:40, tox:false},
-      {k:'ph',      l:'pH',           u:'',        mn:rng&&rng.ph.ok?rng.ph.min:null, mx:rng&&rng.ph.ok?rng.ph.max:null, tox:false},
-      {k:'gh',      l:'Hardness (GH)',u:'',        mn:rng&&rng.gh.ok?rng.gh.min:null, mx:rng&&rng.gh.ok?rng.gh.max:null, tox:false}
+      {k:'temp_f',  l:'Temperature',   u:'°F', mn:rng&&rng.temp.ok?rng.temp.min:null, mx:rng&&rng.temp.ok?rng.temp.max:null, tox:false},
+      {k:'ammonia', l:'Ammonia',       u:'ppm', mn:0, mx:0, tox:true},
+      {k:'nitrite', l:'Nitrite',       u:'ppm', mn:0, mx:0, tox:true},
+      {k:'nitrate', l:'Nitrate',       u:'ppm', mn:0, mx:40, tox:false},
+      {k:'ph',      l:'pH',            u:'',    mn:rng&&rng.ph.ok?rng.ph.min:null, mx:rng&&rng.ph.ok?rng.ph.max:null, tox:false},
+      {k:'gh',      l:'Hardness (GH)', u:'',    mn:rng&&rng.gh.ok?rng.gh.min:null, mx:rng&&rng.gh.ok?rng.gh.max:null, tox:false}
     ];
     h += '<div class="tw"><table><tr><th>Parameter</th><th>Reading</th><th>Safe Range</th><th>Status</th></tr>';
     ps.forEach(function(p) {
       var val = lr[p.k], c = cls_val(val, p.mn, p.mx, p.tox);
-      var rng_txt = p.tox ? '0 ppm' : (p.mn !== null && p.mx !== null ? p.mn + '–' + p.mx + ' ' + p.u : '—');
-      h += '<tr><td>' + p.l + '</td><td>' + (val !== null ? val + ' ' + p.u : '—') + '</td><td style="color:var(--muted)">' + rng_txt + '</td><td>' + pill(c) + '</td></tr>';
+      var rng_txt = p.tox ? '0 ppm' : (p.mn !== null && p.mx !== null ? p.mn + '-' + p.mx + ' ' + p.u : '-');
+      h += '<tr><td>' + p.l + '</td><td>' + (val !== null ? val + ' ' + p.u : '-') + '</td><td style="color:var(--muted)">' + rng_txt + '</td><td>' + pill(c) + '</td></tr>';
     });
     h += '</table></div>';
   } else {
@@ -399,9 +484,6 @@ function r_dash() {
        '<button class="btn bg bs" onclick="do_edit_tank()">Edit Tank</button>' +
        '<button class="btn bd bs" onclick="do_del_tank()">Delete Tank</button></div>';
   el.innerHTML = h;
-}
-function scard(l, v, s) {
-  return '<div class="scard"><div class="slbl">' + l + '</div><div class="sval">' + v + '</div>' + (s ? '<div class="ssub">' + s + '</div>' : '') + '</div>';
 }
 
 // ===== LIFE TAB =====
@@ -426,9 +508,14 @@ function r_life() {
 
   h += '<div class="card"><div class="ctitle">Plants <button class="btn bp bs" onclick="do_add_plant()">+ Add</button></div>';
   if (pl.length) {
-    h += '<div class="tw"><table><tr><th>Plant</th><th>Qty</th><th>Added</th><th>Notes</th><th></th></tr>';
+    h += '<div class="tw"><table><tr><th>Plant</th><th>Qty</th><th>Light</th><th>CO2</th><th>Added</th><th>Notes</th><th></th></tr>';
     pl.forEach(function(p) {
-      h += '<tr><td>' + esc(p.name) + '</td><td>' + p.qty + '</td><td>' + p.added_date + '</td><td>' + esc(p.notes) + '</td>' +
+      var pd = PL[p.plant_id];
+      var light_txt = pd ? pd.light : '-';
+      var co2_txt = pd ? (pd.co2 ? '<span style="color:var(--warn);font-weight:700">Yes</span>' : 'No') : '-';
+      h += '<tr><td><strong>' + esc(p.name) + '</strong>' + (pd ? '<br><small style="color:var(--muted)">' + pd.diff + '</small>' : '') + '</td>' +
+           '<td>' + p.qty + '</td><td>' + light_txt + '</td><td>' + co2_txt + '</td>' +
+           '<td>' + p.added_date + '</td><td>' + esc(p.notes) + '</td>' +
            '<td><button class="btn bd bs" data-id="' + p.id + '" onclick="del_plant(this.dataset.id);r_life()">&#x2715;</button></td></tr>';
     });
     h += '</table></div>';
@@ -437,10 +524,18 @@ function r_life() {
 
   h += '<div class="card"><div class="ctitle">Livestock <button class="btn bp bs" onclick="do_add_stock()">+ Add</button></div>';
   if (sk.length) {
-    h += '<div class="tw"><table><tr><th>Species</th><th>Name</th><th>Qty</th><th>Added</th><th>Notes</th><th></th></tr>';
+    h += '<div class="tw"><table><tr><th>Species</th><th>Name</th><th>Qty</th><th>Bioload</th><th>Added</th><th>Notes</th><th></th></tr>';
     sk.forEach(function(s) {
       var sp = SP[s.species_id];
-      h += '<tr><td>' + (sp ? sp.name : 'Unknown') + '</td><td>' + esc(s.display_name) + '</td><td>' + s.qty + '</td><td>' + s.added_date + '</td><td>' + esc(s.notes) + '</td>' +
+      var bl = sp ? sp.bioload : 0;
+      var bl_color = bl <= 1 ? 'var(--ok)' : bl <= 3 ? 'var(--warn)' : 'var(--danger)';
+      var bl_lbl = bl <= 1 ? 'Low' : bl <= 3 ? 'Med' : 'High';
+      h += '<tr><td>' + (sp ? sp.name : 'Unknown') + '</td>' +
+           '<td>' + esc(s.display_name) + '</td>' +
+           '<td>' + s.qty + '</td>' +
+           '<td><span style="font-size:12px;font-weight:700;color:' + bl_color + '">' + bl_lbl + ' (' + bl + ')</span></td>' +
+           '<td>' + s.added_date + '</td>' +
+           '<td>' + esc(s.notes) + '</td>' +
            '<td><button class="btn bd bs" data-id="' + s.id + '" onclick="del_stock(this.dataset.id);r_life()">&#x2715;</button></td></tr>';
     });
     h += '</table></div>';
@@ -458,13 +553,13 @@ function r_wlog() {
     '<form id="wf" onsubmit="sub_water(event)">' +
     '<div class="frow">' +
     fg('Date', '<input type="date" name="date" value="' + td + '" required>') +
-    fg('Temperature (°F)', '<input type="number" name="tf" step="0.1" placeholder="e.g. 76" title="72–82°F for most tropical fish">') +
+    fg('Temperature (°F)', '<input type="number" name="tf" step="0.1" placeholder="e.g. 76" title="72-82F for most tropical fish">') +
     fg('Ammonia (ppm)', '<input type="number" name="nh3" step="0.01" placeholder="e.g. 0" title="Safe: 0 ppm. Any reading causes stress.">') +
     fg('Nitrite (ppm)', '<input type="number" name="no2" step="0.01" placeholder="e.g. 0" title="Safe: 0 ppm. Causes brown blood disease.">') +
     '</div><div class="frow">' +
     fg('Nitrate (ppm)', '<input type="number" name="no3" step="0.1" placeholder="e.g. 10" title="Keep below 20 ppm. Do a water change above 40.">') +
-    fg('pH', '<input type="number" name="ph" step="0.01" placeholder="e.g. 7.0" title="Most fish: 6.5–7.5. Check species requirements.">') +
-    fg('Hardness (GH)', '<input type="number" name="gh" step="0.1" placeholder="e.g. 8" title="Soft: 1–7, Medium: 8–12, Hard: 13+">') +
+    fg('pH', '<input type="number" name="ph" step="0.01" placeholder="e.g. 7.0" title="Most fish: 6.5-7.5. Check species requirements.">') +
+    fg('Hardness (GH)', '<input type="number" name="gh" step="0.1" placeholder="e.g. 8" title="Soft: 1-7, Medium: 8-12, Hard: 13+">') +
     fg('Notes', '<input type="text" name="notes" placeholder="Optional notes">') +
     '</div><button type="submit" class="btn bp">Save Reading</button></form></div>';
   var entries = get_water(tid);
@@ -481,7 +576,7 @@ function r_wlog() {
   }
   if (entries.length) {
     h += '<div class="card"><div class="ctitle">History</div><div class="tw"><table>' +
-      '<tr><th>Date</th><th>Temp °F</th><th>NH₃</th><th>NO₂</th><th>NO₃</th><th>pH</th><th>GH</th><th>Notes</th><th></th></tr>';
+      '<tr><th>Date</th><th>Temp F</th><th>NH3</th><th>NO2</th><th>NO3</th><th>pH</th><th>GH</th><th>Notes</th><th></th></tr>';
     entries.slice().reverse().slice(0, 30).forEach(function(e) {
       h += '<tr><td>' + e.date + '</td><td>' + nv(e.temp_f) + '</td><td>' + nv(e.ammonia) + '</td><td>' + nv(e.nitrite) + '</td><td>' + nv(e.nitrate) + '</td><td>' + nv(e.ph) + '</td><td>' + nv(e.gh) + '</td><td>' + esc(e.notes) + '</td>' +
            '<td><button class="btn bd bs" data-id="' + e.id + '" onclick="del_water(this.dataset.id);r_wlog()">&#x2715;</button></td></tr>';
@@ -545,13 +640,41 @@ function r_recs() {
   var tid = at(), d = ld(), el = document.getElementById('p-recs');
   if (!d.tanks.find(function(t){return t.id===tid;})) { el.innerHTML = no_tank(); return; }
   var sk = d.stock.filter(function(x){return x.tank_id===tid;});
+  var tank = d.tanks.find(function(t){ return t.id === tid; });
+  var pl_in_tank = d.plants.filter(function(x){ return x.tank_id === tid; });
+
+  // Bioload section (always shown)
+  var cur_bl = calc_bioload(tid);
+  var max_bl = max_bioload(tank ? tank.gallons : 0, pl_in_tank.length);
+  var bl_pct = max_bl > 0 ? Math.min(100, Math.round(cur_bl / max_bl * 100)) : 0;
+  var bl_cls = bioload_cls(cur_bl, max_bl);
+  var bl_bar_color = bl_cls === 'ok' ? 'var(--ok)' : bl_cls === 'warn' ? 'var(--warn)' : 'var(--danger)';
+  var bl_msg = bl_cls === 'danger' ? 'Overstocked! Reduce fish count or upgrade filtration.' :
+               bl_cls === 'warn'   ? 'Nearing capacity. Monitor water quality closely.' :
+                                     'Bioload is within safe range for this tank.';
+  var bl_msg_color = bl_cls === 'danger' ? 'var(--danger)' : bl_cls === 'warn' ? 'var(--warn)' : 'var(--ok)';
+
+  var h = '<div class="card"><div class="ctitle">Tank Bioload</div>';
+  h += '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">';
+  h += '<span style="font-size:22px;font-weight:700;color:var(--deep)">' + cur_bl + '</span>';
+  h += '<span style="font-size:14px;color:var(--muted)">/ ' + max_bl + ' units (' + bl_pct + '% capacity)</span></div>';
+  h += '<div class="bl-bar"><div class="bl-fill" style="width:' + bl_pct + '%;background:' + bl_bar_color + '"></div></div>';
+  h += '<p style="font-size:13px;color:' + bl_msg_color + ';margin-top:4px">' + bl_msg + '</p>';
+  if (pl_in_tank.length > 0) {
+    var bonus_txt = pl_in_tank.length >= 5 ? 'Heavily planted tank (+20% capacity bonus applied)' : 'Planted tank (+10% capacity bonus applied)';
+    h += '<p style="font-size:12px;color:var(--muted);margin-top:4px">' + bonus_txt + '</p>';
+  }
+  h += '<p style="font-size:11px;color:var(--muted);margin-top:6px">Bioload scale: 1=Very Low (shrimp/snails), 2=Low (small fish), 3=Medium, 4=High (cichlids), 5=Very High (goldfish)</p>';
+  h += '</div>';
+
   if (!sk.length) {
-    el.innerHTML = '<div class="card"><div class="empty-s"><h2>No Livestock Added</h2>' +
+    h += '<div class="card"><div class="empty-s"><h2>No Livestock Added</h2>' +
       '<p>Add fish or shrimp in the Equipment &amp; Life tab to see compatibility and parameter recommendations.</p></div></div>';
+    el.innerHTML = h;
     return;
   }
+
   var rng = overlap(tid), lr = last_r(tid);
-  var h = '';
   if (rng.all_ok) {
     h += '<div class="cok">&#x2713; All species in this tank are compatible</div>';
   } else {
@@ -566,28 +689,66 @@ function r_recs() {
       h += '</ul></div>';
     }
   }
-  h += '<div class="card"><div class="ctitle">Recommended Ranges for This Tank</div>' +
+
+  h += '<div class="card"><div class="ctitle">Recommended Water Parameters</div>' +
     '<div class="tw"><table><tr><th>Parameter</th><th>Safe Range</th><th>Current Reading</th><th>Status</th></tr>';
   var rp = [
-    {l:'Temperature', u:'°F', mn:rng.temp.ok?rng.temp.min:null, mx:rng.temp.ok?rng.temp.max:null, k:'temp_f',  tox:false},
-    {l:'Ammonia',     u:'ppm',    mn:0, mx:0,  k:'ammonia', tox:true},
-    {l:'Nitrite',     u:'ppm',    mn:0, mx:0,  k:'nitrite', tox:true},
-    {l:'Nitrate',     u:'ppm',    mn:0, mx:20, k:'nitrate', tox:false},
-    {l:'pH',          u:'',       mn:rng.ph.ok?rng.ph.min:null, mx:rng.ph.ok?rng.ph.max:null, k:'ph', tox:false},
-    {l:'Hardness (GH)',u:'',      mn:rng.gh.ok?rng.gh.min:null, mx:rng.gh.ok?rng.gh.max:null, k:'gh', tox:false}
+    {l:'Temperature', u:'F',  mn:rng.temp.ok?rng.temp.min:null, mx:rng.temp.ok?rng.temp.max:null, k:'temp_f',  tox:false},
+    {l:'Ammonia',     u:'ppm', mn:0, mx:0,  k:'ammonia', tox:true},
+    {l:'Nitrite',     u:'ppm', mn:0, mx:0,  k:'nitrite', tox:true},
+    {l:'Nitrate',     u:'ppm', mn:0, mx:20, k:'nitrate', tox:false},
+    {l:'pH',          u:'',    mn:rng.ph.ok?rng.ph.min:null, mx:rng.ph.ok?rng.ph.max:null, k:'ph', tox:false},
+    {l:'Hardness (GH)',u:'',   mn:rng.gh.ok?rng.gh.min:null, mx:rng.gh.ok?rng.gh.max:null, k:'gh', tox:false}
   ];
   rp.forEach(function(p) {
     var cur = lr ? lr[p.k] : null, c = cls_val(cur, p.mn, p.mx, p.tox);
-    var rt = p.tox ? '0 ' + p.u : (p.mn !== null && p.mx !== null ? p.mn + '–' + p.mx + (p.u?' '+p.u:'') : '—');
-    h += '<tr><td>' + p.l + '</td><td>' + rt + '</td><td>' + (cur !== null ? cur + (p.u?' '+p.u:'') : '—') + '</td><td>' + pill(c) + '</td></tr>';
+    var rt = p.tox ? '0 ' + p.u : (p.mn !== null && p.mx !== null ? p.mn + '-' + p.mx + (p.u?' '+p.u:'') : '-');
+    h += '<tr><td>' + p.l + '</td><td>' + rt + '</td><td>' + (cur !== null ? cur + (p.u?' '+p.u:'') : '-') + '</td><td>' + pill(c) + '</td></tr>';
   });
   h += '</table></div></div>';
+
   h += '<div class="card"><div class="ctitle">Per-Species Requirements</div>' +
-    '<div class="tw"><table><tr><th>Species</th><th>Temp (°F)</th><th>pH</th><th>Hardness (GH)</th><th>Notes</th></tr>';
+    '<div class="tw"><table><tr><th>Species</th><th>Temp (F)</th><th>pH</th><th>Hardness (GH)</th><th>Bioload</th><th>Notes</th></tr>';
   rng.sl.forEach(function(sp) {
-    h += '<tr><td><strong>' + esc(sp.name) + '</strong></td><td>' + sp.tmin + '–' + sp.tmax + '</td><td>' + sp.pmin + '–' + sp.pmax + '</td><td>' + sp.gmin + '–' + sp.gmax + '</td><td style="font-size:12px;color:var(--muted)">' + esc(sp.note) + '</td></tr>';
+    var bl_lbl = sp.bioload <= 1 ? 'Very Low' : sp.bioload <= 2 ? 'Low' : sp.bioload <= 3 ? 'Medium' : sp.bioload <= 4 ? 'High' : 'Very High';
+    h += '<tr><td><strong>' + esc(sp.name) + '</strong></td><td>' + sp.tmin + '-' + sp.tmax + '</td><td>' + sp.pmin + '-' + sp.pmax + '</td><td>' + sp.gmin + '-' + sp.gmax + '</td><td>' + bl_lbl + ' (' + sp.bioload + ')</td><td style="font-size:12px;color:var(--muted)">' + esc(sp.note) + '</td></tr>';
   });
   h += '</table></div></div>';
+
+  // Plant requirements section
+  if (pl_in_tank.length) {
+    var any_co2 = false;
+    pl_in_tank.forEach(function(p) { if (PL[p.plant_id] && PL[p.plant_id].co2) any_co2 = true; });
+    var fish_tmin = rng.temp.ok ? rng.temp.min : null;
+    var fish_tmax = rng.temp.ok ? rng.temp.max : null;
+
+    h += '<div class="card"><div class="ctitle">Plant Requirements</div>';
+    if (any_co2) {
+      h += '<div style="background:#fef3d5;border-radius:6px;padding:8px 12px;color:#8a5a00;font-size:13px;font-weight:600;margin-bottom:10px">&#x26A0; One or more plants require CO2 injection to thrive.</div>';
+    }
+    h += '<div class="tw"><table><tr><th>Plant</th><th>Temp (F)</th><th>Light</th><th>CO2</th><th>Difficulty</th><th>Care Note</th></tr>';
+    pl_in_tank.forEach(function(p) {
+      var pd = PL[p.plant_id];
+      if (pd) {
+        var temp_ok = true;
+        if (fish_tmin !== null && fish_tmax !== null) {
+          temp_ok = pd.tmax >= fish_tmin && pd.tmin <= fish_tmax;
+        }
+        var temp_style = temp_ok ? '' : ' style="color:var(--danger);font-weight:700"';
+        var temp_warn = temp_ok ? '' : ' &#x26A0;';
+        h += '<tr><td><strong>' + esc(p.name) + '</strong></td>' +
+             '<td' + temp_style + '>' + pd.tmin + '-' + pd.tmax + temp_warn + '</td>' +
+             '<td>' + pd.light + '</td>' +
+             '<td>' + (pd.co2 ? '<strong style="color:var(--warn)">Yes</strong>' : 'No') + '</td>' +
+             '<td>' + pd.diff + '</td>' +
+             '<td style="font-size:12px;color:var(--muted)">' + esc(pd.note) + '</td></tr>';
+      } else {
+        h += '<tr><td><strong>' + esc(p.name) + '</strong></td><td colspan="5" style="color:var(--muted)">Custom plant - no database info available</td></tr>';
+      }
+    });
+    h += '</table></div></div>';
+  }
+
   el.innerHTML = h;
 }
 
@@ -601,8 +762,8 @@ function do_add_tank() {
     '<form onsubmit="sub_add_tank(event)">' +
     fg('Tank Name', '<input type="text" name="name" placeholder="e.g. Living Room 20G" required>') +
     '<div class="frow">' +
-    fg('Gallons', '<input type="number" name="gal" id="mg" step="0.1" placeholder="20" required oninput="this.form.lit.value=Math.round(this.value*3.78541*10)/10">') +
-    fg('Litres',  '<input type="number" name="lit" id="ml" step="0.1" placeholder="75.7"       oninput="this.form.gal.value=Math.round(this.value/3.78541*10)/10">') +
+    fg('Gallons', '<input type="number" name="gal" step="0.1" placeholder="20" required oninput="this.form.lit.value=Math.round(this.value*3.78541*10)/10">') +
+    fg('Litres',  '<input type="number" name="lit" step="0.1" placeholder="75.7"       oninput="this.form.gal.value=Math.round(this.value/3.78541*10)/10">') +
     '</div>' +
     fg('Setup Date', '<input type="date" name="setup" value="' + td + '" required>') +
     fg('Notes', '<textarea name="notes" placeholder="Optional notes about your tank"></textarea>') +
@@ -621,8 +782,8 @@ function do_edit_tank() {
     '<form onsubmit="sub_edit_tank(event)">' +
     fg('Tank Name', '<input type="text" name="name" value="' + esc(t.name) + '" required>') +
     '<div class="frow">' +
-    fg('Gallons', '<input type="number" name="gal" id="eg" step="0.1" value="' + t.gallons + '" required oninput="this.form.lit.value=Math.round(this.value*3.78541*10)/10">') +
-    fg('Litres',  '<input type="number" name="lit" id="el" step="0.1" value="' + t.liters  + '"       oninput="this.form.gal.value=Math.round(this.value/3.78541*10)/10">') +
+    fg('Gallons', '<input type="number" name="gal" step="0.1" value="' + t.gallons + '" required oninput="this.form.lit.value=Math.round(this.value*3.78541*10)/10">') +
+    fg('Litres',  '<input type="number" name="lit" step="0.1" value="' + t.liters  + '"       oninput="this.form.gal.value=Math.round(this.value/3.78541*10)/10">') +
     '</div>' +
     fg('Setup Date', '<input type="date" name="setup" value="' + t.setup_date + '" required>') +
     fg('Notes', '<textarea name="notes">' + esc(t.notes) + '</textarea>') +
@@ -660,29 +821,76 @@ function sub_add_equip(e) {
   cm(); r_life();
 }
 
+// ===== PLANT MODAL =====
+function upd_plant_form(sel) {
+  var pid = sel.value;
+  var cname_row = document.getElementById('pl_cname_row');
+  var info_row = document.getElementById('pl_info_row');
+  var req_el = document.getElementById('pl_req');
+  var cname_inp = document.getElementById('pl_cname');
+  if (pid === '_custom') {
+    if (cname_row) cname_row.style.display = 'block';
+    if (cname_inp) cname_inp.required = true;
+    if (info_row) info_row.style.display = 'none';
+  } else {
+    if (cname_row) cname_row.style.display = 'none';
+    if (cname_inp) { cname_inp.required = false; }
+    var p = PL[pid];
+    if (p && req_el) {
+      var co2_str = p.co2 ? 'Required' : 'Not needed';
+      req_el.innerHTML = 'Temp: ' + p.tmin + '-' + p.tmax + 'F &nbsp;|&nbsp; Light: <strong>' + p.light + '</strong> &nbsp;|&nbsp; CO2: <strong>' + co2_str + '</strong> &nbsp;|&nbsp; ' + p.diff + '<br><span style="color:var(--muted)">' + esc(p.note) + '</span>';
+      if (info_row) info_row.style.display = 'block';
+    }
+  }
+}
+
 function do_add_plant() {
   var td = today_str();
-  om('<div class="mtitle">Add Plant</div>' +
+  var popts = Object.keys(PL)
+    .map(function(k){ return '<option value="' + k + '">' + PL[k].name + ' (' + PL[k].light + ' light' + (PL[k].co2 ? ', CO2' : '') + ')</option>'; })
+    .join('') + '<option value="_custom">-- Other / Custom Plant --</option>';
+  var h = '<div class="mtitle">Add Plant</div>' +
     '<form onsubmit="sub_add_plant(event)">' +
+    fg('Plant Species', '<select name="pid" onchange="upd_plant_form(this)">' + popts + '</select>') +
+    '<div id="pl_info_row" class="req-info" style="margin-bottom:10px"><div id="pl_req"></div></div>' +
+    '<div id="pl_cname_row" style="display:none;margin-bottom:10px">' +
+    fg('Custom Name', '<input type="text" name="cname" id="pl_cname" placeholder="Enter plant name">') +
+    '</div>' +
     '<div class="frow">' +
-    fg('Plant Name', '<input type="text" name="name" placeholder="e.g. Java Fern" required>') +
     fg('Quantity', '<input type="number" name="qty" value="1" min="1">') +
-    '</div><div class="frow">' +
     fg('Date Added', '<input type="date" name="added" value="' + td + '">') +
-    fg('Notes', '<input type="text" name="notes" placeholder="e.g. Low light plant">') +
-    '</div><div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Add</button></div>' +
-    '</form>');
+    '</div>' +
+    fg('Notes', '<input type="text" name="notes" placeholder="Optional">') +
+    '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Add</button></div>' +
+    '</form>';
+  om(h);
+  var sel_el = document.querySelector("#mb select[name=pid]");
+  if (sel_el) upd_plant_form(sel_el);
 }
 function sub_add_plant(e) {
   e.preventDefault(); var f = e.target;
-  add_plant(at(), f.name.value, f.qty.value, f.added.value, f.notes.value);
+  var pid = f.pid.value;
+  var pname;
+  if (pid === '_custom') {
+    pname = f.cname.value.trim();
+    if (!pname) { alert('Please enter a plant name.'); return; }
+    add_plant(at(), '', pname, f.qty.value, f.added.value, f.notes.value);
+  } else {
+    pname = PL[pid] ? PL[pid].name : pid;
+    add_plant(at(), pid, pname, f.qty.value, f.added.value, f.notes.value);
+  }
   cm(); r_life();
 }
 
+// ===== LIVESTOCK MODAL =====
 function do_add_stock() {
   var td = today_str();
   var sopts = Object.keys(SP).sort(function(a,b){ return SP[a].name.localeCompare(SP[b].name); })
-    .map(function(k){ return '<option value="' + k + '">' + SP[k].name + '</option>'; }).join('');
+    .map(function(k){
+      var bl = SP[k].bioload;
+      var bl_lbl = bl <= 1 ? 'Low' : bl <= 3 ? 'Med' : 'High';
+      return '<option value="' + k + '">' + SP[k].name + ' (Bioload: ' + bl_lbl + ')</option>';
+    }).join('');
   om('<div class="mtitle">Add Livestock</div>' +
     '<form onsubmit="sub_add_stock(event)">' +
     '<div class="frow">' +
