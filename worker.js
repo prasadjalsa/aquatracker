@@ -470,7 +470,7 @@ function r_wlog() {
   var entries = get_water(tid);
   if (entries.length >= 2) {
     h += '<div class="card"><div class="ctitle" style="gap:10px">Trend ' +
-      '<select id="cpsel" onchange="draw_chart(\'' + tid + '\',this.value)">' +
+      '<select id="cpsel" onchange="draw_chart(at(),this.value)">' +
       '<option value="temp_f">Temperature</option>' +
       '<option value="ammonia">Ammonia</option>' +
       '<option value="nitrite">Nitrite</option>' +
@@ -601,8 +601,8 @@ function do_add_tank() {
     '<form onsubmit="sub_add_tank(event)">' +
     fg('Tank Name', '<input type="text" name="name" placeholder="e.g. Living Room 20G" required>') +
     '<div class="frow">' +
-    fg('Gallons', '<input type="number" name="gal" id="mg" step="0.1" placeholder="20" required oninput="document.getElementById(\'ml\').value=Math.round(this.value*3.78541*10)/10">') +
-    fg('Litres',  '<input type="number" name="lit" id="ml" step="0.1" placeholder="75.7"       oninput="document.getElementById(\'mg\').value=Math.round(this.value/3.78541*10)/10">') +
+    fg('Gallons', '<input type="number" name="gal" id="mg" step="0.1" placeholder="20" required oninput="this.form.lit.value=Math.round(this.value*3.78541*10)/10">') +
+    fg('Litres',  '<input type="number" name="lit" id="ml" step="0.1" placeholder="75.7"       oninput="this.form.gal.value=Math.round(this.value/3.78541*10)/10">') +
     '</div>' +
     fg('Setup Date', '<input type="date" name="setup" value="' + td + '" required>') +
     fg('Notes', '<textarea name="notes" placeholder="Optional notes about your tank"></textarea>') +
@@ -621,8 +621,8 @@ function do_edit_tank() {
     '<form onsubmit="sub_edit_tank(event)">' +
     fg('Tank Name', '<input type="text" name="name" value="' + esc(t.name) + '" required>') +
     '<div class="frow">' +
-    fg('Gallons', '<input type="number" name="gal" id="eg" step="0.1" value="' + t.gallons + '" required oninput="document.getElementById(\'el\').value=Math.round(this.value*3.78541*10)/10">') +
-    fg('Litres',  '<input type="number" name="lit" id="el" step="0.1" value="' + t.liters  + '"       oninput="document.getElementById(\'eg\').value=Math.round(this.value/3.78541*10)/10">') +
+    fg('Gallons', '<input type="number" name="gal" id="eg" step="0.1" value="' + t.gallons + '" required oninput="this.form.lit.value=Math.round(this.value*3.78541*10)/10">') +
+    fg('Litres',  '<input type="number" name="lit" id="el" step="0.1" value="' + t.liters  + '"       oninput="this.form.gal.value=Math.round(this.value/3.78541*10)/10">') +
     '</div>' +
     fg('Setup Date', '<input type="date" name="setup" value="' + t.setup_date + '" required>') +
     fg('Notes', '<textarea name="notes">' + esc(t.notes) + '</textarea>') +
