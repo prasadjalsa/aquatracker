@@ -64,7 +64,7 @@ tr:hover td{background:#f9fbfc}
 .chart-wrap{position:relative;height:260px;margin-top:12px}
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:14px}
 .overlay.on{display:flex}
-.mbox{background:#fff;border-radius:var(--r);padding:22px;width:100%;max-width:500px;max-height:92vh;overflow-y:auto}
+.mbox{background:#fff;border-radius:var(--r);padding:22px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto}
 .mtitle{font-size:16px;font-weight:700;color:var(--deep);margin-bottom:14px}
 .mact{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
 .empty-s{text-align:center;padding:40px 16px;color:var(--muted)}
@@ -77,10 +77,12 @@ tr:hover td{background:#f9fbfc}
 .ssub{font-size:11px;color:var(--muted);margin-top:1px}
 .cok{background:#d4f5e5;border-radius:var(--r);padding:10px 14px;color:#1a7a4a;font-weight:600;margin-bottom:12px;font-size:14px}
 .cwarn{background:#fde0e0;border-radius:var(--r);padding:10px 14px;color:#a01818;font-weight:600;margin-bottom:12px;font-size:14px}
+.cinfo{background:#e8f4fb;border-radius:var(--r);padding:10px 14px;color:#1a5a7a;font-weight:600;margin-bottom:12px;font-size:14px}
 .emsg{color:var(--muted);font-size:13px;padding:4px 0}
 .bl-bar{background:#eef0f3;border-radius:20px;height:10px;overflow:hidden;margin:6px 0 4px}
 .bl-fill{height:100%;border-radius:20px;transition:width .3s}
-.req-info{background:#f5f8fb;border-radius:6px;padding:8px 10px;font-size:12px;color:var(--muted);margin-top:4px}
+.cfg-box{background:#f5f8fb;border-radius:6px;padding:8px 12px;font-size:12px;color:var(--muted);margin-top:6px}
+.cfg-sep{height:1px;background:#eef0f3;margin:8px 0}
 @media(max-width:600px){
   .logo{font-size:14px}
   .panel{padding:10px}
@@ -121,7 +123,7 @@ tr:hover td{background:#f9fbfc}
 
 <script>
 // ===== SPECIES DATABASE (37 species) =====
-// bioload scale: 1=very low (shrimp/snails), 2=low (small fish), 3=medium, 4=high, 5=very high
+// bioload: 1=very low (shrimp/snails), 2=low, 3=medium, 4=high, 5=very high
 var SP = {
   betta:             {name:'Betta',              tmin:72,tmax:86,pmin:6.0,pmax:8.0,gmin:1, gmax:15,bioload:2,note:'Keep males alone or in a sorority.'},
   neon_tetra:        {name:'Neon Tetra',          tmin:70,tmax:77,pmin:4.0,pmax:7.5,gmin:1, gmax:12,bioload:1,note:'School of 6+. Sensitive to nitrates.'},
@@ -230,12 +232,41 @@ function del_tank(id) {
 }
 
 // ===== EQUIPMENT =====
-function add_equip(tid, type, name, brand, notes) {
+function add_equip(tid, type, name, brand, notes, config) {
   var d = ld();
-  d.equip.push({id:gid(), tank_id:tid, type:type, name:name, brand:brand||'', notes:notes||''});
+  d.equip.push({id:gid(), tank_id:tid, type:type, name:name, brand:brand||'', notes:notes||'', config:config||{}});
+  sv(d);
+}
+function upd_equip(id, type, name, brand, notes, config) {
+  var d = ld();
+  d.equip = d.equip.map(function(e) {
+    return e.id === id ? Object.assign({}, e, {type:type, name:name, brand:brand||'', notes:notes||'', config:config||{}}) : e;
+  });
   sv(d);
 }
 function del_equip(id) { var d = ld(); d.equip = d.equip.filter(function(x){return x.id!==id;}); sv(d); }
+
+function eq_cfg_txt(eq) {
+  var cfg = eq.config || {};
+  if (eq.type === 'Light') {
+    var w = cfg.watts ? cfg.watts + 'W' : '';
+    var s = cfg.spectrum || '';
+    var h = cfg.hours ? cfg.hours + 'h/day' : '';
+    return [w, s, h].filter(function(x){return x;}).join(', ') || '-';
+  }
+  if (eq.type === 'Filter') {
+    var g = cfg.flow_gph ? cfg.flow_gph + ' GPH' : '';
+    var st = cfg.style || '';
+    return [g, st].filter(function(x){return x;}).join(', ') || '-';
+  }
+  if (eq.type === 'CO2 System') {
+    var ct = cfg.co2_type || '';
+    var ch = cfg.hours ? cfg.hours + 'h/day' : '';
+    var cb = cfg.bps ? cfg.bps + ' BPS' : '';
+    return [ct, ch, cb].filter(function(x){return x;}).join(', ') || '-';
+  }
+  return '-';
+}
 
 // ===== PLANTS =====
 function add_plant(tid, plant_id, pname, qty, added, notes) {
@@ -299,7 +330,6 @@ function calc_bioload(tid) {
   return total;
 }
 function max_bioload(gallons, plant_count) {
-  // Base: 1.5 units per gallon; planted tanks handle more
   var mult = plant_count >= 5 ? 1.2 : plant_count >= 1 ? 1.1 : 1.0;
   return Math.max(1, Math.round(gallons * 1.5 * mult));
 }
@@ -309,6 +339,89 @@ function bioload_cls(cur, max_val) {
   if (pct <= 0.7) return 'ok';
   if (pct <= 1.0) return 'warn';
   return 'danger';
+}
+
+// ===== EQUIPMENT HELPERS =====
+function get_filter_mult(tid) {
+  var d = ld();
+  var tank = d.tanks.find(function(t){ return t.id === tid; });
+  if (!tank || !tank.gallons) return 1.0;
+  var filters = d.equip.filter(function(x){
+    return x.tank_id === tid && x.type === 'Filter' && x.config && x.config.flow_gph > 0;
+  });
+  if (!filters.length) return 1.0;
+  var total_gph = 0;
+  filters.forEach(function(f){ total_gph += (f.config.flow_gph || 0); });
+  var turnover = total_gph / tank.gallons;
+  if (turnover < 4) return 0.85;
+  if (turnover > 6) return 1.1;
+  return 1.0;
+}
+function get_light_hours(tid) {
+  var d = ld(), max_h = 0;
+  d.equip.filter(function(x){ return x.tank_id === tid && x.type === 'Light'; })
+    .forEach(function(l){ if (l.config && l.config.hours > max_h) max_h = l.config.hours; });
+  return max_h;
+}
+function get_co2_info(tid) {
+  var d = ld();
+  var co2 = d.equip.filter(function(x){ return x.tank_id === tid && x.type === 'CO2 System'; });
+  if (!co2.length) return null;
+  var cfg = co2[0].config || {};
+  return {type: cfg.co2_type || 'CO2', hours: cfg.hours || 0, bps: cfg.bps || 0};
+}
+
+// ===== RECOMMENDED MAINTENANCE TASKS =====
+function get_rec_tasks(tid) {
+  var d = ld();
+  var tank = d.tanks.find(function(t){ return t.id === tid; });
+  if (!tank) return [];
+  var pl_count = d.plants.filter(function(x){ return x.tank_id === tid; }).length;
+  var filter_mult = get_filter_mult(tid);
+  var cur_bl = calc_bioload(tid);
+  var max_bl = Math.round(max_bioload(tank.gallons, pl_count) * filter_mult);
+  var bl_ratio = max_bl > 0 ? cur_bl / max_bl : 0;
+  var recs = [];
+
+  var wc_freq = bl_ratio >= 0.8 ? 3 : bl_ratio >= 0.5 ? 7 : 14;
+  var wc_why = bl_ratio >= 0.8 ? 'High bioload - frequent changes critical' :
+               bl_ratio >= 0.5 ? 'Weekly changes maintain water quality' : 'Light stocking - bi-weekly is fine';
+  recs.push({type:'Water Change', name:'25% Water Change', freq:wc_freq, why:wc_why});
+
+  var fc_freq = bl_ratio >= 0.7 ? 14 : 30;
+  recs.push({type:'Filter Clean', name:'Filter Media Rinse', freq:fc_freq,
+    why:'Rinse in tank water (not tap) to preserve beneficial bacteria'});
+
+  var wt_freq = bl_ratio >= 0.7 ? 7 : 14;
+  recs.push({type:'Water Test', name:'Water Parameter Test', freq:wt_freq,
+    why:'Test NH3, NO2, NO3 and pH to catch issues early'});
+
+  recs.push({type:'Glass Wipe', name:'Glass and Algae Clean', freq:7,
+    why:'Weekly wipe prevents algae from taking hold'});
+
+  recs.push({type:'Gravel Vac', name:'Gravel Vacuum', freq:14,
+    why:'Removes waste and detritus from substrate'});
+
+  if (pl_count > 0) {
+    recs.push({type:'Pruning', name:'Plant Trim and Maintenance', freq:14,
+      why:'Trim overgrowth and remove dead or yellowing leaves'});
+  }
+
+  var co2_equip = d.equip.filter(function(x){
+    return x.tank_id === tid && x.type === 'CO2 System' && x.config &&
+           x.config.co2_type && x.config.co2_type.indexOf('Pressurized') !== -1;
+  });
+  if (co2_equip.length) {
+    recs.push({type:'Other', name:'CO2 Bottle Level Check', freq:30,
+      why:'Monthly check prevents unexpected CO2 loss mid-day'});
+  }
+
+  return recs;
+}
+
+function add_rec_task(type, name, freq) {
+  add_task(at(), type, name, parseInt(freq), today_str(), 'Recommended task');
+  r_maint();
 }
 
 // ===== RECOMMENDATIONS ENGINE =====
@@ -348,6 +461,9 @@ function pill(c) {
   var lbl = c === 'muted' ? 'NO DATA' : c.toUpperCase();
   return '<span class="pill p' + c + '">' + lbl + '</span>';
 }
+function pill_lbl(c, lbl) {
+  return '<span class="pill p' + c + '">' + lbl + '</span>';
+}
 
 // ===== CHART =====
 var ch_inst = null;
@@ -356,7 +472,7 @@ function draw_chart(tid, param) {
   if (ch_inst) { ch_inst.destroy(); ch_inst = null; }
   var cv = document.getElementById('wc');
   if (!cv || entries.length < 2) return;
-  var lmap = {temp_f:'Temperature (°F)', ammonia:'Ammonia (ppm)', nitrite:'Nitrite (ppm)', nitrate:'Nitrate (ppm)', ph:'pH', gh:'Hardness (GH)'};
+  var lmap = {temp_f:'Temperature (F)', ammonia:'Ammonia (ppm)', nitrite:'Nitrite (ppm)', nitrate:'Nitrate (ppm)', ph:'pH', gh:'Hardness (GH)'};
   ch_inst = new Chart(cv.getContext('2d'), {
     type: 'line',
     data: {
@@ -427,12 +543,22 @@ function build_sel() {
   });
 }
 
+// ===== TAB SWITCHER =====
+function switch_tab(t) {
+  document.querySelectorAll('.tab').forEach(function(b){ b.classList.remove('on'); });
+  document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('on'); });
+  document.querySelectorAll('.tab').forEach(function(b){ if (b.dataset.t === t) b.classList.add('on'); });
+  cur_tab = t;
+  document.getElementById('p-' + cur_tab).classList.add('on');
+  render_tab();
+}
+
 // ===== DASHBOARD =====
 function r_dash() {
   var tid = at(), d = ld(), el = document.getElementById('p-dash');
   var tank = d.tanks.find(function(t){ return t.id === tid; });
   if (!tank) { el.innerHTML = no_tank(); return; }
-  var age = Math.max(0, Math.floor((Date.now() - new Date(tank.setup_date + 'T00:00:00').getTime()) / 86400000));
+
   var tasks = d.tasks.filter(function(x){ return x.tank_id === tid; })
     .sort(function(a,b){ return days_til(a.next_due) - days_til(b.next_due); });
   var nt = tasks.length ? tasks[0] : null;
@@ -440,19 +566,34 @@ function r_dash() {
   var lr = last_r(tid), rng = overlap(tid);
   var pl_count = d.plants.filter(function(x){ return x.tank_id === tid; }).length;
   var cur_bl = calc_bioload(tid);
-  var max_bl = max_bioload(tank.gallons, pl_count);
+  var filter_mult = get_filter_mult(tid);
+  var max_bl = Math.round(max_bioload(tank.gallons, pl_count) * filter_mult);
   var bl_pct = max_bl > 0 ? Math.min(100, Math.round(cur_bl / max_bl * 100)) : 0;
   var bl_cls = bioload_cls(cur_bl, max_bl);
   var bl_color = bl_cls === 'ok' ? 'var(--ok)' : bl_cls === 'warn' ? 'var(--warn)' : 'var(--danger)';
-  var bl_sub = bl_pct + '% full' + (cur_bl > max_bl ? ' - OVER LIMIT' : '');
 
-  var h = '<div class="dgrid">';
+  var h = '';
+
+  // Maintenance banner
+  var overdue = tasks.filter(function(x){ return days_til(x.next_due) < 0; });
+  var due_today = tasks.filter(function(x){ return days_til(x.next_due) === 0; });
+  if (overdue.length > 0 || due_today.length > 0) {
+    var msg_parts = [];
+    if (overdue.length) msg_parts.push(overdue.length + ' task' + (overdue.length > 1 ? 's' : '') + ' overdue');
+    if (due_today.length) msg_parts.push(due_today.length + ' due today');
+    h += '<div class="cwarn" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px">' +
+         '<span>&#x26A0; Maintenance reminder: ' + msg_parts.join(', ') + '.</span>' +
+         '<button class="btn bd bs" data-sw="maint" onclick="switch_tab(this.dataset.sw)">View Tasks</button></div>';
+  }
+
+  h += '<div class="dgrid">';
   h += scard('Tank Size', tank.gallons + ' gal', tank.liters + ' L');
+  var age = Math.max(0, Math.floor((Date.now() - new Date(tank.setup_date + 'T00:00:00').getTime()) / 86400000));
   h += scard('Tank Age', age + ' days', 'since ' + tank.setup_date);
   h += scard('Livestock', d.stock.filter(function(x){return x.tank_id===tid;}).length + ' entries', pl_count + ' plant species');
   h += '<div class="scard"><div class="slbl">BIOLOAD</div>' +
        '<div class="sval" style="color:' + bl_color + '">' + cur_bl + '<span style="font-size:14px;font-weight:400;color:var(--muted)"> / ' + max_bl + '</span></div>' +
-       '<div class="ssub">' + bl_sub + '</div></div>';
+       '<div class="ssub">' + bl_pct + '% full' + (cur_bl > max_bl ? ' - OVER LIMIT' : '') + '</div></div>';
   h += scard('Next Task', nt_txt, '');
   h += '</div>';
 
@@ -461,7 +602,7 @@ function r_dash() {
   h += '</div>';
   if (lr) {
     var ps = [
-      {k:'temp_f',  l:'Temperature',   u:'°F', mn:rng&&rng.temp.ok?rng.temp.min:null, mx:rng&&rng.temp.ok?rng.temp.max:null, tox:false},
+      {k:'temp_f',  l:'Temperature',   u:'F',  mn:rng&&rng.temp.ok?rng.temp.min:null, mx:rng&&rng.temp.ok?rng.temp.max:null, tox:false},
       {k:'ammonia', l:'Ammonia',       u:'ppm', mn:0, mx:0, tox:true},
       {k:'nitrite', l:'Nitrite',       u:'ppm', mn:0, mx:0, tox:true},
       {k:'nitrate', l:'Nitrate',       u:'ppm', mn:0, mx:40, tox:false},
@@ -471,8 +612,8 @@ function r_dash() {
     h += '<div class="tw"><table><tr><th>Parameter</th><th>Reading</th><th>Safe Range</th><th>Status</th></tr>';
     ps.forEach(function(p) {
       var val = lr[p.k], c = cls_val(val, p.mn, p.mx, p.tox);
-      var rng_txt = p.tox ? '0 ppm' : (p.mn !== null && p.mx !== null ? p.mn + '-' + p.mx + ' ' + p.u : '-');
-      h += '<tr><td>' + p.l + '</td><td>' + (val !== null ? val + ' ' + p.u : '-') + '</td><td style="color:var(--muted)">' + rng_txt + '</td><td>' + pill(c) + '</td></tr>';
+      var rng_txt = p.tox ? '0 ppm' : (p.mn !== null && p.mx !== null ? p.mn + '-' + p.mx + (p.u?' '+p.u:'') : '-');
+      h += '<tr><td>' + p.l + '</td><td>' + (val !== null ? val + (p.u?' '+p.u:'') : '-') + '</td><td style="color:var(--muted)">' + rng_txt + '</td><td>' + pill(c) + '</td></tr>';
     });
     h += '</table></div>';
   } else {
@@ -497,10 +638,15 @@ function r_life() {
 
   h += '<div class="card"><div class="ctitle">Equipment <button class="btn bp bs" onclick="do_add_equip()">+ Add</button></div>';
   if (eq.length) {
-    h += '<div class="tw"><table><tr><th>Type</th><th>Name</th><th>Brand</th><th>Notes</th><th></th></tr>';
+    h += '<div class="tw"><table><tr><th>Type</th><th>Name</th><th>Brand</th><th>Configuration</th><th>Notes</th><th></th></tr>';
     eq.forEach(function(e) {
-      h += '<tr><td>' + esc(e.type) + '</td><td>' + esc(e.name) + '</td><td>' + esc(e.brand) + '</td><td>' + esc(e.notes) + '</td>' +
-           '<td><button class="btn bd bs" data-id="' + e.id + '" onclick="del_equip(this.dataset.id);r_life()">&#x2715;</button></td></tr>';
+      var cfg_txt = eq_cfg_txt(e);
+      h += '<tr><td>' + esc(e.type) + '</td><td>' + esc(e.name) + '</td><td>' + esc(e.brand) + '</td>' +
+           '<td style="font-size:12px;color:' + (cfg_txt === '-' ? 'var(--muted)' : 'var(--text)') + '">' + esc(cfg_txt) + '</td>' +
+           '<td>' + esc(e.notes) + '</td>' +
+           '<td style="white-space:nowrap">' +
+           '<button class="btn bg bs" data-id="' + e.id + '" onclick="do_edit_equip(this.dataset.id)">Edit</button> ' +
+           '<button class="btn bd bs" data-id="' + e.id + '" onclick="del_equip(this.dataset.id);r_life()">&#x2715;</button></td></tr>';
     });
     h += '</table></div>';
   } else h += '<p class="emsg">No equipment added yet.</p>';
@@ -531,11 +677,9 @@ function r_life() {
       var bl_color = bl <= 1 ? 'var(--ok)' : bl <= 3 ? 'var(--warn)' : 'var(--danger)';
       var bl_lbl = bl <= 1 ? 'Low' : bl <= 3 ? 'Med' : 'High';
       h += '<tr><td>' + (sp ? sp.name : 'Unknown') + '</td>' +
-           '<td>' + esc(s.display_name) + '</td>' +
-           '<td>' + s.qty + '</td>' +
+           '<td>' + esc(s.display_name) + '</td><td>' + s.qty + '</td>' +
            '<td><span style="font-size:12px;font-weight:700;color:' + bl_color + '">' + bl_lbl + ' (' + bl + ')</span></td>' +
-           '<td>' + s.added_date + '</td>' +
-           '<td>' + esc(s.notes) + '</td>' +
+           '<td>' + s.added_date + '</td><td>' + esc(s.notes) + '</td>' +
            '<td><button class="btn bd bs" data-id="' + s.id + '" onclick="del_stock(this.dataset.id);r_life()">&#x2715;</button></td></tr>';
     });
     h += '</table></div>';
@@ -553,32 +697,30 @@ function r_wlog() {
     '<form id="wf" onsubmit="sub_water(event)">' +
     '<div class="frow">' +
     fg('Date', '<input type="date" name="date" value="' + td + '" required>') +
-    fg('Temperature (°F)', '<input type="number" name="tf" step="0.1" placeholder="e.g. 76" title="72-82F for most tropical fish">') +
-    fg('Ammonia (ppm)', '<input type="number" name="nh3" step="0.01" placeholder="e.g. 0" title="Safe: 0 ppm. Any reading causes stress.">') +
-    fg('Nitrite (ppm)', '<input type="number" name="no2" step="0.01" placeholder="e.g. 0" title="Safe: 0 ppm. Causes brown blood disease.">') +
+    fg('Temperature (F)', '<input type="number" name="tf" step="0.1" placeholder="e.g. 76">') +
+    fg('Ammonia (ppm)', '<input type="number" name="nh3" step="0.01" placeholder="e.g. 0">') +
+    fg('Nitrite (ppm)', '<input type="number" name="no2" step="0.01" placeholder="e.g. 0">') +
     '</div><div class="frow">' +
-    fg('Nitrate (ppm)', '<input type="number" name="no3" step="0.1" placeholder="e.g. 10" title="Keep below 20 ppm. Do a water change above 40.">') +
-    fg('pH', '<input type="number" name="ph" step="0.01" placeholder="e.g. 7.0" title="Most fish: 6.5-7.5. Check species requirements.">') +
-    fg('Hardness (GH)', '<input type="number" name="gh" step="0.1" placeholder="e.g. 8" title="Soft: 1-7, Medium: 8-12, Hard: 13+">') +
+    fg('Nitrate (ppm)', '<input type="number" name="no3" step="0.1" placeholder="e.g. 10">') +
+    fg('pH', '<input type="number" name="ph" step="0.01" placeholder="e.g. 7.0">') +
+    fg('Hardness (GH)', '<input type="number" name="gh" step="0.1" placeholder="e.g. 8">') +
     fg('Notes', '<input type="text" name="notes" placeholder="Optional notes">') +
     '</div><button type="submit" class="btn bp">Save Reading</button></form></div>';
   var entries = get_water(tid);
   if (entries.length >= 2) {
     h += '<div class="card"><div class="ctitle" style="gap:10px">Trend ' +
       '<select id="cpsel" onchange="draw_chart(at(),this.value)">' +
-      '<option value="temp_f">Temperature</option>' +
-      '<option value="ammonia">Ammonia</option>' +
-      '<option value="nitrite">Nitrite</option>' +
-      '<option value="nitrate">Nitrate</option>' +
-      '<option value="ph">pH</option>' +
-      '<option value="gh">Hardness</option>' +
+      '<option value="temp_f">Temperature</option><option value="ammonia">Ammonia</option>' +
+      '<option value="nitrite">Nitrite</option><option value="nitrate">Nitrate</option>' +
+      '<option value="ph">pH</option><option value="gh">Hardness</option>' +
       '</select></div><div class="chart-wrap"><canvas id="wc"></canvas></div></div>';
   }
   if (entries.length) {
     h += '<div class="card"><div class="ctitle">History</div><div class="tw"><table>' +
       '<tr><th>Date</th><th>Temp F</th><th>NH3</th><th>NO2</th><th>NO3</th><th>pH</th><th>GH</th><th>Notes</th><th></th></tr>';
     entries.slice().reverse().slice(0, 30).forEach(function(e) {
-      h += '<tr><td>' + e.date + '</td><td>' + nv(e.temp_f) + '</td><td>' + nv(e.ammonia) + '</td><td>' + nv(e.nitrite) + '</td><td>' + nv(e.nitrate) + '</td><td>' + nv(e.ph) + '</td><td>' + nv(e.gh) + '</td><td>' + esc(e.notes) + '</td>' +
+      h += '<tr><td>' + e.date + '</td><td>' + nv(e.temp_f) + '</td><td>' + nv(e.ammonia) + '</td><td>' + nv(e.nitrite) + '</td>' +
+           '<td>' + nv(e.nitrate) + '</td><td>' + nv(e.ph) + '</td><td>' + nv(e.gh) + '</td><td>' + esc(e.notes) + '</td>' +
            '<td><button class="btn bd bs" data-id="' + e.id + '" onclick="del_water(this.dataset.id);r_wlog()">&#x2715;</button></td></tr>';
     });
     h += '</table></div></div>';
@@ -597,36 +739,66 @@ function r_maint() {
   var tid = at(), d = ld(), el = document.getElementById('p-maint');
   if (!d.tanks.find(function(t){return t.id===tid;})) { el.innerHTML = no_tank(); return; }
   var td = today_str();
-  var h = '<div class="card"><div class="ctitle">Add Maintenance Task</div>' +
-    '<form id="mf" onsubmit="sub_task(event)">' +
-    '<div class="frow">' +
-    fg('Task Type', '<select name="type"><option>Water Change</option><option>Filter Clean</option><option>Gravel Vac</option><option>Glass Wipe</option><option>Fertilizer</option><option>Pruning</option><option>Water Test</option><option>Other</option></select>') +
-    fg('Task Name', '<input type="text" name="name" placeholder="e.g. 25% water change" required>') +
-    fg('Every (days)', '<input type="number" name="freq" value="7" min="1" required title="How many days between each task">') +
-    fg('Last Done', '<input type="date" name="last" value="' + td + '" required>') +
-    '</div>' +
-    fg('Notes', '<input type="text" name="notes" placeholder="Optional">') +
-    '<button type="submit" class="btn bp" style="margin-top:8px">Add Task</button></form></div>';
+  var existing_types = d.tasks.filter(function(x){ return x.tank_id === tid; }).map(function(t){ return t.type; });
+  var rec_tasks = get_rec_tasks(tid);
+  var h = '';
+
+  // Recommended tasks card
+  h += '<div class="card"><div class="ctitle">Recommended Schedule <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:6px">Based on your setup</span></div>';
+  if (rec_tasks.length) {
+    h += '<div class="tw"><table><tr><th>Task</th><th>Frequency</th><th>Why</th><th></th></tr>';
+    rec_tasks.forEach(function(t) {
+      var already = existing_types.indexOf(t.type) !== -1;
+      h += '<tr><td><strong>' + esc(t.name) + '</strong></td>' +
+           '<td style="white-space:nowrap">Every ' + t.freq + ' days</td>' +
+           '<td style="font-size:12px;color:var(--muted)">' + esc(t.why) + '</td><td>';
+      if (already) {
+        h += '<span class="pill pok">&#x2713; Added</span>';
+      } else {
+        h += '<button class="btn bp bs" data-rtype="' + esc(t.type) + '" data-rname="' + esc(t.name) + '" data-rfreq="' + t.freq + '" onclick="add_rec_task(this.dataset.rtype,this.dataset.rname,this.dataset.rfreq)">+ Add</button>';
+      }
+      h += '</td></tr>';
+    });
+    h += '</table></div>';
+  } else {
+    h += '<p class="emsg">Add a tank with livestock to see personalized recommendations.</p>';
+  }
+  h += '</div>';
+
+  // Existing tasks
   var tasks = d.tasks.filter(function(x){return x.tank_id===tid;})
     .map(function(t){ return Object.assign({}, t, {days: days_til(t.next_due)}); })
     .sort(function(a,b){ return a.days - b.days; });
   if (tasks.length) {
-    h += '<div class="card"><div class="ctitle">Upcoming Tasks</div><div class="tw"><table>' +
+    h += '<div class="card"><div class="ctitle">Your Schedule</div><div class="tw"><table>' +
       '<tr><th>Task</th><th>Type</th><th>Due</th><th>Last Done</th><th>Every</th><th></th></tr>';
     tasks.forEach(function(t) {
       var cls = ucls(t.days);
       var due = t.days < 0 ? ('Overdue ' + Math.abs(t.days) + 'd') : t.days === 0 ? 'Today' : ('In ' + t.days + 'd');
       h += '<tr class="trow ' + cls + '"><td><strong>' + esc(t.name) + '</strong>' +
            (t.notes ? '<br><small style="color:var(--muted)">' + esc(t.notes) + '</small>' : '') +
-           '</td><td>' + esc(t.type) + '</td><td><strong>' + due + '</strong><br><small style="color:var(--muted)">' + t.next_due + '</small></td><td>' + t.last_done + '</td><td>' + t.freq + 'd</td>' +
+           '</td><td>' + esc(t.type) + '</td>' +
+           '<td><strong>' + due + '</strong><br><small style="color:var(--muted)">' + t.next_due + '</small></td>' +
+           '<td>' + t.last_done + '</td><td>' + t.freq + 'd</td>' +
            '<td style="white-space:nowrap">' +
            '<button class="btn bp bs" data-id="' + t.id + '" onclick="mark_done(this.dataset.id);r_maint()">Done</button> ' +
            '<button class="btn bd bs" data-id="' + t.id + '" onclick="del_task(this.dataset.id);r_maint()">&#x2715;</button></td></tr>';
     });
     h += '</table></div></div>';
-  } else {
-    h += '<div class="card"><p class="emsg">No tasks yet. Add one above to track your maintenance schedule.</p></div>';
   }
+
+  // Add custom task form
+  h += '<div class="card"><div class="ctitle">Add Custom Task</div>' +
+    '<form id="mf" onsubmit="sub_task(event)">' +
+    '<div class="frow">' +
+    fg('Task Type', '<select name="type"><option>Water Change</option><option>Filter Clean</option><option>Gravel Vac</option><option>Glass Wipe</option><option>Fertilizer</option><option>Pruning</option><option>Water Test</option><option>Other</option></select>') +
+    fg('Task Name', '<input type="text" name="name" placeholder="e.g. 25% water change" required>') +
+    fg('Every (days)', '<input type="number" name="freq" value="7" min="1" required>') +
+    fg('Last Done', '<input type="date" name="last" value="' + td + '" required>') +
+    '</div>' +
+    fg('Notes', '<input type="text" name="notes" placeholder="Optional">') +
+    '<button type="submit" class="btn bp" style="margin-top:8px">Add Task</button></form></div>';
+
   el.innerHTML = h;
 }
 function sub_task(e) {
@@ -639,39 +811,97 @@ function sub_task(e) {
 function r_recs() {
   var tid = at(), d = ld(), el = document.getElementById('p-recs');
   if (!d.tanks.find(function(t){return t.id===tid;})) { el.innerHTML = no_tank(); return; }
-  var sk = d.stock.filter(function(x){return x.tank_id===tid;});
   var tank = d.tanks.find(function(t){ return t.id === tid; });
   var pl_in_tank = d.plants.filter(function(x){ return x.tank_id === tid; });
-
-  // Bioload section (always shown)
+  var sk = d.stock.filter(function(x){return x.tank_id===tid;});
+  var light_hours = get_light_hours(tid);
+  var co2_info = get_co2_info(tid);
+  var filter_mult = get_filter_mult(tid);
   var cur_bl = calc_bioload(tid);
-  var max_bl = max_bioload(tank ? tank.gallons : 0, pl_in_tank.length);
+  var max_bl = Math.round(max_bioload(tank ? tank.gallons : 0, pl_in_tank.length) * filter_mult);
   var bl_pct = max_bl > 0 ? Math.min(100, Math.round(cur_bl / max_bl * 100)) : 0;
   var bl_cls = bioload_cls(cur_bl, max_bl);
   var bl_bar_color = bl_cls === 'ok' ? 'var(--ok)' : bl_cls === 'warn' ? 'var(--warn)' : 'var(--danger)';
-  var bl_msg = bl_cls === 'danger' ? 'Overstocked! Reduce fish count or upgrade filtration.' :
-               bl_cls === 'warn'   ? 'Nearing capacity. Monitor water quality closely.' :
-                                     'Bioload is within safe range for this tank.';
-  var bl_msg_color = bl_cls === 'danger' ? 'var(--danger)' : bl_cls === 'warn' ? 'var(--warn)' : 'var(--ok)';
+  var h = '';
 
-  var h = '<div class="card"><div class="ctitle">Tank Bioload</div>';
+  // Bioload card
+  h += '<div class="card"><div class="ctitle">Tank Bioload</div>';
   h += '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">';
   h += '<span style="font-size:22px;font-weight:700;color:var(--deep)">' + cur_bl + '</span>';
   h += '<span style="font-size:14px;color:var(--muted)">/ ' + max_bl + ' units (' + bl_pct + '% capacity)</span></div>';
   h += '<div class="bl-bar"><div class="bl-fill" style="width:' + bl_pct + '%;background:' + bl_bar_color + '"></div></div>';
-  h += '<p style="font-size:13px;color:' + bl_msg_color + ';margin-top:4px">' + bl_msg + '</p>';
-  if (pl_in_tank.length > 0) {
-    var bonus_txt = pl_in_tank.length >= 5 ? 'Heavily planted tank (+20% capacity bonus applied)' : 'Planted tank (+10% capacity bonus applied)';
-    h += '<p style="font-size:12px;color:var(--muted);margin-top:4px">' + bonus_txt + '</p>';
+  var bl_msg = bl_cls === 'danger' ? 'Overstocked! Reduce fish count or upgrade filtration.' :
+               bl_cls === 'warn'   ? 'Nearing capacity. Monitor water quality closely.' : 'Bioload is within safe range.';
+  var bl_mc = bl_cls === 'danger' ? 'var(--danger)' : bl_cls === 'warn' ? 'var(--warn)' : 'var(--ok)';
+  h += '<p style="font-size:13px;color:' + bl_mc + ';margin-top:4px">' + bl_msg + '</p>';
+  if (filter_mult !== 1.0) {
+    var fmsg = filter_mult < 1.0 ? 'Filter underperforming: capacity reduced by 15%. Upgrade filter to increase capacity.' : 'High-flow filter: +10% capacity bonus applied.';
+    h += '<p style="font-size:12px;color:' + (filter_mult < 1.0 ? 'var(--danger)' : 'var(--ok)') + ';margin-top:4px">' + fmsg + '</p>';
   }
-  h += '<p style="font-size:11px;color:var(--muted);margin-top:6px">Bioload scale: 1=Very Low (shrimp/snails), 2=Low (small fish), 3=Medium, 4=High (cichlids), 5=Very High (goldfish)</p>';
+  if (pl_in_tank.length > 0) {
+    h += '<p style="font-size:12px;color:var(--muted);margin-top:4px">' + (pl_in_tank.length >= 5 ? 'Heavily planted (+20%)' : 'Planted tank (+10%)') + ' capacity bonus applied.</p>';
+  }
+  h += '<p style="font-size:11px;color:var(--muted);margin-top:6px">Scale: 1=Very Low, 2=Low, 3=Medium, 4=High, 5=Very High</p>';
   h += '</div>';
+
+  // Equipment check card
+  var filters_eq = d.equip.filter(function(x){ return x.tank_id === tid && x.type === 'Filter'; });
+  var lights_eq = d.equip.filter(function(x){ return x.tank_id === tid && x.type === 'Light'; });
+  var total_gph = 0;
+  filters_eq.forEach(function(f){ if (f.config && f.config.flow_gph) total_gph += f.config.flow_gph; });
+  var turnover = tank && tank.gallons && total_gph > 0 ? Math.round(total_gph / tank.gallons * 10) / 10 : 0;
+  var needs_co2_plant = pl_in_tank.some(function(p){ return PL[p.plant_id] && PL[p.plant_id].co2; });
+  var needs_high_light = pl_in_tank.some(function(p){ return PL[p.plant_id] && PL[p.plant_id].light === 'High'; });
+
+  h += '<div class="card"><div class="ctitle">Equipment Check</div>';
+  // Filter row
+  h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:13px">';
+  h += '<span style="font-weight:600;min-width:50px">Filter:</span>';
+  if (total_gph > 0 && tank) {
+    var turn_cls = turnover < 4 ? 'pdanger' : turnover < 6 ? 'pwarn' : 'pok';
+    var turn_lbl = turnover < 4 ? 'Low flow' : turnover < 6 ? 'OK' : 'Excellent';
+    h += '<span>' + total_gph + ' GPH &mdash; ' + turnover + 'x turnover/hr</span> ' + pill_lbl(turn_cls, turn_lbl);
+    if (turnover < 4 && tank) h += '<span style="font-size:12px;color:var(--danger);margin-left:8px">Needs ' + Math.ceil(tank.gallons * 4) + '+ GPH</span>';
+  } else if (filters_eq.length) {
+    h += '<span style="color:var(--muted)">Filter added. Set GPH in equipment to see turnover rate.</span>';
+  } else {
+    h += '<span style="color:var(--muted)">No filter configured.</span>';
+  }
+  h += '</div>';
+  // Light row
+  h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:13px">';
+  h += '<span style="font-weight:600;min-width:50px">Light:</span>';
+  if (light_hours > 0) {
+    var light_ok = !needs_high_light || light_hours >= 8;
+    h += '<span>' + light_hours + ' hours/day</span>';
+    if (needs_high_light && light_hours < 8) h += ' <span style="color:var(--danger);font-size:12px">High-light plants need 8+ hours</span>';
+    else if (light_hours >= 8) h += ' ' + pill_lbl('pok', 'Good');
+    else h += ' ' + pill_lbl('pwarn', 'Moderate');
+  } else if (lights_eq.length) {
+    h += '<span style="color:var(--muted)">Light added. Set hours/day in equipment config.</span>';
+  } else {
+    h += '<span style="color:var(--muted)">No light configured.</span>';
+  }
+  h += '</div>';
+  // CO2 row
+  h += '<div style="display:flex;align-items:center;gap:8px;font-size:13px">';
+  h += '<span style="font-weight:600;min-width:50px">CO2:</span>';
+  if (co2_info) {
+    h += '<span>' + esc(co2_info.type) + (co2_info.hours ? ', ' + co2_info.hours + 'h/day' : '') + (co2_info.bps ? ', ' + co2_info.bps + ' BPS' : '') + '</span> ' + pill_lbl('pok', 'Active');
+    if (light_hours > 0 && co2_info.hours > 0 && co2_info.hours < light_hours) {
+      h += '<span style="font-size:12px;color:var(--warn);margin-left:8px">Tip: run CO2 1h before lights, stop 1h before lights off</span>';
+    }
+  } else if (needs_co2_plant) {
+    h += '<span style="color:var(--danger)">No CO2 system added, but plants require it.</span>';
+  } else {
+    h += '<span style="color:var(--muted)">No CO2 system.</span>';
+  }
+  h += '</div></div>';
 
   if (!sk.length) {
     h += '<div class="card"><div class="empty-s"><h2>No Livestock Added</h2>' +
-      '<p>Add fish or shrimp in the Equipment &amp; Life tab to see compatibility and parameter recommendations.</p></div></div>';
-    el.innerHTML = h;
-    return;
+      '<p>Add fish or shrimp in the Equipment &amp; Life tab to see parameter recommendations.</p></div></div>';
+    el.innerHTML = h; return;
   }
 
   var rng = overlap(tid), lr = last_r(tid);
@@ -693,40 +923,39 @@ function r_recs() {
   h += '<div class="card"><div class="ctitle">Recommended Water Parameters</div>' +
     '<div class="tw"><table><tr><th>Parameter</th><th>Safe Range</th><th>Current Reading</th><th>Status</th></tr>';
   var rp = [
-    {l:'Temperature', u:'F',  mn:rng.temp.ok?rng.temp.min:null, mx:rng.temp.ok?rng.temp.max:null, k:'temp_f',  tox:false},
-    {l:'Ammonia',     u:'ppm', mn:0, mx:0,  k:'ammonia', tox:true},
-    {l:'Nitrite',     u:'ppm', mn:0, mx:0,  k:'nitrite', tox:true},
+    {l:'Temperature', u:'F',   mn:rng.temp.ok?rng.temp.min:null, mx:rng.temp.ok?rng.temp.max:null, k:'temp_f',  tox:false},
+    {l:'Ammonia',     u:'ppm', mn:0, mx:0, k:'ammonia', tox:true},
+    {l:'Nitrite',     u:'ppm', mn:0, mx:0, k:'nitrite', tox:true},
     {l:'Nitrate',     u:'ppm', mn:0, mx:20, k:'nitrate', tox:false},
     {l:'pH',          u:'',    mn:rng.ph.ok?rng.ph.min:null, mx:rng.ph.ok?rng.ph.max:null, k:'ph', tox:false},
     {l:'Hardness (GH)',u:'',   mn:rng.gh.ok?rng.gh.min:null, mx:rng.gh.ok?rng.gh.max:null, k:'gh', tox:false}
   ];
   rp.forEach(function(p) {
     var cur = lr ? lr[p.k] : null, c = cls_val(cur, p.mn, p.mx, p.tox);
-    var rt = p.tox ? '0 ' + p.u : (p.mn !== null && p.mx !== null ? p.mn + '-' + p.mx + (p.u?' '+p.u:'') : '-');
+    var rt = p.tox ? '0 ppm' : (p.mn !== null && p.mx !== null ? p.mn + '-' + p.mx + (p.u?' '+p.u:'') : '-');
     h += '<tr><td>' + p.l + '</td><td>' + rt + '</td><td>' + (cur !== null ? cur + (p.u?' '+p.u:'') : '-') + '</td><td>' + pill(c) + '</td></tr>';
   });
   h += '</table></div></div>';
 
   h += '<div class="card"><div class="ctitle">Per-Species Requirements</div>' +
-    '<div class="tw"><table><tr><th>Species</th><th>Temp (F)</th><th>pH</th><th>Hardness (GH)</th><th>Bioload</th><th>Notes</th></tr>';
+    '<div class="tw"><table><tr><th>Species</th><th>Temp (F)</th><th>pH</th><th>Hardness</th><th>Bioload</th><th>Notes</th></tr>';
   rng.sl.forEach(function(sp) {
     var bl_lbl = sp.bioload <= 1 ? 'Very Low' : sp.bioload <= 2 ? 'Low' : sp.bioload <= 3 ? 'Medium' : sp.bioload <= 4 ? 'High' : 'Very High';
-    h += '<tr><td><strong>' + esc(sp.name) + '</strong></td><td>' + sp.tmin + '-' + sp.tmax + '</td><td>' + sp.pmin + '-' + sp.pmax + '</td><td>' + sp.gmin + '-' + sp.gmax + '</td><td>' + bl_lbl + ' (' + sp.bioload + ')</td><td style="font-size:12px;color:var(--muted)">' + esc(sp.note) + '</td></tr>';
+    h += '<tr><td><strong>' + esc(sp.name) + '</strong></td><td>' + sp.tmin + '-' + sp.tmax + '</td>' +
+         '<td>' + sp.pmin + '-' + sp.pmax + '</td><td>' + sp.gmin + '-' + sp.gmax + '</td>' +
+         '<td>' + bl_lbl + ' (' + sp.bioload + ')</td>' +
+         '<td style="font-size:12px;color:var(--muted)">' + esc(sp.note) + '</td></tr>';
   });
   h += '</table></div></div>';
 
-  // Plant requirements section
   if (pl_in_tank.length) {
-    var any_co2 = false;
-    pl_in_tank.forEach(function(p) { if (PL[p.plant_id] && PL[p.plant_id].co2) any_co2 = true; });
     var fish_tmin = rng.temp.ok ? rng.temp.min : null;
     var fish_tmax = rng.temp.ok ? rng.temp.max : null;
-
     h += '<div class="card"><div class="ctitle">Plant Requirements</div>';
-    if (any_co2) {
-      h += '<div style="background:#fef3d5;border-radius:6px;padding:8px 12px;color:#8a5a00;font-size:13px;font-weight:600;margin-bottom:10px">&#x26A0; One or more plants require CO2 injection to thrive.</div>';
+    if (needs_co2_plant && !co2_info) {
+      h += '<div style="background:#fef3d5;border-radius:6px;padding:8px 12px;color:#8a5a00;font-size:13px;font-weight:600;margin-bottom:10px">&#x26A0; One or more plants require CO2 injection. Add CO2 System equipment.</div>';
     }
-    h += '<div class="tw"><table><tr><th>Plant</th><th>Temp (F)</th><th>Light</th><th>CO2</th><th>Difficulty</th><th>Care Note</th></tr>';
+    h += '<div class="tw"><table><tr><th>Plant</th><th>Temp (F)</th><th>Light Needed</th><th>CO2</th><th>Difficulty</th><th>Care Note</th></tr>';
     pl_in_tank.forEach(function(p) {
       var pd = PL[p.plant_id];
       if (pd) {
@@ -734,16 +963,15 @@ function r_recs() {
         if (fish_tmin !== null && fish_tmax !== null) {
           temp_ok = pd.tmax >= fish_tmin && pd.tmin <= fish_tmax;
         }
-        var temp_style = temp_ok ? '' : ' style="color:var(--danger);font-weight:700"';
-        var temp_warn = temp_ok ? '' : ' &#x26A0;';
+        var light_warn = (pd.light === 'High' && light_hours > 0 && light_hours < 8) ? ' &#x26A0;' : '';
         h += '<tr><td><strong>' + esc(p.name) + '</strong></td>' +
-             '<td' + temp_style + '>' + pd.tmin + '-' + pd.tmax + temp_warn + '</td>' +
-             '<td>' + pd.light + '</td>' +
+             '<td' + (temp_ok ? '' : ' style="color:var(--danger);font-weight:700"') + '>' + pd.tmin + '-' + pd.tmax + (temp_ok ? '' : ' &#x26A0;') + '</td>' +
+             '<td>' + pd.light + light_warn + '</td>' +
              '<td>' + (pd.co2 ? '<strong style="color:var(--warn)">Yes</strong>' : 'No') + '</td>' +
              '<td>' + pd.diff + '</td>' +
              '<td style="font-size:12px;color:var(--muted)">' + esc(pd.note) + '</td></tr>';
       } else {
-        h += '<tr><td><strong>' + esc(p.name) + '</strong></td><td colspan="5" style="color:var(--muted)">Custom plant - no database info available</td></tr>';
+        h += '<tr><td><strong>' + esc(p.name) + '</strong></td><td colspan="5" style="color:var(--muted)">Custom plant - no database info</td></tr>';
       }
     });
     h += '</table></div></div>';
@@ -756,6 +984,7 @@ function r_recs() {
 function om(h) { document.getElementById('mb').innerHTML = h; document.getElementById('ov').classList.add('on'); }
 function cm() { document.getElementById('ov').classList.remove('on'); }
 
+// ===== TANK MODALS =====
 function do_add_tank() {
   var td = today_str();
   om('<div class="mtitle">Add Tank</div>' +
@@ -775,7 +1004,6 @@ function sub_add_tank(e) {
   add_tank(f.name.value, f.gal.value, f.setup.value, f.notes.value);
   cm(); init();
 }
-
 function do_edit_tank() {
   var t = ld().tanks.find(function(x){ return x.id === at(); }); if (!t) return;
   om('<div class="mtitle">Edit Tank</div>' +
@@ -795,7 +1023,6 @@ function sub_edit_tank(e) {
   upd_tank(at(), f.name.value, f.gal.value, f.setup.value, f.notes.value);
   cm(); init();
 }
-
 function do_del_tank() {
   var t = ld().tanks.find(function(x){ return x.id === at(); }); if (!t) return;
   om('<div class="mtitle">Delete Tank</div>' +
@@ -803,21 +1030,108 @@ function do_del_tank() {
     '<div class="mact"><button class="btn bg" onclick="cm()">Cancel</button><button class="btn bd" onclick="del_tank(at());cm();init()">Delete</button></div>');
 }
 
+// ===== EQUIPMENT MODALS =====
+function upd_equip_form(sel) {
+  var t = sel.value;
+  var ld_div = document.getElementById('eq_light_cfg');
+  var fi_div = document.getElementById('eq_filter_cfg');
+  var co_div = document.getElementById('eq_co2_cfg');
+  if (ld_div) ld_div.style.display = t === 'Light' ? 'block' : 'none';
+  if (fi_div) fi_div.style.display = t === 'Filter' ? 'block' : 'none';
+  if (co_div) co_div.style.display = t === 'CO2 System' ? 'block' : 'none';
+}
+
+function build_equip_cfg_html(type, cfg) {
+  var light_d = type === 'Light' ? 'block' : 'none';
+  var filt_d = type === 'Filter' ? 'block' : 'none';
+  var co2_d = type === 'CO2 System' ? 'block' : 'none';
+  var c = cfg || {};
+  var spec_opts = ['WRGB','White','RGB','Plant/Full Spectrum','Basic Fluorescent']
+    .map(function(o){ return '<option' + (c.spectrum === o ? ' selected' : '') + '>' + o + '</option>'; }).join('');
+  var fst_opts = ['Canister','HOB (Hang-on-Back)','Sponge','Internal','Sump']
+    .map(function(o){ return '<option' + (c.style === o ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('');
+  var co2_opts = ['Pressurized / Paintball','DIY Yeast','Liquid Supplement']
+    .map(function(o){ return '<option' + (c.co2_type === o ? ' selected' : '') + '>' + o + '</option>'; }).join('');
+  return '<div id="eq_light_cfg" style="display:' + light_d + '">' +
+    '<div class="cfg-sep"></div><div style="font-size:12px;font-weight:600;color:var(--mid);margin-bottom:6px">Light Settings</div>' +
+    '<div class="frow">' +
+    fg('Wattage (W)', '<input type="number" name="light_watts" value="' + (c.watts||'') + '" placeholder="e.g. 34" min="0">') +
+    fg('Spectrum', '<select name="light_spectrum">' + spec_opts + '</select>') +
+    fg('Hours / Day', '<input type="number" name="light_hours" value="' + (c.hours||'') + '" placeholder="e.g. 7" min="0" max="24">') +
+    '</div></div>' +
+    '<div id="eq_filter_cfg" style="display:' + filt_d + '">' +
+    '<div class="cfg-sep"></div><div style="font-size:12px;font-weight:600;color:var(--mid);margin-bottom:6px">Filter Settings</div>' +
+    '<div class="frow">' +
+    fg('Flow Rate (GPH)', '<input type="number" name="filter_gph" value="' + (c.flow_gph||'') + '" placeholder="e.g. 180" min="0">') +
+    fg('Filter Style', '<select name="filter_style">' + fst_opts + '</select>') +
+    '</div></div>' +
+    '<div id="eq_co2_cfg" style="display:' + co2_d + '">' +
+    '<div class="cfg-sep"></div><div style="font-size:12px;font-weight:600;color:var(--mid);margin-bottom:6px">CO2 Settings</div>' +
+    '<div class="frow">' +
+    fg('CO2 Type', '<select name="co2_type">' + co2_opts + '</select>') +
+    fg('Hours / Day', '<input type="number" name="co2_hours" value="' + (c.hours||'') + '" placeholder="e.g. 5" min="0" max="24">') +
+    fg('Bubble Rate (BPS)', '<input type="number" name="co2_bps" value="' + (c.bps||'') + '" placeholder="e.g. 2" min="0" step="0.5">') +
+    '</div></div>';
+}
+
+function read_equip_cfg(f) {
+  var t = f.type.value, cfg = {};
+  if (t === 'Light') {
+    cfg.watts = parseFloat(f.light_watts.value) || 0;
+    cfg.spectrum = f.light_spectrum.value;
+    cfg.hours = parseFloat(f.light_hours.value) || 0;
+  } else if (t === 'Filter') {
+    cfg.flow_gph = parseFloat(f.filter_gph.value) || 0;
+    cfg.style = f.filter_style.value;
+  } else if (t === 'CO2 System') {
+    cfg.co2_type = f.co2_type.value;
+    cfg.hours = parseFloat(f.co2_hours.value) || 0;
+    cfg.bps = parseFloat(f.co2_bps.value) || 0;
+  }
+  return cfg;
+}
+
 function do_add_equip() {
+  var type_opts = '<option>Filter</option><option>Heater</option><option>Light</option><option>CO2 System</option><option>Pump</option><option>Substrate</option><option>Thermometer</option><option>Other</option>';
   om('<div class="mtitle">Add Equipment</div>' +
     '<form onsubmit="sub_add_equip(event)">' +
     '<div class="frow">' +
-    fg('Type', '<select name="type"><option>Filter</option><option>Heater</option><option>Light</option><option>CO2 System</option><option>Pump</option><option>Substrate</option><option>Thermometer</option><option>Other</option></select>') +
+    fg('Type', '<select name="type" onchange="upd_equip_form(this)">' + type_opts + '</select>') +
     fg('Name / Model', '<input type="text" name="name" placeholder="e.g. Fluval 307" required>') +
     '</div><div class="frow">' +
     fg('Brand', '<input type="text" name="brand" placeholder="e.g. Fluval">') +
     fg('Notes', '<input type="text" name="notes" placeholder="Optional">') +
-    '</div><div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Add</button></div>' +
+    '</div>' +
+    build_equip_cfg_html('Filter', {}) +
+    '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Add</button></div>' +
     '</form>');
 }
 function sub_add_equip(e) {
   e.preventDefault(); var f = e.target;
-  add_equip(at(), f.type.value, f.name.value, f.brand.value, f.notes.value);
+  add_equip(at(), f.type.value, f.name.value, f.brand.value, f.notes.value, read_equip_cfg(f));
+  cm(); r_life();
+}
+
+function do_edit_equip(eid) {
+  var eq = ld().equip.find(function(x){ return x.id === eid; }); if (!eq) return;
+  var type_opts = ['Filter','Heater','Light','CO2 System','Pump','Substrate','Thermometer','Other']
+    .map(function(o){ return '<option' + (eq.type === o ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('');
+  om('<div class="mtitle">Edit Equipment</div>' +
+    '<form data-id="' + eid + '" onsubmit="sub_edit_equip(event)">' +
+    '<div class="frow">' +
+    fg('Type', '<select name="type" onchange="upd_equip_form(this)">' + type_opts + '</select>') +
+    fg('Name / Model', '<input type="text" name="name" value="' + esc(eq.name) + '" required>') +
+    '</div><div class="frow">' +
+    fg('Brand', '<input type="text" name="brand" value="' + esc(eq.brand) + '">') +
+    fg('Notes', '<input type="text" name="notes" value="' + esc(eq.notes) + '">') +
+    '</div>' +
+    build_equip_cfg_html(eq.type, eq.config) +
+    '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Save</button></div>' +
+    '</form>');
+}
+function sub_edit_equip(e) {
+  e.preventDefault(); var f = e.target;
+  upd_equip(f.dataset.id, f.type.value, f.name.value, f.brand.value, f.notes.value, read_equip_cfg(f));
   cm(); r_life();
 }
 
@@ -834,7 +1148,7 @@ function upd_plant_form(sel) {
     if (info_row) info_row.style.display = 'none';
   } else {
     if (cname_row) cname_row.style.display = 'none';
-    if (cname_inp) { cname_inp.required = false; }
+    if (cname_inp) cname_inp.required = false;
     var p = PL[pid];
     if (p && req_el) {
       var co2_str = p.co2 ? 'Required' : 'Not needed';
@@ -843,16 +1157,15 @@ function upd_plant_form(sel) {
     }
   }
 }
-
 function do_add_plant() {
   var td = today_str();
   var popts = Object.keys(PL)
     .map(function(k){ return '<option value="' + k + '">' + PL[k].name + ' (' + PL[k].light + ' light' + (PL[k].co2 ? ', CO2' : '') + ')</option>'; })
     .join('') + '<option value="_custom">-- Other / Custom Plant --</option>';
-  var h = '<div class="mtitle">Add Plant</div>' +
+  om('<div class="mtitle">Add Plant</div>' +
     '<form onsubmit="sub_add_plant(event)">' +
     fg('Plant Species', '<select name="pid" onchange="upd_plant_form(this)">' + popts + '</select>') +
-    '<div id="pl_info_row" class="req-info" style="margin-bottom:10px"><div id="pl_req"></div></div>' +
+    '<div id="pl_info_row" class="cfg-box" style="margin-bottom:10px"><div id="pl_req"></div></div>' +
     '<div id="pl_cname_row" style="display:none;margin-bottom:10px">' +
     fg('Custom Name', '<input type="text" name="cname" id="pl_cname" placeholder="Enter plant name">') +
     '</div>' +
@@ -862,22 +1175,19 @@ function do_add_plant() {
     '</div>' +
     fg('Notes', '<input type="text" name="notes" placeholder="Optional">') +
     '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Add</button></div>' +
-    '</form>';
-  om(h);
+    '</form>');
   var sel_el = document.querySelector("#mb select[name=pid]");
   if (sel_el) upd_plant_form(sel_el);
 }
 function sub_add_plant(e) {
   e.preventDefault(); var f = e.target;
   var pid = f.pid.value;
-  var pname;
   if (pid === '_custom') {
-    pname = f.cname.value.trim();
+    var pname = f.cname.value.trim();
     if (!pname) { alert('Please enter a plant name.'); return; }
     add_plant(at(), '', pname, f.qty.value, f.added.value, f.notes.value);
   } else {
-    pname = PL[pid] ? PL[pid].name : pid;
-    add_plant(at(), pid, pname, f.qty.value, f.added.value, f.notes.value);
+    add_plant(at(), pid, PL[pid] ? PL[pid].name : pid, f.qty.value, f.added.value, f.notes.value);
   }
   cm(); r_life();
 }
