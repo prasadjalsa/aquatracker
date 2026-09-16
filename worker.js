@@ -324,8 +324,16 @@ function ts_ago(ts) {
 
 // ===== NITROGEN CYCLE TRACKER =====
 function cycle_status(tid) {
-  var entries = get_water(tid);
-  if (!entries.length) return {phase:0, pct:5, label:'Not started', color:'#9ca3af', desc:'Add an ammonia source (pure ammonia, fish food, or a few hardy starter fish) and log your first water test to begin tracking.'};
+  var d = ld(), entries = get_water(tid);
+  var tank = d.tanks.find(function(t){ return t.id === tid; }) || {};
+  var chk = tank.setup_chk || {};
+  var has_fish = d.stock.filter(function(s){ return s.tank_id === tid; }).length > 0;
+  var has_source = has_fish || chk.cycle_src;
+
+  if (!entries.length) {
+    if (!has_source) return {phase:0, pct:5, label:'Not started', color:'#9ca3af', desc:'Add an ammonia source (pure ammonia, fish food, or a few hardy starter fish) and log your first water test to begin tracking.'};
+    return {phase:0, pct:15, label:'Cycling', color:'#4db8d4', desc:'Ammonia source detected (fish or manual). Log your first water test to start tracking cycle progress.'};
+  }
   var last = entries[entries.length - 1];
   var nh3 = last.ammonia, no2 = last.nitrite, no3 = last.nitrate;
   if (nh3 === null && no2 === null) return {phase:0, pct:10, label:'Monitoring', color:'#9ca3af', desc:'Log ammonia and nitrite readings to track cycle progress.'};
@@ -737,7 +745,7 @@ function r_cycle_card(tid) {
     sv(d2);
   }
   if (age > 180 && cyc.phase === 4) return '';
-  var steps = ['No source', 'NH3 spike', 'NO2 spike', 'NO2 falling', 'Cycled'];
+  var steps = ['Pre-cycle', 'NH3 spike', 'NO2 spike', 'NO2 falling', 'Cycled'];
   var h = '<div class="card" style="border-left:4px solid ' + cyc.color + '">';
   h += '<div class="ctitle">Nitrogen Cycle Tracker' +
        '<span class="pill" style="background:' + cyc.color + ';color:#fff;font-size:12px">' + cyc.label + '</span></div>';
