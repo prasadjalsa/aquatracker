@@ -33,6 +33,7 @@ self.addEventListener('activate', e => {
 });
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  if (!e.request.url.startsWith('http')) return;
   if (e.request.mode === 'navigate') {
     e.respondWith(fetch(e.request).then(r => {
       if (r.ok) { var rc = r.clone(); caches.open(CACHE).then(c => c.put(e.request, rc)); }
@@ -54,6 +55,7 @@ const APP_HTML = `<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0a2342">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="AquaTracker">
 <link rel="manifest" href="/manifest.json">
@@ -1549,7 +1551,7 @@ function r_life() {
       h += '<tr><td><strong>' + esc(p.name) + '</strong>' + (pd ? '<br><small style="color:var(--muted)">' + pd.diff + '</small>' : '') + '</td>' +
            '<td>' + p.qty + '</td><td>' + light_txt + '</td><td>' + co2_txt + '</td>' +
            '<td>' + p.added_date + '</td><td>' + esc(p.notes) + '</td>' +
-           '<td style="white-space:nowrap"><button class="btn bg bs" onclick="do_edit_plant(\'' + p.id + '\')">Edit</button> <button class="btn bd bs" data-id="' + p.id + '" onclick="del_plant(this.dataset.id);r_life()">&#x2715;</button></td></tr>';
+           '<td style="white-space:nowrap"><button class="btn bg bs" data-id="' + p.id + '" onclick="do_edit_plant(this.dataset.id)">Edit</button> <button class="btn bd bs" data-id="' + p.id + '" onclick="del_plant(this.dataset.id);r_life()">&#x2715;</button></td></tr>';
     });
     h += '</table></div>';
   } else h += '<p class="emsg">No plants added yet.</p>';
@@ -1584,7 +1586,7 @@ function r_life() {
            '<td style="font-size:12px">' + (sp && sp.size_in ? sp.size_in + '"' : '-') + '</td>' +
            '<td><span style="font-size:12px;font-weight:700;color:' + bl_color + '">' + bl_lbl + bl_inv_tag + ' (' + bl_contrib + ')</span></td>' +
            '<td>' + s.added_date + '</td><td>' + esc(s.notes) + '</td>' +
-           '<td style="white-space:nowrap"><button class="btn bg bs" onclick="do_edit_stock(\'' + s.id + '\')">Edit</button> <button class="btn bd bs" data-id="' + s.id + '" onclick="del_stock(this.dataset.id);r_life()">&#x2715;</button></td></tr>';
+           '<td style="white-space:nowrap"><button class="btn bg bs" data-id="' + s.id + '" onclick="do_edit_stock(this.dataset.id)">Edit</button> <button class="btn bd bs" data-id="' + s.id + '" onclick="del_stock(this.dataset.id);r_life()">&#x2715;</button></td></tr>';
     });
     h += '</table></div>';
   } else h += '<p class="emsg">No livestock added yet.</p>';
@@ -1598,7 +1600,7 @@ function r_life() {
            '<td>' + (f.dose_ml || '—') + ' ml</td>' +
            '<td>' + f.freq_days + ' days</td>' +
            '<td>' + esc(f.notes) + '</td>' +
-           '<td style="white-space:nowrap"><button class="btn bg bs" onclick="do_edit_fert(\'' + f.id + '\')">Edit</button> <button class="btn bd bs" data-id="' + f.id + '" onclick="del_fert(this.dataset.id)">&#x2715;</button></td></tr>';
+           '<td style="white-space:nowrap"><button class="btn bg bs" data-id="' + f.id + '" onclick="do_edit_fert(this.dataset.id)">Edit</button> <button class="btn bd bs" data-id="' + f.id + '" onclick="del_fert(this.dataset.id)">&#x2715;</button></td></tr>';
     });
     h += '</table></div>';
   } else h += '<p class="emsg">No fertilizers added. Add one to get dosing reminders in the Recommended Schedule.</p>';
@@ -1613,7 +1615,7 @@ function r_life() {
     feed_hist.forEach(function(f) {
       h += '<tr><td>' + f.date + '</td><td>' + esc(f.food_type||'—') + '</td><td>' + esc(f.amt||'—') + '</td>' +
            '<td>' + esc(f.notes||'') + '</td>' +
-           '<td><button class="btn bd bs" onclick="del_feeding(\'' + f.id + '\')">&#x2715;</button></td></tr>';
+           '<td><button class="btn bd bs" data-id="' + f.id + '" onclick="del_feeding(this.dataset.id)">&#x2715;</button></td></tr>';
     });
     h += '</table></div>';
   } else h += '<p class="emsg">No feedings logged yet. Use the button above or the dashboard to log a feeding.</p>';
@@ -1633,7 +1635,7 @@ function r_life() {
            '<td>' + sp.pmin + '&ndash;' + sp.pmax + '</td>' +
            '<td>' + sp.gmin + '&ndash;' + sp.gmax + '</td>' +
            '<td>' + sp.min_gal + '</td>' +
-           '<td><button class="btn bd bs" onclick="del_custom_sp(\'' + sid + '\')">&#x2715;</button></td></tr>';
+           '<td><button class="btn bd bs" data-id="' + sid + '" onclick="del_custom_sp(this.dataset.id)">&#x2715;</button></td></tr>';
     });
     h += '</table></div>';
   } else h += '<p class="emsg">No custom species yet.</p>';
