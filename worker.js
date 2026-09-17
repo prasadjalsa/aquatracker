@@ -392,43 +392,12 @@ function add_custom_sp(sp_id, name, type, tmin, tmax, pmin, pmax, gmin, gmax, si
     pmin:parseFloat(pmin)||6.5, pmax:parseFloat(pmax)||7.5, gmin:parseFloat(gmin)||4, gmax:parseFloat(gmax)||12,
     size_in:parseFloat(size_in)||2, min_gal:parseInt(min_gal,10)||10, bioload:parseInt(bioload,10)||2,
     level:level||'Beginner', note:note||'', custom:true};
-  sv(d); r_life();
+  sv(d);
 }
 function del_custom_sp(sp_id) {
   var d = ld(), sp = d.custom_sp[sp_id];
   if (!confirm('Delete custom species "' + (sp ? sp.name : sp_id) + '"? Any livestock using it will lose species data. Cannot be undone.')) return;
   delete d.custom_sp[sp_id]; sv(d); r_life();
-}
-function do_add_custom_sp() {
-  var sp_id = 'custom_' + gid();
-  om('<div class="mtitle">Add Custom Species</div>' +
-    '<form onsubmit="sub_add_custom_sp(event)">' +
-    '<input type="hidden" name="sp_id" value="' + sp_id + '">' +
-    fg('Common Name *', '<input type="text" name="name" required placeholder="e.g. Peacock Cichlid">') +
-    fg('Type', '<select name="type"><option value="Fish">Fish</option><option value="Shrimp">Shrimp</option><option value="Snail">Snail</option><option value="Crab">Crab</option><option value="Amphibian">Amphibian</option><option value="Other">Other</option></select>') +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
-    fgh('Temp min (\xB0F)', '<input type="number" name="tmin" step="0.1" placeholder="72">') +
-    fgh('Temp max (\xB0F)', '<input type="number" name="tmax" step="0.1" placeholder="82">') +
-    fgh('pH min', '<input type="number" name="pmin" step="0.1" placeholder="6.5">') +
-    fgh('pH max', '<input type="number" name="pmax" step="0.1" placeholder="7.5">') +
-    fgh('GH min (dGH)', '<input type="number" name="gmin" step="0.1" placeholder="4">') +
-    fgh('GH max (dGH)', '<input type="number" name="gmax" step="0.1" placeholder="12">') +
-    fgh('Size (inches)', '<input type="number" name="size_in" step="0.1" placeholder="2">') +
-    fgh('Min tank (gal)', '<input type="number" name="min_gal" placeholder="10">') +
-    '</div>' +
-    fg('Bioload', '<select name="bioload"><option value="1">1 — Very low</option><option value="2" selected>2 — Low</option><option value="3">3 — Medium</option><option value="4">4 — High</option><option value="5">5 — Very high</option></select>') +
-    fg('Care level', '<select name="level"><option value="Beginner">Beginner</option><option value="Intermediate">Intermediate</option><option value="Advanced">Advanced</option></select>') +
-    fg('Notes', '<input type="text" name="note" placeholder="Optional notes about this species">') +
-    '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Add Species</button></div>' +
-    '</form>');
-}
-function sub_add_custom_sp(e) {
-  e.preventDefault(); var f = e.target;
-  add_custom_sp(f.sp_id.value, f.name.value, f.type.value,
-    f.tmin.value, f.tmax.value, f.pmin.value, f.pmax.value,
-    f.gmin.value, f.gmax.value, f.size_in.value, f.min_gal.value,
-    f.bioload.value, f.level.value, f.note.value);
-  cm();
 }
 function gid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 function at() { return localStorage.getItem('aq_at') || ''; }
@@ -1621,26 +1590,6 @@ function r_life() {
   } else h += '<p class="emsg">No feedings logged yet. Use the button above or the dashboard to log a feeding.</p>';
   h += '</div>';
 
-  // Custom species
-  var custom_list = Object.keys(d.custom_sp || {});
-  h += '<div class="card"><div class="ctitle">Custom Species <button class="btn bp bs" onclick="do_add_custom_sp()">+ Add</button></div>';
-  h += '<p style="font-size:12px;color:var(--muted);margin:0 0 8px">Add species not in the built-in database. They appear in the livestock species selector and compatibility check.</p>';
-  if (custom_list.length) {
-    h += '<div class="tw"><table><tr><th>Name</th><th>Type</th><th>Temp (\xB0F)</th><th>pH</th><th>GH</th><th>Min gal</th><th></th></tr>';
-    custom_list.forEach(function(sid) {
-      var sp = d.custom_sp[sid];
-      h += '<tr><td><strong>' + esc(sp.name) + '</strong></td>' +
-           '<td>' + esc(sp.type||'Fish') + '</td>' +
-           '<td>' + sp.tmin + '&ndash;' + sp.tmax + '</td>' +
-           '<td>' + sp.pmin + '&ndash;' + sp.pmax + '</td>' +
-           '<td>' + sp.gmin + '&ndash;' + sp.gmax + '</td>' +
-           '<td>' + sp.min_gal + '</td>' +
-           '<td><button class="btn bd bs" data-id="' + sid + '" onclick="del_custom_sp(this.dataset.id)">&#x2715;</button></td></tr>';
-    });
-    h += '</table></div>';
-  } else h += '<p class="emsg">No custom species yet.</p>';
-  h += '</div>';
-
   el.innerHTML = h;
 }
 
@@ -2663,7 +2612,10 @@ function sub_add_plant(e) {
 function upd_stock_compat(sel) {
   var sid = sel.value, d = ld(), tid = at(), sp_all = get_sp(d);
   var result_el = document.getElementById('stk_compat');
-  if (!result_el || !sp_all[sid]) return;
+  var custom_el = document.getElementById('stk_custom_fields');
+  if (custom_el) custom_el.style.display = (sid === '_custom') ? 'block' : 'none';
+  if (!result_el) return;
+  if (sid === '_custom' || !sp_all[sid]) { result_el.innerHTML = ''; return; }
   var new_sp = sp_all[sid], parts = [];
 
   // Difficulty level warning
@@ -2732,7 +2684,7 @@ function build_stock_opts(level_filter, heater_filter, type_filter, search) {
   var tank = d.tanks.find(function(t){ return t.id === at(); });
   var rt_min = tank && tank.room_tmin != null ? tank.room_tmin : null;
   var q = search ? search.toLowerCase() : '';
-  return Object.keys(sp_all)
+  var opts = Object.keys(sp_all)
     .filter(function(k) {
       var sp = sp_all[k];
       if (level_filter && level_filter !== 'All' && sp.level !== level_filter) return false;
@@ -2750,6 +2702,7 @@ function build_stock_opts(level_filter, heater_filter, type_filter, search) {
       var custom_tag = sp.custom ? ' \xB7 custom' : '';
       return '<option value="' + k + '">' + sp.name + ' (' + (sp.type||'Fish') + ' \xB7 Bioload: ' + bl_lbl + lvl + heat_tag + custom_tag + ')</option>';
     }).join('');
+  return '<option value="_custom">+ Not in the list? Define custom species...</option>' + opts;
 }
 
 function filter_stock_all() {
@@ -2812,6 +2765,27 @@ function do_add_stock() {
     fg('Display Name', '<input type="text" name="dname" placeholder="Leave blank for species name">') +
     '</div>' +
     '<div id="stk_compat" style="min-height:18px;margin:4px 0 0;padding:0 2px"></div>' +
+    '<div id="stk_custom_fields" style="display:none;background:#f0f8ff;border:1px solid #c8dff0;border-radius:8px;padding:12px;margin:8px 0">' +
+    '<div style="font-size:12px;font-weight:700;color:var(--mid);margin-bottom:10px">Define your custom species</div>' +
+    '<div class="frow">' +
+    fgh('Species name *', '<input type="text" name="csp_name" placeholder="e.g. Peacock Cichlid">') +
+    fgh('Type', '<select name="csp_type"><option value="Fish">Fish</option><option value="Shrimp">Shrimp</option><option value="Snail">Snail</option><option value="Crab">Crab</option><option value="Amphibian">Amphibian</option><option value="Other">Other</option></select>') +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+    fgh('Temp min (\xB0F)', '<input type="number" name="csp_tmin" step="0.1" placeholder="72">') +
+    fgh('Temp max (\xB0F)', '<input type="number" name="csp_tmax" step="0.1" placeholder="82">') +
+    fgh('pH min', '<input type="number" name="csp_pmin" step="0.1" placeholder="6.5">') +
+    fgh('pH max', '<input type="number" name="csp_pmax" step="0.1" placeholder="7.5">') +
+    fgh('GH min (dGH)', '<input type="number" name="csp_gmin" step="0.1" placeholder="4">') +
+    fgh('GH max (dGH)', '<input type="number" name="csp_gmax" step="0.1" placeholder="12">') +
+    fgh('Adult size (in)', '<input type="number" name="csp_size" step="0.1" placeholder="2">') +
+    fgh('Min tank (gal)', '<input type="number" name="csp_mingal" placeholder="10">') +
+    '</div>' +
+    '<div class="frow">' +
+    fgh('Bioload', '<select name="csp_bioload"><option value="1">1 — Very low</option><option value="2" selected>2 — Low</option><option value="3">3 — Medium</option><option value="4">4 — High</option><option value="5">5 — Very high</option></select>') +
+    fgh('Care level', '<select name="csp_level"><option value="Beginner">Beginner</option><option value="Intermediate">Intermediate</option><option value="Advanced">Advanced</option></select>') +
+    '</div>' +
+    '</div>' +
     '<div class="frow">' +
     fg('Quantity', '<input type="number" name="qty" value="1" min="1">') +
     fg('Date Added', '<input type="date" name="added" value="' + td + '">') +
@@ -2826,7 +2800,18 @@ function do_add_stock() {
 }
 function sub_add_stock(e) {
   e.preventDefault(); var f = e.target;
-  add_stock(at(), f.sid.value, f.dname.value, f.qty.value, f.added.value, f.notes.value);
+  var sid = f.sid.value;
+  if (sid === '_custom') {
+    var cname = f.csp_name.value.trim();
+    if (!cname) { alert('Please enter a species name.'); return; }
+    sid = 'custom_' + gid();
+    add_custom_sp(sid, cname, f.csp_type.value, f.csp_tmin.value, f.csp_tmax.value,
+      f.csp_pmin.value, f.csp_pmax.value, f.csp_gmin.value, f.csp_gmax.value,
+      f.csp_size.value, f.csp_mingal.value, f.csp_bioload.value, f.csp_level.value, '');
+    add_stock(at(), sid, cname, f.qty.value, f.added.value, f.notes.value);
+  } else {
+    add_stock(at(), sid, f.dname.value, f.qty.value, f.added.value, f.notes.value);
+  }
   cm(); r_life();
 }
 
