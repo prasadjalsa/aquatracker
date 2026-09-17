@@ -507,6 +507,16 @@ function mark_cycled(tid) {
   d.tanks = d.tanks.map(function(t){ return t.id === tid ? Object.assign({}, t, {cycled:true}) : t; });
   sv(d); r_dash();
 }
+function save_cycle_method(method) {
+  var d = ld();
+  d.tanks = d.tanks.map(function(t) {
+    if (t.id !== at()) return t;
+    var chk = Object.assign({}, t.setup_chk || {});
+    chk.cycle_method = method;
+    return Object.assign({}, t, {setup_chk: chk});
+  });
+  sv(d); r_dash();
+}
 function upd_checklist(tid, key, val) {
   var d = ld();
   d.tanks = d.tanks.map(function(t) {
@@ -1033,6 +1043,7 @@ function r_cycle_card(tid) {
   var d = ld();
   var tank = d.tanks.find(function(t){ return t.id === tid; }); if (!tank) return '';
   if (tank.cycled) return '';
+  var chk = tank.setup_chk || {};
   var age = Math.floor((Date.now() - new Date(tank.setup_date + 'T00:00:00').getTime()) / 86400000);
   var cyc = cycle_status(tid);
   if (cyc.phase === 4) {
@@ -1053,6 +1064,63 @@ function r_cycle_card(tid) {
   });
   h += '</div>';
   h += '<p style="font-size:13px;line-height:1.5">' + esc(cyc.desc) + '</p>';
+  // Parameter warnings based on cycle type and latest readings
+  if (cyc.phase > 0 && cyc.phase < 4) {
+    var is_fish_in = d.stock.filter(function(s){ return s.tank_id === tid; }).length > 0;
+    var wentries = get_water(tid);
+    var wlast = wentries.length ? wentries[wentries.length - 1] : null;
+    var wnh3 = wlast ? wlast.ammonia : null;
+    var wno2 = wlast ? wlast.nitrite : null;
+    var cycle_lbl = is_fish_in ? 'Fish-in cycle' : 'Fishless cycle';
+    h += '<div style="font-size:11px;color:var(--muted);margin:6px 0 4px">Detected: <strong>' + cycle_lbl + '</strong></div>';
+    // Cycle method selector (fishless only)
+    if (!is_fish_in) {
+      var cm = chk.cycle_method || '';
+      h += '<div style="margin:6px 0 8px;display:flex;align-items:center;gap:8px">' +
+           '<label style="font-size:12px;color:var(--muted)">How did you start the cycle?</label>' +
+           '<select style="font-size:12px;padding:2px 6px;border-radius:4px;border:1px solid #ccc" onchange="save_cycle_method(this.value)">' +
+           '<option value=""' + (cm==='' ? ' selected' : '') + '>Not specified</option>' +
+           '<option value="ammonia"' + (cm==='ammonia' ? ' selected' : '') + '>Pure ammonia (liquid/powder)</option>' +
+           '<option value="food"' + (cm==='food' ? ' selected' : '') + '>Fish food or organic waste</option>' +
+           '<option value="media"' + (cm==='media' ? ' selected' : '') + '>Established filter media / gravel</option>' +
+           '</select></div>';
+    }
+    var cwarns = [];
+    if (is_fish_in) {
+      // Fish-in: keep NH3 and NO2 below toxic levels at all times
+      if (wnh3 !== null && wnh3 > 2)   cwarns.push({level:'danger', msg:'Ammonia is ' + wnh3 + ' ppm — critical. Do a 30-50% water change now and dose Seachem Prime to detoxify.'});
+      else if (wnh3 !== null && wnh3 > 0.5) cwarns.push({level:'warn', msg:'Ammonia is ' + wnh3 + ' ppm — harmful to fish. Do a 25% water change and dose Seachem Prime daily.'});
+      if (wno2 !== null && wno2 > 1)   cwarns.push({level:'danger', msg:'Nitrite is ' + wno2 + ' ppm — critically toxic. Do a 30-50% water change immediately and dose Seachem Prime.'});
+      else if (wno2 !== null && wno2 > 0.5) cwarns.push({level:'warn', msg:'Nitrite is ' + wno2 + ' ppm — toxic to fish. Do a 25% water change and dose Seachem Prime.'});
+    } else {
+      var cm_warn = chk.cycle_method || '';
+      if (cm_warn === 'ammonia') {
+        if (wnh3 !== null && wnh3 < 1 && cyc.phase === 1) cwarns.push({level:'warn', msg:'Ammonia is only ' + wnh3 + ' ppm — too low to seed bacteria. Dose pure ammonia to reach 2-4 ppm.'});
+        if (wnh3 !== null && wnh3 > 5) cwarns.push({level:'warn', msg:'Ammonia is ' + wnh3 + ' ppm — above 5 ppm may inhibit bacteria. Add fresh water to dilute down to 2-4 ppm.'});
+      } else if (cm_warn === 'food') {
+        if (wnh3 !== null && wnh3 > 4) cwarns.push({level:'warn', msg:'Ammonia is ' + wnh3 + ' ppm — likely too much food decomposing. Remove visible food debris and reduce the amount added.'});
+      } else if (cm_warn === 'media') {
+        if (wnh3 !== null && wnh3 > 2) cwarns.push({level:'warn', msg:'Ammonia is ' + wnh3 + ' ppm — the seeded bacteria need a food source. Add a small pinch of fish food daily to keep them active.'});
+      } else {
+        // Method not selected — generic fallback
+        if (wnh3 !== null && wnh3 < 1 && cyc.phase === 1) cwarns.push({level:'warn', msg:'Ammonia is only ' + wnh3 + ' ppm. If using pure ammonia, dose to 2-4 ppm. If using fish food, add a little more.'});
+        if (wnh3 !== null && wnh3 > 5) cwarns.push({level:'warn', msg:'Ammonia is ' + wnh3 + ' ppm — very high. Above 5 ppm may slow bacterial growth. Select your cycle method above for specific guidance.'});
+      }
+    }
+    cwarns.forEach(function(w) {
+      var bg = w.level === 'danger' ? '#fdecea' : '#fef3d5';
+      var bc = w.level === 'danger' ? 'var(--danger)' : 'var(--warn)';
+      var ic = w.level === 'danger' ? '&#x1F6A8;' : '&#x26A0;&#xFE0F;';
+      h += '<div style="display:flex;align-items:flex-start;gap:8px;margin-top:6px;background:' + bg + ';border-left:3px solid ' + bc + ';padding:8px 10px;border-radius:0 6px 6px 0">' +
+           '<span style="font-size:14px">' + ic + '</span><span style="font-size:12px">' + w.msg + '</span></div>';
+    });
+    if (!cwarns.length && wlast) {
+      var ok_parts = [];
+      if (wnh3 !== null) ok_parts.push('NH3: ' + wnh3 + ' ppm');
+      if (wno2 !== null) ok_parts.push('NO2: ' + wno2 + ' ppm');
+      if (ok_parts.length) h += '<div style="font-size:12px;color:var(--ok);margin-top:6px">&#x2713; Current readings within safe range for a ' + cycle_lbl.toLowerCase() + ' — ' + ok_parts.join(', ') + '</div>';
+    }
+  }
   if (cyc.phase < 4) {
     if (cyc.test_freq) {
       h += '<div style="display:flex;align-items:center;gap:8px;margin-top:8px;background:#e8f4fd;border-left:3px solid #4db8d4;padding:8px 10px;border-radius:0 6px 6px 0">' +
