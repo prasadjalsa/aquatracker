@@ -7,7 +7,7 @@ export default {
       return new Response(SW_JS, { headers: {'Content-Type':'application/javascript','Cache-Control':'no-cache'} });
     if (url.pathname === '/icon.svg')
       return new Response(ICON_SVG, { headers: {'Content-Type':'image/svg+xml','Cache-Control':'public,max-age=86400'} });
-    return new Response(APP_HTML, { headers: {'Content-Type':'text/html; charset=utf-8'} });
+    return new Response(APP_HTML, { headers: {'Content-Type':'text/html; charset=utf-8', 'Cache-Control':'no-cache'} });
   }
 };
 
