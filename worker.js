@@ -1307,10 +1307,12 @@ function r_setup_card(tid) {
     needs_heater = stock_in_tank.length === 0
       ? tank.room_tmin < 72
       : stock_in_tank.some(function(s){ var sp = get_sp(d)[s.species_id]; return sp && tank.room_tmin < sp.tmin; });
+  } else if (stock_in_tank.length > 0) {
+    // Room temp unknown but fish present: heater needed if any fish requires warm water
+    needs_heater = stock_in_tank.some(function(s){ var sp = get_sp(d)[s.species_id]; return sp && sp.tmin >= 70; });
   } else {
-    // Room temp unknown: fall back to species tmin threshold
-    needs_heater = stock_in_tank.length === 0 ||
-      stock_in_tank.some(function(s){ var sp = get_sp(d)[s.species_id]; return sp && sp.tmin >= 70; });
+    // No fish, no room temp — can't determine yet, skip the heater item
+    needs_heater = false;
   }
   var heater_label = tank.room_tmin != null
     ? 'Heater installed — room min (' + d_t(tank.room_tmin) + t_lbl() + ') is below some fish requirements'
