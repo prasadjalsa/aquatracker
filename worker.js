@@ -490,9 +490,12 @@ function cycle_status(tid) {
   if (nh3 === null && no2 === null) return {phase:0, pct:10, label:'Monitoring', color:'#9ca3af', test_freq:3, desc:'Log ammonia and nitrite readings to track cycle progress.'};
   if (nh3 !== null && nh3 <= 0.25 && no2 !== null && no2 <= 0.25 && no3 !== null && no3 > 0) return {phase:4, pct:100, label:'Cycle complete!', color:'#3ab87a', test_freq:null, desc:'NH3 and NO2 are at 0 ppm, nitrate detected. Your tank is ready. Add fish slowly — 2-3 at a time, wait 1-2 weeks between additions.'};
   // Pattern: NO2 spike seen in any prior entry, now both NH3 and NO2 are back to safe levels
-  var had_no2_spike = entries.some(function(e){ return e.nitrite !== null && e.nitrite > 0; });
+  var prior = entries.slice(0, entries.length - 1);
+  var had_no2_spike = prior.some(function(e){ return e.nitrite !== null && e.nitrite > 0; });
+  var had_nh3_spike = entries.some(function(e){ return e.ammonia !== null && e.ammonia > 0; });
   var no2_clear = no2 !== null && no2 <= 0.25;
-  var nh3_clear = nh3 === null || nh3 <= 0.25;
+  // If NH3 was ever elevated, require it to be logged and resolved; if never tested, don't block on it
+  var nh3_clear = had_nh3_spike ? (nh3 !== null && nh3 <= 0.25) : true;
   if (had_no2_spike && no2_clear && nh3_clear) return {phase:4, pct:100, label:'Cycle complete!', color:'#3ab87a', test_freq:null, desc:'Nitrite spike detected in your history and now resolved — this is the classic cycle pattern. Test and log nitrate to confirm it is building up. Do a 30-50% water change before adding your first fish.'};
   if (nh3 !== null && nh3 <= 0.5 && no2 !== null && no2 > 0) return {phase:3, pct:75, label:'Almost there', color:'#e8a838', test_freq:2, desc:'Ammonia is falling and nitrite-eating bacteria are multiplying. Keep testing every 2-3 days. 1-2 more weeks typically.'};
   if (no2 !== null && no2 > 0) return {phase:2, pct:50, label:'Nitrite spike', color:'#e05252', test_freq:2, desc:'Ammonia-eating bacteria are established. Nitrite-eating bacteria are growing now. Both are still toxic — do not add fish. Avoid large water changes.'};
