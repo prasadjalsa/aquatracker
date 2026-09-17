@@ -793,6 +793,22 @@ function overlap(tid) {
   var beh_ok = !sl.some(function(a,i){ return sl.slice(i+1).some(function(b){ return !!behavior_incompat(a.sid,a,b.sid,b); }); });
   return {sl:sl, temp:{min:tmi,max:tma,ok:tmi<=tma}, ph:{min:pmi,max:pma,ok:pmi<=pma}, gh:{min:gmi,max:gma,ok:gmi<=gma}, all_ok:param_ok&&beh_ok};
 }
+// Returns species in sl whose individual range is violated by raw for the given key
+function find_affected(sl, k, raw) {
+  var out = [], seen = {};
+  if (!sl || !sl.length || raw === null || raw === undefined) return out;
+  sl.forEach(function(sp) {
+    if (seen[sp.sid]) return;
+    var lo, hi;
+    if (k === 'temp_f') { lo = sp.tmin; hi = sp.tmax; }
+    else if (k === 'ph')  { lo = sp.pmin; hi = sp.pmax; }
+    else if (k === 'gh')  { lo = sp.gmin; hi = sp.gmax; }
+    else return;
+    if (raw > hi)       { seen[sp.sid] = 1; out.push({name: sp.name, dir: 'max', val: k === 'temp_f' ? d_t(hi) : hi}); }
+    else if (raw < lo)  { seen[sp.sid] = 1; out.push({name: sp.name, dir: 'min', val: k === 'temp_f' ? d_t(lo) : lo}); }
+  });
+  return out;
+}
 function behavior_incompat(sid_a, sp_a, sid_b, sp_b) {
   // Check incompat dict on both species (bidirectional)
   if (sp_a.incompat && sp_a.incompat[sid_b]) return sp_a.incompat[sid_b];
@@ -1762,6 +1778,16 @@ function r_recs() {
       }
     } else if (c === 'muted') {
       note = 'No reading logged yet.';
+    }
+    // Append which specific livestock species are out of range
+    if (!p.tox && c !== 'ok' && c !== 'muted' && raw !== null && rng && rng.sl) {
+      var aff = find_affected(rng.sl, p.k, raw);
+      if (aff.length) {
+        var aff_str = aff.map(function(a) {
+          return a.name + ' (' + (a.dir === 'max' ? 'max' : 'min') + ' ' + a.val + (p.u ? ' ' + p.u : '') + ')';
+        }).join(', ');
+        note += (note ? ' ' : '') + 'Affected: ' + aff_str + '.';
+      }
     }
     var note_style = c === 'danger' ? 'color:var(--danger)' : c === 'warn' ? 'color:var(--warn)' : 'color:var(--muted)';
     h += '<tr><td>' + p.l + '</td><td>' + rt + '</td><td>' + (cur !== null ? cur + (p.u?' '+p.u:'') : '—') + '</td><td>' + pill(c) + '</td>' +
