@@ -376,11 +376,58 @@ function ld() {
     var d = JSON.parse(localStorage.getItem('aq')) || mt();
     if (!Array.isArray(d.feeding)) d.feeding = [];
     if (!Array.isArray(d.ferts))   d.ferts   = [];
+    if (!d.custom_sp)              d.custom_sp = {};
     return d;
   } catch(e) { return mt(); }
 }
 function sv(d) { localStorage.setItem('aq', JSON.stringify(d)); }
-function mt() { return {tanks:[], equip:[], plants:[], stock:[], tasks:[], water:[], feeding:[], ferts:[]}; }
+function mt() { return {tanks:[], equip:[], plants:[], stock:[], tasks:[], water:[], feeding:[], ferts:[], custom_sp:{}}; }
+// Merged species lookup: built-in SP + user custom_sp
+function get_sp(d) { return Object.assign({}, SP, d ? d.custom_sp : {}); }
+function add_custom_sp(sp_id, name, type, tmin, tmax, pmin, pmax, gmin, gmax, size_in, min_gal, bioload, level, note) {
+  var d = ld();
+  d.custom_sp[sp_id] = {name:name, type:type||'Fish', tmin:parseFloat(tmin)||72, tmax:parseFloat(tmax)||82,
+    pmin:parseFloat(pmin)||6.5, pmax:parseFloat(pmax)||7.5, gmin:parseFloat(gmin)||4, gmax:parseFloat(gmax)||12,
+    size_in:parseFloat(size_in)||2, min_gal:parseInt(min_gal,10)||10, bioload:parseInt(bioload,10)||2,
+    level:level||'Beginner', note:note||'', custom:true};
+  sv(d); r_life();
+}
+function del_custom_sp(sp_id) {
+  var d = ld(), sp = d.custom_sp[sp_id];
+  if (!confirm('Delete custom species "' + (sp ? sp.name : sp_id) + '"? Any livestock using it will lose species data. Cannot be undone.')) return;
+  delete d.custom_sp[sp_id]; sv(d); r_life();
+}
+function do_add_custom_sp() {
+  var sp_id = 'custom_' + gid();
+  om('<div class="mtitle">Add Custom Species</div>' +
+    '<form onsubmit="sub_add_custom_sp(event)">' +
+    '<input type="hidden" name="sp_id" value="' + sp_id + '">' +
+    fg('Common Name *', '<input type="text" name="name" required placeholder="e.g. Peacock Cichlid">') +
+    fg('Type', '<select name="type"><option value="Fish">Fish</option><option value="Shrimp">Shrimp</option><option value="Snail">Snail</option><option value="Crab">Crab</option><option value="Amphibian">Amphibian</option><option value="Other">Other</option></select>') +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+    fgh('Temp min (\xB0F)', '<input type="number" name="tmin" step="0.1" placeholder="72">') +
+    fgh('Temp max (\xB0F)', '<input type="number" name="tmax" step="0.1" placeholder="82">') +
+    fgh('pH min', '<input type="number" name="pmin" step="0.1" placeholder="6.5">') +
+    fgh('pH max', '<input type="number" name="pmax" step="0.1" placeholder="7.5">') +
+    fgh('GH min (dGH)', '<input type="number" name="gmin" step="0.1" placeholder="4">') +
+    fgh('GH max (dGH)', '<input type="number" name="gmax" step="0.1" placeholder="12">') +
+    fgh('Size (inches)', '<input type="number" name="size_in" step="0.1" placeholder="2">') +
+    fgh('Min tank (gal)', '<input type="number" name="min_gal" placeholder="10">') +
+    '</div>' +
+    fg('Bioload', '<select name="bioload"><option value="1">1 — Very low</option><option value="2" selected>2 — Low</option><option value="3">3 — Medium</option><option value="4">4 — High</option><option value="5">5 — Very high</option></select>') +
+    fg('Care level', '<select name="level"><option value="Beginner">Beginner</option><option value="Intermediate">Intermediate</option><option value="Advanced">Advanced</option></select>') +
+    fg('Notes', '<input type="text" name="note" placeholder="Optional notes about this species">') +
+    '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Add Species</button></div>' +
+    '</form>');
+}
+function sub_add_custom_sp(e) {
+  e.preventDefault(); var f = e.target;
+  add_custom_sp(f.sp_id.value, f.name.value, f.type.value,
+    f.tmin.value, f.tmax.value, f.pmin.value, f.pmax.value,
+    f.gmin.value, f.gmax.value, f.size_in.value, f.min_gal.value,
+    f.bioload.value, f.level.value, f.note.value);
+  cm();
+}
 function gid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 function at() { return localStorage.getItem('aq_at') || ''; }
 function sat(id) { localStorage.setItem('aq_at', id); }
@@ -451,10 +498,35 @@ function del_tank(id) {
 }
 
 // ===== FEEDING LOG =====
-function add_feeding(tid) {
+function add_feeding(tid, food_type, amt, notes) {
   var d = ld(), now = new Date();
-  d.feeding.push({id:gid(), tank_id:tid, date:now.toISOString().slice(0,10), ts:now.getTime()});
+  d.feeding.push({id:gid(), tank_id:tid, date:now.toISOString().slice(0,10), ts:now.getTime(), food_type:food_type||'', amt:amt||'', notes:notes||''});
   sv(d);
+}
+function del_feeding(id) {
+  if (!confirm('Delete this feeding entry? Cannot be undone.')) return;
+  var d = ld(); d.feeding = d.feeding.filter(function(x){return x.id!==id;}); sv(d); r_life(); r_dash();
+}
+function open_feed_modal(tid) {
+  var td = today_str();
+  var food_opts = ['Flakes','Pellets','Frozen','Live food','Wafers / Tablets','Gel food','Vegetables','Other'];
+  var amt_opts  = ['Small pinch','Regular amount','Large portion'];
+  om('<div class="mtitle">Log Feeding</div>' +
+    '<form class="mform" onsubmit="sub_save_feeding(event)">' +
+    '<input type="hidden" name="tid" value="' + tid + '">' +
+    fg('Date', '<input type="date" name="date" value="' + td + '" required>') +
+    fg('Food type', '<select name="food_type"><option value="">— select —</option>' +
+      food_opts.map(function(f){ return '<option>' + f + '</option>'; }).join('') + '</select>') +
+    fg('Amount', '<select name="amt"><option value="">— select —</option>' +
+      amt_opts.map(function(a){ return '<option>' + a + '</option>'; }).join('') + '</select>') +
+    fg('Notes', '<input type="text" name="notes" placeholder="Optional">') +
+    '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button>' +
+    '<button type="submit" class="btn bp">Save</button></div></form>');
+}
+function sub_save_feeding(e) {
+  e.preventDefault(); var f = e.target;
+  add_feeding(f.tid.value, f.food_type.value, f.amt.value, f.notes.value);
+  cm(); r_life(); r_dash();
 }
 function last_feeding(tid) {
   var d = ld();
@@ -548,7 +620,11 @@ function upd_equip(id, type, name, brand, notes, config) {
   });
   sv(d);
 }
-function del_equip(id) { var d = ld(); d.equip = d.equip.filter(function(x){return x.id!==id;}); sv(d); }
+function del_equip(id) {
+  var d = ld(), item = d.equip.find(function(x){return x.id===id;});
+  if (!confirm('Delete "' + (item ? item.name : 'this equipment') + '"? Cannot be undone.')) return;
+  d.equip = d.equip.filter(function(x){return x.id!==id;}); sv(d);
+}
 
 function eq_cfg_txt(eq) {
   var cfg = eq.config || {};
@@ -589,15 +665,63 @@ function add_plant(tid, plant_id, pname, qty, added, notes) {
   d.plants.push({id:gid(), tank_id:tid, plant_id:plant_id||'', name:pname, qty:parseInt(qty)||1, added_date:added, notes:notes||''});
   sv(d);
 }
-function del_plant(id) { var d = ld(); d.plants = d.plants.filter(function(x){return x.id!==id;}); sv(d); }
+function del_plant(id) {
+  var d = ld(), item = d.plants.find(function(x){return x.id===id;});
+  if (!confirm('Delete "' + (item ? item.name : 'this plant') + '"? Cannot be undone.')) return;
+  d.plants = d.plants.filter(function(x){return x.id!==id;}); sv(d);
+}
+function do_edit_plant(id) {
+  var d = ld(), p = d.plants.find(function(x){return x.id===id;}); if (!p) return;
+  om('<div class="mtitle">Edit Plant</div>' +
+    '<form onsubmit="sub_edit_plant(event)">' +
+    '<input type="hidden" name="pid" value="' + p.id + '">' +
+    fg('Plant', '<input type="text" value="' + esc(p.name) + '" disabled style="color:var(--muted)">') +
+    fg('Quantity', '<input type="number" name="qty" min="1" value="' + p.qty + '" required>') +
+    fg('Notes', '<input type="text" name="notes" value="' + esc(p.notes) + '">') +
+    '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Save</button></div>' +
+    '</form>');
+}
+function sub_edit_plant(e) {
+  e.preventDefault(); var f = e.target, d = ld();
+  d.plants = d.plants.map(function(p) {
+    if (p.id !== f.pid.value) return p;
+    return Object.assign({}, p, {qty:parseInt(f.qty.value)||1, notes:f.notes.value});
+  });
+  sv(d); cm(); r_life();
+}
 
 // ===== LIVESTOCK =====
 function add_stock(tid, sid, dname, qty, added, notes) {
   var d = ld();
-  d.stock.push({id:gid(), tank_id:tid, species_id:sid, display_name:dname||(SP[sid]?SP[sid].name:sid), qty:parseInt(qty)||1, added_date:added, notes:notes||''});
+  d.stock.push({id:gid(), tank_id:tid, species_id:sid, display_name:dname||(get_sp(d)[sid]?get_sp(d)[sid].name:sid), qty:parseInt(qty)||1, added_date:added, notes:notes||''});
   sv(d);
 }
-function del_stock(id) { var d = ld(); d.stock = d.stock.filter(function(x){return x.id!==id;}); sv(d); }
+function del_stock(id) {
+  var d = ld(), item = d.stock.find(function(x){return x.id===id;});
+  if (!confirm('Delete "' + (item ? item.display_name : 'this livestock') + '"? Cannot be undone.')) return;
+  d.stock = d.stock.filter(function(x){return x.id!==id;}); sv(d);
+}
+function do_edit_stock(id) {
+  var d = ld(), s = d.stock.find(function(x){return x.id===id;}); if (!s) return;
+  var sp = get_sp(d)[s.species_id];
+  om('<div class="mtitle">Edit Livestock</div>' +
+    '<form onsubmit="sub_edit_stock(event)">' +
+    '<input type="hidden" name="sid" value="' + s.id + '">' +
+    fg('Species', '<input type="text" value="' + esc(sp ? sp.name : s.species_id) + '" disabled style="color:var(--muted)">') +
+    fg('Display Name', '<input type="text" name="dname" value="' + esc(s.display_name) + '">') +
+    fg('Quantity', '<input type="number" name="qty" min="1" value="' + s.qty + '" required>') +
+    fg('Notes', '<input type="text" name="notes" value="' + esc(s.notes) + '">') +
+    '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Save</button></div>' +
+    '</form>');
+}
+function sub_edit_stock(e) {
+  e.preventDefault(); var f = e.target, d = ld();
+  d.stock = d.stock.map(function(s) {
+    if (s.id !== f.sid.value) return s;
+    return Object.assign({}, s, {qty:parseInt(f.qty.value)||1, display_name:f.dname.value||s.display_name, notes:f.notes.value});
+  });
+  sv(d); cm(); r_life(); r_dash();
+}
 
 // ===== FERTILIZERS =====
 var _fert_gal = 0;
@@ -607,6 +731,28 @@ function add_fert(tid, preset, name, dose_ml, freq_days, notes) {
   sv(d); r_life();
 }
 function del_fert(id) { var d = ld(); d.ferts = d.ferts.filter(function(x){return x.id!==id;}); sv(d); r_life(); }
+function do_edit_fert(id) {
+  var d = ld(), f = d.ferts.find(function(x){return x.id===id;}); if (!f) return;
+  var tank = d.tanks.find(function(t){ return t.id === at(); });
+  var gal_note = tank ? '<small style="color:var(--muted);font-size:11px">Tank is ' + Math.round(tank.gallons) + ' gal — adjust dose if needed</small>' : '';
+  om('<div class="mtitle">Edit Fertilizer</div>' +
+    '<form onsubmit="sub_edit_fert(event)">' +
+    '<input type="hidden" name="fid" value="' + f.id + '">' +
+    fg('Name', '<input type="text" name="name" value="' + esc(f.name) + '" required>') +
+    fg('Dose per application (ml)', '<input type="number" name="dose_ml" step="0.1" min="0" value="' + f.dose_ml + '" required>' + gal_note) +
+    fg('Dose every (days)', '<input type="number" name="freq_days" min="1" value="' + f.freq_days + '" required>') +
+    fg('Notes', '<input type="text" name="notes" value="' + esc(f.notes) + '">') +
+    '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Save</button></div>' +
+    '</form>');
+}
+function sub_edit_fert(e) {
+  e.preventDefault(); var f = e.target, d = ld();
+  d.ferts = d.ferts.map(function(x) {
+    if (x.id !== f.fid.value) return x;
+    return Object.assign({}, x, {name:f.name.value, dose_ml:parseFloat(f.dose_ml.value)||0, freq_days:parseInt(f.freq_days.value)||7, notes:f.notes.value});
+  });
+  sv(d); cm(); r_life();
+}
 function calc_fert_dose(sel) {
   var f = document.getElementById('fert_frm');
   var fp = FERT[sel.value];
@@ -658,7 +804,11 @@ function add_task(tid, type, name, freq, last, notes) {
   d.tasks.push({id:gid(), tank_id:tid, type:type, name:name, freq:parseInt(freq)||7, last_done:last, next_due:next_due(last,freq), notes:notes||''});
   sv(d);
 }
-function del_task(id) { var d = ld(); d.tasks = d.tasks.filter(function(x){return x.id!==id;}); sv(d); }
+function del_task(id) {
+  var d = ld(), item = d.tasks.find(function(x){return x.id===id;});
+  if (!confirm('Delete "' + (item ? item.name : 'this task') + '"? Cannot be undone.')) return;
+  d.tasks = d.tasks.filter(function(x){return x.id!==id;}); sv(d);
+}
 function mark_done(id) {
   var d = ld(), today = new Date().toISOString().slice(0,10);
   d.tasks = d.tasks.map(function(t) {
@@ -673,7 +823,10 @@ function add_water(tid, date, tf, nh3, no2, no3, ph, gh, notes) {
   d.water.push({id:gid(), tank_id:tid, date:date, temp_f:pn(tf), ammonia:pn(nh3), nitrite:pn(no2), nitrate:pn(no3), ph:pn(ph), gh:pn(gh), notes:notes||''});
   sv(d);
 }
-function del_water(id) { var d = ld(); d.water = d.water.filter(function(x){return x.id!==id;}); sv(d); }
+function del_water(id) {
+  if (!confirm('Delete this water log entry? Cannot be undone.')) return;
+  var d = ld(); d.water = d.water.filter(function(x){return x.id!==id;}); sv(d);
+}
 function get_water(tid) {
   return ld().water.filter(function(x){return x.tank_id===tid;}).sort(function(a,b){return a.date<b.date?-1:1;});
 }
@@ -681,9 +834,9 @@ function last_r(tid) { var w = get_water(tid); return w.length ? w[w.length-1] :
 
 // ===== BIOLOAD =====
 function calc_bioload(tid) {
-  var d = ld(), total = 0;
+  var d = ld(), sp_all = get_sp(d), total = 0;
   d.stock.filter(function(x){ return x.tank_id === tid; }).forEach(function(s) {
-    var sp = SP[s.species_id];
+    var sp = sp_all[s.species_id];
     // Invertebrates (shrimps, snails) produce ~30% of the waste fish do at equivalent size
     if (sp) total += (sp.bioload || 2) * s.qty * (sp.inv ? 0.3 : 1);
   });
@@ -799,19 +952,25 @@ function add_rec_task(type, name, freq) {
 
 // ===== RECOMMENDATIONS ENGINE =====
 function overlap(tid) {
-  var d = ld(), items = d.stock.filter(function(x){return x.tank_id===tid;});
+  var d = ld(), sp_all = get_sp(d), items = d.stock.filter(function(x){return x.tank_id===tid;});
   if (!items.length) return null;
-  var tmi=-Infinity,tma=Infinity,pmi=-Infinity,pma=Infinity,gmi=-Infinity,gma=Infinity,sl=[];
+  var tmi=-Infinity,tma=Infinity,pmi=-Infinity,pma=Infinity,gmi=-Infinity,gma=Infinity,sl=[],pl_names=[];
   items.forEach(function(s) {
-    var sp = SP[s.species_id]; if (!sp) return;
+    var sp = sp_all[s.species_id]; if (!sp) return;
     sl.push(Object.assign({sid: s.species_id}, sp));
     tmi=Math.max(tmi,sp.tmin); tma=Math.min(tma,sp.tmax);
     pmi=Math.max(pmi,sp.pmin); pma=Math.min(pma,sp.pmax);
     gmi=Math.max(gmi,sp.gmin); gma=Math.min(gma,sp.gmax);
   });
+  // Include plant temperature requirements in the overlap
+  d.plants.filter(function(x){return x.tank_id===tid;}).forEach(function(p) {
+    var pl = PL[p.plant_id]; if (!pl || pl.tmin == null) return;
+    tmi=Math.max(tmi,pl.tmin); tma=Math.min(tma,pl.tmax);
+    pl_names.push(pl.name);
+  });
   var param_ok = tmi<=tma && pmi<=pma && gmi<=gma;
   var beh_ok = !sl.some(function(a,i){ return sl.slice(i+1).some(function(b){ return !!behavior_incompat(a.sid,a,b.sid,b); }); });
-  return {sl:sl, temp:{min:tmi,max:tma,ok:tmi<=tma}, ph:{min:pmi,max:pma,ok:pmi<=pma}, gh:{min:gmi,max:gma,ok:gmi<=gma}, all_ok:param_ok&&beh_ok};
+  return {sl:sl, pl_names:pl_names, temp:{min:tmi,max:tma,ok:tmi<=tma}, ph:{min:pmi,max:pma,ok:pmi<=pma}, gh:{min:gmi,max:gma,ok:gmi<=gma}, all_ok:param_ok&&beh_ok};
 }
 // Returns species in sl whose individual range is violated by raw for the given key
 function find_affected(sl, k, raw) {
@@ -944,12 +1103,15 @@ function do_export() {
     water:   d.water.filter(function(x){ return prev_ids.indexOf(x.tank_id) === -1; }),
     feeding: d.feeding.filter(function(x){ return prev_ids.indexOf(x.tank_id) === -1; }),
     ferts:   d.ferts.filter(function(x){ return prev_ids.indexOf(x.tank_id) === -1; }),
+    custom_sp: d.custom_sp || {},
     pref:    get_pref()
   };
   var blob = new Blob([JSON.stringify(exp, null, 2)], {type:'application/json'});
   var url = URL.createObjectURL(blob), a = document.createElement('a');
   a.href = url; a.download = 'aquatracker-' + new Date().toISOString().slice(0,10) + '.json';
   a.click(); URL.revokeObjectURL(url);
+  localStorage.setItem('aq_last_export', Date.now().toString());
+  r_dash();
 }
 function do_import(inp) {
   var file = inp.files[0]; if (!file) return;
@@ -959,6 +1121,7 @@ function do_import(inp) {
       var p = JSON.parse(e.target.result);
       var ok = ['tanks','equip','plants','stock','tasks','water'].every(function(k){ return Array.isArray(p[k]); });
       if (!ok) { alert('Invalid backup file format.'); return; }
+      if (!p.custom_sp || typeof p.custom_sp !== 'object' || Array.isArray(p.custom_sp)) p.custom_sp = {};
       sv(p); inp.value = '';
       if (p.pref) sv_pref(p.pref);
       if (p.tanks.length) sat(p.tanks[0].id);
@@ -1046,6 +1209,8 @@ function r_cycle_card(tid) {
   var tank = d.tanks.find(function(t){ return t.id === tid; }); if (!tank) return '';
   if (tank.cycled) return '';
   var chk = tank.setup_chk || {};
+  var is_fish_in = d.stock.filter(function(s){ return s.tank_id === tid; }).length > 0;
+  var cm = chk.cycle_method || (is_fish_in ? 'fish_in' : '');
   var age = Math.floor((Date.now() - new Date(tank.setup_date + 'T00:00:00').getTime()) / 86400000);
   var cyc = cycle_status(tid);
   if (cyc.phase === 4) {
@@ -1068,14 +1233,17 @@ function r_cycle_card(tid) {
   h += '<p style="font-size:13px;line-height:1.5">' + esc(cyc.desc) + '</p>';
   // Parameter warnings based on cycle type and latest readings
   if (cyc.phase > 0 && cyc.phase < 4) {
-    var is_fish_in = d.stock.filter(function(s){ return s.tank_id === tid; }).length > 0;
     var wentries = get_water(tid);
     var wlast = wentries.length ? wentries[wentries.length - 1] : null;
     var wnh3 = wlast ? wlast.ammonia : null;
     var wno2 = wlast ? wlast.nitrite : null;
-    // Use saved cycle_method; default to fish-in if livestock is present and no method saved
-    var cm = chk.cycle_method || (is_fish_in ? 'fish_in' : '');
     var cycle_lbl = cm === 'fish_in' ? 'Fish-in cycle' : cm === 'ammonia' ? 'Fishless — pure ammonia' : cm === 'food' ? 'Fishless — fish food' : cm === 'media' ? 'Fishless — established media' : 'Not set';
+    var pref = get_pref();
+    var wc_vol = function(pct) {
+      var v = pref.vol === 'L' ? tank.liters : tank.gallons;
+      var u = pref.vol === 'L' ? 'L' : 'gal';
+      return '~' + Math.round(v * pct) + u;
+    };
     h += '<div style="margin:6px 0 8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
          '<label style="font-size:12px;color:var(--muted)">Cycle method:</label>' +
          '<select style="font-size:12px;padding:2px 6px;border-radius:4px;border:1px solid #ccc" onchange="save_cycle_method(this.value)">' +
@@ -1088,10 +1256,10 @@ function r_cycle_card(tid) {
     var cwarns = [];
     if (cm === 'fish_in' || (cm === '' && is_fish_in)) {
       // Fish-in: keep NH3 and NO2 below toxic levels at all times
-      if (wnh3 !== null && wnh3 > 2)       cwarns.push({level:'danger', msg:'Ammonia is ' + wnh3 + ' ppm — critical. Do a 30-50% water change now and dose Seachem Prime to detoxify.'});
-      else if (wnh3 !== null && wnh3 > 0.5) cwarns.push({level:'warn',   msg:'Ammonia is ' + wnh3 + ' ppm — harmful to fish. Do a 25% water change and dose Seachem Prime daily.'});
-      if (wno2 !== null && wno2 > 1)        cwarns.push({level:'danger', msg:'Nitrite is ' + wno2 + ' ppm — critically toxic. Do a 30-50% water change immediately and dose Seachem Prime.'});
-      else if (wno2 !== null && wno2 > 0.5) cwarns.push({level:'warn',   msg:'Nitrite is ' + wno2 + ' ppm — toxic to fish. Do a 25% water change and dose Seachem Prime.'});
+      if (wnh3 !== null && wnh3 > 2)       cwarns.push({level:'danger', msg:'Ammonia is ' + wnh3 + ' ppm — critical. Do a 30-50% water change (' + wc_vol(0.4) + ') now and dose Seachem Prime to detoxify.'});
+      else if (wnh3 !== null && wnh3 > 0.5) cwarns.push({level:'warn',   msg:'Ammonia is ' + wnh3 + ' ppm — harmful to fish. Do a 25% water change (' + wc_vol(0.25) + ') and dose Seachem Prime daily.'});
+      if (wno2 !== null && wno2 > 1)        cwarns.push({level:'danger', msg:'Nitrite is ' + wno2 + ' ppm — critically toxic. Do a 30-50% water change (' + wc_vol(0.4) + ') immediately and dose Seachem Prime.'});
+      else if (wno2 !== null && wno2 > 0.5) cwarns.push({level:'warn',   msg:'Nitrite is ' + wno2 + ' ppm — toxic to fish. Do a 25% water change (' + wc_vol(0.25) + ') and dose Seachem Prime.'});
     } else if (cm === 'ammonia') {
       if (wnh3 !== null && wnh3 < 1 && cyc.phase === 1) cwarns.push({level:'warn', msg:'Ammonia is only ' + wnh3 + ' ppm — too low to seed bacteria. Dose pure ammonia to reach 2-4 ppm.'});
       if (wnh3 !== null && wnh3 > 5) cwarns.push({level:'warn', msg:'Ammonia is ' + wnh3 + ' ppm — above 5 ppm may inhibit bacteria. Add fresh water to dilute down to 2-4 ppm.'});
@@ -1166,11 +1334,11 @@ function r_setup_card(tid) {
     // Room temp known: heater needed only if room min is below any fish's minimum temp
     needs_heater = stock_in_tank.length === 0
       ? tank.room_tmin < 72
-      : stock_in_tank.some(function(s){ var sp = SP[s.species_id]; return sp && tank.room_tmin < sp.tmin; });
+      : stock_in_tank.some(function(s){ var sp = get_sp(d)[s.species_id]; return sp && tank.room_tmin < sp.tmin; });
   } else {
     // Room temp unknown: fall back to species tmin threshold
     needs_heater = stock_in_tank.length === 0 ||
-      stock_in_tank.some(function(s){ var sp = SP[s.species_id]; return sp && sp.tmin >= 70; });
+      stock_in_tank.some(function(s){ var sp = get_sp(d)[s.species_id]; return sp && sp.tmin >= 70; });
   }
   var heater_label = tank.room_tmin != null
     ? 'Heater installed — room min (' + d_t(tank.room_tmin) + t_lbl() + ') is below some fish requirements'
@@ -1256,6 +1424,18 @@ function r_dash() {
 
   var h = '';
 
+  // Export reminder: warn if no backup in 30+ days (or never)
+  var last_exp = parseInt(localStorage.getItem('aq_last_export') || '0', 10);
+  var days_since_exp = last_exp ? Math.floor((Date.now() - last_exp) / 86400000) : 999;
+  var has_real_data = d.tanks.filter(function(t){return !t.preview;}).length > 0;
+  if (has_real_data && days_since_exp >= 30) {
+    var exp_msg = last_exp ? ('Last backup was ' + days_since_exp + ' days ago.') : 'You have never backed up your data.';
+    h += '<div style="display:flex;align-items:center;gap:10px;background:#fef3d5;border-left:4px solid var(--warn);padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:12px">' +
+         '<span style="font-size:16px">&#x1F4BE;</span>' +
+         '<span style="font-size:13px;flex:1">' + exp_msg + ' Your data is stored only in this browser — export a backup to keep it safe.</span>' +
+         '<button class="btn bg bs" onclick="do_export()" style="white-space:nowrap;font-size:12px">Export now</button></div>';
+  }
+
   // Maintenance banner
   var overdue = tasks.filter(function(x){ return days_til(x.next_due) < 0; });
   var due_today = tasks.filter(function(x){ return days_til(x.next_due) === 0; });
@@ -1297,7 +1477,7 @@ function r_dash() {
   h += '<div class="scard"><div class="slbl">LAST FED</div>' +
        '<div class="sval" style="font-size:16px;color:' + feed_color + '">' + fed_txt + '</div>' +
        '<div class="ssub">' + feed_sub + '</div>' +
-       '<button class="btn bp bs" style="margin-top:8px;width:100%" onclick="add_feeding(at());r_dash()">Log Feeding</button></div>';
+       '<button class="btn bp bs" style="margin-top:8px;width:100%" onclick="open_feed_modal(at())">Log Feeding</button></div>';
   h += '</div>';
 
   // Cycle tracker
@@ -1369,7 +1549,7 @@ function r_life() {
       h += '<tr><td><strong>' + esc(p.name) + '</strong>' + (pd ? '<br><small style="color:var(--muted)">' + pd.diff + '</small>' : '') + '</td>' +
            '<td>' + p.qty + '</td><td>' + light_txt + '</td><td>' + co2_txt + '</td>' +
            '<td>' + p.added_date + '</td><td>' + esc(p.notes) + '</td>' +
-           '<td><button class="btn bd bs" data-id="' + p.id + '" onclick="del_plant(this.dataset.id);r_life()">&#x2715;</button></td></tr>';
+           '<td style="white-space:nowrap"><button class="btn bg bs" onclick="do_edit_plant(\'' + p.id + '\')">Edit</button> <button class="btn bd bs" data-id="' + p.id + '" onclick="del_plant(this.dataset.id);r_life()">&#x2715;</button></td></tr>';
     });
     h += '</table></div>';
   } else h += '<p class="emsg">No plants added yet.</p>';
@@ -1379,9 +1559,10 @@ function r_life() {
   h += '<div class="card"><div class="ctitle">Livestock <button class="btn bp bs" onclick="do_add_stock()">+ Add</button></div>';
   if (sk.length) {
     var tank_life = d.tanks.find(function(t){ return t.id === tid; });
+    var sp_all_life = get_sp(d);
     var small_tank_warns = [];
     sk.forEach(function(s) {
-      var sp = SP[s.species_id];
+      var sp = sp_all_life[s.species_id];
       if (sp && sp.min_gal && tank_life && tank_life.gallons < sp.min_gal) {
         small_tank_warns.push(sp.name + ' needs ' + d_v(sp.min_gal) + ' ' + v_lbl() + ' min');
       }
@@ -1391,7 +1572,7 @@ function r_life() {
     }
     h += '<div class="tw"><table><tr><th>Species</th><th>Name</th><th>Qty</th><th>Adult Size</th><th>Bioload</th><th>Added</th><th>Notes</th><th></th></tr>';
     sk.forEach(function(s) {
-      var sp = SP[s.species_id];
+      var sp = sp_all_life[s.species_id];
       var bl = sp ? sp.bioload : 0;
       var bl_color = bl <= 1 ? 'var(--ok)' : bl <= 3 ? 'var(--warn)' : 'var(--danger)';
       var bl_lbl = bl <= 1 ? 'Low' : bl <= 3 ? 'Med' : 'High';
@@ -1403,7 +1584,7 @@ function r_life() {
            '<td style="font-size:12px">' + (sp && sp.size_in ? sp.size_in + '"' : '-') + '</td>' +
            '<td><span style="font-size:12px;font-weight:700;color:' + bl_color + '">' + bl_lbl + bl_inv_tag + ' (' + bl_contrib + ')</span></td>' +
            '<td>' + s.added_date + '</td><td>' + esc(s.notes) + '</td>' +
-           '<td><button class="btn bd bs" data-id="' + s.id + '" onclick="del_stock(this.dataset.id);r_life()">&#x2715;</button></td></tr>';
+           '<td style="white-space:nowrap"><button class="btn bg bs" onclick="do_edit_stock(\'' + s.id + '\')">Edit</button> <button class="btn bd bs" data-id="' + s.id + '" onclick="del_stock(this.dataset.id);r_life()">&#x2715;</button></td></tr>';
     });
     h += '</table></div>';
   } else h += '<p class="emsg">No livestock added yet.</p>';
@@ -1417,11 +1598,47 @@ function r_life() {
            '<td>' + (f.dose_ml || '—') + ' ml</td>' +
            '<td>' + f.freq_days + ' days</td>' +
            '<td>' + esc(f.notes) + '</td>' +
-           '<td><button class="btn bd bs" data-id="' + f.id + '" onclick="del_fert(this.dataset.id)">&#x2715;</button></td></tr>';
+           '<td style="white-space:nowrap"><button class="btn bg bs" onclick="do_edit_fert(\'' + f.id + '\')">Edit</button> <button class="btn bd bs" data-id="' + f.id + '" onclick="del_fert(this.dataset.id)">&#x2715;</button></td></tr>';
     });
     h += '</table></div>';
   } else h += '<p class="emsg">No fertilizers added. Add one to get dosing reminders in the Recommended Schedule.</p>';
   h += '</div>';
+
+  // Feeding history
+  var feed_hist = d.feeding.filter(function(x){return x.tank_id===tid;})
+    .sort(function(a,b){return b.ts-a.ts;}).slice(0,30);
+  h += '<div class="card"><div class="ctitle">Feeding Log <button class="btn bp bs" onclick="open_feed_modal(at())">+ Log Feeding</button></div>';
+  if (feed_hist.length) {
+    h += '<div class="tw"><table><tr><th>Date</th><th>Food Type</th><th>Amount</th><th>Notes</th><th></th></tr>';
+    feed_hist.forEach(function(f) {
+      h += '<tr><td>' + f.date + '</td><td>' + esc(f.food_type||'—') + '</td><td>' + esc(f.amt||'—') + '</td>' +
+           '<td>' + esc(f.notes||'') + '</td>' +
+           '<td><button class="btn bd bs" onclick="del_feeding(\'' + f.id + '\')">&#x2715;</button></td></tr>';
+    });
+    h += '</table></div>';
+  } else h += '<p class="emsg">No feedings logged yet. Use the button above or the dashboard to log a feeding.</p>';
+  h += '</div>';
+
+  // Custom species
+  var custom_list = Object.keys(d.custom_sp || {});
+  h += '<div class="card"><div class="ctitle">Custom Species <button class="btn bp bs" onclick="do_add_custom_sp()">+ Add</button></div>';
+  h += '<p style="font-size:12px;color:var(--muted);margin:0 0 8px">Add species not in the built-in database. They appear in the livestock species selector and compatibility check.</p>';
+  if (custom_list.length) {
+    h += '<div class="tw"><table><tr><th>Name</th><th>Type</th><th>Temp (\xB0F)</th><th>pH</th><th>GH</th><th>Min gal</th><th></th></tr>';
+    custom_list.forEach(function(sid) {
+      var sp = d.custom_sp[sid];
+      h += '<tr><td><strong>' + esc(sp.name) + '</strong></td>' +
+           '<td>' + esc(sp.type||'Fish') + '</td>' +
+           '<td>' + sp.tmin + '&ndash;' + sp.tmax + '</td>' +
+           '<td>' + sp.pmin + '&ndash;' + sp.pmax + '</td>' +
+           '<td>' + sp.gmin + '&ndash;' + sp.gmax + '</td>' +
+           '<td>' + sp.min_gal + '</td>' +
+           '<td><button class="btn bd bs" onclick="del_custom_sp(\'' + sid + '\')">&#x2715;</button></td></tr>';
+    });
+    h += '</table></div>';
+  } else h += '<p class="emsg">No custom species yet.</p>';
+  h += '</div>';
+
   el.innerHTML = h;
 }
 
@@ -1480,7 +1697,7 @@ function r_wlog() {
     '</div><div class="frow">' +
     fgh('Nitrate (ppm)', '<input type="number" name="no3" step="0.1" placeholder="e.g. 10">', 'Keep below 20 ppm. Reduced by regular water changes.') +
     fgh('pH', '<input type="number" name="ph" step="0.01" placeholder="e.g. 7.0">', 'Stability matters more than exact value. Avoid sudden changes.') +
-    fgh('Hardness (GH)', '<input type="number" name="gh" step="0.1" placeholder="e.g. 8">', 'Most tropical fish prefer 4-12 dGH (soft to medium water).') +
+    fgh('Hardness (GH)', '<input type="number" name="gh" step="0.1" placeholder="e.g. 8">', 'Most tropical fish prefer 4-12 dGH. 1 dGH = 17.9 ppm = 17.9 mg/L CaCO3.') +
     fgh('Notes', '<input type="text" name="notes" placeholder="Optional notes">', '') +
     '</div><button type="submit" class="btn bp">Save Reading</button></form></div>';
   var entries = get_water(tid);
@@ -1709,10 +1926,11 @@ function r_recs() {
   var needs_high_light = pl_in_tank.some(function(p){ return PL[p.plant_id] && PL[p.plant_id].light === 'High'; });
   var needs_med_light  = !needs_high_light && pl_in_tank.some(function(p){ return PL[p.plant_id] && PL[p.plant_id].light === 'Medium'; });
   var heater_needed;
+  var sp_all_recs = get_sp(d);
   if (tank && tank.room_tmin != null) {
-    heater_needed = sk.length === 0 ? tank.room_tmin < 72 : sk.some(function(s){ var sp = SP[s.species_id]; return sp && tank.room_tmin < sp.tmin; });
+    heater_needed = sk.length === 0 ? tank.room_tmin < 72 : sk.some(function(s){ var sp = sp_all_recs[s.species_id]; return sp && tank.room_tmin < sp.tmin; });
   } else {
-    heater_needed = sk.length === 0 || sk.some(function(s){ var sp = SP[s.species_id]; return sp && sp.tmin >= 70; });
+    heater_needed = sk.length === 0 || sk.some(function(s){ var sp = sp_all_recs[s.species_id]; return sp && sp.tmin >= 70; });
   }
 
   h += '<div class="card"><div class="ctitle">Equipment Check</div>';
@@ -1826,7 +2044,9 @@ function r_recs() {
     }
   }
 
+  var plant_temp_note = (rng.pl_names && rng.pl_names.length) ? ' (includes plants: ' + rng.pl_names.join(', ') + ')' : '';
   h += '<div class="card"><div class="ctitle">Recommended Water Parameters</div>' +
+    (plant_temp_note ? '<p style="font-size:12px;color:var(--muted);margin:0 0 8px">Temperature range accounts for fish and plants in this tank' + plant_temp_note + '.</p>' : '') +
     '<div class="tw"><table><tr><th>Parameter</th><th>Safe Range</th><th>Current Reading</th><th>Status</th><th>Notes</th></tr>';
   var rp = [
     {l:'Temperature', u:t_lbl(), mn:rng.temp.ok?d_t(rng.temp.min):null, mx:rng.temp.ok?d_t(rng.temp.max):null, k:'temp_f', tox:false, conv:d_t},
@@ -2439,10 +2659,10 @@ function sub_add_plant(e) {
 
 // ===== LIVESTOCK MODAL =====
 function upd_stock_compat(sel) {
-  var sid = sel.value, d = ld(), tid = at();
+  var sid = sel.value, d = ld(), tid = at(), sp_all = get_sp(d);
   var result_el = document.getElementById('stk_compat');
-  if (!result_el || !SP[sid]) return;
-  var new_sp = SP[sid], parts = [];
+  if (!result_el || !sp_all[sid]) return;
+  var new_sp = sp_all[sid], parts = [];
 
   // Difficulty level warning
   if (new_sp.level !== 'Beginner') {
@@ -2483,7 +2703,7 @@ function upd_stock_compat(sel) {
   } else {
     var conflicts = [];
     existing.forEach(function(s) {
-      var sp = SP[s.species_id]; if (!sp) return;
+      var sp = sp_all[s.species_id]; if (!sp) return;
       var iss = [], beh_reason = null;
       if (Math.max(new_sp.tmin,sp.tmin) > Math.min(new_sp.tmax,sp.tmax)) iss.push('temp');
       if (Math.max(new_sp.pmin,sp.pmin) > Math.min(new_sp.pmax,sp.pmax)) iss.push('pH');
@@ -2506,12 +2726,13 @@ function upd_stock_compat(sel) {
   result_el.innerHTML = parts.join('');
 }
 function build_stock_opts(level_filter, heater_filter, type_filter, search) {
-  var d = ld(), tank = d.tanks.find(function(t){ return t.id === at(); });
+  var d = ld(), sp_all = get_sp(d);
+  var tank = d.tanks.find(function(t){ return t.id === at(); });
   var rt_min = tank && tank.room_tmin != null ? tank.room_tmin : null;
   var q = search ? search.toLowerCase() : '';
-  return Object.keys(SP)
+  return Object.keys(sp_all)
     .filter(function(k) {
-      var sp = SP[k];
+      var sp = sp_all[k];
       if (level_filter && level_filter !== 'All' && sp.level !== level_filter) return false;
       if (rt_min != null && heater_filter === 'no_heater' && rt_min < sp.tmin) return false;
       if (rt_min != null && heater_filter === 'heater_req' && rt_min >= sp.tmin) return false;
@@ -2519,12 +2740,13 @@ function build_stock_opts(level_filter, heater_filter, type_filter, search) {
       if (q && sp.name.toLowerCase().indexOf(q) === -1) return false;
       return true;
     })
-    .sort(function(a,b){ return SP[a].name.localeCompare(SP[b].name); })
+    .sort(function(a,b){ return sp_all[a].name.localeCompare(sp_all[b].name); })
     .map(function(k) {
-      var sp = SP[k], bl = sp.bioload, bl_lbl = bl <= 1 ? 'Low' : bl <= 3 ? 'Med' : 'High';
+      var sp = sp_all[k], bl = sp.bioload, bl_lbl = bl <= 1 ? 'Low' : bl <= 3 ? 'Med' : 'High';
       var lvl = sp.level === 'Intermediate' ? ' ★★' : sp.level === 'Advanced' ? ' ★★★' : '';
-      var heat_tag = rt_min != null ? (rt_min >= sp.tmin ? ' · no heater' : ' · heater') : '';
-      return '<option value="' + k + '">' + sp.name + ' (' + sp.type + ' · Bioload: ' + bl_lbl + lvl + heat_tag + ')</option>';
+      var heat_tag = rt_min != null ? (rt_min >= sp.tmin ? ' \xB7 no heater' : ' \xB7 heater') : '';
+      var custom_tag = sp.custom ? ' \xB7 custom' : '';
+      return '<option value="' + k + '">' + sp.name + ' (' + (sp.type||'Fish') + ' \xB7 Bioload: ' + bl_lbl + lvl + heat_tag + custom_tag + ')</option>';
     }).join('');
 }
 
