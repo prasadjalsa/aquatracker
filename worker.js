@@ -2373,9 +2373,9 @@ function do_edit_tank() {
     fg('Max ' + t_lbl(), '<input type="number" name="room_tmax" value="' + (t.room_tmax != null ? d_t(t.room_tmax) : '') + '" placeholder="e.g. ' + (get_pref().temp === 'C' ? '28' : '82') + '">') +
     '</div>' +
     fg('Notes', '<textarea name="notes">' + esc(t.notes) + '</textarea>') +
-    '<label style="display:flex;align-items:center;gap:8px;font-size:13px;margin:8px 0 4px;cursor:pointer">' +
+    '<div class="fg"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400">' +
     '<input type="checkbox" name="show_feed_log"' + (t.show_feed_log ? ' checked' : '') + '>' +
-    'Show Feeding Log in the Logs tab</label>' +
+    'Show Feeding Log in the Logs tab</label></div>' +
     '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Save</button></div>' +
     '</form>');
 }
