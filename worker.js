@@ -160,7 +160,7 @@ tr:hover td{background:#f9fbfc}
 <div class="tabs">
   <button class="tab on" data-t="dash">Dashboard</button>
   <button class="tab" data-t="life">My Tank</button>
-  <button class="tab" data-t="wlog">Water Log</button>
+  <button class="tab" data-t="wlog">Logs</button>
   <button class="tab" data-t="maint">Maintenance</button>
   <button class="tab" data-t="recs">Recommendations</button>
   <button class="tab" data-t="tools">Toolkit</button>
@@ -446,14 +446,15 @@ function add_tank(name, gal, setup, notes, rt_min, rt_max) {
            room_tmax: rt_max ? parseFloat(rt_max) : null};
   d.tanks.push(t); sv(d); sat(t.id); return t.id;
 }
-function upd_tank(id, name, gal, setup, notes, rt_min, rt_max) {
+function upd_tank(id, name, gal, setup, notes, rt_min, rt_max, show_feed_log) {
   var d = ld(), g = parseFloat(gal) || 0;
   d.tanks = d.tanks.map(function(t) {
     if (t.id !== id) return t;
     return Object.assign({}, t, {
       name:name, gallons:g, liters:g2l(g), setup_date:setup, notes:notes||'',
       room_tmin: rt_min ? parseFloat(rt_min) : null,
-      room_tmax: rt_max ? parseFloat(rt_max) : null
+      room_tmax: rt_max ? parseFloat(rt_max) : null,
+      show_feed_log: !!show_feed_log
     });
   });
   sv(d);
@@ -476,7 +477,7 @@ function add_feeding(tid, food_type, amt, notes) {
 }
 function del_feeding(id) {
   if (!confirm('Delete this feeding entry? Cannot be undone.')) return;
-  var d = ld(); d.feeding = d.feeding.filter(function(x){return x.id!==id;}); sv(d); r_life(); r_dash();
+  var d = ld(); d.feeding = d.feeding.filter(function(x){return x.id!==id;}); sv(d); r_wlog(); r_dash();
 }
 function open_feed_modal(tid) {
   var td = today_str();
@@ -497,7 +498,7 @@ function open_feed_modal(tid) {
 function sub_save_feeding(e) {
   e.preventDefault(); var f = e.target;
   add_feeding(f.tid.value, f.food_type.value, f.amt.value, f.notes.value);
-  cm(); r_life(); r_dash();
+  cm(); r_wlog(); r_dash();
 }
 function last_feeding(tid) {
   var d = ld();
@@ -1475,7 +1476,7 @@ function r_dash() {
     });
     h += '</table></div>';
   } else {
-    h += '<p class="emsg">No readings yet. Go to the Water Log tab to add one.</p>';
+    h += '<p class="emsg">No readings yet. Go to the Logs tab to add one.</p>';
   }
   h += '</div>';
   if (tank.notes) h += '<div class="card"><div class="ctitle">Notes</div><p style="font-size:13px;color:var(--muted)">' + esc(tank.notes) + '</p></div>';
@@ -1573,21 +1574,6 @@ function r_life() {
     });
     h += '</table></div>';
   } else h += '<p class="emsg">No fertilizers added. Add one to get dosing reminders in the Recommended Schedule.</p>';
-  h += '</div>';
-
-  // Feeding history
-  var feed_hist = d.feeding.filter(function(x){return x.tank_id===tid;})
-    .sort(function(a,b){return b.ts-a.ts;}).slice(0,30);
-  h += '<div class="card"><div class="ctitle">Feeding Log <button class="btn bp bs" onclick="open_feed_modal(at())">+ Log Feeding</button></div>';
-  if (feed_hist.length) {
-    h += '<div class="tw"><table><tr><th>Date</th><th>Food Type</th><th>Amount</th><th>Notes</th><th></th></tr>';
-    feed_hist.forEach(function(f) {
-      h += '<tr><td>' + f.date + '</td><td>' + esc(f.food_type||'—') + '</td><td>' + esc(f.amt||'—') + '</td>' +
-           '<td>' + esc(f.notes||'') + '</td>' +
-           '<td><button class="btn bd bs" data-id="' + f.id + '" onclick="del_feeding(this.dataset.id)">&#x2715;</button></td></tr>';
-    });
-    h += '</table></div>';
-  } else h += '<p class="emsg">No feedings logged yet. Use the button above or the dashboard to log a feeding.</p>';
   h += '</div>';
 
   el.innerHTML = h;
@@ -1691,6 +1677,22 @@ function r_wlog() {
       '</table></div>' +
       '<p style="font-size:12px;color:var(--muted);margin:8px 0 0">Temperature ideal range depends on your fish species &mdash; check the Compatibility tab.</p>' +
       '</div>';
+  }
+  var tank_wlog = d.tanks.find(function(t){ return t.id === tid; });
+  if (tank_wlog && tank_wlog.show_feed_log) {
+    var feed_hist = d.feeding.filter(function(x){return x.tank_id===tid;})
+      .sort(function(a,b){return b.ts-a.ts;}).slice(0,30);
+    h += '<div class="card"><div class="ctitle">Feeding Log <button class="btn bp bs" onclick="open_feed_modal(at())">+ Log Feeding</button></div>';
+    if (feed_hist.length) {
+      h += '<div class="tw"><table><tr><th>Date</th><th>Food Type</th><th>Amount</th><th>Notes</th><th></th></tr>';
+      feed_hist.forEach(function(f) {
+        h += '<tr><td>' + f.date + '</td><td>' + esc(f.food_type||'—') + '</td><td>' + esc(f.amt||'—') + '</td>' +
+             '<td>' + esc(f.notes||'') + '</td>' +
+             '<td><button class="btn bd bs" data-id="' + f.id + '" onclick="del_feeding(this.dataset.id)">&#x2715;</button></td></tr>';
+      });
+      h += '</table></div>';
+    } else h += '<p class="emsg">No feedings logged yet.</p>';
+    h += '</div>';
   }
   el.innerHTML = h;
   if (entries.length >= 2) draw_chart(tid, 'temp_f');
@@ -2371,6 +2373,9 @@ function do_edit_tank() {
     fg('Max ' + t_lbl(), '<input type="number" name="room_tmax" value="' + (t.room_tmax != null ? d_t(t.room_tmax) : '') + '" placeholder="e.g. ' + (get_pref().temp === 'C' ? '28' : '82') + '">') +
     '</div>' +
     fg('Notes', '<textarea name="notes">' + esc(t.notes) + '</textarea>') +
+    '<label style="display:flex;align-items:center;gap:8px;font-size:13px;margin:8px 0 4px;cursor:pointer">' +
+    '<input type="checkbox" name="show_feed_log"' + (t.show_feed_log ? ' checked' : '') + '>' +
+    'Show Feeding Log in the Logs tab</label>' +
     '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Save</button></div>' +
     '</form>');
 }
@@ -2379,7 +2384,7 @@ function sub_edit_tank(e) {
   var lit = parseFloat(f.lit.value) || 0;
   var gal = parseFloat(f.gal.value) || 0;
   if (get_pref().vol === 'L' && lit) gal = lit / 3.78541;
-  upd_tank(at(), f.name.value, gal, f.setup.value, f.notes.value, inp_t(f.room_tmin.value), inp_t(f.room_tmax.value));
+  upd_tank(at(), f.name.value, gal, f.setup.value, f.notes.value, inp_t(f.room_tmin.value), inp_t(f.room_tmax.value), f.show_feed_log.checked);
   cm(); init();
 }
 function do_del_tank() {
