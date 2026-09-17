@@ -1731,20 +1731,41 @@ function r_recs() {
   }
 
   h += '<div class="card"><div class="ctitle">Recommended Water Parameters</div>' +
-    '<div class="tw"><table><tr><th>Parameter</th><th>Safe Range</th><th>Current Reading</th><th>Status</th></tr>';
+    '<div class="tw"><table><tr><th>Parameter</th><th>Safe Range</th><th>Current Reading</th><th>Status</th><th>Notes</th></tr>';
   var rp = [
     {l:'Temperature', u:t_lbl(), mn:rng.temp.ok?d_t(rng.temp.min):null, mx:rng.temp.ok?d_t(rng.temp.max):null, k:'temp_f', tox:false, conv:d_t},
     {l:'Ammonia',     u:'ppm', mn:0, mx:0, k:'ammonia', tox:true,  conv:null},
     {l:'Nitrite',     u:'ppm', mn:0, mx:0, k:'nitrite', tox:true,  conv:null},
     {l:'Nitrate',     u:'ppm', mn:0, mx:20, k:'nitrate', tox:false, conv:null},
     {l:'pH',          u:'',    mn:rng.ph.ok?rng.ph.min:null, mx:rng.ph.ok?rng.ph.max:null, k:'ph', tox:false, conv:null},
-    {l:'Hardness (GH)',u:'',   mn:rng.gh.ok?rng.gh.min:null, mx:rng.gh.ok?rng.gh.max:null, k:'gh', tox:false, conv:null}
+    {l:'Hardness (GH)',u:'dGH',mn:rng.gh.ok?rng.gh.min:null, mx:rng.gh.ok?rng.gh.max:null, k:'gh', tox:false, conv:null}
   ];
   rp.forEach(function(p) {
     var raw = lr ? lr[p.k] : null, cur = (p.conv && raw !== null) ? p.conv(raw) : raw;
-    var c = cls_val(raw, p.k === 'temp_f' ? (rng.temp.ok?rng.temp.min:null) : p.mn, p.k === 'temp_f' ? (rng.temp.ok?rng.temp.max:null) : p.mx, p.tox);
-    var rt = p.tox ? '0 ppm' : (p.mn !== null && p.mx !== null ? p.mn + '-' + p.mx + (p.u?' '+p.u:'') : '-');
-    h += '<tr><td>' + p.l + '</td><td>' + rt + '</td><td>' + (cur !== null ? cur + (p.u?' '+p.u:'') : '-') + '</td><td>' + pill(c) + '</td></tr>';
+    var mn_chk = p.k === 'temp_f' ? (rng.temp.ok?rng.temp.min:null) : p.mn;
+    var mx_chk = p.k === 'temp_f' ? (rng.temp.ok?rng.temp.max:null) : p.mx;
+    var c = cls_val(raw, mn_chk, mx_chk, p.tox);
+    var rt = p.tox ? '0 ppm' : (p.mn !== null && p.mx !== null ? p.mn + (p.u?' '+p.u:'') + ' – ' + p.mx + (p.u?' '+p.u:'') : '—');
+    // Build explanation for warn/danger
+    var note = '';
+    if (c !== 'ok' && c !== 'muted' && raw !== null) {
+      var disp = cur !== null ? cur : raw;
+      if (p.tox) {
+        note = disp > 0.5 ? 'Toxic — do a 25–50% water change immediately.' : 'Trace detected — should be 0. Partial water change recommended.';
+      } else if (mn_chk !== null && mx_chk !== null) {
+        var hi = (p.conv ? p.conv(mx_chk) : mx_chk), lo = (p.conv ? p.conv(mn_chk) : mn_chk);
+        if (disp > hi) note = 'Too high — safe range for your fish is ' + lo + '–' + hi + (p.u?' '+p.u:'') + '.';
+        else if (disp < lo) note = 'Too low — safe range for your fish is ' + lo + '–' + hi + (p.u?' '+p.u:'') + '.';
+        else note = 'Close to the limit — safe range is ' + lo + '–' + hi + (p.u?' '+p.u:'') + '.';
+      } else if (p.k === 'nitrate') {
+        note = raw > 40 ? 'Too high — do a 50% water change. Above 40 ppm stresses fish.' : 'Elevated — aim for below 20 ppm. Schedule a water change.';
+      }
+    } else if (c === 'muted') {
+      note = 'No reading logged yet.';
+    }
+    var note_style = c === 'danger' ? 'color:var(--danger)' : c === 'warn' ? 'color:var(--warn)' : 'color:var(--muted)';
+    h += '<tr><td>' + p.l + '</td><td>' + rt + '</td><td>' + (cur !== null ? cur + (p.u?' '+p.u:'') : '—') + '</td><td>' + pill(c) + '</td>' +
+         '<td style="font-size:12px;' + note_style + '">' + note + '</td></tr>';
   });
   h += '</table></div></div>';
 
