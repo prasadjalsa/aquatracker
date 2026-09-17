@@ -838,21 +838,59 @@ function draw_chart(tid, param) {
   var cv = document.getElementById('wc');
   if (!cv || entries.length < 2) return;
   var lmap = {temp_f:'Temperature (' + t_lbl() + ')', ammonia:'Ammonia (ppm)', nitrite:'Nitrite (ppm)', nitrate:'Nitrate (ppm)', ph:'pH', gh:'Hardness (GH)'};
+
+  // Reference lines: {v, color, label}
+  var temp_refs = [];
+  var rng = overlap(tid);
+  if (rng && rng.temp.ok) {
+    temp_refs = [
+      {v: d_t(rng.temp.min), color:'#3ab87a', label:'Species min'},
+      {v: d_t(rng.temp.max), color:'#3ab87a', label:'Species max'}
+    ];
+  }
+  var all_refs = {
+    ammonia: [{v:0.25, color:'#e8a838', label:'Caution (0.25 ppm)'}, {v:0.5, color:'#e05252', label:'Danger (0.5 ppm)'}],
+    nitrite: [{v:0.25, color:'#e8a838', label:'Caution (0.25 ppm)'}, {v:0.5, color:'#e05252', label:'Danger (0.5 ppm)'}],
+    nitrate: [{v:20,   color:'#3ab87a', label:'Ideal max (20 ppm)'}, {v:40, color:'#e8a838', label:'Caution max (40 ppm)'}],
+    ph:      [{v:6.5,  color:'#3ab87a', label:'Ideal min (6.5)'}, {v:7.5, color:'#3ab87a', label:'Ideal max (7.5)'}, {v:6.0, color:'#e8a838', label:'Caution min (6.0)'}, {v:8.0, color:'#e8a838', label:'Caution max (8.0)'}],
+    gh:      [{v:4,    color:'#3ab87a', label:'Ideal min (4 dGH)'}, {v:12, color:'#3ab87a', label:'Ideal max (12 dGH)'}, {v:2, color:'#e8a838', label:'Caution min (2 dGH)'}, {v:15, color:'#e8a838', label:'Caution max (15 dGH)'}],
+    temp_f:  temp_refs
+  };
+
+  var refs = all_refs[param] || [];
+  var n = entries.length;
+  var datasets = [{
+    label: lmap[param] || param,
+    data: entries.map(function(e) { return param === 'temp_f' ? d_t(e[param]) : e[param]; }),
+    borderColor: '#4db8d4', backgroundColor: 'rgba(77,184,212,0.12)',
+    tension: 0.3, fill: true, pointRadius: 4, spanGaps: true, order: 1
+  }];
+  refs.forEach(function(r) {
+    datasets.push({
+      label: r.label,
+      data: Array.apply(null, Array(n)).map(function(){ return r.v; }),
+      borderColor: r.color, backgroundColor: 'transparent',
+      borderWidth: 1.5, borderDash: [6, 4],
+      pointRadius: 0, fill: false, tension: 0, order: 2
+    });
+  });
+
   ch_inst = new Chart(cv.getContext('2d'), {
     type: 'line',
-    data: {
-      labels: entries.map(function(e) { return e.date; }),
-      datasets: [{
-        label: lmap[param] || param,
-        data: entries.map(function(e) { return param === 'temp_f' ? d_t(e[param]) : e[param]; }),
-        borderColor: '#4db8d4', backgroundColor: 'rgba(77,184,212,0.12)',
-        tension: 0.3, fill: true, pointRadius: 4, spanGaps: true
-      }]
-    },
+    data: {labels: entries.map(function(e) { return e.date; }), datasets: datasets},
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: {legend:{display:false}, tooltip:{mode:'index',intersect:false}},
-      scales: {x:{ticks:{maxTicksLimit:8}}, y:{beginAtZero:false}}
+      plugins: {
+        legend: {
+          display: refs.length > 0,
+          labels: {boxWidth: 16, font: {size: 11}}
+        },
+        tooltip: {mode:'index', intersect:false}
+      },
+      scales: {
+        x: {ticks: {maxTicksLimit: 8}},
+        y: {beginAtZero: (param === 'ammonia' || param === 'nitrite' || param === 'nitrate')}
+      }
     }
   });
 }
