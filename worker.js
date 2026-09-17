@@ -2709,7 +2709,7 @@ function build_stock_opts(level_filter, heater_filter, type_filter, search) {
       var custom_tag = sp.custom ? ' \xB7 custom' : '';
       return '<option value="' + k + '">' + sp.name + ' (' + (sp.type||'Fish') + ' \xB7 Bioload: ' + bl_lbl + lvl + heat_tag + custom_tag + ')</option>';
     }).join('');
-  return '<option value="_custom">+ Not in the list? Define custom species...</option>' + opts;
+  return opts + '<option value="_custom">+ Not in the list? Define custom species...</option>';
 }
 
 function filter_stock_all() {
