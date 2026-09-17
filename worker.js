@@ -1124,7 +1124,14 @@ function r_cycle_card(tid) {
            '<span style="font-size:12px;color:var(--muted)">— test NH3, NO2, NO3 and pH</span>' +
            '</div>';
     }
-    h += '<p style="font-size:12px;color:var(--muted);margin-top:6px;background:#f5f8fb;padding:8px 10px;border-radius:6px">Typical timeline: 4-6 weeks total. Do not add fish until NH3 and NO2 both read 0 ppm.</p>';
+    var tl_map = {
+      fish_in: '4-8 weeks. Keep NH3 below 0.5 ppm and NO2 below 0.5 ppm at all times — do partial water changes and dose Seachem Prime whenever readings rise.',
+      ammonia: '3-6 weeks. Re-dose ammonia to 2-4 ppm each time it drops to 0. Cycle is complete when both NH3 and NO2 drop to 0 within 24 hours of dosing.',
+      food:    '4-8 weeks. Add a small pinch of food every 2-3 days. Remove any uneaten food to avoid over-dosing ammonia. Do not add fish until NH3 and NO2 both read 0 ppm.',
+      media:   '1-2 weeks with established media — bacteria are already present and just need to multiply. Test daily. Do not add fish until NH3 and NO2 both read 0 ppm.'
+    };
+    var tl_txt = tl_map[cm] || '4-6 weeks total. Do not add fish until NH3 and NO2 both read 0 ppm.';
+    h += '<p style="font-size:12px;color:var(--muted);margin-top:6px;background:#f5f8fb;padding:8px 10px;border-radius:6px"><strong>Typical timeline:</strong> ' + tl_txt + '</p>';
     h += '<div style="margin-top:8px"><button class="btn bg bs" onclick="mark_cycled(at())">Mark as Cycled Manually</button></div>';
   } else {
     h += '<div style="display:flex;align-items:flex-start;gap:8px;margin-top:8px;background:#eaf8f1;border-left:3px solid var(--ok);padding:10px 12px;border-radius:0 6px 6px 0">' +
