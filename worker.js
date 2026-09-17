@@ -1270,6 +1270,46 @@ function r_life() {
 }
 
 // ===== WATER LOG =====
+function wlog_cls(key, val) {
+  if (val === null || val === undefined || val === '') return '';
+  val = parseFloat(val);
+  if (key === 'ammonia' || key === 'nitrite')
+    return val === 0 ? 'var(--ok)' : val <= 0.25 ? 'var(--warn)' : 'var(--danger)';
+  if (key === 'nitrate')
+    return val <= 20 ? 'var(--ok)' : val <= 40 ? 'var(--warn)' : 'var(--danger)';
+  if (key === 'ph')
+    return val >= 6.5 && val <= 7.5 ? 'var(--ok)' : val >= 6.0 && val <= 8.0 ? 'var(--warn)' : 'var(--danger)';
+  if (key === 'gh')
+    return val >= 4 && val <= 12 ? 'var(--ok)' : val >= 2 && val <= 15 ? 'var(--warn)' : 'var(--danger)';
+  return '';
+}
+function wlog_lbl(key, val) {
+  if (val === null || val === undefined || val === '') return '&mdash;';
+  val = parseFloat(val);
+  if (key === 'ammonia' || key === 'nitrite')
+    return val === 0 ? 'Safe' : val <= 0.25 ? 'Trace' : 'Toxic';
+  if (key === 'nitrate')
+    return val <= 20 ? 'Good' : val <= 40 ? 'High' : 'Danger';
+  if (key === 'ph')
+    return val < 6.0 ? 'Too acidic' : val <= 6.5 ? 'Slightly low' : val <= 7.5 ? 'Ideal' : val <= 8.0 ? 'Slightly high' : 'Too high';
+  if (key === 'gh')
+    return val < 2 ? 'Too soft' : val <= 4 ? 'Soft' : val <= 12 ? 'Good' : val <= 15 ? 'Hard' : 'Very hard';
+  return '';
+}
+function wlog_arrow(cur, prev) {
+  if (prev === null || prev === undefined || cur === null || cur === undefined) return '';
+  var diff = parseFloat(cur) - parseFloat(prev);
+  if (Math.abs(diff) < 0.001) return '';
+  return diff > 0 ? ' <span style="color:var(--muted);font-size:10px">&#x2191;</span>' : ' <span style="color:var(--muted);font-size:10px">&#x2193;</span>';
+}
+function wlog_cell(key, val, prev_val) {
+  if (val === null || val === undefined || val === '') return '<td>&mdash;</td>';
+  var col = wlog_cls(key, val);
+  var lbl = wlog_lbl(key, val);
+  var arr = wlog_arrow(val, prev_val);
+  var style = col ? 'color:' + col + ';font-weight:600' : '';
+  return '<td style="' + style + '">' + val + arr + '<br><span style="font-size:10px;font-weight:400;color:var(--muted)">' + lbl + '</span></td>';
+}
 function r_wlog() {
   var tid = at(), d = ld(), el = document.getElementById('p-wlog');
   if (!d.tanks.find(function(t){return t.id===tid;})) { el.innerHTML = no_tank(); return; }
@@ -1297,14 +1337,36 @@ function r_wlog() {
       '</select></div><div class="chart-wrap"><canvas id="wc"></canvas></div></div>';
   }
   if (entries.length) {
+    var sorted = entries.slice().reverse();
     h += '<div class="card"><div class="ctitle">History</div><div class="tw"><table>' +
-      '<tr><th>Date</th><th>Temp ' + t_lbl() + '</th><th>NH3</th><th>NO2</th><th>NO3</th><th>pH</th><th>GH</th><th>Notes</th><th></th></tr>';
-    entries.slice().reverse().slice(0, 30).forEach(function(e) {
-      h += '<tr><td>' + e.date + '</td><td>' + nv(d_t(e.temp_f)) + '</td><td>' + nv(e.ammonia) + '</td><td>' + nv(e.nitrite) + '</td>' +
-           '<td>' + nv(e.nitrate) + '</td><td>' + nv(e.ph) + '</td><td>' + nv(e.gh) + '</td><td>' + esc(e.notes) + '</td>' +
+      '<tr><th>Date</th><th>Temp ' + t_lbl() + '</th><th>NH3 (ppm)</th><th>NO2 (ppm)</th><th>NO3 (ppm)</th><th>pH</th><th>GH</th><th>Notes</th><th></th></tr>';
+    sorted.slice(0, 30).forEach(function(e, i) {
+      var prev = sorted[i + 1];
+      var td = d_t(e.temp_f);
+      var pt = prev ? d_t(prev.temp_f) : null;
+      var t_arr = wlog_arrow(td, pt);
+      var t_disp = td !== null ? td + t_arr : '&mdash;';
+      h += '<tr><td>' + e.date + '</td><td>' + t_disp + '</td>' +
+           wlog_cell('ammonia', e.ammonia, prev ? prev.ammonia : null) +
+           wlog_cell('nitrite', e.nitrite, prev ? prev.nitrite : null) +
+           wlog_cell('nitrate', e.nitrate, prev ? prev.nitrate : null) +
+           wlog_cell('ph', e.ph, prev ? prev.ph : null) +
+           wlog_cell('gh', e.gh, prev ? prev.gh : null) +
+           '<td>' + esc(e.notes) + '</td>' +
            '<td><button class="btn bd bs" data-id="' + e.id + '" onclick="del_water(this.dataset.id);r_wlog()">&#x2715;</button></td></tr>';
     });
     h += '</table></div></div>';
+    h += '<div class="card"><div class="ctitle">Ideal Ranges</div>' +
+      '<div class="tw"><table>' +
+      '<tr><th>Parameter</th><th style="color:var(--ok)">&#x2713; Ideal</th><th style="color:var(--warn)">&#x26A0; Caution</th><th style="color:var(--danger)">&#x2717; Danger</th></tr>' +
+      '<tr><td>Ammonia (NH3)</td><td>0 ppm</td><td>0.01&ndash;0.25 ppm</td><td>&gt; 0.25 ppm</td></tr>' +
+      '<tr><td>Nitrite (NO2)</td><td>0 ppm</td><td>0.01&ndash;0.25 ppm</td><td>&gt; 0.25 ppm</td></tr>' +
+      '<tr><td>Nitrate (NO3)</td><td>0&ndash;20 ppm</td><td>21&ndash;40 ppm</td><td>&gt; 40 ppm</td></tr>' +
+      '<tr><td>pH</td><td>6.5&ndash;7.5</td><td>6.0&ndash;6.4 or 7.6&ndash;8.0</td><td>&lt; 6.0 or &gt; 8.0</td></tr>' +
+      '<tr><td>Hardness (GH)</td><td>4&ndash;12 dGH</td><td>2&ndash;3 or 13&ndash;15 dGH</td><td>&lt; 2 or &gt; 15 dGH</td></tr>' +
+      '</table></div>' +
+      '<p style="font-size:12px;color:var(--muted);margin:8px 0 0">Temperature ideal range depends on your fish species &mdash; check the Compatibility tab.</p>' +
+      '</div>';
   }
   el.innerHTML = h;
   if (entries.length >= 2) draw_chart(tid, 'temp_f');
@@ -1837,7 +1899,10 @@ function do_add_tank() {
 }
 function sub_add_tank(e) {
   e.preventDefault(); var f = e.target;
-  add_tank(f.name.value, f.gal.value, f.setup.value, f.notes.value, inp_t(f.room_tmin.value), inp_t(f.room_tmax.value));
+  var lit = parseFloat(f.lit.value) || 0;
+  var gal = parseFloat(f.gal.value) || 0;
+  if (get_pref().vol === 'L' && lit) gal = lit / 3.78541;
+  add_tank(f.name.value, gal, f.setup.value, f.notes.value, inp_t(f.room_tmin.value), inp_t(f.room_tmax.value));
   cm(); init();
 }
 
@@ -1950,7 +2015,10 @@ function do_edit_tank() {
 }
 function sub_edit_tank(e) {
   e.preventDefault(); var f = e.target;
-  upd_tank(at(), f.name.value, f.gal.value, f.setup.value, f.notes.value, inp_t(f.room_tmin.value), inp_t(f.room_tmax.value));
+  var lit = parseFloat(f.lit.value) || 0;
+  var gal = parseFloat(f.gal.value) || 0;
+  if (get_pref().vol === 'L' && lit) gal = lit / 3.78541;
+  upd_tank(at(), f.name.value, gal, f.setup.value, f.notes.value, inp_t(f.room_tmin.value), inp_t(f.room_tmax.value));
   cm(); init();
 }
 function do_del_tank() {
