@@ -1071,41 +1071,36 @@ function r_cycle_card(tid) {
     var wlast = wentries.length ? wentries[wentries.length - 1] : null;
     var wnh3 = wlast ? wlast.ammonia : null;
     var wno2 = wlast ? wlast.nitrite : null;
-    var cycle_lbl = is_fish_in ? 'Fish-in cycle' : 'Fishless cycle';
-    h += '<div style="font-size:11px;color:var(--muted);margin:6px 0 4px">Detected: <strong>' + cycle_lbl + '</strong></div>';
-    // Cycle method selector (fishless only)
-    if (!is_fish_in) {
-      var cm = chk.cycle_method || '';
-      h += '<div style="margin:6px 0 8px;display:flex;align-items:center;gap:8px">' +
-           '<label style="font-size:12px;color:var(--muted)">How did you start the cycle?</label>' +
-           '<select style="font-size:12px;padding:2px 6px;border-radius:4px;border:1px solid #ccc" onchange="save_cycle_method(this.value)">' +
-           '<option value=""' + (cm==='' ? ' selected' : '') + '>Not specified</option>' +
-           '<option value="ammonia"' + (cm==='ammonia' ? ' selected' : '') + '>Pure ammonia (liquid/powder)</option>' +
-           '<option value="food"' + (cm==='food' ? ' selected' : '') + '>Fish food or organic waste</option>' +
-           '<option value="media"' + (cm==='media' ? ' selected' : '') + '>Established filter media / gravel</option>' +
-           '</select></div>';
-    }
+    // Use saved cycle_method; default to fish-in if livestock is present and no method saved
+    var cm = chk.cycle_method || (is_fish_in ? 'fish_in' : '');
+    var cycle_lbl = cm === 'fish_in' ? 'Fish-in cycle' : cm === 'ammonia' ? 'Fishless — pure ammonia' : cm === 'food' ? 'Fishless — fish food' : cm === 'media' ? 'Fishless — established media' : 'Not set';
+    h += '<div style="margin:6px 0 8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+         '<label style="font-size:12px;color:var(--muted)">Cycle method:</label>' +
+         '<select style="font-size:12px;padding:2px 6px;border-radius:4px;border:1px solid #ccc" onchange="save_cycle_method(this.value)">' +
+         '<option value=""'          + (cm===''        ? ' selected' : '') + '>Not specified</option>' +
+         '<option value="fish_in"'   + (cm==='fish_in'  ? ' selected' : '') + '>Fish-in (fish are in the tank)</option>' +
+         '<option value="ammonia"'   + (cm==='ammonia'  ? ' selected' : '') + '>Fishless — pure ammonia</option>' +
+         '<option value="food"'      + (cm==='food'     ? ' selected' : '') + '>Fishless — fish food / organic</option>' +
+         '<option value="media"'     + (cm==='media'    ? ' selected' : '') + '>Fishless — established filter media</option>' +
+         '</select></div>';
     var cwarns = [];
-    if (is_fish_in) {
+    if (cm === 'fish_in' || (cm === '' && is_fish_in)) {
       // Fish-in: keep NH3 and NO2 below toxic levels at all times
-      if (wnh3 !== null && wnh3 > 2)   cwarns.push({level:'danger', msg:'Ammonia is ' + wnh3 + ' ppm — critical. Do a 30-50% water change now and dose Seachem Prime to detoxify.'});
-      else if (wnh3 !== null && wnh3 > 0.5) cwarns.push({level:'warn', msg:'Ammonia is ' + wnh3 + ' ppm — harmful to fish. Do a 25% water change and dose Seachem Prime daily.'});
-      if (wno2 !== null && wno2 > 1)   cwarns.push({level:'danger', msg:'Nitrite is ' + wno2 + ' ppm — critically toxic. Do a 30-50% water change immediately and dose Seachem Prime.'});
-      else if (wno2 !== null && wno2 > 0.5) cwarns.push({level:'warn', msg:'Nitrite is ' + wno2 + ' ppm — toxic to fish. Do a 25% water change and dose Seachem Prime.'});
+      if (wnh3 !== null && wnh3 > 2)       cwarns.push({level:'danger', msg:'Ammonia is ' + wnh3 + ' ppm — critical. Do a 30-50% water change now and dose Seachem Prime to detoxify.'});
+      else if (wnh3 !== null && wnh3 > 0.5) cwarns.push({level:'warn',   msg:'Ammonia is ' + wnh3 + ' ppm — harmful to fish. Do a 25% water change and dose Seachem Prime daily.'});
+      if (wno2 !== null && wno2 > 1)        cwarns.push({level:'danger', msg:'Nitrite is ' + wno2 + ' ppm — critically toxic. Do a 30-50% water change immediately and dose Seachem Prime.'});
+      else if (wno2 !== null && wno2 > 0.5) cwarns.push({level:'warn',   msg:'Nitrite is ' + wno2 + ' ppm — toxic to fish. Do a 25% water change and dose Seachem Prime.'});
+    } else if (cm === 'ammonia') {
+      if (wnh3 !== null && wnh3 < 1 && cyc.phase === 1) cwarns.push({level:'warn', msg:'Ammonia is only ' + wnh3 + ' ppm — too low to seed bacteria. Dose pure ammonia to reach 2-4 ppm.'});
+      if (wnh3 !== null && wnh3 > 5) cwarns.push({level:'warn', msg:'Ammonia is ' + wnh3 + ' ppm — above 5 ppm may inhibit bacteria. Add fresh water to dilute down to 2-4 ppm.'});
+    } else if (cm === 'food') {
+      if (wnh3 !== null && wnh3 > 4) cwarns.push({level:'warn', msg:'Ammonia is ' + wnh3 + ' ppm — likely too much food decomposing. Remove visible food debris and reduce the amount added.'});
+    } else if (cm === 'media') {
+      if (wnh3 !== null && wnh3 > 2) cwarns.push({level:'warn', msg:'Ammonia is ' + wnh3 + ' ppm — the seeded bacteria need a food source. Add a small pinch of fish food daily to keep them active.'});
     } else {
-      var cm_warn = chk.cycle_method || '';
-      if (cm_warn === 'ammonia') {
-        if (wnh3 !== null && wnh3 < 1 && cyc.phase === 1) cwarns.push({level:'warn', msg:'Ammonia is only ' + wnh3 + ' ppm — too low to seed bacteria. Dose pure ammonia to reach 2-4 ppm.'});
-        if (wnh3 !== null && wnh3 > 5) cwarns.push({level:'warn', msg:'Ammonia is ' + wnh3 + ' ppm — above 5 ppm may inhibit bacteria. Add fresh water to dilute down to 2-4 ppm.'});
-      } else if (cm_warn === 'food') {
-        if (wnh3 !== null && wnh3 > 4) cwarns.push({level:'warn', msg:'Ammonia is ' + wnh3 + ' ppm — likely too much food decomposing. Remove visible food debris and reduce the amount added.'});
-      } else if (cm_warn === 'media') {
-        if (wnh3 !== null && wnh3 > 2) cwarns.push({level:'warn', msg:'Ammonia is ' + wnh3 + ' ppm — the seeded bacteria need a food source. Add a small pinch of fish food daily to keep them active.'});
-      } else {
-        // Method not selected — generic fallback
-        if (wnh3 !== null && wnh3 < 1 && cyc.phase === 1) cwarns.push({level:'warn', msg:'Ammonia is only ' + wnh3 + ' ppm. If using pure ammonia, dose to 2-4 ppm. If using fish food, add a little more.'});
-        if (wnh3 !== null && wnh3 > 5) cwarns.push({level:'warn', msg:'Ammonia is ' + wnh3 + ' ppm — very high. Above 5 ppm may slow bacterial growth. Select your cycle method above for specific guidance.'});
-      }
+      // No method selected — generic fallback
+      if (wnh3 !== null && wnh3 < 1 && cyc.phase === 1) cwarns.push({level:'warn', msg:'Ammonia is only ' + wnh3 + ' ppm. If using pure ammonia, dose to 2-4 ppm. If using fish food, add a little more.'});
+      if (wnh3 !== null && wnh3 > 5) cwarns.push({level:'warn', msg:'Ammonia is ' + wnh3 + ' ppm — very high. Above 5 ppm may slow bacterial growth. Select your cycle method above for specific guidance.'});
     }
     cwarns.forEach(function(w) {
       var bg = w.level === 'danger' ? '#fdecea' : '#fef3d5';
