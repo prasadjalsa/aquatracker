@@ -1211,39 +1211,47 @@ function mark_startup_done() {
 function r_startup_card(tid) {
   var d = ld();
   var tank = d.tanks.find(function(t){ return t.id === tid; }); if (!tank) return '';
-  // Only show for new-ish tanks that aren't fully cycled
   var age = Math.floor((Date.now() - new Date(tank.setup_date + 'T00:00:00').getTime()) / 86400000);
-  if (age > 180 || tank.cycled) return '';
+  if (age > 270 || tank.cycled) return '';
 
   var method = tank.startup_method || '';
-  // Startup phase complete — nothing to show here; cycle card takes over
   if (tank.startup_done) return '';
-  // Standard/none — just let the cycle card do its thing
   if (!method || method === 'standard') return '';
 
   var start_d = tank.startup_date || tank.setup_date;
   var elapsed = Math.max(0, Math.floor((Date.now() - new Date(start_d + 'T00:00:00').getTime()) / 86400000));
 
   if (method === 'dark') {
-    var dur = 28;
-    var pct = Math.min(100, Math.round(elapsed / dur * 100));
-    var remaining = Math.max(0, dur - elapsed);
-    var color, phase_lbl, phase_desc, steps;
-    steps = ['Setup', 'Dark period', 'Light intro', 'Cycling'];
-    var cur_step;
+    // Dark Start: ~7 weeks total before fish can be added
+    // Phase 0: Setup (day 0)        — fill tank, block all light, run filter, add ammonia source
+    // Phase 1: Dark cycling (1-28)  — complete blackout while bacteria establish + cycling begins
+    // Phase 2: Light intro (29-42)  — gradual photoperiod increase, watch for algae
+    // Phase 3: Verify water (43+)   — confirm NH3 & NO2 = 0, nitrate present, safe for fish
+    var total = 49; // 7 weeks as reference for the progress bar
+    var pct = Math.min(100, Math.round(elapsed / total * 100));
+    var steps = ['Setup', 'Dark cycling', 'Light intro', 'Verify water', 'Add fish'];
+    var cur_step, color, phase_lbl, phase_desc, tip;
+
     if (elapsed < 1) {
-      cur_step = 0; color = '#9ca3af';
-      phase_lbl = 'Starting';
-      phase_desc = 'Turn off all lights now and cover the tank if natural light enters the room. Keep the filter running. CO2 should be off. The darkness prevents algae spores from establishing while beneficial bacteria begin to grow.';
-    } else if (elapsed < dur) {
-      cur_step = 1; color = '#1a6b8a';
-      phase_lbl = 'Dark period — day ' + elapsed + ' of ' + dur;
-      phase_desc = remaining + ' days remaining. Keep the tank completely dark. Check filter flow and temperature every few days without turning the lights on. Avoid opening the lid unnecessarily.';
+      cur_step = 0; color = '#9ca3af'; phase_lbl = 'Day 0 — Setup';
+      phase_desc = 'Fill the tank with dechlorinated water. Turn off ALL lights immediately and cover the tank if natural light enters the room. Start the filter now — cycling begins in the dark. Add your ammonia source (pure ammonia, fish food, or established media) to feed the bacteria. CO2 off.';
+      tip = null;
+    } else if (elapsed < 29) {
+      var rem = 28 - elapsed;
+      cur_step = 1; color = '#1a6b8a'; phase_lbl = 'Dark cycling — day ' + elapsed + ' of 28';
+      phase_desc = rem + ' day' + (rem !== 1 ? 's' : '') + ' remaining. Tank is in complete darkness while beneficial bacteria establish on the filter media and substrate. Cycling is running simultaneously — test NH3, NO2, and NO3 every 3-4 days (open the lid briefly with the lights off, or use a torch). Do not turn the lights on.';
+      tip = '<span style="font-size:16px">&#x1F506;</span><span style="font-size:13px;font-weight:600">Lights OFF for ' + rem + ' more day' + (rem !== 1 ? 's' : '') + '</span><span style="font-size:12px;color:var(--muted)"> — test water in the dark with a torch</span>';
+    } else if (elapsed < 43) {
+      var rem = 42 - elapsed;
+      cur_step = 2; color = '#e8a838'; phase_lbl = 'Light introduction — day ' + elapsed;
+      phase_desc = 'Start with 4-5 hours of light per day and increase by 1 hour every 3 days (target: 8-10 hrs/day). Watch closely for algae every single day — the dark period makes it unlikely, but catch any outbreak early. Reduce photoperiod immediately if algae appears. Keep testing water: NH3 and NO2 should be close to 0 by now.';
+      tip = '<span style="font-size:14px">&#x1F331;</span><span style="font-size:13px">Algae alert period — inspect the tank daily. ' + rem + ' days until verification phase.</span>';
     } else {
-      cur_step = 2; color = '#e8a838';
-      phase_lbl = 'Introduce light gradually';
-      phase_desc = 'Dark period complete. Start with just 4-6 hours of light per day for the first week, then add 1 hour per week. Watch closely for algae in the first 2 weeks — if it appears, reduce photoperiod. Once light schedule is stable, start your nitrogen cycle.';
+      cur_step = 3; color = '#3ab87a'; phase_lbl = 'Verify water parameters';
+      phase_desc = 'The dark start is complete. Before adding fish, confirm: Ammonia = 0 ppm, Nitrite = 0 ppm, Nitrate detectable (shows the cycle ran). Do a 30-50% water change to flush built-up nitrates, then add your first fish. Light schedule should now be 8-10 hours/day.';
+      tip = '<span style="font-size:14px">&#x2705;</span><span style="font-size:13px;font-weight:600">Final check before fish:</span><span style="font-size:12px;color:var(--muted)"> NH3 = 0 ppm, NO2 = 0 ppm, NO3 present. Do a 30-50% water change, then add fish.</span>';
     }
+
     var h = '<div class="card" style="border-left:4px solid ' + color + '">';
     h += '<div class="ctitle">Dark Start Tracker <span class="pill" style="background:' + color + ';color:#fff;font-size:12px">' + phase_lbl + '</span></div>';
     h += '<div class="bl-bar"><div class="bl-fill" style="width:' + pct + '%;background:' + color + '"></div></div>';
@@ -1254,38 +1262,49 @@ function r_startup_card(tid) {
     });
     h += '</div>';
     h += '<p style="font-size:13px;line-height:1.5">' + esc(phase_desc) + '</p>';
-    if (elapsed < dur) {
-      h += '<div style="display:flex;align-items:center;gap:8px;margin-top:8px;background:#e8f4fd;border-left:3px solid #4db8d4;padding:8px 10px;border-radius:0 6px 6px 0">' +
-           '<span style="font-size:16px">&#x1F506;</span>' +
-           '<span style="font-size:13px;font-weight:600">Lights must stay OFF for ' + remaining + ' more day' + (remaining !== 1 ? 's' : '') + '</span></div>';
+    if (tip) {
+      h += '<div style="display:flex;align-items:center;gap:8px;margin-top:8px;background:#e8f4fd;border-left:3px solid ' + color + ';padding:8px 10px;border-radius:0 6px 6px 0">' + tip + '</div>';
     }
-    h += '<p style="font-size:12px;color:var(--muted);margin-top:8px;background:#f5f8fb;padding:8px 10px;border-radius:6px"><strong>Why dark start?</strong> Starting in complete darkness for 3-4 weeks starves algae spores of the light they need to establish. When you introduce light, your plants have a head start and the tank is far less likely to experience an early algae outbreak.</p>';
-    h += '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">';
-    h += '<button class="btn bg bs" onclick="mark_startup_done()">Mark dark start complete</button>';
+    h += '<p style="font-size:12px;color:var(--muted);margin-top:8px;background:#f5f8fb;padding:8px 10px;border-radius:6px">' +
+         '<strong>Timeline:</strong> 4 weeks dark → 2 weeks light intro → confirm water → add fish. ' +
+         'Total: ~7 weeks. Cycling happens during the dark period, so no extra cycling time is needed afterward.</p>';
+    h += '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">';
+    h += '<button class="btn bg bs" onclick="mark_startup_done()">Mark complete — ready to add fish</button>';
     h += '<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">Started: <input type="date" value="' + start_d + '" style="font-size:12px;padding:2px 6px;border-radius:4px;border:1px solid #ccc" onchange="save_startup_date(this.value)"></div>';
     h += '</div></div>';
     return h;
   }
 
   if (method === 'dry') {
-    var dur = 42;
-    var pct = Math.min(100, Math.round(elapsed / dur * 100));
-    var remaining = Math.max(0, dur - elapsed);
-    var color, cur_step, phase_lbl, phase_desc;
-    var steps = ['Plant emersed', 'Growth phase', 'Flood', 'Cycling'];
+    // Dry Start: ~12 weeks total before fish can be added
+    // Phase 0: Plant emersed (0-6)     — no water, moist substrate, seal for humidity
+    // Phase 1: Emersed growth (7-41)   — mist daily, roots establishing, lights on
+    // Phase 2: Flood tank (42-44)      — slowly fill over 1-2 days, start filter
+    // Phase 3: Nitrogen cycle (45+)    — standard cycling, 4-8 weeks, then fish
+    var total = 84; // 12 weeks reference
+    var pct = Math.min(100, Math.round(elapsed / total * 100));
+    var steps = ['Plant emersed', 'Growth', 'Flood', 'Nitrogen cycle', 'Add fish'];
+    var cur_step, color, phase_lbl, phase_desc, tip;
+
     if (elapsed < 7) {
-      cur_step = 0; color = '#3ab87a';
-      phase_lbl = 'Planting phase';
-      phase_desc = 'Plant directly into moist substrate — no standing water yet. Lay the plants in shallowly so roots contact the soil. Seal the top with plastic wrap or a glass lid to trap humidity above 80%. Keep lights on 10-12 hours/day.';
-    } else if (elapsed < dur) {
-      cur_step = 1; color = '#4db8d4';
-      phase_lbl = 'Emersed growth — day ' + elapsed + ' of ' + dur;
-      phase_desc = remaining + ' days remaining. Mist the plants twice daily with dechlorinated water. Look for new leaf growth — this means roots are establishing. Keep humidity high. Remove any mould as soon as it appears.';
+      cur_step = 0; color = '#3ab87a'; phase_lbl = 'Day ' + elapsed + ' — Planting phase';
+      phase_desc = 'No standing water yet. Plant directly into moist (not wet) substrate — roots should contact the soil. Lightly mist everything, then seal the top with cling wrap or a glass lid to trap humidity above 80%. Keep lights on 10-12 hours/day. CO2 is off — plants absorb CO2 directly from air.';
+      tip = '<span style="font-size:14px">&#x1F4A7;</span><span style="font-size:13px">No water in tank yet. Just moist substrate + sealed lid for humidity.</span>';
+    } else if (elapsed < 42) {
+      var rem = 41 - elapsed;
+      cur_step = 1; color = '#4db8d4'; phase_lbl = 'Emersed growth — day ' + elapsed + ' of 41';
+      phase_desc = rem + ' day' + (rem !== 1 ? 's' : '') + ' remaining. Mist the plants twice daily with dechlorinated water. Look for new leaf or runner growth — this means roots are establishing in the substrate. Remove any white mould immediately. Keep the lid sealed between mistings. Light: 10-12 hrs/day.';
+      tip = '<span style="font-size:16px">&#x1F4A6;</span><span style="font-size:13px;font-weight:600">Mist twice daily</span><span style="font-size:12px;color:var(--muted)"> — dechlorinated water, keep humidity &gt;80%</span>';
+    } else if (elapsed < 45) {
+      cur_step = 2; color = '#e8a838'; phase_lbl = 'Flood the tank';
+      phase_desc = 'Plants are established. Fill the tank slowly over 1-2 days using dechlorinated water — do not rush or pour directly onto the plants. Start the filter once the water level is over the intake. Some plants will shed their emersed-form leaves and grow new submersed leaves — this is completely normal. Do not add fish yet.';
+      tip = '<span style="font-size:14px">&#x26A0;&#xFE0F;</span><span style="font-size:13px">Fill slowly — avoid disturbing the substrate. Leaf shedding is normal during transition.</span>';
     } else {
-      cur_step = 2; color = '#e8a838';
-      phase_lbl = 'Ready to flood';
-      phase_desc = 'Plants are established. Slowly add dechlorinated water over 1-2 days — do not fill all at once. Some plants will shed their emersed-form leaves and grow new submersed leaves. Once flooded, begin your nitrogen cycle before adding fish.';
+      cur_step = 3; color = '#9b59b6'; phase_lbl = 'Nitrogen cycling';
+      phase_desc = 'Tank is flooded. Now run a standard nitrogen cycle before adding fish: add an ammonia source, test NH3, NO2, and NO3 every 2-3 days, and wait for both ammonia and nitrite to drop to 0 with nitrate building up. This typically takes 4-8 weeks. The cycle tracker below will guide you through.';
+      tip = '<span style="font-size:14px">&#x1F9EA;</span><span style="font-size:13px">Cycling now — check the Nitrogen Cycle Tracker below for daily guidance.</span>';
     }
+
     var h = '<div class="card" style="border-left:4px solid ' + color + '">';
     h += '<div class="ctitle">Dry Start Tracker <span class="pill" style="background:' + color + ';color:#fff;font-size:12px">' + phase_lbl + '</span></div>';
     h += '<div class="bl-bar"><div class="bl-fill" style="width:' + pct + '%;background:' + color + '"></div></div>';
@@ -1296,23 +1315,14 @@ function r_startup_card(tid) {
     });
     h += '</div>';
     h += '<p style="font-size:13px;line-height:1.5">' + esc(phase_desc) + '</p>';
-    if (elapsed < 7) {
-      h += '<div style="display:flex;align-items:flex-start;gap:8px;margin-top:8px;background:#eaf8f1;border-left:3px solid var(--ok);padding:8px 10px;border-radius:0 6px 6px 0">' +
-           '<span style="font-size:14px">&#x1F4A7;</span>' +
-           '<span style="font-size:13px">No standing water yet — just moist substrate. Seal the top tightly to maintain high humidity.</span></div>';
-    } else if (elapsed >= 7 && elapsed < dur) {
-      h += '<div style="display:flex;align-items:center;gap:8px;margin-top:8px;background:#e8f4fd;border-left:3px solid #4db8d4;padding:8px 10px;border-radius:0 6px 6px 0">' +
-           '<span style="font-size:16px">&#x1F4A6;</span>' +
-           '<span style="font-size:13px;font-weight:600">Mist twice daily</span>' +
-           '<span style="font-size:12px;color:var(--muted)">— keep humidity above 80%</span></div>';
-    } else {
-      h += '<div style="display:flex;align-items:flex-start;gap:8px;margin-top:8px;background:#fef3d5;border-left:3px solid var(--warn);padding:8px 10px;border-radius:0 6px 6px 0">' +
-           '<span style="font-size:14px">&#x26A0;&#xFE0F;</span>' +
-           '<span style="font-size:13px">Fill slowly over 1-2 days. Do not add fish — complete the nitrogen cycle first after flooding.</span></div>';
+    if (tip) {
+      h += '<div style="display:flex;align-items:center;gap:8px;margin-top:8px;background:#e8f4fd;border-left:3px solid ' + color + ';padding:8px 10px;border-radius:0 6px 6px 0">' + tip + '</div>';
     }
-    h += '<p style="font-size:12px;color:var(--muted);margin-top:8px;background:#f5f8fb;padding:8px 10px;border-radius:6px"><strong>Why dry start?</strong> Growing plants emersed lets them develop strong roots in the substrate before being submerged. Plants are far more established when you flood the tank, which gives them a competitive advantage over algae from day one.</p>';
-    h += '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">';
-    h += '<button class="btn bg bs" onclick="mark_startup_done()">Mark dry start complete</button>';
+    h += '<p style="font-size:12px;color:var(--muted);margin-top:8px;background:#f5f8fb;padding:8px 10px;border-radius:6px">' +
+         '<strong>Timeline:</strong> 6 weeks emersed → flood over 1-2 days → 4-8 weeks nitrogen cycle → add fish. ' +
+         'Total: ~12-14 weeks. Plants have very strong roots by the time fish arrive.</p>';
+    h += '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">';
+    h += '<button class="btn bg bs" onclick="mark_startup_done()">Mark dry start complete (flooded + cycled)</button>';
     h += '<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">Started: <input type="date" value="' + start_d + '" style="font-size:12px;padding:2px 6px;border-radius:4px;border:1px solid #ccc" onchange="save_startup_date(this.value)"></div>';
     h += '</div></div>';
     return h;
@@ -1345,8 +1355,16 @@ function r_cycle_card(tid) {
   var d = ld();
   var tank = d.tanks.find(function(t){ return t.id === tid; }); if (!tank) return '';
   if (tank.cycled) return '';
-  // Hide cycle card while dark/dry start is still in progress
-  if ((tank.startup_method === 'dark' || tank.startup_method === 'dry') && !tank.startup_done) return '';
+  // Hide cycle card while dark start or dry start (pre-flood) is still in progress
+  if (!tank.startup_done) {
+    if (tank.startup_method === 'dark') return ''; // cycling happens inside dark start card
+    if (tank.startup_method === 'dry') {
+      // During dry start, suppress cycle card until flooding phase (day 45+)
+      var su_start = tank.startup_date || tank.setup_date;
+      var su_elapsed = Math.max(0, Math.floor((Date.now() - new Date(su_start + 'T00:00:00').getTime()) / 86400000));
+      if (su_elapsed < 45) return '';
+    }
+  }
   var chk = tank.setup_chk || {};
   var is_fish_in = d.stock.filter(function(s){ return s.tank_id === tid; }).length > 0;
   var cm = chk.cycle_method || (is_fish_in ? 'fish_in' : '');
