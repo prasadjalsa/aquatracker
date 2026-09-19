@@ -1407,11 +1407,11 @@ function r_startup_picker(tid) {
   h += '<div class="ctitle">Choose Your Startup Method</div>';
   h += '<p style="font-size:13px;line-height:1.5;margin-bottom:10px">How do you plan to start this aquarium? Each method has different steps to track. You can change this at any time.</p>';
   h += '<div style="display:flex;flex-direction:column;gap:8px">';
-  h += '<button class="btn bg" style="text-align:left;padding:10px 14px" onclick="save_startup_method(\'standard\')">' +
+  h += '<button class="btn bg" style="text-align:left;padding:10px 14px" data-sm="standard" onclick="save_startup_method(this.dataset.sm)">' +
        '<strong>Standard — Nitrogen Cycle only</strong><br><span style="font-size:12px;color:var(--muted)">Fill with water, add an ammonia source and cycle. Most common approach.</span></button>';
-  h += '<button class="btn bg" style="text-align:left;padding:10px 14px" onclick="save_startup_method(\'dark\')">' +
+  h += '<button class="btn bg" style="text-align:left;padding:10px 14px" data-sm="dark" onclick="save_startup_method(this.dataset.sm)">' +
        '<strong>Dark Start Method</strong><br><span style="font-size:12px;color:var(--muted)">Run the tank in complete darkness for 3-4 weeks before introducing light. Best for preventing early algae outbreaks in planted tanks.</span></button>';
-  h += '<button class="btn bg" style="text-align:left;padding:10px 14px" onclick="save_startup_method(\'dry\')">' +
+  h += '<button class="btn bg" style="text-align:left;padding:10px 14px" data-sm="dry" onclick="save_startup_method(this.dataset.sm)">' +
        '<strong>Dry Start Method</strong><br><span style="font-size:12px;color:var(--muted)">Grow plants emersed (out of water) for 4-6 weeks before flooding. Gives plants a strong root system before any fish are added.</span></button>';
   h += '</div></div>';
   return h;
