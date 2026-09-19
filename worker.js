@@ -1724,6 +1724,15 @@ function r_dash() {
   // Setup checklist
   h += r_setup_card(tid);
 
+  // Startup method picker (shown for new tanks before method is chosen)
+  h += r_startup_picker(tid);
+
+  // Startup method tracker (dark start / dry start)
+  h += r_startup_card(tid);
+
+  // Cycle tracker
+  h += r_cycle_card(tid);
+
   // Parameter trend alerts
   var p_alerts = get_param_alerts(tid);
   if (p_alerts.length) {
@@ -1752,15 +1761,6 @@ function r_dash() {
        '<div class="ssub">' + feed_sub + '</div>' +
        '<button class="btn bp bs" style="margin-top:8px;width:100%" onclick="open_feed_modal(at())">Log Feeding</button></div>';
   h += '</div>';
-
-  // Startup method picker (shown for new tanks before method is chosen)
-  h += r_startup_picker(tid);
-
-  // Startup method tracker (dark start / dry start) — shown before nitrogen cycle
-  h += r_startup_card(tid);
-
-  // Cycle tracker
-  h += r_cycle_card(tid);
 
   h += '<div class="card"><div class="ctitle">Last Water Reading';
   if (lr) h += '<small style="font-weight:400;color:var(--muted)"> ' + lr.date + '</small>';
