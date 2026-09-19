@@ -1262,6 +1262,72 @@ function r_startup_card(tid) {
     });
     h += '</div>';
     h += '<p style="font-size:13px;line-height:1.5">' + esc(phase_desc) + '</p>';
+
+    // Cycling method selector + parameter warnings (shown during dark cycling and light intro phases)
+    if (elapsed >= 1 && cur_step < 3) {
+      var chk = tank.setup_chk || {};
+      var cm = chk.cycle_method || '';
+      var is_fish_in = d.stock.filter(function(s){ return s.tank_id === tid; }).length > 0;
+      if (!cm && is_fish_in) cm = 'fish_in';
+      var cycle_lbl = cm === 'fish_in' ? 'Fish-in' : cm === 'ammonia' ? 'Fishless — pure ammonia' : cm === 'food' ? 'Fishless — fish food' : cm === 'media' ? 'Fishless — established media' : 'Not set';
+      h += '<div style="margin:8px 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+           '<label style="font-size:12px;color:var(--muted)">Cycling method:</label>' +
+           '<select style="font-size:12px;padding:2px 6px;border-radius:4px;border:1px solid #ccc" onchange="save_cycle_method(this.value)">' +
+           '<option value=""'         + (cm===''         ? ' selected' : '') + '>Not specified</option>' +
+           '<option value="fish_in"'  + (cm==='fish_in'  ? ' selected' : '') + '>Fish-in (fish are in the tank)</option>' +
+           '<option value="ammonia"'  + (cm==='ammonia'  ? ' selected' : '') + '>Fishless — pure ammonia</option>' +
+           '<option value="food"'     + (cm==='food'     ? ' selected' : '') + '>Fishless — fish food / organic</option>' +
+           '<option value="media"'    + (cm==='media'    ? ' selected' : '') + '>Fishless — established filter media</option>' +
+           '</select></div>';
+      // Parameter warnings based on last water reading
+      var wentries = get_water(tid);
+      var wlast = wentries.length ? wentries[wentries.length - 1] : null;
+      var wnh3 = wlast ? wlast.ammonia : null;
+      var wno2 = wlast ? wlast.nitrite : null;
+      var pref = get_pref();
+      var wc_vol = function(pct) {
+        var v = pref.vol === 'L' ? tank.liters : tank.gallons;
+        var u = pref.vol === 'L' ? 'L' : 'gal';
+        return '~' + Math.round(v * pct) + u;
+      };
+      var cwarns = [];
+      if (cm === 'fish_in' || (cm === '' && is_fish_in)) {
+        if (wnh3 !== null && wnh3 > 2)       cwarns.push({level:'danger', msg:'Ammonia is ' + wnh3 + ' ppm — critical. Do a 30-50% water change (' + wc_vol(0.4) + ') now and dose Seachem Prime to detoxify.'});
+        else if (wnh3 !== null && wnh3 > 0.5) cwarns.push({level:'warn',  msg:'Ammonia is ' + wnh3 + ' ppm — harmful to fish. Do a 25% water change (' + wc_vol(0.25) + ') and dose Seachem Prime daily.'});
+        if (wno2 !== null && wno2 > 1)        cwarns.push({level:'danger', msg:'Nitrite is ' + wno2 + ' ppm — critically toxic. Do a 30-50% water change (' + wc_vol(0.4) + ') immediately and dose Seachem Prime.'});
+        else if (wno2 !== null && wno2 > 0.5) cwarns.push({level:'warn',  msg:'Nitrite is ' + wno2 + ' ppm — toxic to fish. Do a 25% water change (' + wc_vol(0.25) + ') and dose Seachem Prime.'});
+      } else if (cm === 'ammonia') {
+        if (wnh3 !== null && wnh3 < 1) cwarns.push({level:'warn', msg:'Ammonia is only ' + wnh3 + ' ppm — too low to seed bacteria. Dose pure ammonia to reach 2-4 ppm (do this in the dark — no need to turn lights on).'});
+        if (wnh3 !== null && wnh3 > 5) cwarns.push({level:'warn', msg:'Ammonia is ' + wnh3 + ' ppm — above 5 ppm may inhibit bacteria. Add fresh water to dilute down to 2-4 ppm.'});
+      } else if (cm === 'food') {
+        if (wnh3 !== null && wnh3 > 4) cwarns.push({level:'warn', msg:'Ammonia is ' + wnh3 + ' ppm — likely too much food decomposing. Remove visible food debris and reduce the amount added.'});
+      } else if (cm === 'media') {
+        if (wnh3 !== null && wnh3 > 2) cwarns.push({level:'warn', msg:'Ammonia is ' + wnh3 + ' ppm — bacteria need a food source. Add a small pinch of fish food daily to keep them active.'});
+      } else {
+        if (wnh3 !== null && wnh3 < 1) cwarns.push({level:'warn', msg:'Ammonia is only ' + wnh3 + ' ppm. Select your cycling method above for specific guidance on dosing.'});
+        if (wnh3 !== null && wnh3 > 5) cwarns.push({level:'warn', msg:'Ammonia is ' + wnh3 + ' ppm — very high. Select your cycling method above for specific guidance.'});
+      }
+      cwarns.forEach(function(w) {
+        var bg = w.level === 'danger' ? '#fdecea' : '#fef3d5';
+        var bc = w.level === 'danger' ? 'var(--danger)' : 'var(--warn)';
+        var ic = w.level === 'danger' ? '&#x1F6A8;' : '&#x26A0;&#xFE0F;';
+        h += '<div style="display:flex;align-items:flex-start;gap:8px;margin-top:6px;background:' + bg + ';border-left:3px solid ' + bc + ';padding:8px 10px;border-radius:0 6px 6px 0">' +
+             '<span style="font-size:14px">' + ic + '</span><span style="font-size:12px">' + w.msg + '</span></div>';
+      });
+      if (!cwarns.length && wlast && (wnh3 !== null || wno2 !== null)) {
+        var ok_parts = [];
+        if (wnh3 !== null) ok_parts.push('NH3: ' + wnh3 + ' ppm');
+        if (wno2 !== null) ok_parts.push('NO2: ' + wno2 + ' ppm');
+        h += '<div style="font-size:12px;color:var(--ok);margin-top:6px">&#x2713; Readings look good for a ' + (cycle_lbl === 'Not set' ? 'dark start cycle' : cycle_lbl.toLowerCase()) + ' — ' + ok_parts.join(', ') + '</div>';
+      }
+      if (wentries.length) {
+        h += '<div style="display:flex;align-items:center;gap:8px;margin-top:8px;background:#e8f4fd;border-left:3px solid #4db8d4;padding:8px 10px;border-radius:0 6px 6px 0">' +
+             '<span style="font-size:16px">&#x1F9EA;</span>' +
+             '<span style="font-size:13px;font-weight:600">Test every 3-4 days</span>' +
+             '<span style="font-size:12px;color:var(--muted)"> — NH3, NO2, NO3 (test in the dark or with a low torch)</span></div>';
+      }
+    }
+
     if (tip) {
       h += '<div style="display:flex;align-items:center;gap:8px;margin-top:8px;background:#e8f4fd;border-left:3px solid ' + color + ';padding:8px 10px;border-radius:0 6px 6px 0">' + tip + '</div>';
     }
