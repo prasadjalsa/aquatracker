@@ -1571,17 +1571,65 @@ function r_setup_card(tid) {
   // CO2 only needed when the tank contains plants that require it.
   var plants_in_tank = d.plants.filter(function(p){ return p.tank_id === tid; });
   var needs_co2 = plants_in_tank.some(function(p){ return PL[p.plant_id] && PL[p.plant_id].co2; });
-  var items = [
-    {key:'rinsed',    auto:false, done:chk.rinsed||false,  label:'Tank, gravel, and decorations rinsed with no soap'},
-    {key:'dechlo',    auto:false, done:chk.dechlo||false,  label:'Water dechlorinator purchased (Prime, Stress Coat, etc.)'},
-    {key:'_filter',   auto:true,  done:has_filter,          label:'Filter installed and running'},
-    needs_heater && {key:'_heater', auto:true, done:has_heater, label:heater_label},
-    needs_co2    && {key:'_co2',    auto:true, done:has_co2,    label:'CO2 system installed and running (required by your plants)'},
-    {key:'_tested',   auto:true,  done:has_test,            label:'First water test logged'},
-    {key:'cycle_src', auto:false, done:cycle_started,       label:'Ammonia source added to start the cycle'},
-    {key:'_cycled',   auto:true,  done:cyc.phase===4||tank.cycled||false, label:'Tank fully cycled — safe to add fish'},
-    (cyc.phase===4 || tank.cycled) && {key:'post_wc', auto:false, done:chk.post_wc||false, label:'30-50% water change done — flush accumulated nitrates before adding first fish'}
-  ].filter(Boolean);
+  var method = tank.startup_method || 'standard';
+  var items;
+
+  if (method === 'dark') {
+    items = [
+      {key:'rinsed',      auto:false, done:chk.rinsed||false,      label:'Tank, substrate, and decorations rinsed with no soap'},
+      {key:'dechlo',      auto:false, done:chk.dechlo||false,      label:'Water dechlorinator purchased (Prime, Stress Coat, etc.)'},
+      {key:'_filter',     auto:true,  done:has_filter,              label:'Filter installed and running'},
+      needs_heater && {key:'_heater', auto:true, done:has_heater,   label:heater_label},
+      {key:'lights_off',  auto:false, done:chk.lights_off||false,  label:'All lights turned off — tank in complete darkness'},
+      {key:'covered',     auto:false, done:chk.covered||false,     label:'Tank covered or positioned away from natural light'},
+      {key:'cycle_src',   auto:false, done:cycle_started,          label:'Ammonia source added for dark cycling (ammonia, fish food, or fish)'},
+      {key:'_tested',     auto:true,  done:has_test,               label:'First water test logged (test in the dark with a torch)'},
+      {key:'_cycled',     auto:true,  done:cyc.phase===4||tank.cycled||false, label:'Tank fully cycled — NH3 and NO2 both at 0 ppm'},
+      (cyc.phase===4||tank.cycled) && {key:'post_wc', auto:false, done:chk.post_wc||false, label:'30-50% water change done after cycling — flush nitrates before adding fish'}
+    ].filter(Boolean);
+
+  } else if (method === 'dry') {
+    var su_start = tank.startup_date || tank.setup_date;
+    var su_elapsed = Math.max(0, Math.floor((Date.now() - new Date(su_start + 'T00:00:00').getTime()) / 86400000));
+    var flooded = su_elapsed >= 42 || tank.startup_done;
+    if (!flooded) {
+      // Pre-flood checklist
+      items = [
+        {key:'substrate',   auto:false, done:chk.substrate||false,  label:'Substrate prepared and moistened (no standing water)'},
+        {key:'planted',     auto:false, done:chk.planted||false,    label:'Plants planted with roots in contact with substrate'},
+        {key:'sealed',      auto:false, done:chk.sealed||false,     label:'Tank top sealed with cling wrap or glass lid (humidity >80%)'},
+        needs_co2 && {key:'_co2', auto:true, done:false,            label:'CO2 off — plants absorb CO2 from air during emersed phase'},
+        {key:'lights_dry',  auto:false, done:chk.lights_dry||false, label:'Lights set to 10-12 hours/day for emersed growth'}
+      ].filter(Boolean);
+    } else {
+      // Post-flood checklist
+      items = [
+        {key:'flooded',     auto:false, done:chk.flooded||false,    label:'Tank flooded slowly with dechlorinated water (over 1-2 days)'},
+        {key:'dechlo',      auto:false, done:chk.dechlo||false,     label:'Water dechlorinator purchased (Prime, Stress Coat, etc.)'},
+        {key:'_filter',     auto:true,  done:has_filter,            label:'Filter installed and running'},
+        needs_heater && {key:'_heater', auto:true, done:has_heater, label:heater_label},
+        needs_co2    && {key:'_co2',    auto:true, done:has_co2,    label:'CO2 system installed and running (required by your plants)'},
+        {key:'cycle_src',   auto:false, done:cycle_started,        label:'Ammonia source added to start the nitrogen cycle'},
+        {key:'_tested',     auto:true,  done:has_test,             label:'First water test logged'},
+        {key:'_cycled',     auto:true,  done:cyc.phase===4||tank.cycled||false, label:'Tank fully cycled — NH3 and NO2 both at 0 ppm'},
+        (cyc.phase===4||tank.cycled) && {key:'post_wc', auto:false, done:chk.post_wc||false, label:'30-50% water change done — flush nitrates before adding fish'}
+      ].filter(Boolean);
+    }
+
+  } else {
+    // Standard / default
+    items = [
+      {key:'rinsed',    auto:false, done:chk.rinsed||false,  label:'Tank, gravel, and decorations rinsed with no soap'},
+      {key:'dechlo',    auto:false, done:chk.dechlo||false,  label:'Water dechlorinator purchased (Prime, Stress Coat, etc.)'},
+      {key:'_filter',   auto:true,  done:has_filter,          label:'Filter installed and running'},
+      needs_heater && {key:'_heater', auto:true, done:has_heater, label:heater_label},
+      needs_co2    && {key:'_co2',    auto:true, done:has_co2,    label:'CO2 system installed and running (required by your plants)'},
+      {key:'_tested',   auto:true,  done:has_test,            label:'First water test logged'},
+      {key:'cycle_src', auto:false, done:cycle_started,       label:'Ammonia source added to start the cycle'},
+      {key:'_cycled',   auto:true,  done:cyc.phase===4||tank.cycled||false, label:'Tank fully cycled — safe to add fish'},
+      (cyc.phase===4 || tank.cycled) && {key:'post_wc', auto:false, done:chk.post_wc||false, label:'30-50% water change done — flush accumulated nitrates before adding first fish'}
+    ].filter(Boolean);
+  }
   var done_count = items.filter(function(i){ return i.done; }).length;
   var color = done_count === items.length ? 'var(--ok)' : 'var(--surf)';
   var h = '<div class="card" style="border-left:4px solid ' + color + '">';
