@@ -1182,10 +1182,171 @@ function get_param_alerts(tid) {
 }
 
 // ===== CYCLE CARD =====
+// ===== STARTUP METHOD TRACKER =====
+function save_startup_method(method) {
+  var d = ld(), tid = at();
+  d.tanks = d.tanks.map(function(t) {
+    if (t.id !== tid) return t;
+    var patch = {startup_method: method};
+    // Only set start date once, when method is first picked
+    if (!t.startup_date && method) patch.startup_date = today_str();
+    return Object.assign({}, t, patch);
+  });
+  sv(d); r_dash();
+}
+function save_startup_date(date_str) {
+  var d = ld(), tid = at();
+  d.tanks = d.tanks.map(function(t) {
+    return t.id === tid ? Object.assign({}, t, {startup_date: date_str}) : t;
+  });
+  sv(d); r_dash();
+}
+function mark_startup_done() {
+  var d = ld(), tid = at();
+  d.tanks = d.tanks.map(function(t) {
+    return t.id === tid ? Object.assign({}, t, {startup_done: true}) : t;
+  });
+  sv(d); r_dash();
+}
+function r_startup_card(tid) {
+  var d = ld();
+  var tank = d.tanks.find(function(t){ return t.id === tid; }); if (!tank) return '';
+  // Only show for new-ish tanks that aren't fully cycled
+  var age = Math.floor((Date.now() - new Date(tank.setup_date + 'T00:00:00').getTime()) / 86400000);
+  if (age > 180 || tank.cycled) return '';
+
+  var method = tank.startup_method || '';
+  // Startup phase complete — nothing to show here; cycle card takes over
+  if (tank.startup_done) return '';
+  // Standard/none — just let the cycle card do its thing
+  if (!method || method === 'standard') return '';
+
+  var start_d = tank.startup_date || tank.setup_date;
+  var elapsed = Math.max(0, Math.floor((Date.now() - new Date(start_d + 'T00:00:00').getTime()) / 86400000));
+
+  if (method === 'dark') {
+    var dur = 28;
+    var pct = Math.min(100, Math.round(elapsed / dur * 100));
+    var remaining = Math.max(0, dur - elapsed);
+    var color, phase_lbl, phase_desc, steps;
+    steps = ['Setup', 'Dark period', 'Light intro', 'Cycling'];
+    var cur_step;
+    if (elapsed < 1) {
+      cur_step = 0; color = '#9ca3af';
+      phase_lbl = 'Starting';
+      phase_desc = 'Turn off all lights now and cover the tank if natural light enters the room. Keep the filter running. CO2 should be off. The darkness prevents algae spores from establishing while beneficial bacteria begin to grow.';
+    } else if (elapsed < dur) {
+      cur_step = 1; color = '#1a6b8a';
+      phase_lbl = 'Dark period — day ' + elapsed + ' of ' + dur;
+      phase_desc = remaining + ' days remaining. Keep the tank completely dark. Check filter flow and temperature every few days without turning the lights on. Avoid opening the lid unnecessarily.';
+    } else {
+      cur_step = 2; color = '#e8a838';
+      phase_lbl = 'Introduce light gradually';
+      phase_desc = 'Dark period complete. Start with just 4-6 hours of light per day for the first week, then add 1 hour per week. Watch closely for algae in the first 2 weeks — if it appears, reduce photoperiod. Once light schedule is stable, start your nitrogen cycle.';
+    }
+    var h = '<div class="card" style="border-left:4px solid ' + color + '">';
+    h += '<div class="ctitle">Dark Start Tracker <span class="pill" style="background:' + color + ';color:#fff;font-size:12px">' + phase_lbl + '</span></div>';
+    h += '<div class="bl-bar"><div class="bl-fill" style="width:' + pct + '%;background:' + color + '"></div></div>';
+    h += '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin:3px 0 8px">';
+    steps.forEach(function(s, i) {
+      var cur = i === cur_step, done = i < cur_step;
+      h += '<span style="' + (cur ? 'color:'+color+';font-weight:700' : done ? 'color:var(--ok)' : '') + '">' + s + '</span>';
+    });
+    h += '</div>';
+    h += '<p style="font-size:13px;line-height:1.5">' + esc(phase_desc) + '</p>';
+    if (elapsed < dur) {
+      h += '<div style="display:flex;align-items:center;gap:8px;margin-top:8px;background:#e8f4fd;border-left:3px solid #4db8d4;padding:8px 10px;border-radius:0 6px 6px 0">' +
+           '<span style="font-size:16px">&#x1F506;</span>' +
+           '<span style="font-size:13px;font-weight:600">Lights must stay OFF for ' + remaining + ' more day' + (remaining !== 1 ? 's' : '') + '</span></div>';
+    }
+    h += '<p style="font-size:12px;color:var(--muted);margin-top:8px;background:#f5f8fb;padding:8px 10px;border-radius:6px"><strong>Why dark start?</strong> Starting in complete darkness for 3-4 weeks starves algae spores of the light they need to establish. When you introduce light, your plants have a head start and the tank is far less likely to experience an early algae outbreak.</p>';
+    h += '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">';
+    h += '<button class="btn bg bs" onclick="mark_startup_done()">Mark dark start complete</button>';
+    h += '<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">Started: <input type="date" value="' + start_d + '" style="font-size:12px;padding:2px 6px;border-radius:4px;border:1px solid #ccc" onchange="save_startup_date(this.value)"></div>';
+    h += '</div></div>';
+    return h;
+  }
+
+  if (method === 'dry') {
+    var dur = 42;
+    var pct = Math.min(100, Math.round(elapsed / dur * 100));
+    var remaining = Math.max(0, dur - elapsed);
+    var color, cur_step, phase_lbl, phase_desc;
+    var steps = ['Plant emersed', 'Growth phase', 'Flood', 'Cycling'];
+    if (elapsed < 7) {
+      cur_step = 0; color = '#3ab87a';
+      phase_lbl = 'Planting phase';
+      phase_desc = 'Plant directly into moist substrate — no standing water yet. Lay the plants in shallowly so roots contact the soil. Seal the top with plastic wrap or a glass lid to trap humidity above 80%. Keep lights on 10-12 hours/day.';
+    } else if (elapsed < dur) {
+      cur_step = 1; color = '#4db8d4';
+      phase_lbl = 'Emersed growth — day ' + elapsed + ' of ' + dur;
+      phase_desc = remaining + ' days remaining. Mist the plants twice daily with dechlorinated water. Look for new leaf growth — this means roots are establishing. Keep humidity high. Remove any mould as soon as it appears.';
+    } else {
+      cur_step = 2; color = '#e8a838';
+      phase_lbl = 'Ready to flood';
+      phase_desc = 'Plants are established. Slowly add dechlorinated water over 1-2 days — do not fill all at once. Some plants will shed their emersed-form leaves and grow new submersed leaves. Once flooded, begin your nitrogen cycle before adding fish.';
+    }
+    var h = '<div class="card" style="border-left:4px solid ' + color + '">';
+    h += '<div class="ctitle">Dry Start Tracker <span class="pill" style="background:' + color + ';color:#fff;font-size:12px">' + phase_lbl + '</span></div>';
+    h += '<div class="bl-bar"><div class="bl-fill" style="width:' + pct + '%;background:' + color + '"></div></div>';
+    h += '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin:3px 0 8px">';
+    steps.forEach(function(s, i) {
+      var cur = i === cur_step, done = i < cur_step;
+      h += '<span style="' + (cur ? 'color:'+color+';font-weight:700' : done ? 'color:var(--ok)' : '') + '">' + s + '</span>';
+    });
+    h += '</div>';
+    h += '<p style="font-size:13px;line-height:1.5">' + esc(phase_desc) + '</p>';
+    if (elapsed < 7) {
+      h += '<div style="display:flex;align-items:flex-start;gap:8px;margin-top:8px;background:#eaf8f1;border-left:3px solid var(--ok);padding:8px 10px;border-radius:0 6px 6px 0">' +
+           '<span style="font-size:14px">&#x1F4A7;</span>' +
+           '<span style="font-size:13px">No standing water yet — just moist substrate. Seal the top tightly to maintain high humidity.</span></div>';
+    } else if (elapsed >= 7 && elapsed < dur) {
+      h += '<div style="display:flex;align-items:center;gap:8px;margin-top:8px;background:#e8f4fd;border-left:3px solid #4db8d4;padding:8px 10px;border-radius:0 6px 6px 0">' +
+           '<span style="font-size:16px">&#x1F4A6;</span>' +
+           '<span style="font-size:13px;font-weight:600">Mist twice daily</span>' +
+           '<span style="font-size:12px;color:var(--muted)">— keep humidity above 80%</span></div>';
+    } else {
+      h += '<div style="display:flex;align-items:flex-start;gap:8px;margin-top:8px;background:#fef3d5;border-left:3px solid var(--warn);padding:8px 10px;border-radius:0 6px 6px 0">' +
+           '<span style="font-size:14px">&#x26A0;&#xFE0F;</span>' +
+           '<span style="font-size:13px">Fill slowly over 1-2 days. Do not add fish — complete the nitrogen cycle first after flooding.</span></div>';
+    }
+    h += '<p style="font-size:12px;color:var(--muted);margin-top:8px;background:#f5f8fb;padding:8px 10px;border-radius:6px"><strong>Why dry start?</strong> Growing plants emersed lets them develop strong roots in the substrate before being submerged. Plants are far more established when you flood the tank, which gives them a competitive advantage over algae from day one.</p>';
+    h += '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">';
+    h += '<button class="btn bg bs" onclick="mark_startup_done()">Mark dry start complete</button>';
+    h += '<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">Started: <input type="date" value="' + start_d + '" style="font-size:12px;padding:2px 6px;border-radius:4px;border:1px solid #ccc" onchange="save_startup_date(this.value)"></div>';
+    h += '</div></div>';
+    return h;
+  }
+
+  return '';
+}
+
+// Method picker shown when startup_method not yet set (called from r_setup_card area)
+function r_startup_picker(tid) {
+  var d = ld();
+  var tank = d.tanks.find(function(t){ return t.id === tid; }); if (!tank) return '';
+  var age = Math.floor((Date.now() - new Date(tank.setup_date + 'T00:00:00').getTime()) / 86400000);
+  if (age > 60 || tank.cycled || tank.startup_method || tank.startup_done) return '';
+  var h = '<div class="card" style="border-left:4px solid #4db8d4">';
+  h += '<div class="ctitle">Choose Your Startup Method</div>';
+  h += '<p style="font-size:13px;line-height:1.5;margin-bottom:10px">How do you plan to start this aquarium? Each method has different steps to track. You can change this at any time.</p>';
+  h += '<div style="display:flex;flex-direction:column;gap:8px">';
+  h += '<button class="btn bg" style="text-align:left;padding:10px 14px" onclick="save_startup_method(\'standard\')">' +
+       '<strong>Standard — Nitrogen Cycle only</strong><br><span style="font-size:12px;color:var(--muted)">Fill with water, add an ammonia source and cycle. Most common approach.</span></button>';
+  h += '<button class="btn bg" style="text-align:left;padding:10px 14px" onclick="save_startup_method(\'dark\')">' +
+       '<strong>Dark Start Method</strong><br><span style="font-size:12px;color:var(--muted)">Run the tank in complete darkness for 3-4 weeks before introducing light. Best for preventing early algae outbreaks in planted tanks.</span></button>';
+  h += '<button class="btn bg" style="text-align:left;padding:10px 14px" onclick="save_startup_method(\'dry\')">' +
+       '<strong>Dry Start Method</strong><br><span style="font-size:12px;color:var(--muted)">Grow plants emersed (out of water) for 4-6 weeks before flooding. Gives plants a strong root system before any fish are added.</span></button>';
+  h += '</div></div>';
+  return h;
+}
+
 function r_cycle_card(tid) {
   var d = ld();
   var tank = d.tanks.find(function(t){ return t.id === tid; }); if (!tank) return '';
   if (tank.cycled) return '';
+  // Hide cycle card while dark/dry start is still in progress
+  if ((tank.startup_method === 'dark' || tank.startup_method === 'dry') && !tank.startup_done) return '';
   var chk = tank.setup_chk || {};
   var is_fish_in = d.stock.filter(function(s){ return s.tank_id === tid; }).length > 0;
   var cm = chk.cycle_method || (is_fish_in ? 'fish_in' : '');
@@ -1459,6 +1620,12 @@ function r_dash() {
        '<div class="ssub">' + feed_sub + '</div>' +
        '<button class="btn bp bs" style="margin-top:8px;width:100%" onclick="open_feed_modal(at())">Log Feeding</button></div>';
   h += '</div>';
+
+  // Startup method picker (shown for new tanks before method is chosen)
+  h += r_startup_picker(tid);
+
+  // Startup method tracker (dark start / dry start) — shown before nitrogen cycle
+  h += r_startup_card(tid);
 
   // Cycle tracker
   h += r_cycle_card(tid);
