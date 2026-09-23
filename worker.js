@@ -1175,6 +1175,57 @@ function fgh(lbl, inp_html, hint) {
 }
 
 // ===== PARAMETER TREND ALERTS =====
+function get_water_recs(lr) {
+  if (!lr) return [];
+  var recs = [];
+  var uia = calc_uia(lr.ammonia, lr.ph, lr.temp_f);
+  var uia_assumed = uia_temp_defaulted(lr.temp_f);
+
+  if (lr.ammonia !== null && lr.ammonia > 0) {
+    recs.push({level:'danger', param:'Ammonia TAN', msg:'Do a 25&ndash;50% water change immediately. Check for dead fish, uneaten food, or overcrowding. Increase surface aeration. Recheck in 24 hours.'});
+  }
+  if (uia !== null && uia >= 0.05) {
+    recs.push({level:'danger', param:'Ammonia UIA', msg:'Emergency water change now.' + (uia_assumed ? ' (Calculated at 25&deg;C default — actual toxicity may differ.)' : '') + ' At high pH and temperature, even moderate TAN becomes lethal. A partial water change lowers both TAN and pH slightly, reducing UIA immediately.'});
+  } else if (uia !== null && uia >= 0.02 && uia < 0.05) {
+    recs.push({level:'warn', param:'Ammonia UIA', msg:'UIA is approaching the danger threshold of 0.05 ppm.' + (uia_assumed ? ' (Calculated at 25&deg;C default.)' : '') + ' Monitor closely. A water change now prevents it from crossing into toxic territory.'});
+  }
+  if (lr.nitrite !== null && lr.nitrite > 0) {
+    recs.push({level:'danger', param:'Nitrite', msg:'Do a 25&ndash;50% water change. Adding aquarium salt (1 tsp per gal) helps fish tolerate nitrite short-term by blocking uptake. Reduce feeding. Tank may still be cycling.'});
+  }
+  if (lr.nitrate !== null && lr.nitrate > 40) {
+    recs.push({level:'danger', param:'Nitrate', msg:'Do a 30&ndash;50% water change to pull nitrate below 20 ppm. Reduce feeding frequency. Adding fast-growing plants (hornwort, water wisteria) consumes nitrate continuously.'});
+  } else if (lr.nitrate !== null && lr.nitrate > 20) {
+    recs.push({level:'warn', param:'Nitrate', msg:'Nitrate is elevated. A 25% water change will help. Consider increasing change frequency or adding plants to keep it under 20 ppm long-term.'});
+  }
+  if (lr.ph !== null && lr.ph < 6.0) {
+    recs.push({level:'danger', param:'pH', msg:'pH is critically low. Add crushed coral to the filter or substrate — it buffers slowly and safely. Avoid liquid pH-up; it causes dangerous swings. Max safe change: 0.2 units per day.'});
+  } else if (lr.ph !== null && lr.ph < 6.5) {
+    recs.push({level:'warn', param:'pH', msg:'pH is slightly low. Add crushed coral or aragonite to buffer naturally. Check KH — if KH is near zero, pH will keep crashing. Driftwood in the tank also contributes to acidity.'});
+  } else if (lr.ph !== null && lr.ph > 8.0) {
+    recs.push({level:'danger', param:'pH', msg:'pH is very high. Mix in RO or distilled water during water changes to dilute. Driftwood and Indian almond leaves lower pH gradually. Avoid chemical pH-down — it causes instability.'});
+  } else if (lr.ph !== null && lr.ph > 7.5) {
+    recs.push({level:'warn', param:'pH', msg:'pH is slightly high. Driftwood or peat moss in the filter will lower it gradually. Indian almond leaves also help and are safe for all fish.'});
+  }
+  if (lr.gh !== null && lr.gh < 2) {
+    recs.push({level:'danger', param:'Hardness (GH)', msg:'Water is critically soft. Add Seachem Equilibrium, crushed coral, or a Wonder Shell to raise GH. Extremely soft water causes osmotic stress and interferes with fish osmoregulation.'});
+  } else if (lr.gh !== null && lr.gh < 4) {
+    recs.push({level:'warn', param:'Hardness (GH)', msg:'GH is slightly low. Add Seachem Equilibrium or crushed coral gradually — raise by no more than 2 dGH per day to avoid stressing fish.'});
+  } else if (lr.gh !== null && lr.gh > 15) {
+    recs.push({level:'danger', param:'Hardness (GH)', msg:'Water is very hard. Mix in RO or distilled water during water changes to reduce GH gradually. Peat moss in the filter also softens water over time.'});
+  } else if (lr.gh !== null && lr.gh > 12) {
+    recs.push({level:'warn', param:'Hardness (GH)', msg:'GH is slightly high. Replace a portion of water change volume with RO or distilled water to bring it down slowly.'});
+  }
+  if (lr.temp_f !== null) {
+    var tc = Math.round((lr.temp_f - 32) * 5 / 9);
+    if (tc > 30) {
+      recs.push({level:'danger', param:'Temperature', msg:'Tank is too hot. Increase surface agitation to boost oxygenation (heat reduces O2). Float a bag of ice, remove the lid, or point a fan at the water surface. Check heater for malfunction.'});
+    } else if (tc < 18) {
+      recs.push({level:'danger', param:'Temperature', msg:'Tank is too cold for tropical fish. Check the heater is on and set correctly. Verify the heater wattage is sufficient (roughly 5W per gallon for unheated rooms).'});
+    }
+  }
+  return recs;
+}
+
 function get_param_alerts(tid) {
   var entries = get_water(tid);
   if (entries.length < 2) return [];
@@ -1836,6 +1887,19 @@ function r_dash() {
            ' <span class="pill p' + (dash_uia === 0 ? 'ok' : dash_uia < 0.05 ? 'warn' : 'danger') + '" style="font-size:10px">' + uia_lbl + '</span>' +
            uia_temp_note +
            '<span style="color:var(--muted)"> &mdash; danger threshold 0.05 ppm</span></div>';
+    }
+    // Per-parameter recommendations when values are out of range
+    var w_recs = get_water_recs(lr);
+    if (w_recs.length) {
+      h += '<div style="margin-top:10px"><div style="font-size:12px;font-weight:600;margin-bottom:6px">&#x1F527; What to do</div>';
+      w_recs.forEach(function(r) {
+        h += '<div style="display:flex;gap:8px;font-size:12px;margin-bottom:5px;padding:7px 10px;' +
+             'background:' + (r.level === 'danger' ? '#fff0f0' : '#fff8e5') + ';' +
+             'border-left:3px solid ' + (r.level === 'danger' ? 'var(--danger)' : 'var(--warn)') + ';border-radius:0 6px 6px 0">' +
+             '<strong style="flex-shrink:0;color:' + (r.level === 'danger' ? 'var(--danger)' : 'var(--warn)') + '">' + r.param + ':</strong>' +
+             '<span>' + r.msg + '</span></div>';
+      });
+      h += '</div>';
     }
     // Ca:Mg ratio note when both are logged
     if (lr.calcium !== null && lr.calcium !== undefined && lr.magnesium !== null && lr.magnesium !== undefined && lr.magnesium > 0) {
