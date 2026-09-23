@@ -3552,7 +3552,7 @@ function r_tools() {
     h += '<div style="background:#fff3cd;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:13px">';
     h += '<div style="font-weight:600;margin-bottom:6px">&#x26A0; Un-ionized Ammonia (UIA) — the toxic fraction</div>';
     h += '<p style="margin:0 0 6px">The test measures <strong>Total Ammonia Nitrogen (TAN)</strong>. Un-ionized ammonia (UIA) is ~100&times; more toxic than ionized ammonia and is harmful from as low as <strong>0.05 mg/L</strong>.</p>';
-    h += '<p style="margin:0">To find UIA: multiply TAN by the factor from the table below (using your water\'s temperature and pH).</p>';
+    h += '<p style="margin:0">To find UIA: multiply TAN by the factor from the table below (using your water temperature and pH).</p>';
     h += '</div>';
     // UIA fraction table (simplified common values)
     h += '<div style="background:#f8fbff;border-radius:8px;padding:12px 14px;font-size:12px">';
