@@ -796,9 +796,9 @@ function mark_done(id) {
 }
 
 // ===== WATER LOG =====
-function add_water(tid, date, tf, nh3, no2, no3, ph, gh, notes) {
+function add_water(tid, date, tf, nh3, no2, no3, ph, gh, notes, ca, mg) {
   var d = ld();
-  d.water.push({id:gid(), tank_id:tid, date:date, temp_f:pn(tf), ammonia:pn(nh3), nitrite:pn(no2), nitrate:pn(no3), ph:pn(ph), gh:pn(gh), notes:notes||''});
+  d.water.push({id:gid(), tank_id:tid, date:date, temp_f:pn(tf), ammonia:pn(nh3), nitrite:pn(no2), nitrate:pn(no3), ph:pn(ph), gh:pn(gh), notes:notes||'', calcium:pn(ca), magnesium:pn(mg)});
   sv(d);
 }
 function del_water(id) {
@@ -1767,13 +1767,18 @@ function r_dash() {
   h += '</div>';
   if (lr) {
     var ps = [
-      {k:'temp_f',  l:'Temperature',   u:t_lbl(), mn:rng&&rng.temp.ok?d_t(rng.temp.min):null, mx:rng&&rng.temp.ok?d_t(rng.temp.max):null, tox:false, conv:d_t},
-      {k:'ammonia', l:'Ammonia',       u:'ppm', mn:0, mx:0, tox:true,  conv:null},
-      {k:'nitrite', l:'Nitrite',       u:'ppm', mn:0, mx:0, tox:true,  conv:null},
-      {k:'nitrate', l:'Nitrate',       u:'ppm', mn:0, mx:40, tox:false, conv:null},
-      {k:'ph',      l:'pH',            u:'',    mn:rng&&rng.ph.ok?rng.ph.min:null, mx:rng&&rng.ph.ok?rng.ph.max:null, tox:false, conv:null},
-      {k:'gh',      l:'Hardness (GH)', u:'',    mn:rng&&rng.gh.ok?rng.gh.min:null, mx:rng&&rng.gh.ok?rng.gh.max:null, tox:false, conv:null}
+      {k:'temp_f',    l:'Temperature',      u:t_lbl(), mn:rng&&rng.temp.ok?d_t(rng.temp.min):null, mx:rng&&rng.temp.ok?d_t(rng.temp.max):null, tox:false, conv:d_t},
+      {k:'ammonia',   l:'Ammonia',          u:'ppm', mn:0,  mx:0,  tox:true,  conv:null},
+      {k:'nitrite',   l:'Nitrite',          u:'ppm', mn:0,  mx:0,  tox:true,  conv:null},
+      {k:'nitrate',   l:'Nitrate',          u:'ppm', mn:0,  mx:40, tox:false, conv:null},
+      {k:'ph',        l:'pH',               u:'',    mn:rng&&rng.ph.ok?rng.ph.min:null, mx:rng&&rng.ph.ok?rng.ph.max:null, tox:false, conv:null},
+      {k:'gh',        l:'Hardness (GH)',    u:'',    mn:rng&&rng.gh.ok?rng.gh.min:null, mx:rng&&rng.gh.ok?rng.gh.max:null, tox:false, conv:null}
     ];
+    // Only show Ca/Mg rows if they were logged for this reading
+    if (lr.calcium !== null && lr.calcium !== undefined) {
+      ps.push({k:'calcium',   l:'Calcium (Ca)',   u:'ppm', mn:20, mx:60, tox:false, conv:null});
+      ps.push({k:'magnesium', l:'Magnesium (Mg)', u:'ppm', mn:5,  mx:20, tox:false, conv:null});
+    }
     h += '<div class="tw"><table><tr><th>Parameter</th><th>Reading</th><th>Safe Range</th><th>Status</th></tr>';
     ps.forEach(function(p) {
       var raw = lr[p.k], val = (p.conv && raw !== null) ? p.conv(raw) : raw;
@@ -1782,11 +1787,14 @@ function r_dash() {
       h += '<tr><td>' + p.l + '</td><td>' + (val !== null ? val + (p.u?' '+p.u:'') : '-') + '</td><td style="color:var(--muted)">' + rng_txt + '</td><td>' + pill(c) + '</td></tr>';
     });
     h += '</table></div>';
+    // Ca:Mg ratio note when both are logged
+    if (lr.calcium !== null && lr.calcium !== undefined && lr.magnesium !== null && lr.magnesium !== undefined && lr.magnesium > 0) {
+      var ca_mg_ratio = Math.round(lr.calcium / lr.magnesium * 10) / 10;
+      var ratio_cls = ca_mg_ratio >= 3 && ca_mg_ratio <= 5 ? 'var(--ok)' : ca_mg_ratio >= 2 && ca_mg_ratio <= 6 ? 'var(--warn)' : 'var(--danger)';
+      h += '<div style="font-size:12px;margin-top:6px">Ca:Mg ratio: <strong style="color:' + ratio_cls + '">' + ca_mg_ratio + ':1</strong>' +
+           '<span style="color:var(--muted)"> &mdash; ideal is 3:1 to 5:1 for planted tanks</span></div>';
+    }
   } else {
-    h += '<p class="emsg">No readings yet. Go to the Logs tab to add one.</p>';
-  }
-  h += '</div>';
-  if (tank.notes) h += '<div class="card"><div class="ctitle">Notes</div><p style="font-size:13px;color:var(--muted)">' + esc(tank.notes) + '</p></div>';
   h += '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
        '<button class="btn bg bs" onclick="do_edit_tank()">Edit Tank</button>' +
        '<button class="btn bd bs" onclick="do_del_tank()">Delete Tank</button></div>';
@@ -1898,6 +1906,10 @@ function wlog_cls(key, val) {
     return val >= 6.5 && val <= 7.5 ? 'var(--ok)' : val >= 6.0 && val <= 8.0 ? 'var(--warn)' : 'var(--danger)';
   if (key === 'gh')
     return val >= 4 && val <= 12 ? 'var(--ok)' : val >= 2 && val <= 15 ? 'var(--warn)' : 'var(--danger)';
+  if (key === 'calcium')
+    return val >= 20 && val <= 60 ? 'var(--ok)' : val >= 10 && val <= 80 ? 'var(--warn)' : 'var(--danger)';
+  if (key === 'magnesium')
+    return val >= 5 && val <= 20 ? 'var(--ok)' : val >= 2 && val <= 30 ? 'var(--warn)' : 'var(--danger)';
   return '';
 }
 function wlog_lbl(key, val) {
@@ -1911,6 +1923,10 @@ function wlog_lbl(key, val) {
     return val < 6.0 ? 'Too acidic' : val <= 6.5 ? 'Slightly low' : val <= 7.5 ? 'Ideal' : val <= 8.0 ? 'Slightly high' : 'Too high';
   if (key === 'gh')
     return val < 2 ? 'Too soft' : val <= 4 ? 'Soft' : val <= 12 ? 'Good' : val <= 15 ? 'Hard' : 'Very hard';
+  if (key === 'calcium')
+    return val < 10 ? 'Low' : val <= 20 ? 'Slightly low' : val <= 60 ? 'Good' : val <= 80 ? 'Slightly high' : 'High';
+  if (key === 'magnesium')
+    return val < 2 ? 'Low' : val <= 5 ? 'Slightly low' : val <= 20 ? 'Good' : val <= 30 ? 'Slightly high' : 'High';
   return '';
 }
 function wlog_arrow(cur, prev) {
@@ -1943,7 +1959,17 @@ function r_wlog() {
     fgh('pH', '<input type="number" name="ph" step="0.01" placeholder="e.g. 7.0">', 'Stability matters more than exact value. Avoid sudden changes.') +
     fgh('Hardness (GH)', '<input type="number" name="gh" step="0.1" placeholder="e.g. 8">', 'Most tropical fish prefer 4-12 dGH. 1 dGH = 17.9 ppm = 17.9 mg/L CaCO3.') +
     fgh('Notes', '<input type="text" name="notes" placeholder="Optional notes">', '') +
-    '</div><button type="submit" class="btn bp">Save Reading</button></form></div>';
+    '</div>' +
+    '<div style="margin:8px 0 10px">' +
+    '<button type="button" class="btn bg bs" style="font-size:12px" onclick="tog_wlog_adv()">' +
+    (wlog_adv ? '&#x25BC;' : '&#x25B6;') + ' Calcium &amp; Magnesium (optional &mdash; for planted tanks &amp; shrimp)</button>' +
+    '</div>' +
+    (wlog_adv ?
+      '<div class="frow" style="margin-bottom:10px">' +
+      fgh('Calcium (ppm)', '<input type="number" name="ca" step="0.1" placeholder="e.g. 40">', 'Ideal: 20&ndash;60 ppm. Test with BIONIX or similar Ca/Mg kit.') +
+      fgh('Magnesium (ppm)', '<input type="number" name="mg" step="0.1" placeholder="e.g. 10">', 'Ideal: 5&ndash;20 ppm. Ca:Mg ratio should be 3:1 to 5:1.') +
+      '</div>' : '') +
+    '<button type="submit" class="btn bp">Save Reading</button></form></div>';
   var entries = get_water(tid);
   if (entries.length >= 2) {
     h += '<div class="card"><div class="ctitle" style="gap:10px">Trend ' +
@@ -1955,8 +1981,11 @@ function r_wlog() {
   }
   if (entries.length) {
     var sorted = entries.slice().reverse();
+    var has_ca_mg = entries.some(function(e){ return e.calcium !== null && e.calcium !== undefined; });
     h += '<div class="card"><div class="ctitle">History</div><div class="tw"><table>' +
-      '<tr><th>Date</th><th>Temp ' + t_lbl() + '</th><th>NH3 (ppm)</th><th>NO2 (ppm)</th><th>NO3 (ppm)</th><th>pH</th><th>GH</th><th>Notes</th><th></th></tr>';
+      '<tr><th>Date</th><th>Temp ' + t_lbl() + '</th><th>NH3 (ppm)</th><th>NO2 (ppm)</th><th>NO3 (ppm)</th><th>pH</th><th>GH</th>' +
+      (has_ca_mg ? '<th>Ca (ppm)</th><th>Mg (ppm)</th>' : '') +
+      '<th>Notes</th><th></th></tr>';
     sorted.slice(0, 30).forEach(function(e, i) {
       var prev = sorted[i + 1];
       var td = d_t(e.temp_f);
@@ -1969,6 +1998,7 @@ function r_wlog() {
            wlog_cell('nitrate', e.nitrate, prev ? prev.nitrate : null) +
            wlog_cell('ph', e.ph, prev ? prev.ph : null) +
            wlog_cell('gh', e.gh, prev ? prev.gh : null) +
+           (has_ca_mg ? wlog_cell('calcium', e.calcium, prev ? prev.calcium : null) + wlog_cell('magnesium', e.magnesium, prev ? prev.magnesium : null) : '') +
            '<td>' + esc(e.notes) + '</td>' +
            '<td><button class="btn bd bs" data-id="' + e.id + '" onclick="del_water(this.dataset.id);r_wlog()">&#x2715;</button></td></tr>';
     });
@@ -1981,8 +2011,12 @@ function r_wlog() {
       '<tr><td>Nitrate (NO3)</td><td>0&ndash;20 ppm</td><td>21&ndash;40 ppm</td><td>&gt; 40 ppm</td></tr>' +
       '<tr><td>pH</td><td>6.5&ndash;7.5</td><td>6.0&ndash;6.4 or 7.6&ndash;8.0</td><td>&lt; 6.0 or &gt; 8.0</td></tr>' +
       '<tr><td>Hardness (GH)</td><td>4&ndash;12 dGH</td><td>2&ndash;3 or 13&ndash;15 dGH</td><td>&lt; 2 or &gt; 15 dGH</td></tr>' +
+      '<tr><td>Calcium (Ca)</td><td>20&ndash;60 ppm</td><td>10&ndash;19 or 61&ndash;80 ppm</td><td>&lt; 10 or &gt; 80 ppm</td></tr>' +
+      '<tr><td>Magnesium (Mg)</td><td>5&ndash;20 ppm</td><td>2&ndash;4 or 21&ndash;30 ppm</td><td>&lt; 2 or &gt; 30 ppm</td></tr>' +
+      '<tr><td>Ca:Mg ratio</td><td>3:1 to 5:1</td><td>2:1 to 6:1</td><td>&lt; 2:1 or &gt; 6:1</td></tr>' +
       '</table></div>' +
-      '<p style="font-size:12px;color:var(--muted);margin:8px 0 0">Temperature ideal range depends on your fish species &mdash; check the Compatibility tab.</p>' +
+      '<p style="font-size:12px;color:var(--muted);margin:8px 0 0">Temperature ideal range depends on your fish species &mdash; check the Compatibility tab. ' +
+      'Calcium &amp; Magnesium ranges are for planted tanks and shrimp; fish-only tanks only need GH.</p>' +
       '</div>';
   }
   var tank_wlog = d.tanks.find(function(t){ return t.id === tid; });
@@ -2004,9 +2038,13 @@ function r_wlog() {
   el.innerHTML = h;
   if (entries.length >= 2) draw_chart(tid, 'temp_f');
 }
+var wlog_adv = false;
+function tog_wlog_adv() { wlog_adv = !wlog_adv; r_wlog(); }
 function sub_water(e) {
   e.preventDefault(); var f = e.target, tid = at();
-  add_water(tid, f.date.value, inp_t(f.tf.value), f.nh3.value, f.no2.value, f.no3.value, f.ph.value, f.gh.value, f.notes.value);
+  var ca = wlog_adv && f.ca ? f.ca.value : '';
+  var mg = wlog_adv && f.mg ? f.mg.value : '';
+  add_water(tid, f.date.value, inp_t(f.tf.value), f.nh3.value, f.no2.value, f.no3.value, f.ph.value, f.gh.value, f.notes.value, ca, mg);
   r_wlog();
 }
 
