@@ -413,6 +413,30 @@ function pn(v) {
   var n = parseFloat(v);
   return isNaN(n) ? null : n;
 }
+// UIA (un-ionized ammonia, the toxic fraction) derived from TAN, pH, and temperature.
+// Uses exact pKa formula: pKa = 0.09018 + 2729.92 / T_kelvin
+// Falls back to 25°C when temperature is not logged.
+function calc_uia(tan, ph, temp_f) {
+  if (tan === null || tan === undefined || ph === null || ph === undefined) return null;
+  var tc = (temp_f !== null && temp_f !== undefined) ? (temp_f - 32) * 5 / 9 : 25;
+  var tk = tc + 273.15;
+  var pka = 0.09018 + 2729.92 / tk;
+  var frac = 1 / (1 + Math.pow(10, pka - ph));
+  return Math.round(tan * frac * 10000) / 10000;
+}
+function uia_temp_defaulted(temp_f) { return temp_f === null || temp_f === undefined; }
+function mk_uia_cell(tan, ph, temp_f, prev_tan, prev_ph, prev_tf) {
+  var v = calc_uia(tan, ph, temp_f);
+  if (v === null) return '<td>&mdash;</td>';
+  var pv = calc_uia(prev_tan, prev_ph, prev_tf);
+  var col = wlog_cls('uia', v);
+  var lbl = wlog_lbl('uia', v);
+  var arr = wlog_arrow(v, pv);
+  var assumed = uia_temp_defaulted(temp_f);
+  return '<td style="color:' + col + ';font-weight:600">' + v + arr +
+         (assumed ? '<sup style="color:var(--muted);font-weight:400;font-size:9px"> *25</sup>' : '') +
+         '<br><span style="font-size:10px;font-weight:400;color:var(--muted)">' + lbl + '</span></td>';
+}
 
 // ===== UNIT CONVERSION =====
 function g2l(g) { return Math.round(g * 3.78541 * 10) / 10; }
@@ -1010,7 +1034,7 @@ function draw_chart(tid, param) {
   if (ch_inst) { ch_inst.destroy(); ch_inst = null; }
   var cv = document.getElementById('wc');
   if (!cv || entries.length < 2) return;
-  var lmap = {temp_f:'Temperature (' + t_lbl() + ')', ammonia:'Ammonia (ppm)', nitrite:'Nitrite (ppm)', nitrate:'Nitrate (ppm)', ph:'pH', gh:'Hardness (GH)'};
+  var lmap = {temp_f:'Temperature (' + t_lbl() + ')', ammonia:'Ammonia TAN (ppm)', nitrite:'Nitrite (ppm)', nitrate:'Nitrate (ppm)', ph:'pH', gh:'Hardness (GH)', uia:'Ammonia UIA (ppm)'};
 
   // Reference lines: {v, color, label}
   var temp_refs = [];
@@ -1027,14 +1051,19 @@ function draw_chart(tid, param) {
     nitrate: [{v:20,   color:'#3ab87a', label:'Ideal max (20 ppm)'}, {v:40, color:'#e8a838', label:'Caution max (40 ppm)'}],
     ph:      [{v:6.5,  color:'#3ab87a', label:'Ideal min (6.5)'}, {v:7.5, color:'#3ab87a', label:'Ideal max (7.5)'}, {v:6.0, color:'#e8a838', label:'Caution min (6.0)'}, {v:8.0, color:'#e8a838', label:'Caution max (8.0)'}],
     gh:      [{v:4,    color:'#3ab87a', label:'Ideal min (4 dGH)'}, {v:12, color:'#3ab87a', label:'Ideal max (12 dGH)'}, {v:2, color:'#e8a838', label:'Caution min (2 dGH)'}, {v:15, color:'#e8a838', label:'Caution max (15 dGH)'}],
-    temp_f:  temp_refs
+    temp_f:  temp_refs,
+    uia:     [{v:0.02, color:'#e8a838', label:'Caution (0.02 ppm)'}, {v:0.05, color:'#e05252', label:'Danger (0.05 ppm)'}]
   };
 
   var refs = all_refs[param] || [];
   var n = entries.length;
   var datasets = [{
     label: lmap[param] || param,
-    data: entries.map(function(e) { return param === 'temp_f' ? d_t(e[param]) : e[param]; }),
+    data: entries.map(function(e) {
+      if (param === 'temp_f') return d_t(e[param]);
+      if (param === 'uia') return calc_uia(e.ammonia, e.ph, e.temp_f);
+      return e[param];
+    }),
     borderColor: '#4db8d4', backgroundColor: 'rgba(77,184,212,0.12)',
     tension: 0.3, fill: true, pointRadius: 4, spanGaps: true, order: 1
   }];
@@ -1156,7 +1185,15 @@ function get_param_alerts(tid) {
 
   // Persistent ammonia
   if (last.ammonia !== null && last.ammonia > 0 && prev.ammonia !== null && prev.ammonia > 0) {
-    alerts.push({level:'danger', msg:'Ammonia has been elevated across multiple tests (' + prev.ammonia + ' ppm → ' + last.ammonia + ' ppm). Do a 25-50% water change immediately and recheck in 24h.'});
+    alerts.push({level:'danger', msg:'Ammonia TAN has been elevated across multiple tests (' + prev.ammonia + ' ppm → ' + last.ammonia + ' ppm). Do a 25-50% water change immediately and recheck in 24h.'});
+  }
+  // UIA — calculated toxic fraction
+  var last_uia = calc_uia(last.ammonia, last.ph, last.temp_f);
+  var uia_temp_note_alert = uia_temp_defaulted(last.temp_f) ? ' (temperature not logged — assumed 25°C)' : '';
+  if (last_uia !== null && last_uia >= 0.05) {
+    alerts.push({level:'danger', msg:'Un-ionized ammonia (UIA) is ' + last_uia + ' ppm — above the toxic threshold of 0.05 ppm' + uia_temp_note_alert + '. Even if TAN looks moderate, UIA at this pH and temperature is lethal. Do an immediate water change and lower pH slightly.'});
+  } else if (last_uia !== null && last_uia >= 0.02) {
+    alerts.push({level:'warn', msg:'Un-ionized ammonia (UIA) is ' + last_uia + ' ppm — approaching the danger threshold of 0.05 ppm' + uia_temp_note_alert + '. Monitor closely and be ready for a water change.'});
   }
   // Persistent nitrite
   if (last.nitrite !== null && last.nitrite > 0 && prev.nitrite !== null && prev.nitrite > 0) {
@@ -1789,6 +1826,17 @@ function r_dash() {
       h += '<tr><td>' + p.l + '</td><td>' + (val !== null ? val + (p.u?' '+p.u:'') : '-') + '</td><td style="color:var(--muted)">' + rng_txt + '</td><td>' + pill(c) + '</td></tr>';
     });
     h += '</table></div>';
+    // UIA — auto-calculated toxic ammonia fraction
+    var dash_uia = calc_uia(lr.ammonia, lr.ph, lr.temp_f);
+    if (dash_uia !== null) {
+      var uia_col = dash_uia === 0 ? 'var(--ok)' : dash_uia < 0.05 ? 'var(--warn)' : 'var(--danger)';
+      var uia_lbl = dash_uia === 0 ? 'Safe' : dash_uia < 0.05 ? 'Caution' : 'Toxic';
+      var uia_temp_note = uia_temp_defaulted(lr.temp_f) ? ' <span style="color:var(--muted)">(temp assumed 25&deg;C)</span>' : '';
+      h += '<div style="font-size:12px;margin-top:6px">Ammonia UIA (toxic fraction): <strong style="color:' + uia_col + '">' + dash_uia + ' ppm</strong>' +
+           ' <span class="pill p' + (dash_uia === 0 ? 'ok' : dash_uia < 0.05 ? 'warn' : 'danger') + '" style="font-size:10px">' + uia_lbl + '</span>' +
+           uia_temp_note +
+           '<span style="color:var(--muted)"> &mdash; danger threshold 0.05 ppm</span></div>';
+    }
     // Ca:Mg ratio note when both are logged
     if (lr.calcium !== null && lr.calcium !== undefined && lr.magnesium !== null && lr.magnesium !== undefined && lr.magnesium > 0) {
       var ca_mg_ratio = Math.round(lr.calcium / lr.magnesium * 10) / 10;
@@ -1906,6 +1954,8 @@ function wlog_cls(key, val) {
   val = parseFloat(val);
   if (key === 'ammonia' || key === 'nitrite')
     return val === 0 ? 'var(--ok)' : val <= 0.25 ? 'var(--warn)' : 'var(--danger)';
+  if (key === 'uia')
+    return val === 0 ? 'var(--ok)' : val < 0.05 ? 'var(--warn)' : 'var(--danger)';
   if (key === 'nitrate')
     return val <= 20 ? 'var(--ok)' : val <= 40 ? 'var(--warn)' : 'var(--danger)';
   if (key === 'ph')
@@ -1923,6 +1973,8 @@ function wlog_lbl(key, val) {
   val = parseFloat(val);
   if (key === 'ammonia' || key === 'nitrite')
     return val === 0 ? 'Safe' : val <= 0.25 ? 'Trace' : 'Toxic';
+  if (key === 'uia')
+    return val === 0 ? 'Safe' : val < 0.05 ? 'Caution' : 'Toxic';
   if (key === 'nitrate')
     return val <= 20 ? 'Good' : val <= 40 ? 'High' : 'Danger';
   if (key === 'ph')
@@ -1964,7 +2016,7 @@ function r_wlog() {
     '<div class="frow">' +
     fgh('Date', '<input type="date" name="date" value="' + td + '" required>', '') +
     (has_therm ? fgh('Temperature (' + t_lbl() + ')', '<input type="number" name="tf" step="0.1" placeholder="e.g. ' + (get_pref().temp === 'C' ? '24' : '76') + '">', 'Stable temp is as important as the number itself.') : '') +
-    fgh('Ammonia (ppm)', '<input type="number" name="nh3" step="0.01" placeholder="e.g. 0">', 'Target: 0 ppm. Any reading above 0 is harmful to fish.') +
+    fgh('Ammonia TAN (ppm)', '<input type="number" name="nh3" step="0.01" placeholder="e.g. 0">', 'Enter TAN from the colour card. Target: 0 ppm. UIA (toxic fraction) is calculated automatically from TAN + pH + temperature.') +
     fgh('Nitrite (ppm)', '<input type="number" name="no2" step="0.01" placeholder="e.g. 0">', 'Target: 0 ppm. Toxic even at 0.25 ppm. Spikes during cycling.') +
     '</div><div class="frow">' +
     fgh('Nitrate (ppm)', '<input type="number" name="no3" step="0.1" placeholder="e.g. 10">', 'Keep below 20 ppm. Reduced by regular water changes.') +
@@ -1987,7 +2039,8 @@ function r_wlog() {
     h += '<div class="card"><div class="ctitle" style="gap:10px">Trend ' +
       '<select id="cpsel" onchange="draw_chart(at(),this.value)">' +
       (has_therm ? '<option value="temp_f">Temperature</option>' : '') +
-      '<option value="ammonia">Ammonia</option>' +
+      '<option value="ammonia">Ammonia TAN</option>' +
+      '<option value="uia">Ammonia UIA</option>' +
       '<option value="nitrite">Nitrite</option><option value="nitrate">Nitrate</option>' +
       '<option value="ph">pH</option><option value="gh">Hardness</option>' +
       '</select></div><div class="chart-wrap"><canvas id="wc"></canvas></div></div>';
@@ -1995,8 +2048,9 @@ function r_wlog() {
   if (entries.length) {
     var sorted = entries.slice().reverse();
     var has_ca_mg = entries.some(function(e){ return e.calcium !== null && e.calcium !== undefined; });
+    var has_uia = entries.some(function(e){ return calc_uia(e.ammonia, e.ph, e.temp_f) !== null; });
     h += '<div class="card"><div class="ctitle">History</div><div class="tw"><table>' +
-      '<tr><th>Date</th>' + (has_therm ? '<th>Temp ' + t_lbl() + '</th>' : '') + '<th>NH3 (ppm)</th><th>NO2 (ppm)</th><th>NO3 (ppm)</th><th>pH</th><th>GH</th>' +
+      '<tr><th>Date</th>' + (has_therm ? '<th>Temp ' + t_lbl() + '</th>' : '') + '<th>NH3 TAN</th>' + (has_uia ? '<th>UIA</th>' : '') + '<th>NO2 (ppm)</th><th>NO3 (ppm)</th><th>pH</th><th>GH</th>' +
       (has_ca_mg ? '<th>Ca (ppm)</th><th>Mg (ppm)</th>' : '') +
       '<th>Notes</th><th></th></tr>';
     sorted.slice(0, 30).forEach(function(e, i) {
@@ -2008,6 +2062,7 @@ function r_wlog() {
       h += '<tr><td>' + e.date + '</td>' +
            (has_therm ? '<td>' + t_disp + '</td>' : '') +
            wlog_cell('ammonia', e.ammonia, prev ? prev.ammonia : null) +
+           (has_uia ? mk_uia_cell(e.ammonia, e.ph, e.temp_f, prev ? prev.ammonia : null, prev ? prev.ph : null, prev ? prev.temp_f : null) : '') +
            wlog_cell('nitrite', e.nitrite, prev ? prev.nitrite : null) +
            wlog_cell('nitrate', e.nitrate, prev ? prev.nitrate : null) +
            wlog_cell('ph', e.ph, prev ? prev.ph : null) +
@@ -2016,7 +2071,11 @@ function r_wlog() {
            '<td>' + esc(e.notes) + '</td>' +
            '<td><button class="btn bd bs" data-id="' + e.id + '" onclick="del_water(this.dataset.id);r_wlog()">&#x2715;</button></td></tr>';
     });
-    h += '</table></div></div>';
+    h += '</table></div>';
+    if (has_uia && entries.some(function(e){ return uia_temp_defaulted(e.temp_f) && calc_uia(e.ammonia, e.ph, null) !== null; })) {
+      h += '<p style="font-size:11px;color:var(--muted);margin:6px 0 0"><sup>*25</sup> Temperature not logged &mdash; UIA calculated using 25&deg;C default. Add a Thermometer under Equipment &amp; Life for accurate values.</p>';
+    }
+    h += '</div>';
     h += '<div class="card"><div class="ctitle">Ideal Ranges</div>' +
       '<div class="tw"><table>' +
       '<tr><th>Parameter</th><th style="color:var(--ok)">&#x2713; Ideal</th><th style="color:var(--warn)">&#x26A0; Caution</th><th style="color:var(--danger)">&#x2717; Danger</th></tr>' +
