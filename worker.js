@@ -2079,7 +2079,8 @@ function r_wlog() {
     h += '<div class="card"><div class="ctitle">Ideal Ranges</div>' +
       '<div class="tw"><table>' +
       '<tr><th>Parameter</th><th style="color:var(--ok)">&#x2713; Ideal</th><th style="color:var(--warn)">&#x26A0; Caution</th><th style="color:var(--danger)">&#x2717; Danger</th></tr>' +
-      '<tr><td>Ammonia (NH3)</td><td>0 ppm</td><td>0.01&ndash;0.25 ppm</td><td>&gt; 0.25 ppm</td></tr>' +
+      '<tr><td>Ammonia TAN (NH3+NH4)</td><td>0 ppm</td><td>0.01&ndash;0.25 ppm</td><td>&gt; 0.25 ppm</td></tr>' +
+      '<tr><td>Ammonia UIA (toxic fraction)</td><td>0 ppm</td><td>0.01&ndash;0.05 ppm</td><td>&gt; 0.05 ppm</td></tr>' +
       '<tr><td>Nitrite (NO2)</td><td>0 ppm</td><td>0.01&ndash;0.25 ppm</td><td>&gt; 0.25 ppm</td></tr>' +
       '<tr><td>Nitrate (NO3)</td><td>0&ndash;20 ppm</td><td>21&ndash;40 ppm</td><td>&gt; 40 ppm</td></tr>' +
       '<tr><td>pH</td><td>6.5&ndash;7.5</td><td>6.0&ndash;6.4 or 7.6&ndash;8.0</td><td>&lt; 6.0 or &gt; 8.0</td></tr>' +
