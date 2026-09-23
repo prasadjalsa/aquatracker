@@ -3442,6 +3442,10 @@ function r_tools() {
   // === Test Kit Instructions ===
   var tk_brands = [
     {id:'bionix', label:'BIONIX', tests:[
+      {id:'ph',       label:'pH'},
+      {id:'ammonia',  label:'Ammonia'},
+      {id:'nitrite',  label:'Nitrite'},
+      {id:'nitrate',  label:'Nitrate'},
       {id:'th_ca_mg', label:'Total Hardness, Calcium & Magnesium'}
     ]}
   ];
@@ -3472,24 +3476,142 @@ function r_tools() {
   }
   h += '</div>';
 
-  // BIONIX — Total Hardness, Calcium & Magnesium
-  if (tk_brand === 'bionix' && tk_test === 'th_ca_mg') {
-    // General tips
-    h += '<div style="background:#f0f8ff;border-radius:8px;padding:12px 14px;margin-bottom:14px">';
-    h += '<div style="font-size:13px;font-weight:600;margin-bottom:8px">Before you start</div>';
+  // Shared "before you start" tips helper
+  function tk_tips_html(extra) {
     var tips = [
       'Wash the test tube with sample water before performing any test.',
       'Shake the liquid reagent bottle properly before use.',
-      'Hold the dropper bottle completely vertical (upside down) when adding drops — this ensures consistent drop size.',
+      'Hold the dropper bottle completely vertical (upside down) when adding drops &mdash; this ensures consistent drop size.',
       'Test the sample as soon as possible after collecting from the source.',
       'Store the kit at room temperature in a cool, dark place when not in use.'
     ];
+    if (extra) tips.push(extra);
+    var out = '<div style="background:#f0f8ff;border-radius:8px;padding:12px 14px;margin-bottom:14px">';
+    out += '<div style="font-size:13px;font-weight:600;margin-bottom:8px">Before you start</div>';
     tips.forEach(function(t, i) {
-      h += '<div style="display:flex;gap:8px;font-size:13px;margin-bottom:5px">' +
-           '<span style="font-weight:700;color:var(--surf);flex-shrink:0">' + (i+1) + '.</span>' +
-           '<span>' + t + '</span></div>';
+      out += '<div style="display:flex;gap:8px;font-size:13px;margin-bottom:5px">' +
+             '<span style="font-weight:700;color:var(--surf);flex-shrink:0">' + (i+1) + '.</span>' +
+             '<span>' + t + '</span></div>';
     });
+    return out + '</div>';
+  }
+  function tk_steps_html(steps, accent) {
+    var out = '';
+    steps.forEach(function(s, i) {
+      out += '<div style="display:flex;gap:10px;margin-bottom:10px;font-size:13px">' +
+             '<div style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:' + accent + ';color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center">' + (i+1) + '</div>' +
+             '<div style="padding-top:4px">' + s + '</div></div>';
+    });
+    return out;
+  }
+
+  // BIONIX — pH
+  if (tk_brand === 'bionix' && tk_test === 'ph') {
+    h += tk_tips_html('While matching the colour, always place the test tube against a white background for maximum accuracy.');
+    h += '<div style="background:#f8fbff;border-radius:8px;padding:14px;border-left:4px solid #4db8d4;margin-bottom:14px">';
+    h += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#1a6b8a">pH Test Procedure</div>';
+    h += tk_steps_html([
+      'Fill the test tube with <strong>2.5 ml</strong> of sample water using the syringe.',
+      'Add <strong>3 drops of pH Reagent 1</strong>. Hold the dropper bottle upside down and completely vertical.',
+      'Cap the tube and shake vigorously for <strong>5 seconds</strong>.',
+      'Compare the colour with the <strong>colour card</strong>, holding the tube against the white background of the card. The closest match is your pH reading.'
+    ], '#4db8d4');
     h += '</div>';
+    h += '<div style="background:#f5f0ff;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px">';
+    h += '<div style="font-weight:600;margin-bottom:8px">Typical freshwater pH reference</div>';
+    h += '<div class="tw"><table style="font-size:12px"><tr><th>pH</th><th>Meaning</th><th>Common for</th></tr>';
+    [
+      ['6.0 &ndash; 6.5', 'Soft, acidic',    'Discus, cardinal tetra, soft-water plants'],
+      ['6.5 &ndash; 7.0', 'Slightly acidic', 'Most community fish, neon tetra, corydoras'],
+      ['7.0',             'Neutral',          'General community tanks'],
+      ['7.0 &ndash; 7.5', 'Slightly basic',  'Guppies, platies, mollies'],
+      ['7.5 &ndash; 8.5', 'Hard, alkaline',  'African cichlids, livebearers'],
+    ].forEach(function(r) {
+      h += '<tr><td><strong>' + r[0] + '</strong></td><td>' + r[1] + '</td><td style="color:var(--muted)">' + r[2] + '</td></tr>';
+    });
+    h += '</table></div></div>';
+    h += '<div style="background:#fff3cd;border-radius:6px;padding:10px 12px;font-size:12px;color:#856404">' +
+         '<strong>Tip:</strong> pH stability matters more than the exact number. A sudden shift of 0.5 or more in a day stresses fish significantly. Test at the same time each day for consistent readings.' +
+         '</div>';
+  }
+
+  // BIONIX — Ammonia
+  if (tk_brand === 'bionix' && tk_test === 'ammonia') {
+    h += tk_tips_html(null);
+    h += '<div style="background:#f8fbff;border-radius:8px;padding:14px;border-left:4px solid #e05252;margin-bottom:14px">';
+    h += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#c0392b">Ammonia Test Procedure</div>';
+    h += tk_steps_html([
+      'Fill the glass test tube with <strong>2.5 ml</strong> of sample water using the syringe.',
+      'Add <strong>4 drops of Ammonia Reagent 1</strong> and <strong>4 drops of Ammonia Reagent 2</strong>. Hold the dropper bottle upside down and completely vertical.',
+      'Cap the tube and shake vigorously for a few seconds.',
+      'Add <strong>4 drops of Ammonia Reagent 3</strong>. Cap and shake vigorously for <strong>15 seconds</strong>.',
+      'Wait <strong>15&ndash;20 minutes</strong> for the colour to fully develop.',
+      'Compare the colour with the colour card, holding the tube against the white background. The closest match is your Total Ammonia Nitrogen (TAN) in ppm.'
+    ], '#e05252');
+    h += '</div>';
+    h += '<div style="background:#fff3cd;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:13px">';
+    h += '<div style="font-weight:600;margin-bottom:6px">&#x26A0; Un-ionized Ammonia (UIA) — the toxic fraction</div>';
+    h += '<p style="margin:0 0 6px">The test measures <strong>Total Ammonia Nitrogen (TAN)</strong>. Un-ionized ammonia (UIA) is ~100&times; more toxic than ionized ammonia and is harmful from as low as <strong>0.05 mg/L</strong>.</p>';
+    h += '<p style="margin:0">To find UIA: multiply TAN by the factor from the table below (using your water\'s temperature and pH).</p>';
+    h += '</div>';
+    // UIA fraction table (simplified common values)
+    h += '<div style="background:#f8fbff;border-radius:8px;padding:12px 14px;font-size:12px">';
+    h += '<div style="font-weight:600;margin-bottom:8px;font-size:13px">UIA fraction table &mdash; multiply TAN by this factor</div>';
+    h += '<div class="tw"><table style="font-size:12px"><tr><th>pH \\ Temp</th><th>20&deg;C / 68&deg;F</th><th>24&deg;C / 75&deg;F</th><th>28&deg;C / 82&deg;F</th><th>30&deg;C / 86&deg;F</th></tr>';
+    [
+      ['6.5', '0.0010', '0.0015', '0.0022', '0.0027'],
+      ['7.0', '0.0032', '0.0047', '0.0069', '0.0085'],
+      ['7.5', '0.0100', '0.0148', '0.0216', '0.0266'],
+      ['8.0', '0.0312', '0.0454', '0.0654', '0.0799'],
+      ['8.5', '0.0918', '0.1307', '0.1824', '0.2175'],
+    ].forEach(function(r) {
+      h += '<tr><td><strong>' + r[0] + '</strong></td><td>' + r[1] + '</td><td>' + r[2] + '</td><td>' + r[3] + '</td><td>' + r[4] + '</td></tr>';
+    });
+    h += '</table></div>';
+    h += '<p style="margin:8px 0 0;color:var(--muted)">Example: TAN = 0.5 ppm, pH 7.5, 24&deg;C &rarr; UIA = 0.5 &times; 0.0148 = <strong>0.0074 ppm</strong>. Threshold for harm: 0.05 ppm.</p>';
+    h += '</div>';
+  }
+
+  // BIONIX — Nitrite
+  if (tk_brand === 'bionix' && tk_test === 'nitrite') {
+    h += tk_tips_html(null);
+    h += '<div style="background:#f8fbff;border-radius:8px;padding:14px;border-left:4px solid #e8a838;margin-bottom:14px">';
+    h += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#b7791f">Nitrite Test Procedure</div>';
+    h += tk_steps_html([
+      'Fill the test tube with <strong>2 ml</strong> of sample water using the syringe.',
+      'Add <strong>2 drops of Nitrite &amp; Nitrate Reagent 1</strong>. Hold the dropper bottle upside down and completely vertical.',
+      'Cap and shake properly for <strong>10 seconds</strong>.',
+      'Add <strong>2 drops of Nitrite &amp; Nitrate Reagent 2</strong>. Cap and shake slowly for <strong>5 seconds</strong>.',
+      'Wait <strong>5 minutes</strong>, then compare the colour with the colour card against a white background.'
+    ], '#e8a838');
+    h += '</div>';
+    h += '<div style="background:#fff3cd;border-radius:6px;padding:10px 12px;font-size:12px;color:#856404">' +
+         '<strong>Note:</strong> In some cases no colour develops if nitrite is zero &mdash; a clear result is a good result.' +
+         '</div>';
+  }
+
+  // BIONIX — Nitrate
+  if (tk_brand === 'bionix' && tk_test === 'nitrate') {
+    h += tk_tips_html(null);
+    h += '<div style="background:#f8fbff;border-radius:8px;padding:14px;border-left:4px solid #3ab87a;margin-bottom:14px">';
+    h += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#1e7a4a">Nitrate Test Procedure</div>';
+    h += tk_steps_html([
+      'Fill the test tube with <strong>2 ml</strong> of sample water using the syringe.',
+      'Add less than <strong>&frac14; of the micro spoon</strong> of Nitrite &amp; Nitrate Reagent 3. Do not overfill the spoon.',
+      'Shake the solution vigorously for <strong>1 minute</strong>.',
+      'Add <strong>3 drops of Nitrite &amp; Nitrate Reagent 1</strong>. Cap and shake well for 5 seconds, then let the tube stand still for 10 seconds.',
+      'Add <strong>3 drops of Nitrite &amp; Nitrate Reagent 2</strong>. Cap and shake well for <strong>5 seconds</strong>.',
+      'Wait <strong>5 minutes</strong> for the colour to fully develop, then compare with the colour card against a white background.'
+    ], '#3ab87a');
+    h += '</div>';
+    h += '<div style="background:#fff3cd;border-radius:6px;padding:10px 12px;font-size:12px;color:#856404">' +
+         '<strong>Note:</strong> In some cases no colour develops if nitrate is zero &mdash; a clear result is a good result.' +
+         '</div>';
+  }
+
+  // BIONIX — Total Hardness, Calcium & Magnesium
+  if (tk_brand === 'bionix' && tk_test === 'th_ca_mg') {
+    h += tk_tips_html(null);
 
     // Two-column layout: Total Hardness | Calcium
     h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px">';
