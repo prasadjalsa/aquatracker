@@ -3387,6 +3387,130 @@ function r_tools() {
   var is_cycling = !tank.cycled && cyc.phase < 4;
   var h = '';
 
+  // === Test Kit Instructions ===
+  var tk_brands = [
+    {id:'bionix', label:'BIONIX', tests:[
+      {id:'th_ca_mg', label:'Total Hardness, Calcium & Magnesium'}
+    ]}
+  ];
+  h += '<div class="card">';
+  h += '<div class="ctitle">Test Kit Instructions</div>';
+  h += '<p style="font-size:13px;color:var(--muted);margin-bottom:12px">Select your test kit brand and the test you are performing to see step-by-step instructions and a result calculator.</p>';
+  // Brand selector
+  h += '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:12px">';
+  h += '<div class="fg" style="margin:0;min-width:180px">';
+  h += '<label style="font-size:12px;color:var(--muted);font-weight:600;display:block;margin-bottom:4px">Brand</label>';
+  h += '<select style="width:100%" onchange="set_tk_brand(this.value)">';
+  h += '<option value="">-- Select brand --</option>';
+  tk_brands.forEach(function(b) {
+    h += '<option value="' + b.id + '"' + (tk_brand === b.id ? ' selected' : '') + '>' + b.label + '</option>';
+  });
+  h += '</select></div>';
+  // Test selector
+  var sel_brand = tk_brands.find(function(b){ return b.id === tk_brand; });
+  if (sel_brand) {
+    h += '<div class="fg" style="margin:0;min-width:280px">';
+    h += '<label style="font-size:12px;color:var(--muted);font-weight:600;display:block;margin-bottom:4px">Test</label>';
+    h += '<select style="width:100%" onchange="set_tk_test(this.value)">';
+    h += '<option value="">-- Select test --</option>';
+    sel_brand.tests.forEach(function(t) {
+      h += '<option value="' + t.id + '"' + (tk_test === t.id ? ' selected' : '') + '>' + t.label + '</option>';
+    });
+    h += '</select></div>';
+  }
+  h += '</div>';
+
+  // BIONIX — Total Hardness, Calcium & Magnesium
+  if (tk_brand === 'bionix' && tk_test === 'th_ca_mg') {
+    // General tips
+    h += '<div style="background:#f0f8ff;border-radius:8px;padding:12px 14px;margin-bottom:14px">';
+    h += '<div style="font-size:13px;font-weight:600;margin-bottom:8px">Before you start</div>';
+    var tips = [
+      'Wash the test tube with sample water before performing any test.',
+      'Shake the liquid reagent bottle properly before use.',
+      'Hold the dropper bottle completely vertical (upside down) when adding drops — this ensures consistent drop size.',
+      'Test the sample as soon as possible after collecting from the source.',
+      'Store the kit at room temperature in a cool, dark place when not in use.'
+    ];
+    tips.forEach(function(t, i) {
+      h += '<div style="display:flex;gap:8px;font-size:13px;margin-bottom:5px">' +
+           '<span style="font-weight:700;color:var(--surf);flex-shrink:0">' + (i+1) + '.</span>' +
+           '<span>' + t + '</span></div>';
+    });
+    h += '</div>';
+
+    // Two-column layout: Total Hardness | Calcium
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px">';
+
+    // Total Hardness procedure
+    h += '<div style="background:#f8fbff;border-radius:8px;padding:12px 14px;border-left:4px solid #4db8d4">';
+    h += '<div style="font-size:13px;font-weight:700;margin-bottom:10px;color:#1a6b8a">Total Hardness Procedure</div>';
+    [
+      ['Reagent 1', 'Take <strong>2 ml</strong> of sample water. Add <strong>2 drops of Reagent 1</strong> and shake for a few seconds.'],
+      ['Reagent 2', 'Add <strong>Reagent 2</strong> (not more than &frac14; of the small plastic spoon). Shake to mix. Colour will turn <em>wine red, pink, or purple</em> (purple = low hardness).'],
+      ['Reagent 3', 'Add <strong>Reagent 3 drop by drop</strong>, shaking gently and waiting 1 second after each drop. Continue until the colour changes to <strong>light blue</strong>. Count all drops used.'],
+    ].forEach(function(s, i) {
+      h += '<div style="display:flex;gap:8px;margin-bottom:8px;font-size:13px">' +
+           '<div style="flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--surf);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center">' + (i+1) + '</div>' +
+           '<div><span style="font-size:11px;font-weight:700;color:#1a6b8a;display:block;margin-bottom:2px">' + s[0] + '</span>' + s[1] + '</div></div>';
+    });
+    h += '<div style="background:#e8f4fd;border-radius:6px;padding:8px 10px;font-size:13px;margin-top:4px">' +
+         '<strong>Formula:</strong> Total Hardness (ppm) = Drops of Reagent 3 &times; 25</div>';
+    h += '</div>';
+
+    // Calcium procedure
+    h += '<div style="background:#f8fbff;border-radius:8px;padding:12px 14px;border-left:4px solid #3ab87a">';
+    h += '<div style="font-size:13px;font-weight:700;margin-bottom:10px;color:#1e7a4a">Calcium Procedure</div>';
+    [
+      ['Reagent 4', 'Take a fresh <strong>2 ml</strong> of sample water. Add <strong>2 drops of Reagent 4</strong> and shake for a few seconds.'],
+      ['Reagent 5', 'Add <strong>Reagent 5</strong> (not more than &frac14; of the plastic spoon). Shake to mix. Colour will turn <em>orange red or pink</em>.'],
+      ['Reagent 3', 'Add <strong>Reagent 3 drop by drop</strong>, shaking and waiting 1 second after each drop. Continue until the colour changes to <strong>purple</strong>. Count all drops used.'],
+    ].forEach(function(s, i) {
+      h += '<div style="display:flex;gap:8px;margin-bottom:8px;font-size:13px">' +
+           '<div style="flex-shrink:0;width:24px;height:24px;border-radius:50%;background:#3ab87a;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center">' + (i+1) + '</div>' +
+           '<div><span style="font-size:11px;font-weight:700;color:#1e7a4a;display:block;margin-bottom:2px">' + s[0] + '</span>' + s[1] + '</div></div>';
+    });
+    h += '<div style="background:#eaf8f1;border-radius:6px;padding:8px 10px;font-size:13px;margin-top:4px">' +
+         '<strong>Formula:</strong> Calcium (ppm) = Drops of Reagent 3 &times; 10</div>';
+    h += '</div>';
+    h += '</div>'; // end grid
+
+    // Derived formulas reference
+    h += '<div style="background:#f5f0ff;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px">';
+    h += '<div style="font-weight:600;margin-bottom:6px">Derived values (calculated automatically below)</div>';
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 20px;">';
+    [
+      ['Magnesium (ppm)', '6 &times; (Drops R3 for TH &minus; Drops R3 for Ca)'],
+      ['Calcium Hardness (ppm)', '2.5 &times; Calcium'],
+      ['Magnesium Hardness (ppm)', 'Total Hardness &minus; Calcium Hardness'],
+    ].forEach(function(f) {
+      h += '<div style="color:var(--muted)">' + f[0] + '</div><div>' + f[1] + '</div>';
+    });
+    h += '</div></div>';
+
+    // Calculator
+    h += '<div style="background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:14px">';
+    h += '<div style="font-size:13px;font-weight:700;margin-bottom:10px">Result Calculator</div>';
+    h += '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px">';
+    h += '<div class="fg" style="margin:0">' +
+         '<label style="font-size:12px;font-weight:600">Drops of Reagent 3 used in <span style="color:#1a6b8a">Total Hardness</span> test</label>' +
+         '<input type="number" id="tk_drops_th" min="0" max="99" placeholder="e.g. 8" style="width:120px" oninput="calc_tk_bionix()"></div>';
+    h += '<div class="fg" style="margin:0">' +
+         '<label style="font-size:12px;font-weight:600">Drops of Reagent 3 used in <span style="color:#1e7a4a">Calcium</span> test</label>' +
+         '<input type="number" id="tk_drops_ca" min="0" max="99" placeholder="e.g. 5" style="width:120px" oninput="calc_tk_bionix()"></div>';
+    h += '</div>';
+    h += '<div id="tk_results"><p style="font-size:13px;color:var(--muted)">Enter the drops above to see your results.</p></div>';
+    h += '</div>';
+  }
+
+  if (!tk_brand) {
+    h += '<p style="font-size:13px;color:var(--muted);padding:8px 0">Select a brand above to see instructions.</p>';
+  } else if (!tk_test) {
+    h += '<p style="font-size:13px;color:var(--muted);padding:8px 0">Select a test above to see the procedure.</p>';
+  }
+
+  h += '</div>'; // end Test Kit card
+
   // === Water Testing Tools ===
   h += '<div class="card">';
   h += '<div class="ctitle">Water Testing Tools</div>';
@@ -3502,6 +3626,41 @@ function r_tools() {
 
 // ===== APP CORE =====
 var cur_tab = 'dash';
+var tk_brand = '';
+var tk_test  = '';
+function set_tk_brand(brand) { tk_brand = brand; tk_test = ''; r_tools(); }
+function set_tk_test(test)   { tk_test  = test;               r_tools(); }
+function calc_tk_bionix() {
+  var el_th  = document.getElementById('tk_drops_th');
+  var el_ca  = document.getElementById('tk_drops_ca');
+  var el_res = document.getElementById('tk_results');
+  if (!el_th || !el_ca || !el_res) return;
+  var drops_th = parseInt(el_th.value) || 0;
+  var drops_ca = parseInt(el_ca.value) || 0;
+  if (drops_ca > drops_th) drops_ca = drops_th;
+  var total_hard  = drops_th * 25;
+  var calcium     = drops_ca * 10;
+  var magnesium   = 6 * (drops_th - drops_ca);
+  var ca_hard     = 2.5 * calcium;
+  var mg_hard     = total_hard - ca_hard;
+  var row = function(lbl, val, note) {
+    return '<tr><td style="font-weight:500">' + lbl + '</td>' +
+           '<td style="font-weight:700;color:var(--surf)">' + val + ' ppm</td>' +
+           '<td style="font-size:12px;color:var(--muted)">' + (note||'') + '</td></tr>';
+  };
+  var h = '<div class="tw"><table>' +
+    '<tr><th>Parameter</th><th>Result</th><th>Typical range (freshwater)</th></tr>' +
+    row('Total Hardness (GH)', total_hard, '4&ndash;8 dGH (71&ndash;143 ppm) for most community fish') +
+    row('Calcium (Ca)', calcium, '20&ndash;60 ppm ideal for planted tanks') +
+    row('Magnesium (Mg)', magnesium, '5&ndash;20 ppm; Ca:Mg ratio ideally 3:1 to 5:1') +
+    row('Calcium Hardness', ca_hard, 'Portion of total hardness from Ca') +
+    row('Magnesium Hardness', mg_hard, 'Total hardness &minus; Calcium hardness') +
+    '</table></div>';
+  if (drops_th === 0 && drops_ca === 0) {
+    h = '<p style="font-size:13px;color:var(--muted)">Enter the drops above to see your results.</p>';
+  }
+  el_res.innerHTML = h;
+}
 function render_tab() {
   upd_prev_bar();
   if      (cur_tab === 'dash')  r_dash();
