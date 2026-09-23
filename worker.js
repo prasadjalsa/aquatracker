@@ -1681,6 +1681,7 @@ function r_dash() {
   var tid = at(), d = ld(), el = document.getElementById('p-dash');
   var tank = d.tanks.find(function(t){ return t.id === tid; });
   if (!tank) { el.innerHTML = no_tank(); return; }
+  var has_therm = d.equip.some(function(e){ return e.tank_id === tid && e.type === 'Thermometer'; });
 
   var tasks = d.tasks.filter(function(x){ return x.tank_id === tid; })
     .sort(function(a,b){ return days_til(a.next_due) - days_til(b.next_due); });
@@ -1766,14 +1767,15 @@ function r_dash() {
   if (lr) h += '<small style="font-weight:400;color:var(--muted)"> ' + lr.date + '</small>';
   h += '</div>';
   if (lr) {
-    var ps = [
-      {k:'temp_f',    l:'Temperature',      u:t_lbl(), mn:rng&&rng.temp.ok?d_t(rng.temp.min):null, mx:rng&&rng.temp.ok?d_t(rng.temp.max):null, tox:false, conv:d_t},
+    var ps = [];
+    if (has_therm) ps.push({k:'temp_f', l:'Temperature', u:t_lbl(), mn:rng&&rng.temp.ok?d_t(rng.temp.min):null, mx:rng&&rng.temp.ok?d_t(rng.temp.max):null, tox:false, conv:d_t});
+    ps.push(
       {k:'ammonia',   l:'Ammonia',          u:'ppm', mn:0,  mx:0,  tox:true,  conv:null},
       {k:'nitrite',   l:'Nitrite',          u:'ppm', mn:0,  mx:0,  tox:true,  conv:null},
       {k:'nitrate',   l:'Nitrate',          u:'ppm', mn:0,  mx:40, tox:false, conv:null},
       {k:'ph',        l:'pH',               u:'',    mn:rng&&rng.ph.ok?rng.ph.min:null, mx:rng&&rng.ph.ok?rng.ph.max:null, tox:false, conv:null},
       {k:'gh',        l:'Hardness (GH)',    u:'',    mn:rng&&rng.gh.ok?rng.gh.min:null, mx:rng&&rng.gh.ok?rng.gh.max:null, tox:false, conv:null}
-    ];
+    );
     // Only show Ca/Mg rows if they were logged for this reading
     if (lr.calcium !== null && lr.calcium !== undefined) {
       ps.push({k:'calcium',   l:'Calcium (Ca)',   u:'ppm', mn:20, mx:60, tox:false, conv:null});
@@ -1950,18 +1952,24 @@ function wlog_cell(key, val, prev_val) {
 function r_wlog() {
   var tid = at(), d = ld(), el = document.getElementById('p-wlog');
   if (!d.tanks.find(function(t){return t.id===tid;})) { el.innerHTML = no_tank(); return; }
+  var has_therm = d.equip.some(function(e){ return e.tank_id === tid && e.type === 'Thermometer'; });
+  var prev_r = last_r(tid);
+  var last_gh_val = prev_r ? prev_r.gh : null;
+  var gh_hint = last_gh_val !== null
+    ? 'Carried from last reading &mdash; update only after a water change.'
+    : 'Most tropical fish prefer 4&ndash;12 dGH. 1 dGH = 17.9 ppm = 17.9 mg/L CaCO&#x2083;.';
   var td = today_str();
   var h = '<div class="card"><div class="ctitle">Add Water Reading</div>' +
     '<form id="wf" onsubmit="sub_water(event)">' +
     '<div class="frow">' +
     fgh('Date', '<input type="date" name="date" value="' + td + '" required>', '') +
-    fgh('Temperature (' + t_lbl() + ')', '<input type="number" name="tf" step="0.1" placeholder="e.g. ' + (get_pref().temp === 'C' ? '24' : '76') + '">', 'Stable temp is as important as the number itself.') +
+    (has_therm ? fgh('Temperature (' + t_lbl() + ')', '<input type="number" name="tf" step="0.1" placeholder="e.g. ' + (get_pref().temp === 'C' ? '24' : '76') + '">', 'Stable temp is as important as the number itself.') : '') +
     fgh('Ammonia (ppm)', '<input type="number" name="nh3" step="0.01" placeholder="e.g. 0">', 'Target: 0 ppm. Any reading above 0 is harmful to fish.') +
     fgh('Nitrite (ppm)', '<input type="number" name="no2" step="0.01" placeholder="e.g. 0">', 'Target: 0 ppm. Toxic even at 0.25 ppm. Spikes during cycling.') +
     '</div><div class="frow">' +
     fgh('Nitrate (ppm)', '<input type="number" name="no3" step="0.1" placeholder="e.g. 10">', 'Keep below 20 ppm. Reduced by regular water changes.') +
     fgh('pH', '<input type="number" name="ph" step="0.01" placeholder="e.g. 7.0">', 'Stability matters more than exact value. Avoid sudden changes.') +
-    fgh('Hardness (GH)', '<input type="number" name="gh" step="0.1" placeholder="e.g. 8">', 'Most tropical fish prefer 4-12 dGH. 1 dGH = 17.9 ppm = 17.9 mg/L CaCO3.') +
+    fgh('Hardness (GH)', '<input type="number" name="gh" step="0.1"' + (last_gh_val !== null ? ' value="' + last_gh_val + '"' : ' placeholder="e.g. 8"') + '>', gh_hint) +
     fgh('Notes', '<input type="text" name="notes" placeholder="Optional notes">', '') +
     '</div>' +
     '<div style="margin:8px 0 10px">' +
@@ -1978,7 +1986,8 @@ function r_wlog() {
   if (entries.length >= 2) {
     h += '<div class="card"><div class="ctitle" style="gap:10px">Trend ' +
       '<select id="cpsel" onchange="draw_chart(at(),this.value)">' +
-      '<option value="temp_f">Temperature</option><option value="ammonia">Ammonia</option>' +
+      (has_therm ? '<option value="temp_f">Temperature</option>' : '') +
+      '<option value="ammonia">Ammonia</option>' +
       '<option value="nitrite">Nitrite</option><option value="nitrate">Nitrate</option>' +
       '<option value="ph">pH</option><option value="gh">Hardness</option>' +
       '</select></div><div class="chart-wrap"><canvas id="wc"></canvas></div></div>';
@@ -1987,7 +1996,7 @@ function r_wlog() {
     var sorted = entries.slice().reverse();
     var has_ca_mg = entries.some(function(e){ return e.calcium !== null && e.calcium !== undefined; });
     h += '<div class="card"><div class="ctitle">History</div><div class="tw"><table>' +
-      '<tr><th>Date</th><th>Temp ' + t_lbl() + '</th><th>NH3 (ppm)</th><th>NO2 (ppm)</th><th>NO3 (ppm)</th><th>pH</th><th>GH</th>' +
+      '<tr><th>Date</th>' + (has_therm ? '<th>Temp ' + t_lbl() + '</th>' : '') + '<th>NH3 (ppm)</th><th>NO2 (ppm)</th><th>NO3 (ppm)</th><th>pH</th><th>GH</th>' +
       (has_ca_mg ? '<th>Ca (ppm)</th><th>Mg (ppm)</th>' : '') +
       '<th>Notes</th><th></th></tr>';
     sorted.slice(0, 30).forEach(function(e, i) {
@@ -1996,7 +2005,8 @@ function r_wlog() {
       var pt = prev ? d_t(prev.temp_f) : null;
       var t_arr = wlog_arrow(td, pt);
       var t_disp = td !== null ? td + t_arr : '&mdash;';
-      h += '<tr><td>' + e.date + '</td><td>' + t_disp + '</td>' +
+      h += '<tr><td>' + e.date + '</td>' +
+           (has_therm ? '<td>' + t_disp + '</td>' : '') +
            wlog_cell('ammonia', e.ammonia, prev ? prev.ammonia : null) +
            wlog_cell('nitrite', e.nitrite, prev ? prev.nitrite : null) +
            wlog_cell('nitrate', e.nitrate, prev ? prev.nitrate : null) +
@@ -2048,7 +2058,7 @@ function sub_water(e) {
   e.preventDefault(); var f = e.target, tid = at();
   var ca = wlog_adv && f.ca ? f.ca.value : '';
   var mg = wlog_adv && f.mg ? f.mg.value : '';
-  add_water(tid, f.date.value, inp_t(f.tf.value), f.nh3.value, f.no2.value, f.no3.value, f.ph.value, f.gh.value, f.notes.value, ca, mg);
+  add_water(tid, f.date.value, f.tf ? inp_t(f.tf.value) : null, f.nh3.value, f.no2.value, f.no3.value, f.ph.value, f.gh.value, f.notes.value, ca, mg);
   r_wlog();
 }
 
