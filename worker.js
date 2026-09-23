@@ -1795,6 +1795,10 @@ function r_dash() {
            '<span style="color:var(--muted)"> &mdash; ideal is 3:1 to 5:1 for planted tanks</span></div>';
     }
   } else {
+    h += '<p class="emsg">No readings yet. Go to the Logs tab to add one.</p>';
+  }
+  h += '</div>';
+  if (tank.notes) h += '<div class="card"><div class="ctitle">Notes</div><p style="font-size:13px;color:var(--muted)">' + esc(tank.notes) + '</p></div>';
   h += '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
        '<button class="btn bg bs" onclick="do_edit_tank()">Edit Tank</button>' +
        '<button class="btn bd bs" onclick="do_del_tank()">Delete Tank</button></div>';
