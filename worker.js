@@ -2360,6 +2360,11 @@ function r_recs() {
   h += '<span style="font-size:22px;font-weight:700;color:var(--deep)">' + cur_bl + '</span>';
   h += '<span style="font-size:14px;color:var(--muted)">/ ' + max_bl + ' units (' + bl_pct + '% capacity)</span></div>';
   h += '<div class="bl-bar"><div class="bl-fill" style="width:' + bl_pct + '%;background:' + bl_bar_color + '"></div></div>';
+  var sub_total = calc_substrate_liters(tid);
+  if (sub_total > 0 && tank) {
+    var eff_l = Math.round((tank.liters - sub_total) * 10) / 10;
+    h += '<div style="font-size:12px;color:var(--muted);margin-top:4px">Effective water volume: ' + eff_l + ' L (tank ' + Math.round(tank.liters) + ' L &minus; substrate ' + sub_total + ' L)</div>';
+  }
   var bl_msg, bl_mc;
   if (bl_cls === 'danger') {
     bl_mc = 'var(--danger)';
