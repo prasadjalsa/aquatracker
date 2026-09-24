@@ -843,7 +843,7 @@ function calc_bioload(tid) {
     // Invertebrates (shrimps, snails) produce ~30% of the waste fish do at equivalent size
     if (sp) total += (sp.bioload || 2) * s.qty * (sp.inv ? 0.3 : 1);
   });
-  return Math.round(total * 10) / 10;
+  return Math.round(total);
 }
 function max_bioload(gallons, plant_count, substrate_liters) {
   var sub_gal = (substrate_liters || 0) / 3.78541;
