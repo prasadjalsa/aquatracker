@@ -294,14 +294,14 @@ Object.keys(SP).forEach(function(k){ if(!SP[k].type) SP[k].type='Fish'; });
 // ===== PLANT DATABASE (20 species) =====
 var PL = {
   // ── Anubias ──
-  anubias:               {group:'Anubias',            name:'Anubias (Generic)',         tmin:60,tmax:84,light:'Low',   co2:false,diff:'Easy',    note:'Attach to hardscape. Burying rhizome causes rot.'},
-  anubias_barteri:       {group:'Anubias',            name:'Anubias Barteri',           tmin:60,tmax:84,light:'Low',   co2:false,diff:'Easy',    note:'Large oval leaves. Robust and undemanding. Attach to hardscape.'},
-  anubias_nana:          {group:'Anubias',            name:'Anubias Nana',              tmin:60,tmax:84,light:'Low',   co2:false,diff:'Easy',    note:'Most popular Anubias. Compact and very hardy. Great for midground.'},
-  anubias_nana_petite:   {group:'Anubias',            name:'Anubias Nana Petite',       tmin:60,tmax:84,light:'Low',   co2:false,diff:'Easy',    note:'Tiny variant of Nana. Ideal for nano tanks and small driftwood.'},
-  anubias_coffeefolia:   {group:'Anubias',            name:'Anubias Coffeefolia',       tmin:60,tmax:84,light:'Low',   co2:false,diff:'Easy',    note:'Deeply ridged dark leaves with brown new growth. Striking midground.'},
-  anubias_congensis:     {group:'Anubias',            name:'Anubias Congensis',         tmin:62,tmax:84,light:'Low',   co2:false,diff:'Easy',    note:'Long narrow leaves. Less common but very hardy.'},
+  anubias:               {group:'Anubias',            name:'Anubias (Generic)',         tmin:60,tmax:84,light:'Low',   co2:false,diff:'Easy',nitrate_abs:'low',    note:'Attach to hardscape. Burying rhizome causes rot.'},
+  anubias_barteri:       {group:'Anubias',            name:'Anubias Barteri',           tmin:60,tmax:84,light:'Low',   co2:false,diff:'Easy',nitrate_abs:'low',    note:'Large oval leaves. Robust and undemanding. Attach to hardscape.'},
+  anubias_nana:          {group:'Anubias',            name:'Anubias Nana',              tmin:60,tmax:84,light:'Low',   co2:false,diff:'Easy',nitrate_abs:'low',    note:'Most popular Anubias. Compact and very hardy. Great for midground.'},
+  anubias_nana_petite:   {group:'Anubias',            name:'Anubias Nana Petite',       tmin:60,tmax:84,light:'Low',   co2:false,diff:'Easy',nitrate_abs:'low',    note:'Tiny variant of Nana. Ideal for nano tanks and small driftwood.'},
+  anubias_coffeefolia:   {group:'Anubias',            name:'Anubias Coffeefolia',       tmin:60,tmax:84,light:'Low',   co2:false,diff:'Easy',nitrate_abs:'low',    note:'Deeply ridged dark leaves with brown new growth. Striking midground.'},
+  anubias_congensis:     {group:'Anubias',            name:'Anubias Congensis',         tmin:62,tmax:84,light:'Low',   co2:false,diff:'Easy',nitrate_abs:'low',    note:'Long narrow leaves. Less common but very hardy.'},
   // ── Bucephalandra ──
-  bucephalandra:         {group:'Bucephalandra',      name:'Bucephalandra',             tmin:68,tmax:86,light:'Low',   co2:false,diff:'Easy',    note:'Many color variants. Attach to hardscape. Slow grower.'},
+  bucephalandra:         {group:'Bucephalandra',      name:'Bucephalandra',             tmin:68,tmax:86,light:'Low',   co2:false,diff:'Easy',nitrate_abs:'low',    note:'Many color variants. Attach to hardscape. Slow grower.'},
   // ── Cryptocoryne ──
   cryptocoryne:          {group:'Cryptocoryne',       name:'Cryptocoryne (Generic)',    tmin:68,tmax:82,light:'Low',   co2:false,diff:'Easy',    note:'Melts when moved. Will recover within weeks.'},
   crypt_wendtii:         {group:'Cryptocoryne',       name:'Crypt. Wendtii',            tmin:68,tmax:82,light:'Low',   co2:false,diff:'Easy',    note:'Most common Crypt. Comes in green and bronze. Very adaptable.'},
@@ -315,40 +315,40 @@ var PL = {
   echinodorus_parviflorus:{group:'Swords & Rosettes', name:'Black Amazon Sword',        tmin:60,tmax:82,light:'Medium',co2:false,diff:'Easy',    note:'Darker and more compact than the standard Amazon Sword.'},
   echinodorus_osiris:    {group:'Swords & Rosettes',  name:'Melon Sword',               tmin:60,tmax:82,light:'Medium',co2:false,diff:'Easy',    note:'Large reddish-brown leaves. Statement background plant. Root feeder.'},
   dwarf_lily:            {group:'Swords & Rosettes',  name:'Dwarf Lily',                tmin:68,tmax:82,light:'Medium',co2:false,diff:'Medium',  note:'Grows from a bulb. Produces broad lily-pad leaves above water.'},
-  vallisneria:           {group:'Swords & Rosettes',  name:'Vallisneria',               tmin:60,tmax:86,light:'Medium',co2:false,diff:'Easy',    note:'Spreads via runners. Tall grass-like background plant.'},
-  vallisneria_nana:      {group:'Swords & Rosettes',  name:'Vallisneria Nana',          tmin:60,tmax:86,light:'Medium',co2:false,diff:'Easy',    note:'Shorter and narrower than standard Val. Good for medium tanks.'},
+  vallisneria:           {group:'Swords & Rosettes',  name:'Vallisneria',               tmin:60,tmax:86,light:'Medium',co2:false,diff:'Easy',nitrate_abs:'high',    note:'Spreads via runners. Tall grass-like background plant.'},
+  vallisneria_nana:      {group:'Swords & Rosettes',  name:'Vallisneria Nana',          tmin:60,tmax:86,light:'Medium',co2:false,diff:'Easy',nitrate_abs:'high',    note:'Shorter and narrower than standard Val. Good for medium tanks.'},
   sagittaria_subulata:   {group:'Swords & Rosettes',  name:'Sagittaria Subulata',       tmin:60,tmax:82,light:'Medium',co2:false,diff:'Easy',    note:'Grass-like spreader. Easy alternative to dwarf hairgrass.'},
   blyxa_japonica:        {group:'Swords & Rosettes',  name:'Blyxa Japonica',            tmin:68,tmax:82,light:'Medium',co2:false,diff:'Medium',  note:'Grass-like rosette with a reddish hue. Benefits from CO2.'},
   // ── Java Fern ──
-  java_fern:             {group:'Java Fern',          name:'Java Fern',                 tmin:60,tmax:82,light:'Low',   co2:false,diff:'Easy',    note:'Tie to driftwood or hardscape. Never bury the rhizome.'},
-  java_fern_narrow:      {group:'Java Fern',          name:'Java Fern Narrow Leaf',     tmin:60,tmax:82,light:'Low',   co2:false,diff:'Easy',    note:'Slender leaves. Same care as standard Java Fern.'},
-  java_fern_windelov:    {group:'Java Fern',          name:'Java Fern Windelov',        tmin:60,tmax:82,light:'Low',   co2:false,diff:'Easy',    note:'Lacy trident-tipped leaves. Stunning attached to hardscape.'},
-  java_fern_trident:     {group:'Java Fern',          name:'Java Fern Trident',         tmin:60,tmax:82,light:'Low',   co2:false,diff:'Easy',    note:'Deeply lobed finger-like leaves. Less common but very easy.'},
-  bolbitis_heudelotii:   {group:'Java Fern',          name:'Bolbitis (African Fern)',   tmin:68,tmax:80,light:'Medium',co2:false,diff:'Medium',  note:'Delicate translucent green leaves. Attach to hardscape. Needs water flow.'},
+  java_fern:             {group:'Java Fern',          name:'Java Fern',                 tmin:60,tmax:82,light:'Low',   co2:false,diff:'Easy',nitrate_abs:'low',    note:'Tie to driftwood or hardscape. Never bury the rhizome.'},
+  java_fern_narrow:      {group:'Java Fern',          name:'Java Fern Narrow Leaf',     tmin:60,tmax:82,light:'Low',   co2:false,diff:'Easy',nitrate_abs:'low',    note:'Slender leaves. Same care as standard Java Fern.'},
+  java_fern_windelov:    {group:'Java Fern',          name:'Java Fern Windelov',        tmin:60,tmax:82,light:'Low',   co2:false,diff:'Easy',nitrate_abs:'low',    note:'Lacy trident-tipped leaves. Stunning attached to hardscape.'},
+  java_fern_trident:     {group:'Java Fern',          name:'Java Fern Trident',         tmin:60,tmax:82,light:'Low',   co2:false,diff:'Easy',nitrate_abs:'low',    note:'Deeply lobed finger-like leaves. Less common but very easy.'},
+  bolbitis_heudelotii:   {group:'Java Fern',          name:'Bolbitis (African Fern)',   tmin:68,tmax:80,light:'Medium',co2:false,diff:'Medium',nitrate_abs:'low',  note:'Delicate translucent green leaves. Attach to hardscape. Needs water flow.'},
   // ── Mosses ──
-  java_moss:             {group:'Mosses',             name:'Java Moss',                 tmin:60,tmax:82,light:'Low',   co2:false,diff:'Easy',    note:'Great for shrimp and fry cover. Attach to surfaces.'},
-  christmas_moss:        {group:'Mosses',             name:'Christmas Moss',            tmin:65,tmax:79,light:'Low',   co2:false,diff:'Easy',    note:'Triangular branching resembles fir branches. Attach to hardscape.'},
-  flame_moss:            {group:'Mosses',             name:'Flame Moss',                tmin:65,tmax:82,light:'Low',   co2:false,diff:'Easy',    note:'Distinctive upward-twisting growth pattern. Very unique look.'},
-  riccia_fluitans:       {group:'Mosses',             name:'Riccia (Crystalwort)',      tmin:65,tmax:82,light:'High',  co2:true, diff:'Medium',  note:'Dense bright-green mat. Needs high light and CO2 to stay submerged.'},
+  java_moss:             {group:'Mosses',             name:'Java Moss',                 tmin:60,tmax:82,light:'Low',   co2:false,diff:'Easy',nitrate_abs:'low',    note:'Great for shrimp and fry cover. Attach to surfaces.'},
+  christmas_moss:        {group:'Mosses',             name:'Christmas Moss',            tmin:65,tmax:79,light:'Low',   co2:false,diff:'Easy',nitrate_abs:'low',    note:'Triangular branching resembles fir branches. Attach to hardscape.'},
+  flame_moss:            {group:'Mosses',             name:'Flame Moss',                tmin:65,tmax:82,light:'Low',   co2:false,diff:'Easy',nitrate_abs:'low',    note:'Distinctive upward-twisting growth pattern. Very unique look.'},
+  riccia_fluitans:       {group:'Mosses',             name:'Riccia (Crystalwort)',      tmin:65,tmax:82,light:'High',  co2:true, diff:'Medium',nitrate_abs:'low',  note:'Dense bright-green mat. Needs high light and CO2 to stay submerged.'},
   // ── Floating ──
-  duckweed:              {group:'Floating',           name:'Duckweed',                  tmin:60,tmax:86,light:'Low',   co2:false,diff:'Easy',    note:'Tiny floating plant. Spreads extremely fast — hard to remove.'},
-  frogbit:               {group:'Floating',           name:'Frogbit',                   tmin:60,tmax:78,light:'Medium',co2:false,diff:'Easy',    note:'Floating plant with round leaves. Provides shade and surface cover.'},
-  salvinia:              {group:'Floating',           name:'Salvinia',                  tmin:64,tmax:82,light:'Medium',co2:false,diff:'Easy',    note:'Small floating fern. Fast grower and excellent nitrate absorber.'},
-  water_sprite:          {group:'Floating',           name:'Water Sprite',              tmin:60,tmax:87,light:'Medium',co2:false,diff:'Easy',    note:'Can float or be planted in substrate. Trim regularly.'},
-  water_lettuce:         {group:'Floating',           name:'Water Lettuce',             tmin:68,tmax:86,light:'High',  co2:false,diff:'Easy',    note:'Large floating rosette. Needs strong light and high humidity.'},
+  duckweed:              {group:'Floating',           name:'Duckweed',                  tmin:60,tmax:86,light:'Low',   co2:false,diff:'Easy',nitrate_abs:'very_high',    note:'Tiny floating plant. Spreads extremely fast — hard to remove.'},
+  frogbit:               {group:'Floating',           name:'Frogbit',                   tmin:60,tmax:78,light:'Medium',co2:false,diff:'Easy',nitrate_abs:'very_high',    note:'Floating plant with round leaves. Provides shade and surface cover.'},
+  salvinia:              {group:'Floating',           name:'Salvinia',                  tmin:64,tmax:82,light:'Medium',co2:false,diff:'Easy',nitrate_abs:'very_high',    note:'Small floating fern. Fast grower and excellent nitrate absorber.'},
+  water_sprite:          {group:'Floating',           name:'Water Sprite',              tmin:60,tmax:87,light:'Medium',co2:false,diff:'Easy',nitrate_abs:'very_high',    note:'Can float or be planted in substrate. Trim regularly.'},
+  water_lettuce:         {group:'Floating',           name:'Water Lettuce',             tmin:68,tmax:86,light:'High',  co2:false,diff:'Easy',nitrate_abs:'high',    note:'Large floating rosette. Needs strong light and high humidity.'},
   // ── Stem Plants ──
-  bacopa:                {group:'Stem Plants',        name:'Bacopa Caroliniana',        tmin:68,tmax:82,light:'Medium',co2:false,diff:'Easy',    note:'Round leaves on upright stems. Slightly acidic water preferred.'},
-  bacopa_monnieri:       {group:'Stem Plants',        name:'Bacopa Monnieri',           tmin:64,tmax:86,light:'Medium',co2:false,diff:'Easy',    note:'Smaller leaves than caroliniana. Tolerates harder water well.'},
-  hornwort:              {group:'Stem Plants',        name:'Hornwort',                  tmin:59,tmax:86,light:'Medium',co2:false,diff:'Easy',    note:'Very fast grower. Great natural nitrate filter.'},
+  bacopa:                {group:'Stem Plants',        name:'Bacopa Caroliniana',        tmin:68,tmax:82,light:'Medium',co2:false,diff:'Easy',nitrate_abs:'high',    note:'Round leaves on upright stems. Slightly acidic water preferred.'},
+  bacopa_monnieri:       {group:'Stem Plants',        name:'Bacopa Monnieri',           tmin:64,tmax:86,light:'Medium',co2:false,diff:'Easy',nitrate_abs:'high',    note:'Smaller leaves than caroliniana. Tolerates harder water well.'},
+  hornwort:              {group:'Stem Plants',        name:'Hornwort',                  tmin:59,tmax:86,light:'Medium',co2:false,diff:'Easy',nitrate_abs:'very_high',    note:'Very fast grower. Great natural nitrate filter.'},
   moneywort:             {group:'Stem Plants',        name:'Moneywort',                 tmin:60,tmax:82,light:'Medium',co2:false,diff:'Easy',    note:'Round leaves on stems. Can also grow emersed above water.'},
-  pennywort:             {group:'Stem Plants',        name:'Pennywort',                 tmin:68,tmax:82,light:'Medium',co2:false,diff:'Easy',    note:'Fast growing trailing stems. Easy for beginners.'},
-  water_wisteria:        {group:'Stem Plants',        name:'Water Wisteria',            tmin:60,tmax:86,light:'Medium',co2:false,diff:'Easy',    note:'Fast grower with delicate lacy leaves. Trim regularly.'},
-  hygrophila_corymbosa:  {group:'Stem Plants',        name:'Giant Hygro',               tmin:64,tmax:86,light:'Medium',co2:false,diff:'Easy',    note:'Large leaves on tall stems. One of the most undemanding backgrounds.'},
-  hygrophila_polysperma: {group:'Stem Plants',        name:'Sunset Hygro',              tmin:64,tmax:86,light:'Medium',co2:false,diff:'Easy',    note:'Pinkish-orange tips under good light. One of the easiest stem plants.'},
-  limnophila_sessiliflora:{group:'Stem Plants',       name:'Ambulia',                   tmin:64,tmax:82,light:'Medium',co2:false,diff:'Easy',    note:'Fine feathery whorled leaves. Fast grower. Good beginner plant.'},
+  pennywort:             {group:'Stem Plants',        name:'Pennywort',                 tmin:68,tmax:82,light:'Medium',co2:false,diff:'Easy',nitrate_abs:'high',    note:'Fast growing trailing stems. Easy for beginners.'},
+  water_wisteria:        {group:'Stem Plants',        name:'Water Wisteria',            tmin:60,tmax:86,light:'Medium',co2:false,diff:'Easy',nitrate_abs:'high',    note:'Fast grower with delicate lacy leaves. Trim regularly.'},
+  hygrophila_corymbosa:  {group:'Stem Plants',        name:'Giant Hygro',               tmin:64,tmax:86,light:'Medium',co2:false,diff:'Easy',nitrate_abs:'high',    note:'Large leaves on tall stems. One of the most undemanding backgrounds.'},
+  hygrophila_polysperma: {group:'Stem Plants',        name:'Sunset Hygro',              tmin:64,tmax:86,light:'Medium',co2:false,diff:'Easy',nitrate_abs:'high',    note:'Pinkish-orange tips under good light. One of the easiest stem plants.'},
+  limnophila_sessiliflora:{group:'Stem Plants',       name:'Ambulia',                   tmin:64,tmax:82,light:'Medium',co2:false,diff:'Easy',nitrate_abs:'high',    note:'Fine feathery whorled leaves. Fast grower. Good beginner plant.'},
   cabomba:               {group:'Stem Plants',        name:'Cabomba',                   tmin:64,tmax:82,light:'Medium',co2:false,diff:'Medium',  note:'Fan-shaped whorled leaves. Needs good light and soft water.'},
-  najas_guadalupensis:   {group:'Stem Plants',        name:'Guppy Grass',               tmin:60,tmax:82,light:'Low',   co2:false,diff:'Easy',    note:'Extremely fast grower. Excellent breeding cover and nitrate sink.'},
-  hemianthus_micranthemoides:{group:'Stem Plants',   name:'Pearl Weed',                tmin:68,tmax:82,light:'Medium',co2:false,diff:'Easy',    note:'Tiny round leaves. Can carpet low or grow upright as a stem plant.'},
+  najas_guadalupensis:   {group:'Stem Plants',        name:'Guppy Grass',               tmin:60,tmax:82,light:'Low',   co2:false,diff:'Easy',nitrate_abs:'very_high',    note:'Extremely fast grower. Excellent breeding cover and nitrate sink.'},
+  hemianthus_micranthemoides:{group:'Stem Plants',   name:'Pearl Weed',                tmin:68,tmax:82,light:'Medium',co2:false,diff:'Easy',nitrate_abs:'low',    note:'Tiny round leaves. Can carpet low or grow upright as a stem plant.'},
   ludwigia:              {group:'Stem Plants',        name:'Ludwigia Repens',           tmin:68,tmax:82,light:'High',  co2:true, diff:'Medium',  note:'Red/orange color intensifies with high light and CO2.'},
   ludwigia_arcuata:      {group:'Stem Plants',        name:'Ludwigia Arcuata',          tmin:68,tmax:82,light:'High',  co2:true, diff:'Medium',  note:'Needle-like leaves. Vibrant orange-red with CO2 and high light.'},
   ludwigia_super_red:    {group:'Stem Plants',        name:'Ludwigia Super Red',        tmin:68,tmax:82,light:'High',  co2:true, diff:'Medium',  note:'Deep blood-red color when conditions are ideal. Very striking.'},
@@ -358,13 +358,23 @@ var PL = {
   alternanthera_reineckii:{group:'Stem Plants',       name:'Alternanthera Reineckii',   tmin:72,tmax:82,light:'High',  co2:true, diff:'Medium',  note:'Striking pink-red leaves. Needs strong light and CO2 for best color.'},
   myriophyllum_tuberculatum:{group:'Stem Plants',     name:'Red Milfoil',               tmin:65,tmax:80,light:'High',  co2:true, diff:'Advanced',note:'Fine-textured red stems. Very demanding — needs CO2, high light, soft water.'},
   // ── Foreground & Carpet ──
-  dwarf_hairgrass:       {group:'Foreground & Carpet',name:'Dwarf Hairgrass',           tmin:60,tmax:80,light:'Medium',co2:false,diff:'Medium',  note:'Classic carpet plant. Slow to spread without CO2.'},
-  eleocharis_acicularis: {group:'Foreground & Carpet',name:'Micro Hairgrass',           tmin:60,tmax:80,light:'Medium',co2:false,diff:'Medium',  note:'Finer and shorter than dwarf hairgrass. Dense low carpet.'},
-  staurogyne_repens:     {group:'Foreground & Carpet',name:'Staurogyne Repens',         tmin:68,tmax:82,light:'Medium',co2:false,diff:'Easy',    note:'Compact bushy foreground. Very undemanding for a carpet plant.'},
-  marsilea_hirsuta:      {group:'Foreground & Carpet',name:'Marsilea Hirsuta',          tmin:64,tmax:82,light:'Medium',co2:false,diff:'Easy',    note:'Four-leaf clover appearance. Easy low carpet without CO2.'},
-  monte_carlo:           {group:'Foreground & Carpet',name:'Monte Carlo',               tmin:68,tmax:82,light:'Medium',co2:true, diff:'Medium',  note:'Dense carpet. CO2 greatly accelerates spreading.'},
-  hemianthus_callitrichoides:{group:'Foreground & Carpet',name:'HC Cuba',               tmin:68,tmax:78,light:'High',  co2:true, diff:'Advanced',note:'Demanding mini carpet. Needs high light, CO2, and soft water.'},
-  pogostemon_helferi:    {group:'Foreground & Carpet',name:'Pogostemon Helferi (Downoi)',tmin:68,tmax:82,light:'Medium',co2:false,diff:'Medium', note:'Unique star-shaped leaves forming low dense clusters.'},
+  dwarf_hairgrass:       {group:'Foreground & Carpet',name:'Dwarf Hairgrass',           tmin:60,tmax:80,light:'Medium',co2:false,diff:'Medium',nitrate_abs:'low',  note:'Classic carpet plant. Slow to spread without CO2.'},
+  eleocharis_acicularis: {group:'Foreground & Carpet',name:'Micro Hairgrass',           tmin:60,tmax:80,light:'Medium',co2:false,diff:'Medium',nitrate_abs:'low',  note:'Finer and shorter than dwarf hairgrass. Dense low carpet.'},
+  staurogyne_repens:     {group:'Foreground & Carpet',name:'Staurogyne Repens',         tmin:68,tmax:82,light:'Medium',co2:false,diff:'Easy',nitrate_abs:'low',    note:'Compact bushy foreground. Very undemanding for a carpet plant.'},
+  marsilea_hirsuta:      {group:'Foreground & Carpet',name:'Marsilea Hirsuta',          tmin:64,tmax:82,light:'Medium',co2:false,diff:'Easy',nitrate_abs:'low',    note:'Four-leaf clover appearance. Easy low carpet without CO2.'},
+  monte_carlo:           {group:'Foreground & Carpet',name:'Monte Carlo',               tmin:68,tmax:82,light:'Medium',co2:true, diff:'Medium',nitrate_abs:'low',  note:'Dense carpet. CO2 greatly accelerates spreading.'},
+  hemianthus_callitrichoides:{group:'Foreground & Carpet',name:'HC Cuba',               tmin:68,tmax:78,light:'High',  co2:true, diff:'Advanced',nitrate_abs:'low',  note:'Demanding mini carpet. Needs high light, CO2, and soft water.'},
+  pogostemon_helferi:    {group:'Foreground & Carpet',name:'Pogostemon Helferi (Downoi)',tmin:68,tmax:82,light:'Medium',co2:false,diff:'Medium',nitrate_abs:'low',  note:'Unique star-shaped leaves forming low dense clusters.'},
+  // ── Riparian / Emersed ──
+  pothos:       {group:'Riparian / Emersed', name:'Pothos (Money Plant)', tmin:60,tmax:86,light:'Low',   co2:false,diff:'Easy',nitrate_abs:'very_high',    note:'Grow with roots in the water, foliage above the tank. Excellent nitrate sink.'},
+  spider_plant: {group:'Riparian / Emersed', name:'Spider Plant',         tmin:60,tmax:82,light:'Low',   co2:false,diff:'Easy',nitrate_abs:'very_high',    note:'Grow emersed with roots trailing in the tank. Fast nitrate uptake.'},
+  lucky_bamboo:     {group:'Riparian / Emersed', name:'Lucky Bamboo',         tmin:60,tmax:86,light:'Low',   co2:false,diff:'Easy',nitrate_abs:'medium',       note:'Sold at most gift shops and stationery stores in India. Stand stems in water — no soil needed.'},
+  peace_lily:       {group:'Riparian / Emersed', name:'Peace Lily',            tmin:60,tmax:85,light:'Low',   co2:false,diff:'Easy',nitrate_abs:'high',         note:'Common houseplant in India. Set the pot above the tank with roots dangling into the water.'},
+  sweet_potato_vine:{group:'Riparian / Emersed', name:'Sweet Potato Vine',     tmin:65,tmax:88,light:'Medium',co2:false,diff:'Easy',nitrate_abs:'very_high',    note:'A kitchen sweet potato sprouted in water. Very fast grower with dense fibrous roots — one of the best nitrate absorbers.'},
+  philodendron:     {group:'Riparian / Emersed', name:'Philodendron',           tmin:60,tmax:86,light:'Low',   co2:false,diff:'Easy',nitrate_abs:'medium',       note:'Common houseplant. Trail a stem cutting with roots over the tank edge into the water.'},
+  aglaonema:        {group:'Riparian / Emersed', name:'Aglaonema (Chinese Evergreen)',tmin:60,tmax:85,light:'Low',co2:false,diff:'Easy',nitrate_abs:'low',   note:'Very popular office plant in India. Slow growing but extremely tolerant. Suspend roots in the tank.'},
+  coleus:           {group:'Riparian / Emersed', name:'Coleus',                 tmin:65,tmax:88,light:'Medium',co2:false,diff:'Easy',nitrate_abs:'high',         note:'Very common in Indian gardens. Colourful foliage. Fast grower — roots take hold in water quickly.'},
+  wandering_jew:    {group:'Riparian / Emersed', name:'Wandering Jew (Tradescantia)',tmin:60,tmax:86,light:'Medium',co2:false,diff:'Easy',nitrate_abs:'very_high', note:'Extremely common in Indian gardens. Grows very fast. Trail cuttings with roots directly into the tank.'},
 };
 
 // ===== FERTILIZER PRESETS =====
@@ -848,10 +858,11 @@ function calc_bioload(tid) {
   });
   return Math.round(total);
 }
-function max_bioload(gallons, plant_count, substrate_liters) {
+function max_bioload(gallons, plant_score, substrate_liters) {
   var sub_gal = (substrate_liters || 0) / 3.78541;
   var eff_gal = Math.max(1, gallons - sub_gal);
-  var mult = plant_count >= 5 ? 1.2 : plant_count >= 1 ? 1.1 : 1.0;
+  // Score tiers: very_high=3, high=2, medium=1, low=0.5 per plant
+  var mult = plant_score >= 10 ? 1.4 : plant_score >= 6 ? 1.3 : plant_score >= 3 ? 1.2 : plant_score >= 1 ? 1.1 : 1.0;
   return Math.max(1, Math.round(eff_gal * 1.5 * mult));
 }
 function bioload_cls(cur, max_val) {
@@ -900,7 +911,7 @@ function get_rec_tasks(tid) {
   var pl_count = d.plants.filter(function(x){ return x.tank_id === tid; }).length;
   var filter_mult = get_filter_mult(tid);
   var cur_bl = calc_bioload(tid);
-  var max_bl = Math.round(max_bioload(tank.gallons, pl_count, calc_substrate_liters(tid)) * filter_mult);
+  var max_bl = Math.round(max_bioload(tank.gallons, calc_plant_score(tid), calc_substrate_liters(tid)) * filter_mult);
   var bl_ratio = max_bl > 0 ? cur_bl / max_bl : 0;
   var recs = [];
 
@@ -1830,7 +1841,7 @@ function r_dash() {
   var pl_count = d.plants.filter(function(x){ return x.tank_id === tid; }).length;
   var cur_bl = calc_bioload(tid);
   var filter_mult = get_filter_mult(tid);
-  var max_bl = Math.round(max_bioload(tank.gallons, pl_count, calc_substrate_liters(tid)) * filter_mult);
+  var max_bl = Math.round(max_bioload(tank.gallons, calc_plant_score(tid), calc_substrate_liters(tid)) * filter_mult);
   var bl_pct = max_bl > 0 ? Math.min(100, Math.round(cur_bl / max_bl * 100)) : 0;
   var bl_cls = bioload_cls(cur_bl, max_bl);
   var bl_color = bl_cls === 'ok' ? 'var(--ok)' : bl_cls === 'warn' ? 'var(--warn)' : 'var(--danger)';
@@ -2348,7 +2359,8 @@ function r_recs() {
   var co2_info = get_co2_info(tid);
   var filter_mult = get_filter_mult(tid);
   var cur_bl = calc_bioload(tid);
-  var max_bl = Math.round(max_bioload(tank ? tank.gallons : 0, pl_in_tank.length, calc_substrate_liters(tid)) * filter_mult);
+  var pl_score = calc_plant_score(tid);
+  var max_bl = Math.round(max_bioload(tank ? tank.gallons : 0, pl_score, calc_substrate_liters(tid)) * filter_mult);
   var bl_pct = max_bl > 0 ? Math.min(100, Math.round(cur_bl / max_bl * 100)) : 0;
   var bl_cls = bioload_cls(cur_bl, max_bl);
   var bl_bar_color = bl_cls === 'ok' ? 'var(--ok)' : bl_cls === 'warn' ? 'var(--warn)' : 'var(--danger)';
@@ -2369,7 +2381,7 @@ function r_recs() {
   if (bl_cls === 'danger') {
     bl_mc = 'var(--danger)';
     var has_plants      = pl_in_tank.length >= 1;
-    var max_plants      = pl_in_tank.length >= 5;
+    var plant_maxed     = pl_score >= 10;
     var filter_poor     = filter_mult < 1.0;
     var filter_maxed    = filter_mult > 1.0;
     var tgt_lo = Math.ceil((tank ? tank.gallons : 0) * 4);
@@ -2380,13 +2392,13 @@ function r_recs() {
     } else if (!filter_maxed) {
       fixes.push('upgrade to a high-flow filter (6x+ turnover = ' + d_fl(tgt_hi) + '+ ' + fl_lbl() + ') for a 10% boost');
     }
-    if (!max_plants) {
-      fixes.push(has_plants ? 'add more plants (5+ total for a 20% bonus, currently at 10%)' : 'add 5+ plant species for a 20% natural capacity boost');
+    if (!plant_maxed) {
+      fixes.push(has_plants ? 'add faster-absorbing plants (pothos, hornwort, duckweed) to reach a higher capacity tier' : 'add plants — pothos, hornwort or duckweed give the biggest capacity boost');
     }
     var already = [];
     if (filter_maxed)  already.push('filtration excellent');
-    if (max_plants)    already.push('heavily planted +20%');
-    else if (has_plants) already.push('planted +10%');
+    var pl_mult_pct = Math.round((pl_score >= 10 ? 0.4 : pl_score >= 6 ? 0.3 : pl_score >= 3 ? 0.2 : pl_score >= 1 ? 0.1 : 0) * 100);
+    if (has_plants && pl_mult_pct > 0) already.push('plants +' + pl_mult_pct + '%');
     var already_txt = already.length ? ' (' + already.join(', ') + ' already applied)' : '';
     if (!fixes.length) {
       bl_msg = 'Overstocked' + already_txt + '. Your setup is fully optimised — the only fix is to reduce fish count.';
@@ -2405,8 +2417,10 @@ function r_recs() {
     var fmsg = filter_mult < 1.0 ? 'Filter flow below 4x turnover: capacity reduced by 15%. Aim for 4-6x (' + fl_lbl() + ' = ' + d_fl(Math.ceil((tank ? tank.gallons : 0) * 4)) + '-' + d_fl(Math.ceil((tank ? tank.gallons : 0) * 6)) + ').' : 'High-flow filter (6x+ turnover): +10% capacity bonus applied.';
     h += '<p style="font-size:12px;color:' + (filter_mult < 1.0 ? 'var(--danger)' : 'var(--ok)') + ';margin-top:4px">' + fmsg + '</p>';
   }
-  if (pl_in_tank.length > 0) {
-    h += '<p style="font-size:12px;color:var(--muted);margin-top:4px">' + (pl_in_tank.length >= 5 ? 'Heavily planted (+20%)' : 'Planted tank (+10%)') + ' capacity bonus applied.</p>';
+  if (pl_score > 0) {
+    var pl_pct = Math.round((pl_score >= 10 ? 0.4 : pl_score >= 6 ? 0.3 : pl_score >= 3 ? 0.2 : 0.1) * 100);
+    var pl_tier = pl_score >= 10 ? 'Heavily planted' : pl_score >= 6 ? 'Well planted' : pl_score >= 3 ? 'Planted' : 'Lightly planted';
+    h += '<p style="font-size:12px;color:var(--muted);margin-top:4px">' + pl_tier + ': +' + pl_pct + '% capacity bonus applied (absorption score ' + (Math.round(pl_score * 10) / 10) + ').</p>';
   }
   h += '<p style="font-size:11px;color:var(--muted);margin-top:6px">Scale: 1=Very Low, 2=Low, 3=Medium, 4=High, 5=Very High</p>';
   h += '</div>';
@@ -2513,6 +2527,37 @@ function r_recs() {
     }
   }
   h += '</div></div>';
+
+  // Riparian / Emersed plant suggestion card
+  var em_keys = Object.keys(PL).filter(function(k){ return PL[k].group === 'Riparian / Emersed'; });
+  var em_in_tank = {};
+  pl_in_tank.forEach(function(p){ if (PL[p.plant_id] && PL[p.plant_id].group === 'Riparian / Emersed') em_in_tank[p.plant_id] = true; });
+  var em_suggest = em_keys.filter(function(k){ return !em_in_tank[k]; });
+  var em_have_names = pl_in_tank.filter(function(p){ return em_in_tank[p.plant_id]; }).map(function(p){ return esc(p.name); });
+  h += '<div class="card"><div class="ctitle">Riparian / Emersed Plants</div>';
+  h += '<p style="font-size:13px;color:var(--muted);margin:0 0 10px">Grown above the waterline with roots dangling in the tank water — no aquatic conditions, no CO2, no special lighting. Roots absorb nitrates directly from the water. Most of these are easy to find in India.</p>';
+  if (em_have_names.length) {
+    h += '<p style="font-size:13px;color:var(--ok);margin:0 0 8px">&#x2713; Already using: ' + em_have_names.join(', ') + '</p>';
+  }
+  if (em_suggest.length) {
+    h += '<div class="tw"><table><tr><th>Plant</th><th>Absorption</th><th>Score</th><th>Notes</th></tr>';
+    em_suggest.forEach(function(k){
+      var pl = PL[k];
+      var abs = pl.nitrate_abs || 'medium';
+      var abs_lbl = abs === 'very_high' ? 'Very High' : abs === 'high' ? 'High' : abs === 'medium' ? 'Medium' : 'Low';
+      var abs_col = (abs === 'very_high' || abs === 'high') ? 'var(--ok)' : 'var(--muted)';
+      var sc = abs === 'very_high' ? '+3' : abs === 'high' ? '+2' : abs === 'low' ? '+0.5' : '+1';
+      h += '<tr><td><strong>' + esc(pl.name) + '</strong></td>' +
+           '<td style="color:' + abs_col + ';font-weight:600">' + abs_lbl + '</td>' +
+           '<td>' + sc + '</td>' +
+           '<td style="font-size:12px;color:var(--muted)">' + esc(pl.note) + '</td></tr>';
+    });
+    h += '</table></div>';
+    h += '<p style="font-size:11px;color:var(--muted);margin-top:8px">Score tiers: 1+ = +10% capacity &bull; 3+ = +20% &bull; 6+ = +30% &bull; 10+ = +40%</p>';
+  } else {
+    h += '<p style="font-size:13px;color:var(--ok)">You are using all available emersed plants.</p>';
+  }
+  h += '</div>';
 
   if (!sk.length) {
     h += '<div class="card"><div class="empty-s"><h2>No Livestock Added</h2>' +
@@ -3021,6 +3066,18 @@ function calc_substrate_liters(tid) {
   var d = ld();
   return d.equip.filter(function(e){ return e.tank_id === tid && e.type === 'Substrate'; })
     .reduce(function(sum, e){ return sum + ((e.config && e.config.substrate_liters) || 0); }, 0);
+}
+function calc_plant_score(tid) {
+  var d = ld();
+  var plants = d.plants.filter(function(p){ return p.tank_id === tid; });
+  if (!plants.length) return 0;
+  var score = 0;
+  plants.forEach(function(p) {
+    var sp = PL[p.plant_id];
+    var abs = sp ? (sp.nitrate_abs || 'medium') : 'medium';
+    score += abs === 'very_high' ? 3 : abs === 'high' ? 2 : abs === 'low' ? 0.5 : 1;
+  });
+  return score;
 }
 
 function do_add_equip() {
