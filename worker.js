@@ -3148,7 +3148,7 @@ function upd_plant_form(sel) {
   }
 }
 function build_plant_opts(co2_f, light_f, search) {
-  var groups = ['Anubias','Bucephalandra','Cryptocoryne','Swords & Rosettes','Java Fern','Mosses','Floating','Stem Plants','Foreground & Carpet'];
+  var groups = ['Anubias','Bucephalandra','Cryptocoryne','Swords & Rosettes','Java Fern','Mosses','Floating','Stem Plants','Foreground & Carpet','Riparian / Emersed'];
   var q = search ? search.toLowerCase() : '';
   var h = '';
   groups.forEach(function(g) {
