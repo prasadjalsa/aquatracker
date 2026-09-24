@@ -653,6 +653,9 @@ function eq_cfg_txt(eq) {
     var ht = cfg.heater_type || '';
     return [hw, ht].filter(function(x){return x;}).join(', ') || '-';
   }
+  if (eq.type === 'Substrate') {
+    return cfg.substrate_liters ? cfg.substrate_liters + ' L' : '-';
+  }
   return '-';
 }
 function get_heater_watts(tid) {
@@ -897,7 +900,7 @@ function get_rec_tasks(tid) {
   var pl_count = d.plants.filter(function(x){ return x.tank_id === tid; }).length;
   var filter_mult = get_filter_mult(tid);
   var cur_bl = calc_bioload(tid);
-  var max_bl = Math.round(max_bioload(tank.gallons, pl_count, tank.substrate_liters) * filter_mult);
+  var max_bl = Math.round(max_bioload(tank.gallons, pl_count, calc_substrate_liters(tid)) * filter_mult);
   var bl_ratio = max_bl > 0 ? cur_bl / max_bl : 0;
   var recs = [];
 
@@ -1329,11 +1332,6 @@ function save_startup_method(method) {
     return Object.assign({}, t, patch);
   });
   sv(d); r_dash();
-}
-function save_substrate_liters(val) {
-  var d = ld(), tid = at(), v = parseFloat(val) || 0;
-  d.tanks = d.tanks.map(function(t){ return t.id === tid ? Object.assign({}, t, {substrate_liters: v}) : t; });
-  sv(d); r_life(); r_dash();
 }
 function save_startup_date(date_str) {
   var d = ld(), tid = at();
@@ -1832,7 +1830,7 @@ function r_dash() {
   var pl_count = d.plants.filter(function(x){ return x.tank_id === tid; }).length;
   var cur_bl = calc_bioload(tid);
   var filter_mult = get_filter_mult(tid);
-  var max_bl = Math.round(max_bioload(tank.gallons, pl_count, tank.substrate_liters) * filter_mult);
+  var max_bl = Math.round(max_bioload(tank.gallons, pl_count, calc_substrate_liters(tid)) * filter_mult);
   var bl_pct = max_bl > 0 ? Math.min(100, Math.round(cur_bl / max_bl * 100)) : 0;
   var bl_cls = bioload_cls(cur_bl, max_bl);
   var bl_color = bl_cls === 'ok' ? 'var(--ok)' : bl_cls === 'warn' ? 'var(--warn)' : 'var(--danger)';
@@ -1982,17 +1980,6 @@ function r_life() {
   var h = '';
 
   h += '<div class="card"><div class="ctitle">Equipment <button class="btn bp bs" onclick="do_add_equip()">+ Add</button></div>';
-  var tank = d.tanks.find(function(t){return t.id===tid;});
-  var sub_l = tank ? (tank.substrate_liters || 0) : 0;
-  h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">' +
-       '<span style="font-size:13px;color:var(--muted)">Substrate volume:</span>' +
-       '<form style="display:flex;align-items:center;gap:6px;margin:0" onsubmit="save_substrate_liters(this.sub_l.value);return false">' +
-       '<input type="number" name="sub_l" min="0" step="0.5" value="' + (sub_l || '') + '" placeholder="e.g. 11" style="width:70px;font-size:13px;padding:3px 6px;border-radius:4px;border:1px solid #ccc">' +
-       '<span style="font-size:13px;color:var(--muted)">L</span>' +
-       '<button type="submit" class="btn bg bs">Save</button>' +
-       '</form>' +
-       (sub_l ? '<span style="font-size:12px;color:var(--muted)">Effective water volume: ' + Math.round((tank.liters - sub_l) * 10) / 10 + ' L — used for bioload capacity</span>' : '<span style="font-size:12px;color:var(--muted)">Substrate displaces water — set this to get accurate bioload capacity</span>') +
-       '</div>';
   if (eq.length) {
     h += '<div class="tw"><table><tr><th>Type</th><th>Name</th><th>Brand</th><th>Configuration</th><th>Notes</th><th></th></tr>';
     eq.forEach(function(e) {
@@ -2361,7 +2348,7 @@ function r_recs() {
   var co2_info = get_co2_info(tid);
   var filter_mult = get_filter_mult(tid);
   var cur_bl = calc_bioload(tid);
-  var max_bl = Math.round(max_bioload(tank ? tank.gallons : 0, pl_in_tank.length, tank ? tank.substrate_liters : 0) * filter_mult);
+  var max_bl = Math.round(max_bioload(tank ? tank.gallons : 0, pl_in_tank.length, calc_substrate_liters(tid)) * filter_mult);
   var bl_pct = max_bl > 0 ? Math.min(100, Math.round(cur_bl / max_bl * 100)) : 0;
   var bl_cls = bioload_cls(cur_bl, max_bl);
   var bl_bar_color = bl_cls === 'ok' ? 'var(--ok)' : bl_cls === 'warn' ? 'var(--warn)' : 'var(--danger)';
@@ -2951,10 +2938,12 @@ function upd_equip_form(sel) {
   var fi_div = document.getElementById('eq_filter_cfg');
   var co_div = document.getElementById('eq_co2_cfg');
   var he_div = document.getElementById('eq_heater_cfg');
+  var su_div = document.getElementById('eq_substrate_cfg');
   if (ld_div) ld_div.style.display = t === 'Light' ? 'block' : 'none';
   if (fi_div) fi_div.style.display = t === 'Filter' ? 'block' : 'none';
   if (co_div) co_div.style.display = t === 'CO2 System' ? 'block' : 'none';
   if (he_div) he_div.style.display = t === 'Heater' ? 'block' : 'none';
+  if (su_div) su_div.style.display = t === 'Substrate' ? 'block' : 'none';
 }
 
 function build_equip_cfg_html(type, cfg) {
@@ -2993,6 +2982,11 @@ function build_equip_cfg_html(type, cfg) {
     '<div class="frow">' +
     fg('Wattage (W)', '<input type="number" name="heater_watts" value="' + (c.watts||'') + '" placeholder="e.g. 100 (5W per gallon)" min="0">') +
     fg('Heater Type', '<select name="heater_type"><option' + (c.heater_type==='Submersible'?' selected':'') + '>Submersible</option><option' + (c.heater_type==='Inline'?' selected':'') + '>Inline</option><option' + (c.heater_type==='Clip-on'?' selected':'') + '>Clip-on</option></select>') +
+    '</div></div>' +
+    '<div id="eq_substrate_cfg" style="display:' + (type==='Substrate'?'block':'none') + '">' +
+    '<div class="cfg-sep"></div><div style="font-size:12px;font-weight:600;color:var(--mid);margin-bottom:6px">Substrate Settings</div>' +
+    '<div class="frow">' +
+    fg('Volume (L)', '<input type="number" name="substrate_vol" value="' + (c.substrate_liters||'') + '" placeholder="e.g. 11" min="0" step="0.5">', 'Volume of substrate in litres — used to calculate effective water volume for bioload') +
     '</div></div>';
 }
 
@@ -3012,8 +3006,16 @@ function read_equip_cfg(f) {
   } else if (t === 'Heater') {
     cfg.watts = parseFloat(f.heater_watts.value) || 0;
     cfg.heater_type = f.heater_type.value;
+  } else if (t === 'Substrate') {
+    cfg.substrate_liters = parseFloat(f.substrate_vol.value) || 0;
   }
   return cfg;
+}
+
+function calc_substrate_liters(tid) {
+  var d = ld();
+  return d.equip.filter(function(e){ return e.tank_id === tid && e.type === 'Substrate'; })
+    .reduce(function(sum, e){ return sum + ((e.config && e.config.substrate_liters) || 0); }, 0);
 }
 
 function do_add_equip() {
