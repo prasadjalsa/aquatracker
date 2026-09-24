@@ -473,7 +473,8 @@ function add_tank(name, gal, setup, notes, rt_min, rt_max) {
   var d = ld(), g = parseFloat(gal) || 0;
   var t = {id:gid(), name:name, gallons:g, liters:g2l(g), setup_date:setup, notes:notes||'',
            room_tmin: rt_min ? parseFloat(rt_min) : null,
-           room_tmax: rt_max ? parseFloat(rt_max) : null};
+           room_tmax: rt_max ? parseFloat(rt_max) : null,
+           substrate_liters: 0};
   d.tanks.push(t); sv(d); sat(t.id); return t.id;
 }
 function upd_tank(id, name, gal, setup, notes, rt_min, rt_max, show_feed_log) {
@@ -844,9 +845,11 @@ function calc_bioload(tid) {
   });
   return Math.round(total * 10) / 10;
 }
-function max_bioload(gallons, plant_count) {
+function max_bioload(gallons, plant_count, substrate_liters) {
+  var sub_gal = (substrate_liters || 0) / 3.78541;
+  var eff_gal = Math.max(1, gallons - sub_gal);
   var mult = plant_count >= 5 ? 1.2 : plant_count >= 1 ? 1.1 : 1.0;
-  return Math.max(1, Math.round(gallons * 1.5 * mult));
+  return Math.max(1, Math.round(eff_gal * 1.5 * mult));
 }
 function bioload_cls(cur, max_val) {
   if (max_val === 0) return 'muted';
@@ -894,7 +897,7 @@ function get_rec_tasks(tid) {
   var pl_count = d.plants.filter(function(x){ return x.tank_id === tid; }).length;
   var filter_mult = get_filter_mult(tid);
   var cur_bl = calc_bioload(tid);
-  var max_bl = Math.round(max_bioload(tank.gallons, pl_count) * filter_mult);
+  var max_bl = Math.round(max_bioload(tank.gallons, pl_count, tank.substrate_liters) * filter_mult);
   var bl_ratio = max_bl > 0 ? cur_bl / max_bl : 0;
   var recs = [];
 
@@ -1326,6 +1329,11 @@ function save_startup_method(method) {
     return Object.assign({}, t, patch);
   });
   sv(d); r_dash();
+}
+function save_substrate_liters(val) {
+  var d = ld(), tid = at(), v = parseFloat(val) || 0;
+  d.tanks = d.tanks.map(function(t){ return t.id === tid ? Object.assign({}, t, {substrate_liters: v}) : t; });
+  sv(d); r_life(); r_dash();
 }
 function save_startup_date(date_str) {
   var d = ld(), tid = at();
@@ -1824,7 +1832,7 @@ function r_dash() {
   var pl_count = d.plants.filter(function(x){ return x.tank_id === tid; }).length;
   var cur_bl = calc_bioload(tid);
   var filter_mult = get_filter_mult(tid);
-  var max_bl = Math.round(max_bioload(tank.gallons, pl_count) * filter_mult);
+  var max_bl = Math.round(max_bioload(tank.gallons, pl_count, tank.substrate_liters) * filter_mult);
   var bl_pct = max_bl > 0 ? Math.min(100, Math.round(cur_bl / max_bl * 100)) : 0;
   var bl_cls = bioload_cls(cur_bl, max_bl);
   var bl_color = bl_cls === 'ok' ? 'var(--ok)' : bl_cls === 'warn' ? 'var(--warn)' : 'var(--danger)';
@@ -1974,6 +1982,15 @@ function r_life() {
   var h = '';
 
   h += '<div class="card"><div class="ctitle">Equipment <button class="btn bp bs" onclick="do_add_equip()">+ Add</button></div>';
+  var tank = d.tanks.find(function(t){return t.id===tid;});
+  var sub_l = tank ? (tank.substrate_liters || 0) : 0;
+  h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">' +
+       '<span style="font-size:13px;color:var(--muted)">Substrate volume:</span>' +
+       '<input type="number" id="substrate_l_inp" min="0" step="0.5" value="' + (sub_l || '') + '" placeholder="e.g. 11" style="width:70px;font-size:13px;padding:3px 6px;border-radius:4px;border:1px solid #ccc">' +
+       '<span style="font-size:13px;color:var(--muted)">L</span>' +
+       '<button class="btn bg bs" onclick="save_substrate_liters(document.getElementById(\'substrate_l_inp\').value)">Save</button>' +
+       (sub_l ? '<span style="font-size:12px;color:var(--muted)">Effective water volume: ' + Math.round((tank.liters - sub_l) * 10) / 10 + ' L — used for bioload capacity</span>' : '<span style="font-size:12px;color:var(--muted)">Substrate displaces water — set this to get accurate bioload capacity</span>') +
+       '</div>';
   if (eq.length) {
     h += '<div class="tw"><table><tr><th>Type</th><th>Name</th><th>Brand</th><th>Configuration</th><th>Notes</th><th></th></tr>';
     eq.forEach(function(e) {
@@ -2342,7 +2359,7 @@ function r_recs() {
   var co2_info = get_co2_info(tid);
   var filter_mult = get_filter_mult(tid);
   var cur_bl = calc_bioload(tid);
-  var max_bl = Math.round(max_bioload(tank ? tank.gallons : 0, pl_in_tank.length) * filter_mult);
+  var max_bl = Math.round(max_bioload(tank ? tank.gallons : 0, pl_in_tank.length, tank ? tank.substrate_liters : 0) * filter_mult);
   var bl_pct = max_bl > 0 ? Math.min(100, Math.round(cur_bl / max_bl * 100)) : 0;
   var bl_cls = bioload_cls(cur_bl, max_bl);
   var bl_bar_color = bl_cls === 'ok' ? 'var(--ok)' : bl_cls === 'warn' ? 'var(--warn)' : 'var(--danger)';
