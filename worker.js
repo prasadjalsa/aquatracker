@@ -1986,9 +1986,11 @@ function r_life() {
   var sub_l = tank ? (tank.substrate_liters || 0) : 0;
   h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">' +
        '<span style="font-size:13px;color:var(--muted)">Substrate volume:</span>' +
-       '<input type="number" id="substrate_l_inp" min="0" step="0.5" value="' + (sub_l || '') + '" placeholder="e.g. 11" style="width:70px;font-size:13px;padding:3px 6px;border-radius:4px;border:1px solid #ccc">' +
+       '<form style="display:flex;align-items:center;gap:6px;margin:0" onsubmit="save_substrate_liters(this.sub_l.value);return false">' +
+       '<input type="number" name="sub_l" min="0" step="0.5" value="' + (sub_l || '') + '" placeholder="e.g. 11" style="width:70px;font-size:13px;padding:3px 6px;border-radius:4px;border:1px solid #ccc">' +
        '<span style="font-size:13px;color:var(--muted)">L</span>' +
-       '<button class="btn bg bs" onclick="save_substrate_liters(document.getElementById(\'substrate_l_inp\').value)">Save</button>' +
+       '<button type="submit" class="btn bg bs">Save</button>' +
+       '</form>' +
        (sub_l ? '<span style="font-size:12px;color:var(--muted)">Effective water volume: ' + Math.round((tank.liters - sub_l) * 10) / 10 + ' L — used for bioload capacity</span>' : '<span style="font-size:12px;color:var(--muted)">Substrate displaces water — set this to get accurate bioload capacity</span>') +
        '</div>';
   if (eq.length) {
