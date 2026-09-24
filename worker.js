@@ -1396,22 +1396,10 @@ function r_startup_card(tid) {
     h += '</div>';
     h += '<p style="font-size:13px;line-height:1.5">' + esc(phase_desc) + '</p>';
 
-    // Cycling method selector + parameter warnings (shown during dark cycling and light intro phases)
+    // Parameter warnings based on last water reading (substrate method hardcoded for dark start)
     if (elapsed >= 1 && cur_step < 3) {
-      var chk = tank.setup_chk || {};
-      var cm = chk.cycle_method || '';
-      var is_fish_in = d.stock.filter(function(s){ return s.tank_id === tid; }).length > 0;
-      if (!cm && is_fish_in) cm = 'fish_in';
-      var cycle_lbl = cm === 'fish_in' ? 'Fish-in' : cm === 'ammonia' ? 'Fishless — pure ammonia' : cm === 'food' ? 'Fishless — fish food' : cm === 'media' ? 'Fishless — established media' : 'Not set';
-      h += '<div style="margin:8px 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
-           '<label style="font-size:12px;color:var(--muted)">Cycling method:</label>' +
-           '<select style="font-size:12px;padding:2px 6px;border-radius:4px;border:1px solid #ccc" onchange="save_cycle_method(this.value)">' +
-           '<option value=""'         + (cm===''         ? ' selected' : '') + '>Not specified</option>' +
-           '<option value="fish_in"'  + (cm==='fish_in'  ? ' selected' : '') + '>Fish-in (fish are in the tank)</option>' +
-           '<option value="ammonia"'  + (cm==='ammonia'  ? ' selected' : '') + '>Fishless — pure ammonia</option>' +
-           '<option value="food"'     + (cm==='food'     ? ' selected' : '') + '>Fishless — fish food / organic</option>' +
-           '<option value="media"'    + (cm==='media'    ? ' selected' : '') + '>Fishless — established filter media</option>' +
-           '</select></div>';
+      // Dark start always uses active substrate as the ammonia source — method is fixed, no selector needed
+      var cm = 'substrate';
       // Parameter warnings based on last water reading
       var wentries = get_water(tid);
       var wlast = wentries.length ? wentries[wentries.length - 1] : null;
@@ -1424,11 +1412,11 @@ function r_startup_card(tid) {
         return '~' + Math.round(v * pct) + u;
       };
       var cwarns = [];
-      if (cm === 'fish_in' || (cm === '' && is_fish_in)) {
-        if (wnh3 !== null && wnh3 > 2)       cwarns.push({level:'danger', msg:'Ammonia is ' + wnh3 + ' ppm — critical. Do a 30-50% water change (' + wc_vol(0.4) + ') now and dose Seachem Prime to detoxify.'});
-        else if (wnh3 !== null && wnh3 > 0.5) cwarns.push({level:'warn',  msg:'Ammonia is ' + wnh3 + ' ppm — harmful to fish. Do a 25% water change (' + wc_vol(0.25) + ') and dose Seachem Prime daily.'});
-        if (wno2 !== null && wno2 > 1)        cwarns.push({level:'danger', msg:'Nitrite is ' + wno2 + ' ppm — critically toxic. Do a 30-50% water change (' + wc_vol(0.4) + ') immediately and dose Seachem Prime.'});
-        else if (wno2 !== null && wno2 > 0.5) cwarns.push({level:'warn',  msg:'Nitrite is ' + wno2 + ' ppm — toxic to fish. Do a 25% water change (' + wc_vol(0.25) + ') and dose Seachem Prime.'});
+      // Dark start is always fishless — no fish-in branch
+      if (cm === 'substrate') {
+        // Active substrate (ADA Amazonia etc.) releases ammonia naturally — no dosing needed
+        if (wnh3 !== null && wnh3 < 1) cwarns.push({level:'warn', msg:'Ammonia is ' + wnh3 + ' ppm — still building up from the substrate. Normal in the first 1-2 weeks. No action needed yet.'});
+        if (wnh3 !== null && wnh3 > 6) cwarns.push({level:'warn', msg:'Ammonia is ' + wnh3 + ' ppm — unusually high from the substrate. Do a small 20% water change to dilute slightly, then monitor.'});
       } else if (cm === 'ammonia') {
         if (wnh3 !== null && wnh3 < 1) cwarns.push({level:'warn', msg:'Ammonia is only ' + wnh3 + ' ppm — too low to seed bacteria. Dose pure ammonia to reach 2-4 ppm (do this in the dark — no need to turn lights on).'});
         if (wnh3 !== null && wnh3 > 5) cwarns.push({level:'warn', msg:'Ammonia is ' + wnh3 + ' ppm — above 5 ppm may inhibit bacteria. Add fresh water to dilute down to 2-4 ppm.'});
@@ -1565,7 +1553,10 @@ function r_cycle_card(tid) {
     }
   }
   var chk = tank.setup_chk || {};
-  var is_fish_in = d.stock.filter(function(s){ return s.tank_id === tid; }).length > 0;
+  var startup_method = tank.startup_method || '';
+  // Dark/dry start are always fishless with soil-based ammonia — exclude fish-in option
+  var is_soil_start = startup_method === 'dark' || startup_method === 'dry';
+  var is_fish_in = !is_soil_start && d.stock.filter(function(s){ return s.tank_id === tid; }).length > 0;
   var cm = chk.cycle_method || (is_fish_in ? 'fish_in' : '');
   var age = Math.floor((Date.now() - new Date(tank.setup_date + 'T00:00:00').getTime()) / 86400000);
   var cyc = cycle_status(tid);
@@ -1593,22 +1584,26 @@ function r_cycle_card(tid) {
     var wlast = wentries.length ? wentries[wentries.length - 1] : null;
     var wnh3 = wlast ? wlast.ammonia : null;
     var wno2 = wlast ? wlast.nitrite : null;
-    var cycle_lbl = cm === 'fish_in' ? 'Fish-in cycle' : cm === 'ammonia' ? 'Fishless — pure ammonia' : cm === 'food' ? 'Fishless — fish food' : cm === 'media' ? 'Fishless — established media' : 'Not set';
+    // Dry/dark start always uses active substrate — fix the method, skip the selector
+    if (is_soil_start) cm = 'substrate';
+    var cycle_lbl = cm === 'fish_in' ? 'Fish-in cycle' : cm === 'substrate' ? 'Fishless — active substrate' : cm === 'ammonia' ? 'Fishless — pure ammonia' : cm === 'food' ? 'Fishless — fish food' : cm === 'media' ? 'Fishless — established media' : 'Not set';
     var pref = get_pref();
     var wc_vol = function(pct) {
       var v = pref.vol === 'L' ? tank.liters : tank.gallons;
       var u = pref.vol === 'L' ? 'L' : 'gal';
       return '~' + Math.round(v * pct) + u;
     };
-    h += '<div style="margin:6px 0 8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
-         '<label style="font-size:12px;color:var(--muted)">Cycle method:</label>' +
-         '<select style="font-size:12px;padding:2px 6px;border-radius:4px;border:1px solid #ccc" onchange="save_cycle_method(this.value)">' +
-         '<option value=""'          + (cm===''        ? ' selected' : '') + '>Not specified</option>' +
-         '<option value="fish_in"'   + (cm==='fish_in'  ? ' selected' : '') + '>Fish-in (fish are in the tank)</option>' +
-         '<option value="ammonia"'   + (cm==='ammonia'  ? ' selected' : '') + '>Fishless — pure ammonia</option>' +
-         '<option value="food"'      + (cm==='food'     ? ' selected' : '') + '>Fishless — fish food / organic</option>' +
-         '<option value="media"'     + (cm==='media'    ? ' selected' : '') + '>Fishless — established filter media</option>' +
-         '</select></div>';
+    if (!is_soil_start) {
+      h += '<div style="margin:6px 0 8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+           '<label style="font-size:12px;color:var(--muted)">Cycle method:</label>' +
+           '<select style="font-size:12px;padding:2px 6px;border-radius:4px;border:1px solid #ccc" onchange="save_cycle_method(this.value)">' +
+           '<option value=""'           + (cm===''           ? ' selected' : '') + '>Not specified</option>' +
+           '<option value="fish_in"'    + (cm==='fish_in'    ? ' selected' : '') + '>Fish-in (fish are in the tank)</option>' +
+           '<option value="ammonia"'    + (cm==='ammonia'    ? ' selected' : '') + '>Fishless — pure ammonia</option>' +
+           '<option value="food"'       + (cm==='food'       ? ' selected' : '') + '>Fishless — fish food / organic</option>' +
+           '<option value="media"'      + (cm==='media'      ? ' selected' : '') + '>Fishless — established filter media</option>' +
+           '</select></div>';
+    }
     var cwarns = [];
     if (cm === 'fish_in' || (cm === '' && is_fish_in)) {
       // Fish-in: keep NH3 and NO2 below toxic levels at all times
@@ -1616,6 +1611,10 @@ function r_cycle_card(tid) {
       else if (wnh3 !== null && wnh3 > 0.5) cwarns.push({level:'warn',   msg:'Ammonia is ' + wnh3 + ' ppm — harmful to fish. Do a 25% water change (' + wc_vol(0.25) + ') and dose Seachem Prime daily.'});
       if (wno2 !== null && wno2 > 1)        cwarns.push({level:'danger', msg:'Nitrite is ' + wno2 + ' ppm — critically toxic. Do a 30-50% water change (' + wc_vol(0.4) + ') immediately and dose Seachem Prime.'});
       else if (wno2 !== null && wno2 > 0.5) cwarns.push({level:'warn',   msg:'Nitrite is ' + wno2 + ' ppm — toxic to fish. Do a 25% water change (' + wc_vol(0.25) + ') and dose Seachem Prime.'});
+    } else if (cm === 'substrate') {
+      // Active substrate releases ammonia naturally — just monitor, no dosing needed
+      if (wnh3 !== null && wnh3 < 1) cwarns.push({level:'warn', msg:'Ammonia is ' + wnh3 + ' ppm — still building up from the substrate. Normal in early weeks. No action needed.'});
+      if (wnh3 !== null && wnh3 > 6) cwarns.push({level:'warn', msg:'Ammonia is ' + wnh3 + ' ppm — very high from substrate. Do a 20% water change to dilute slightly, then monitor.'});
     } else if (cm === 'ammonia') {
       if (wnh3 !== null && wnh3 < 1 && cyc.phase === 1) cwarns.push({level:'warn', msg:'Ammonia is only ' + wnh3 + ' ppm — too low to seed bacteria. Dose pure ammonia to reach 2-4 ppm.'});
       if (wnh3 !== null && wnh3 > 5) cwarns.push({level:'warn', msg:'Ammonia is ' + wnh3 + ' ppm — above 5 ppm may inhibit bacteria. Add fresh water to dilute down to 2-4 ppm.'});
@@ -1651,10 +1650,11 @@ function r_cycle_card(tid) {
            '</div>';
     }
     var tl_map = {
-      fish_in: '4-8 weeks. Keep NH3 below 0.5 ppm and NO2 below 0.5 ppm at all times — do partial water changes and dose Seachem Prime whenever readings rise.',
-      ammonia: '3-6 weeks. Re-dose ammonia to 2-4 ppm each time it drops to 0. Cycle is complete when both NH3 and NO2 drop to 0 within 24 hours of dosing.',
-      food:    '4-8 weeks. Add a small pinch of food every 2-3 days. Remove any uneaten food to avoid over-dosing ammonia. Do not add fish until NH3 and NO2 both read 0 ppm.',
-      media:   '1-2 weeks with established media — bacteria are already present and just need to multiply. Test daily. Do not add fish until NH3 and NO2 both read 0 ppm.'
+      fish_in:   '4-8 weeks. Keep NH3 below 0.5 ppm and NO2 below 0.5 ppm at all times — do partial water changes and dose Seachem Prime whenever readings rise.',
+      substrate: '4-8 weeks. Active substrate (e.g. ADA Amazonia) releases ammonia naturally — no dosing needed. Test every 2-3 days and wait for NH3 and NO2 to both reach 0 ppm. Do a 30-50% water change before adding fish.',
+      ammonia:   '3-6 weeks. Re-dose ammonia to 2-4 ppm each time it drops to 0. Cycle is complete when both NH3 and NO2 drop to 0 within 24 hours of dosing.',
+      food:      '4-8 weeks. Add a small pinch of food every 2-3 days. Remove any uneaten food to avoid over-dosing ammonia. Do not add fish until NH3 and NO2 both read 0 ppm.',
+      media:     '1-2 weeks with established media — bacteria are already present and just need to multiply. Test daily. Do not add fish until NH3 and NO2 both read 0 ppm.'
     };
     var tl_txt = tl_map[cm] || '4-6 weeks total. Do not add fish until NH3 and NO2 both read 0 ppm.';
     h += '<p style="font-size:12px;color:var(--muted);margin-top:6px;background:#f5f8fb;padding:8px 10px;border-radius:6px"><strong>Typical timeline:</strong> ' + tl_txt + '</p>';
