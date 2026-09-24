@@ -1175,28 +1175,59 @@ function fgh(lbl, inp_html, hint) {
 }
 
 // ===== PARAMETER TREND ALERTS =====
-function get_water_recs(lr) {
+function get_water_recs(lr, tid) {
   if (!lr) return [];
   var recs = [];
   var uia = calc_uia(lr.ammonia, lr.ph, lr.temp_f);
   var uia_assumed = uia_temp_defaulted(lr.temp_f);
 
+  // Determine if tank is actively cycling so we can tailor advice
+  var d = ld();
+  var tank = d.tanks.find(function(t){ return t.id === tid; });
+  var cyc = tank ? cycle_status(tid) : null;
+  var cycling_active = tank && !tank.cycled && cyc && cyc.phase >= 1 && cyc.phase < 4;
+  var has_fish = d.stock.filter(function(s){ return s.tank_id === tid && !s.preview; }).length > 0;
+
   if (lr.ammonia !== null && lr.ammonia > 0) {
-    recs.push({level:'danger', param:'Ammonia TAN', msg:'Do a 25&ndash;50% water change immediately. Check for dead fish, uneaten food, or overcrowding. Increase surface aeration. Recheck in 24 hours.'});
+    if (cycling_active) {
+      if (has_fish && lr.ammonia > 2) {
+        recs.push({level:'warn', param:'Ammonia TAN', msg:'Ammonia is high for a fish-in cycle. Do a <strong>20&ndash;30% partial water change</strong> to bring it below 2 ppm — but no lower, as bacteria still need ammonia to eat. Avoid full water changes during cycling.'});
+      }
+      // else: ammonia spike during cycling is normal — no recommendation needed
+    } else {
+      recs.push({level:'danger', param:'Ammonia TAN', msg:'Do a 25&ndash;50% water change immediately. Check for dead fish, uneaten food, or overcrowding. Increase surface aeration. Recheck in 24 hours.'});
+    }
   }
+
   if (uia !== null && uia >= 0.05) {
-    recs.push({level:'danger', param:'Ammonia UIA', msg:'Emergency water change now.' + (uia_assumed ? ' (Calculated at 25&deg;C default — actual toxicity may differ.)' : '') + ' At high pH and temperature, even moderate TAN becomes lethal. A partial water change lowers both TAN and pH slightly, reducing UIA immediately.'});
-  } else if (uia !== null && uia >= 0.02 && uia < 0.05) {
-    recs.push({level:'warn', param:'Ammonia UIA', msg:'UIA is approaching the danger threshold of 0.05 ppm.' + (uia_assumed ? ' (Calculated at 25&deg;C default.)' : '') + ' Monitor closely. A water change now prevents it from crossing into toxic territory.'});
+    if (cycling_active && !has_fish) {
+      // Fishless cycling — UIA has no fish to harm, skip warning
+    } else if (cycling_active && has_fish) {
+      recs.push({level:'danger', param:'Ammonia UIA', msg:'UIA is above the toxic threshold' + (uia_assumed ? ' (calculated at 25&deg;C default)' : '') + '. Do a <strong>20&ndash;30% partial water change</strong> to protect your fish. Do not reduce ammonia to 0 — leave some for the cycling bacteria.'});
+    } else {
+      recs.push({level:'danger', param:'Ammonia UIA', msg:'Emergency water change now.' + (uia_assumed ? ' (Calculated at 25&deg;C default — actual toxicity may differ.)' : '') + ' At high pH and temperature, even moderate TAN becomes lethal. A partial water change lowers both TAN and pH slightly, reducing UIA immediately.'});
+    }
+  } else if (uia !== null && uia >= 0.02 && uia < 0.05 && !cycling_active) {
+    recs.push({level:'warn', param:'Ammonia UIA', msg:'UIA is approaching the danger threshold of 0.05 ppm.' + (uia_assumed ? ' (Calculated at 25&deg;C default.)' : '') + ' Monitor closely. A water change now prevents it crossing into toxic territory.'});
   }
+
   if (lr.nitrite !== null && lr.nitrite > 0) {
-    recs.push({level:'danger', param:'Nitrite', msg:'Do a 25&ndash;50% water change. Adding aquarium salt (1 tsp per gal) helps fish tolerate nitrite short-term by blocking uptake. Reduce feeding. Tank may still be cycling.'});
+    if (cycling_active) {
+      if (has_fish) {
+        recs.push({level:'warn', param:'Nitrite', msg:'Nitrite spike is expected during cycling. To protect fish short-term, add <strong>aquarium salt (1 tsp per gal)</strong> — it blocks nitrite uptake without disrupting the cycle. Avoid large water changes.'});
+      }
+      // else: nitrite spike during fishless cycling is normal — no recommendation
+    } else {
+      recs.push({level:'danger', param:'Nitrite', msg:'Do a 25&ndash;50% water change. Adding aquarium salt (1 tsp per gal) helps fish tolerate nitrite short-term by blocking uptake. Reduce feeding. Tank may still be cycling.'});
+    }
   }
+
   if (lr.nitrate !== null && lr.nitrate > 40) {
     recs.push({level:'danger', param:'Nitrate', msg:'Do a 30&ndash;50% water change to pull nitrate below 20 ppm. Reduce feeding frequency. Adding fast-growing plants (hornwort, water wisteria) consumes nitrate continuously.'});
-  } else if (lr.nitrate !== null && lr.nitrate > 20) {
+  } else if (lr.nitrate !== null && lr.nitrate > 20 && !cycling_active) {
     recs.push({level:'warn', param:'Nitrate', msg:'Nitrate is elevated. A 25% water change will help. Consider increasing change frequency or adding plants to keep it under 20 ppm long-term.'});
   }
+
   if (lr.ph !== null && lr.ph < 6.0) {
     recs.push({level:'danger', param:'pH', msg:'pH is critically low. Add crushed coral to the filter or substrate — it buffers slowly and safely. Avoid liquid pH-up; it causes dangerous swings. Max safe change: 0.2 units per day.'});
   } else if (lr.ph !== null && lr.ph < 6.5) {
@@ -1234,21 +1265,35 @@ function get_param_alerts(tid) {
   var last = last3[last3.length - 1];
   var prev = last3[last3.length - 2];
 
-  // Persistent ammonia
+  var d = ld();
+  var tank = d.tanks.find(function(t){ return t.id === tid; });
+  var cyc = tank ? cycle_status(tid) : null;
+  var cycling_active = tank && !tank.cycled && cyc && cyc.phase >= 1 && cyc.phase < 4;
+  var has_fish = d.stock.filter(function(s){ return s.tank_id === tid && !s.preview; }).length > 0;
+
+  // Persistent ammonia — suppress during cycling (expected), unless fish-in and very high
   if (last.ammonia !== null && last.ammonia > 0 && prev.ammonia !== null && prev.ammonia > 0) {
-    alerts.push({level:'danger', msg:'Ammonia TAN has been elevated across multiple tests (' + prev.ammonia + ' ppm → ' + last.ammonia + ' ppm). Do a 25-50% water change immediately and recheck in 24h.'});
+    if (!cycling_active) {
+      alerts.push({level:'danger', msg:'Ammonia TAN has been elevated across multiple tests (' + prev.ammonia + ' ppm → ' + last.ammonia + ' ppm). Do a 25-50% water change immediately and recheck in 24h.'});
+    } else if (has_fish && last.ammonia > 2) {
+      alerts.push({level:'warn', msg:'Ammonia TAN is ' + last.ammonia + ' ppm during a fish-in cycle. Do a 20-30% partial water change to bring it below 2 ppm — leave some for bacteria. Avoid full water changes during cycling.'});
+    }
   }
-  // UIA — calculated toxic fraction
+  // UIA — always warn if dangerous and there are fish; suppress for fishless cycling
   var last_uia = calc_uia(last.ammonia, last.ph, last.temp_f);
   var uia_temp_note_alert = uia_temp_defaulted(last.temp_f) ? ' (temperature not logged — assumed 25°C)' : '';
-  if (last_uia !== null && last_uia >= 0.05) {
+  if (last_uia !== null && last_uia >= 0.05 && (!cycling_active || has_fish)) {
     alerts.push({level:'danger', msg:'Un-ionized ammonia (UIA) is ' + last_uia + ' ppm — above the toxic threshold of 0.05 ppm' + uia_temp_note_alert + '. Even if TAN looks moderate, UIA at this pH and temperature is lethal. Do an immediate water change and lower pH slightly.'});
-  } else if (last_uia !== null && last_uia >= 0.02) {
+  } else if (last_uia !== null && last_uia >= 0.02 && !cycling_active) {
     alerts.push({level:'warn', msg:'Un-ionized ammonia (UIA) is ' + last_uia + ' ppm — approaching the danger threshold of 0.05 ppm' + uia_temp_note_alert + '. Monitor closely and be ready for a water change.'});
   }
-  // Persistent nitrite
+  // Persistent nitrite — during cycling it is expected; just remind not to add fish
   if (last.nitrite !== null && last.nitrite > 0 && prev.nitrite !== null && prev.nitrite > 0) {
-    alerts.push({level:'danger', msg:'Nitrite remains elevated across multiple tests (' + prev.nitrite + ' ppm → ' + last.nitrite + ' ppm). Tank may not be fully cycled. Hold off adding fish.'});
+    if (cycling_active) {
+      alerts.push({level:'warn', msg:'Nitrite spike is ongoing — cycling is in progress. Do not add fish yet. Avoid large water changes.'});
+    } else {
+      alerts.push({level:'danger', msg:'Nitrite remains elevated across multiple tests (' + prev.nitrite + ' ppm → ' + last.nitrite + ' ppm). Tank may not be fully cycled. Hold off adding fish.'});
+    }
   }
   // High nitrate
   if (last.nitrate !== null && last.nitrate > 40) {
@@ -1889,7 +1934,7 @@ function r_dash() {
            '<span style="color:var(--muted)"> &mdash; danger threshold 0.05 ppm</span></div>';
     }
     // Per-parameter recommendations when values are out of range
-    var w_recs = get_water_recs(lr);
+    var w_recs = get_water_recs(lr, tid);
     if (w_recs.length) {
       h += '<div style="margin-top:10px"><div style="font-size:12px;font-weight:600;margin-bottom:6px">&#x1F527; What to do</div>';
       w_recs.forEach(function(r) {
