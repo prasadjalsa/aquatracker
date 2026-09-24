@@ -1907,7 +1907,7 @@ function r_dash() {
       {k:'nitrite',   l:'Nitrite',          u:'ppm', mn:0,  mx:0,  tox:true,  conv:null},
       {k:'nitrate',   l:'Nitrate',          u:'ppm', mn:0,  mx:40, tox:false, conv:null},
       {k:'ph',        l:'pH',               u:'',    mn:rng&&rng.ph.ok?rng.ph.min:null, mx:rng&&rng.ph.ok?rng.ph.max:null, tox:false, conv:null},
-      {k:'gh',        l:'Hardness (GH)',    u:'',    mn:rng&&rng.gh.ok?rng.gh.min:null, mx:rng&&rng.gh.ok?rng.gh.max:null, tox:false, conv:null}
+      {k:'gh',        l:'Hardness (GH)',    u:'dGH', mn:rng&&rng.gh.ok?rng.gh.min:null, mx:rng&&rng.gh.ok?rng.gh.max:null, tox:false, conv:null}
     );
     // Only show Ca/Mg rows if they were logged for this reading
     if (lr.calcium !== null && lr.calcium !== undefined) {
@@ -2116,9 +2116,10 @@ function r_wlog() {
   var has_therm = d.equip.some(function(e){ return e.tank_id === tid && e.type === 'Thermometer'; });
   var prev_r = last_r(tid);
   var last_gh_val = prev_r ? prev_r.gh : null;
-  var gh_hint = last_gh_val !== null
-    ? 'Carried from last reading &mdash; update only after a water change.'
-    : 'Most tropical fish prefer 4&ndash;12 dGH. 1 dGH = 17.9 ppm = 17.9 mg/L CaCO&#x2083;.';
+  var last_gh_ppm = last_gh_val !== null ? Math.round(last_gh_val * 17.9 * 10) / 10 : null;
+  var gh_hint = last_gh_ppm !== null
+    ? 'Last reading: ' + last_gh_val + ' dGH (' + last_gh_ppm + ' ppm) &mdash; update only after a water change.'
+    : 'Enter ppm from your test kit (BIONIX: drops &times; 25). Ideal: 71&ndash;215 ppm (4&ndash;12 dGH). Converted to dGH automatically.';
   var td = today_str();
   var h = '<div class="card"><div class="ctitle">Add Water Reading</div>' +
     '<form id="wf" onsubmit="sub_water(event)">' +
@@ -2130,7 +2131,7 @@ function r_wlog() {
     '</div><div class="frow">' +
     fgh('Nitrate (ppm)', '<input type="number" name="no3" step="0.1" placeholder="e.g. 10">', 'Keep below 20 ppm. Reduced by regular water changes.') +
     fgh('pH', '<input type="number" name="ph" step="0.01" placeholder="e.g. 7.0">', 'Stability matters more than exact value. Avoid sudden changes.') +
-    fgh('Hardness (GH)', '<input type="number" name="gh" step="0.1"' + (last_gh_val !== null ? ' value="' + last_gh_val + '"' : ' placeholder="e.g. 8"') + '>', gh_hint) +
+    fgh('Hardness GH (ppm)', '<input type="number" name="gh" step="1"' + (last_gh_ppm !== null ? ' value="' + last_gh_ppm + '"' : ' placeholder="e.g. 143"') + '>', gh_hint) +
     fgh('Notes', '<input type="text" name="notes" placeholder="Optional notes">', '') +
     '</div>' +
     '<div style="margin:8px 0 10px">' +
@@ -2159,7 +2160,7 @@ function r_wlog() {
     var has_ca_mg = entries.some(function(e){ return e.calcium !== null && e.calcium !== undefined; });
     var has_uia = entries.some(function(e){ return calc_uia(e.ammonia, e.ph, e.temp_f) !== null; });
     h += '<div class="card"><div class="ctitle">History</div><div class="tw"><table>' +
-      '<tr><th>Date</th>' + (has_therm ? '<th>Temp ' + t_lbl() + '</th>' : '') + '<th>NH3 TAN</th>' + (has_uia ? '<th>UIA</th>' : '') + '<th>NO2 (ppm)</th><th>NO3 (ppm)</th><th>pH</th><th>GH</th>' +
+      '<tr><th>Date</th>' + (has_therm ? '<th>Temp ' + t_lbl() + '</th>' : '') + '<th>NH3 TAN</th>' + (has_uia ? '<th>UIA</th>' : '') + '<th>NO2 (ppm)</th><th>NO3 (ppm)</th><th>pH</th><th>GH (dGH)</th>' +
       (has_ca_mg ? '<th>Ca (ppm)</th><th>Mg (ppm)</th>' : '') +
       '<th>Notes</th><th></th></tr>';
     sorted.slice(0, 30).forEach(function(e, i) {
@@ -2193,7 +2194,7 @@ function r_wlog() {
       '<tr><td>Nitrite (NO2)</td><td>0 ppm</td><td>0.01&ndash;0.25 ppm</td><td>&gt; 0.25 ppm</td></tr>' +
       '<tr><td>Nitrate (NO3)</td><td>0&ndash;20 ppm</td><td>21&ndash;40 ppm</td><td>&gt; 40 ppm</td></tr>' +
       '<tr><td>pH</td><td>6.5&ndash;7.5</td><td>6.0&ndash;6.4 or 7.6&ndash;8.0</td><td>&lt; 6.0 or &gt; 8.0</td></tr>' +
-      '<tr><td>Hardness (GH)</td><td>4&ndash;12 dGH</td><td>2&ndash;3 or 13&ndash;15 dGH</td><td>&lt; 2 or &gt; 15 dGH</td></tr>' +
+      '<tr><td>Hardness (GH)</td><td>71&ndash;215 ppm (4&ndash;12 dGH)</td><td>36&ndash;70 or 216&ndash;268 ppm</td><td>&lt; 36 or &gt; 268 ppm</td></tr>' +
       '<tr><td>Calcium (Ca)</td><td>20&ndash;60 ppm</td><td>10&ndash;19 or 61&ndash;80 ppm</td><td>&lt; 10 or &gt; 80 ppm</td></tr>' +
       '<tr><td>Magnesium (Mg)</td><td>5&ndash;20 ppm</td><td>2&ndash;4 or 21&ndash;30 ppm</td><td>&lt; 2 or &gt; 30 ppm</td></tr>' +
       '<tr><td>Ca:Mg ratio</td><td>3:1 to 5:1</td><td>2:1 to 6:1</td><td>&lt; 2:1 or &gt; 6:1</td></tr>' +
@@ -2227,7 +2228,9 @@ function sub_water(e) {
   e.preventDefault(); var f = e.target, tid = at();
   var ca = wlog_adv && f.ca ? f.ca.value : '';
   var mg = wlog_adv && f.mg ? f.mg.value : '';
-  add_water(tid, f.date.value, f.tf ? inp_t(f.tf.value) : null, f.nh3.value, f.no2.value, f.no3.value, f.ph.value, f.gh.value, f.notes.value, ca, mg);
+  var gh_ppm = f.gh ? pn(f.gh.value) : null;
+  var gh_dgh = gh_ppm !== null ? Math.round(gh_ppm / 17.9 * 100) / 100 : '';
+  add_water(tid, f.date.value, f.tf ? inp_t(f.tf.value) : null, f.nh3.value, f.no2.value, f.no3.value, f.ph.value, gh_dgh, f.notes.value, ca, mg);
   r_wlog();
 }
 
