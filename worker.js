@@ -2196,7 +2196,10 @@ function r_wlog() {
            wlog_cell('gh', e.gh, prev ? prev.gh : null) +
            (has_ca_mg ? wlog_cell('calcium', e.calcium, prev ? prev.calcium : null) + wlog_cell('magnesium', e.magnesium, prev ? prev.magnesium : null) : '') +
            '<td>' + esc(e.notes) + '</td>' +
-           '<td><button class="btn bd bs" data-id="' + e.id + '" onclick="del_water(this.dataset.id);r_wlog()">&#x2715;</button></td></tr>';
+           '<td style="white-space:nowrap">' +
+           '<button class="btn bg bs" style="margin-right:4px" data-id="' + e.id + '" onclick="do_edit_water(this.dataset.id)">&#x270E;</button>' +
+           '<button class="btn bd bs" data-id="' + e.id + '" onclick="del_water(this.dataset.id);r_wlog()">&#x2715;</button>' +
+           '</td></tr>';
     });
     h += '</table></div>';
     if (has_uia && entries.some(function(e){ return uia_temp_defaulted(e.temp_f) && calc_uia(e.ammonia, e.ph, null) !== null; })) {
@@ -2249,6 +2252,60 @@ function sub_water(e) {
   var gh_dgh = gh_ppm !== null ? Math.round(gh_ppm / 17.9 * 100) / 100 : '';
   add_water(tid, f.date.value, f.tf ? inp_t(f.tf.value) : null, f.nh3.value, f.no2.value, f.no3.value, f.ph.value, gh_dgh, f.notes.value, ca, mg);
   r_wlog();
+}
+function do_edit_water(id) {
+  var d = ld();
+  var e = d.water.find(function(x){ return x.id === id; });
+  if (!e) return;
+  var tid = e.tank_id;
+  var has_therm = d.equip.some(function(eq){ return eq.tank_id === tid && eq.type === 'Thermometer'; });
+  var gh_ppm_val = e.gh != null ? Math.round(e.gh * 17.9) : '';
+  var temp_disp  = e.temp_f != null ? d_t(e.temp_f) : '';
+  var fv = function(v){ return v != null ? v : ''; };
+  om('<div class="mtitle">Edit Water Reading</div>' +
+    '<form data-eid="' + id + '" onsubmit="sub_edit_water(event,this.dataset.eid)">' +
+    '<div class="frow">' +
+    fgh('Date', '<input type="date" name="date" value="' + e.date + '" required>', '') +
+    (has_therm ? fgh('Temperature (' + t_lbl() + ')', '<input type="number" name="tf" step="0.1" value="' + temp_disp + '">', '') : '') +
+    fgh('Ammonia TAN (ppm)', '<input type="number" name="nh3" step="0.01" value="' + fv(e.ammonia) + '">', '') +
+    fgh('Nitrite (ppm)',     '<input type="number" name="no2" step="0.01" value="' + fv(e.nitrite) + '">', '') +
+    '</div><div class="frow">' +
+    fgh('Nitrate (ppm)', '<input type="number" name="no3" step="0.1"  value="' + fv(e.nitrate) + '">', '') +
+    fgh('pH',            '<input type="number" name="ph"  step="0.01" value="' + fv(e.ph) + '">', '') +
+    fgh('Hardness GH (ppm)', '<input type="number" name="gh" step="1" value="' + gh_ppm_val + '">', 'Value in ppm — converted to dGH on save') +
+    fgh('Notes', '<input type="text" name="notes" value="' + esc(e.notes || '') + '">', '') +
+    '</div><div class="frow">' +
+    fgh('Calcium (ppm)',   '<input type="number" name="ca" step="0.1" value="' + fv(e.calcium) + '">', 'Optional') +
+    fgh('Magnesium (ppm)', '<input type="number" name="mg" step="0.1" value="' + fv(e.magnesium) + '">', 'Optional') +
+    '</div>' +
+    '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Save Changes</button></div>' +
+    '</form>');
+}
+function sub_edit_water(e, id) {
+  e.preventDefault();
+  var f = e.target;
+  var d = ld();
+  var idx = -1;
+  for (var i = 0; i < d.water.length; i++) { if (d.water[i].id === id) { idx = i; break; } }
+  if (idx === -1) return;
+  var tid = d.water[idx].tank_id;
+  var has_therm = d.equip.some(function(eq){ return eq.tank_id === tid && eq.type === 'Thermometer'; });
+  var gh_ppm = f.gh && f.gh.value !== '' ? pn(f.gh.value) : null;
+  var gh_dgh = gh_ppm !== null ? Math.round(gh_ppm / 17.9 * 100) / 100 : null;
+  d.water[idx] = {
+    id: id, tank_id: tid,
+    date:      f.date.value,
+    temp_f:    has_therm && f.tf && f.tf.value !== '' ? inp_t(f.tf.value) : d.water[idx].temp_f,
+    ammonia:   pn(f.nh3.value),
+    nitrite:   pn(f.no2.value),
+    nitrate:   pn(f.no3.value),
+    ph:        pn(f.ph.value),
+    gh:        gh_dgh,
+    notes:     f.notes.value || '',
+    calcium:   f.ca && f.ca.value !== '' ? pn(f.ca.value) : null,
+    magnesium: f.mg && f.mg.value !== '' ? pn(f.mg.value) : null
+  };
+  sv(d); cm(); r_wlog(); r_dash();
 }
 
 // ===== MAINTENANCE =====
