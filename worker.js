@@ -3113,10 +3113,12 @@ function build_equip_cfg_html(type, cfg) {
     '<div id="eq_co2_cfg" style="display:' + co2_d + '">' +
     '<div class="cfg-sep"></div><div style="font-size:12px;font-weight:600;color:var(--mid);margin-bottom:6px">CO2 Settings</div>' +
     '<div class="frow">' +
-    fg('CO2 Type', '<select name="co2_type" onchange="toggle_bps_row(this)">' + co2_opts + '</select>') +
+    fg('CO2 Type', '<select name="co2_type" onchange="toggle_co2_fields(this)">' + co2_opts + '</select>') +
+    '<div id="eq_co2_hours_row" style="display:' + (c.co2_type === 'Liquid Supplement' ? 'none' : '') + '">' +
     fg('Hours / Day', '<input type="number" name="co2_hours" value="' + (c.hours||'') + '" placeholder="e.g. 5" min="0" max="24">') +
     '</div>' +
-    '<div id="eq_bps_row" style="display:' + (c.co2_type === 'Liquid Supplement' ? 'none' : '') + '">' +
+    '</div>' +
+    '<div id="eq_bps_row" style="display:' + ((c.co2_type === 'Liquid Supplement' || c.co2_type === 'DIY Yeast') ? 'none' : '') + '">' +
     '<div class="frow">' +
     fg('Bubble Rate (BPS)', '<input type="number" name="co2_bps" value="' + (c.bps||'') + '" placeholder="e.g. 2" min="0" step="0.5">') +
     '</div></div>' +
@@ -3134,9 +3136,12 @@ function build_equip_cfg_html(type, cfg) {
     '</div></div>';
 }
 
-function toggle_bps_row(sel) {
-  var row = document.getElementById('eq_bps_row');
-  if (row) row.style.display = sel.value === 'Liquid Supplement' ? 'none' : '';
+function toggle_co2_fields(sel) {
+  var bps_row   = document.getElementById('eq_bps_row');
+  var hours_row = document.getElementById('eq_co2_hours_row');
+  var v = sel.value;
+  if (bps_row)   bps_row.style.display   = (v === 'Liquid Supplement' || v === 'DIY Yeast') ? 'none' : '';
+  if (hours_row) hours_row.style.display  = v === 'Liquid Supplement' ? 'none' : '';
 }
 
 function read_equip_cfg(f) {
