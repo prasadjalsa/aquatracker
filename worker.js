@@ -3113,9 +3113,13 @@ function build_equip_cfg_html(type, cfg) {
     '<div id="eq_co2_cfg" style="display:' + co2_d + '">' +
     '<div class="cfg-sep"></div><div style="font-size:12px;font-weight:600;color:var(--mid);margin-bottom:6px">CO2 Settings</div>' +
     '<div class="frow">' +
-    fg('CO2 Type', '<select name="co2_type">' + co2_opts + '</select>') +
+    fg('CO2 Type', '<select name="co2_type" onchange="toggle_bps_row(this)">' + co2_opts + '</select>') +
     fg('Hours / Day', '<input type="number" name="co2_hours" value="' + (c.hours||'') + '" placeholder="e.g. 5" min="0" max="24">') +
+    '</div>' +
+    '<div id="eq_bps_row" style="display:' + (c.co2_type === 'Liquid Supplement' ? 'none' : '') + '">' +
+    '<div class="frow">' +
     fg('Bubble Rate (BPS)', '<input type="number" name="co2_bps" value="' + (c.bps||'') + '" placeholder="e.g. 2" min="0" step="0.5">') +
+    '</div></div>' +
     '</div></div>' +
     '<div id="eq_heater_cfg" style="display:' + (type==='Heater'?'block':'none') + '">' +
     '<div class="cfg-sep"></div><div style="font-size:12px;font-weight:600;color:var(--mid);margin-bottom:6px">Heater Settings</div>' +
@@ -3128,6 +3132,11 @@ function build_equip_cfg_html(type, cfg) {
     '<div class="frow">' +
     fg('Volume (L)', '<input type="number" name="substrate_vol" value="' + (c.substrate_liters||'') + '" placeholder="e.g. 11" min="0" step="0.5">', 'Volume of substrate in litres — used to calculate effective water volume for bioload') +
     '</div></div>';
+}
+
+function toggle_bps_row(sel) {
+  var row = document.getElementById('eq_bps_row');
+  if (row) row.style.display = sel.value === 'Liquid Supplement' ? 'none' : '';
 }
 
 function read_equip_cfg(f) {
