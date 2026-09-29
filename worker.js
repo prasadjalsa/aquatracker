@@ -3543,7 +3543,7 @@ function r_howto() {
   stage_labels.forEach(function(s, i) {
     var bg = ['#1a6b8a','#4db8d4','#e8a838','#3ab87a','#6b7280'][i];
     h += '<div style="flex:1;background:' + bg + ';color:#fff;text-align:center;padding:8px 4px;font-size:11px;font-weight:600">' +
-         '<div style="font-size:16px">' + ['&#x1F4E6;','&#x1F9EA;','&#x1F422;','&#x1F420;','&#x1F504;'][i] + '</div>' + s + '</div>';
+         '<div style="font-size:16px">' + ['&#x1F4E6;','&#x1F9EA;','&#x1F40C;','&#x1F420;','&#x1F504;'][i] + '</div>' + s + '</div>';
   });
   h += '</div>';
 
@@ -3617,16 +3617,16 @@ function r_howto() {
   );
 
   // Step 3: Cleaner Crew
-  h += step(3, '#e8a838', '&#x1F422;', 'Introduce the Cleaner Crew', 'After the cycle is complete',
+  h += step(3, '#e8a838', '&#x1F40C;', 'Introduce the Cleaner Crew', 'After the cycle is complete',
     '<p style="font-size:13px;margin:0 0 10px">Before adding fish, put a <strong>small clean-up crew</strong> in place. They eat algae, leftover food, and detritus, keeping the tank balanced.</p>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">' +
     [
-      ['&#x1F422;','Nerite Snails','Best algae scrapers. Cannot breed in freshwater.'],
-      ['&#x1F422;','Mystery Snails','Clean up detritus and leftover food.'],
+      ['&#x1F40C;','Nerite Snails','Best algae scrapers. Cannot breed in freshwater.'],
+      ['&#x1F40C;','Mystery Snails','Clean up detritus and leftover food.'],
       ['&#x1F990;','Cherry Shrimp','Scavengers. Eat biofilm and algae off plants.'],
       ['&#x1F41F;','Corydoras','Bottom cleaners. Work the substrate.'],
-      ['&#x1F40C;','Amano Shrimp','Strong algae eaters, especially hair algae.'],
-      ['&#x1F422;','Nerite Snail','1 snail per 5 gal is a good starting ratio.'],
+      ['&#x1F990;','Amano Shrimp','Strong algae eaters, especially hair algae.'],
+      ['&#x1F40C;','Nerite Snail','1 snail per 5 gal is a good starting ratio.'],
     ].slice(0,5).map(function(e){
       return '<div style="background:#f5f8fb;border-radius:6px;padding:8px 10px;font-size:12px">' +
              '<div style="font-size:18px">' + e[0] + '</div>' +
