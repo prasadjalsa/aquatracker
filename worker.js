@@ -955,6 +955,17 @@ function get_rec_tasks(tid) {
       why:'Monthly check prevents unexpected CO2 loss mid-day'});
   }
 
+  var co2_injected = d.equip.filter(function(x){
+    return x.tank_id === tid && x.type === 'CO2 System' && x.config &&
+           x.config.co2_type && x.config.co2_type.indexOf('Liquid') === -1;
+  });
+  if (co2_injected.length) {
+    recs.push({type:'Other', name:'Drop Checker Fluid Change', freq:14,
+      why:'Reference solution loses accuracy after 1-2 weeks. Replace with fresh 4 dKH water and indicator drops.'});
+    recs.push({type:'Other', name:'CO2 Diffuser Clean', freq:30,
+      why:'Calcium deposits block the ceramic membrane and reduce bubble output. Soak in diluted white vinegar for 30 minutes.'});
+  }
+
   d.ferts.filter(function(x){ return x.tank_id === tid; }).forEach(function(f) {
     var dose_str = f.dose_ml ? f.dose_ml + ' ml per dose' : 'see bottle for dose';
     recs.push({type:'Fertilizer', name:f.name, freq:f.freq_days,
@@ -3663,6 +3674,33 @@ function r_howto() {
     tip_box('The single biggest mistake new fishkeepers make is skipping water changes. Even in a healthy tank, nitrates build up. Regular partial changes are the foundation of fish health.')
   );
 
+  // ── CO2 for Planted Tanks (bonus card) ──
+  h += '<div class="card" style="margin-bottom:14px">';
+  h += '<div style="font-size:15px;font-weight:700;margin-bottom:10px">&#x1F4A8; CO2 for Planted Tanks <span style="background:#4db8d4;color:#fff;border-radius:4px;font-size:11px;padding:2px 7px;font-weight:600;margin-left:6px;vertical-align:middle">Optional</span></div>';
+  h += '<p style="font-size:13px;margin:0 0 10px">Injected CO2 is not needed for low-light plants (Anubias, Java Fern, mosses) but significantly speeds growth for demanding plants (Rotala, Ludwigia, HC Cuba). Plants use CO2 and light together &mdash; more CO2 means faster plant growth and less algae.</p>';
+  h += '<p style="font-size:13px;font-weight:600;margin:0 0 6px">Monitoring dissolved CO2 &mdash; the drop checker</p>';
+  h += '<p style="font-size:13px;margin:0 0 10px">A <strong>CO2 drop checker</strong> is a small glass bulb that hangs inside the tank, filled with 4 dKH reference water and bromothymol blue pH indicator. The colour shows the dissolved CO2 level:</p>';
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">';
+  h += '<div style="background:#dbeafe;border-radius:6px;padding:10px;text-align:center"><div style="font-size:20px;margin-bottom:4px">&#x1F535;</div><div style="font-weight:700;font-size:13px;color:#1e40af">Blue &mdash; Too Low</div><div style="font-size:12px;color:var(--muted);margin-top:3px">&lt; 15 ppm. Increase BPS.</div></div>';
+  h += '<div style="background:#dcfce7;border-radius:6px;padding:10px;text-align:center"><div style="font-size:20px;margin-bottom:4px">&#x1F7E2;</div><div style="font-weight:700;font-size:13px;color:#15803d">Green &mdash; Ideal</div><div style="font-size:12px;color:var(--muted);margin-top:3px">20&ndash;30 ppm. Target range.</div></div>';
+  h += '<div style="background:#fef9c3;border-radius:6px;padding:10px;text-align:center"><div style="font-size:20px;margin-bottom:4px">&#x1F7E1;</div><div style="font-weight:700;font-size:13px;color:#854d0e">Yellow &mdash; Too High</div><div style="font-size:12px;color:var(--muted);margin-top:3px">&gt; 35 ppm. Reduce BPS.</div></div>';
+  h += '</div>';
+  h += '<p style="font-size:13px;font-weight:600;margin:0 0 6px">Timing CO2 with your lights</p>';
+  h += bullets([
+    'Turn CO2 on <strong>1 hour before lights on</strong> &mdash; CO2 builds to the right level before photosynthesis starts',
+    'Turn CO2 off <strong>1 hour before lights off</strong> &mdash; plants stop using it at night; running it overnight just drops pH',
+    'The Recommendations tab calculates a starting BPS for your tank volume and plant load',
+  ]);
+  h += '<p style="font-size:13px;font-weight:600;margin:12px 0 6px">CO2 maintenance checklist</p>';
+  h += bullets([
+    '<strong>Drop checker fluid</strong> &mdash; replace every 1&ndash;2 weeks. Reference solution absorbs CO2 from air and drifts over time.',
+    '<strong>CO2 diffuser</strong> &mdash; clean monthly. Calcium deposits block the ceramic membrane. Soak in diluted white vinegar for 30 minutes.',
+    '<strong>Cylinder level (pressurised)</strong> &mdash; check monthly. Unexpected CO2 loss mid-day causes pH swings that stress fish.',
+  ]);
+  h += warn_box('A pH drop of more than 0.3 units overnight usually means CO2 is running too high or the drop checker fluid has lost accuracy and needs replacing.');
+  h += tip_box('Wait 2&ndash;4 hours after adjusting BPS before reading the drop checker again &mdash; CO2 takes time to reach a stable level in the water.');
+  h += '</div>';
+
   // ── PART 2 header ──
   h += '<div style="background:linear-gradient(135deg,#1a5c3a,#3ab87a);color:#fff;border-radius:10px;padding:20px 22px;margin:24px 0 18px">' +
        '<div style="font-size:18px;font-weight:700;margin-bottom:4px">Part 2 &mdash; Using AquaTracker</div>' +
@@ -4025,19 +4063,20 @@ function r_tools() {
   h += '<p style="font-size:13px;color:var(--muted);margin-bottom:12px">Physical items needed to accurately measure each parameter you log in the app.</p>';
   h += '<div class="tw"><table><tr><th>Parameter</th><th>What You Need</th><th>Tip</th></tr>';
   [
-    ['NH3 &mdash; Ammonia',   'API Freshwater Master Test Kit', 'Compare colour in natural daylight, not yellow or LED light'],
-    ['NO2 &mdash; Nitrite',   'API Freshwater Master Test Kit', 'Same kit &mdash; included in one box'],
-    ['NO3 &mdash; Nitrate',   'API Freshwater Master Test Kit', 'Shake bottle #2 vigorously for 30 seconds &mdash; this is critical'],
-    ['pH',                    'API Freshwater Master Test Kit', 'Test at the same time each day for consistency'],
-    ['GH &mdash; Hardness',   'API GH &amp; KH Test Kit',      'Count drops until colour changes; each drop = 1&deg;dH (17.9 ppm)'],
-    ['Temperature',           'Digital aquarium thermometer',   'Stick-on strip thermometers are inaccurate. Use a digital probe.'],
+    ['NH3 &mdash; Ammonia',   'BIONIX Test Kit', 'Compare colour card in natural daylight, not yellow or warm LED light'],
+    ['NO2 &mdash; Nitrite',   'BIONIX Test Kit', 'Test every 2 days while cycling. Target 0 ppm at all times.'],
+    ['NO3 &mdash; Nitrate',   'BIONIX Test Kit', 'Keep below 20 ppm. Do a water change if reading exceeds 40 ppm.'],
+    ['pH',                    'BIONIX Test Kit', 'Test at the same time each day. Stability matters more than the exact number.'],
+    ['GH &mdash; Hardness',   'BIONIX Test Kit', 'Count drops until colour changes. BIONIX: drops &times; 25 = ppm. Ideal 4&ndash;12 dGH (71&ndash;215 ppm).'],
+    ['CO2 (injected tanks)',  'CO2 Drop Checker', 'Fill with 4 dKH reference water + bromothymol blue. Green = 20&ndash;30 ppm ideal. Blue = too little, Yellow = too much.'],
+    ['Temperature',           'Digital aquarium thermometer', 'Stick-on strip thermometers are inaccurate. Use a digital probe.'],
   ].forEach(function(r) {
     h += '<tr><td><strong>' + r[0] + '</strong></td><td>' + r[1] + '</td><td style="color:var(--muted);font-size:12px">' + r[2] + '</td></tr>';
   });
   h += '</table></div>';
   h += '<div style="margin-top:10px;background:#f0f8ff;border-radius:6px;padding:10px 12px;font-size:13px">' +
-       '<strong>Starter recommendation:</strong> The API Freshwater Master Test Kit covers NH3, NO2, NO3, and pH in one box. ' +
-       'Pick up the API GH &amp; KH Kit separately for hardness. Both are available at most fish stores and online.</div>';
+       '<strong>Kit recommendation:</strong> The BIONIX Test Kit covers NH3, NO2, NO3, pH, GH, and KH in one box. ' +
+       'For CO2 injection, add a drop checker with 4 dKH reference solution and bromothymol blue indicator. Both are available at aquarium stores and online.</div>';
   h += '</div>';
 
   // === Water Change Equipment ===
