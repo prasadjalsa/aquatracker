@@ -2547,17 +2547,39 @@ function r_recs() {
   }
   h += '</div>';
   // CO2 row
-  h += '<div style="display:flex;align-items:center;gap:8px;font-size:13px">';
+  h += '<div style="font-size:13px">';
+  h += '<div style="display:flex;align-items:center;gap:8px">';
   h += '<span style="font-weight:600;min-width:50px">CO2:</span>';
   if (co2_info) {
     h += '<span>' + esc(co2_info.type) + (co2_info.hours ? ', ' + co2_info.hours + 'h/day' : '') + (co2_info.bps ? ', ' + co2_info.bps + ' BPS' : '') + '</span> ' + pill_lbl('pok', 'Active');
-    if (light_hours > 0 && co2_info.hours > 0 && co2_info.hours < light_hours) {
-      h += '<span style="font-size:12px;color:var(--warn);margin-left:8px">Tip: run CO2 1h before lights, stop 1h before lights off</span>';
-    }
   } else if (needs_co2_plant) {
     h += '<span style="color:var(--danger)">No CO2 system added, but plants require it.</span>';
   } else {
     h += '<span style="color:var(--muted)">Not required for your current plants.</span> ' + pill_lbl('pok', 'Not needed');
+  }
+  h += '</div>';
+  if (co2_info) {
+    if (light_hours > 0 && co2_info.hours > 0 && co2_info.hours < light_hours) {
+      h += '<div style="font-size:12px;color:var(--warn);margin-top:3px">Tip: run CO2 1h before lights on, stop 1h before lights off</div>';
+    }
+    var is_liquid = co2_info.type.indexOf('Liquid') !== -1;
+    var is_diy    = co2_info.type.indexOf('DIY') !== -1;
+    if (!is_liquid && tank && tank.liters > 0) {
+      var l_per_bps = pl_score >= 10 ? 20 : pl_score >= 6 ? 25 : pl_score >= 3 ? 35 : 50;
+      var rec_bps = Math.round(tank.liters / l_per_bps * 10) / 10;
+      var bps_density = pl_score >= 10 ? 'heavily planted' : pl_score >= 6 ? 'well planted' : pl_score >= 3 ? 'moderately planted' : 'lightly planted';
+      var bps_feedback = '';
+      if (co2_info.bps > 0) {
+        if      (co2_info.bps < rec_bps * 0.5) bps_feedback = ' &mdash; <span style="color:var(--warn)">your ' + co2_info.bps + ' BPS looks low</span>';
+        else if (co2_info.bps > rec_bps * 2.0) bps_feedback = ' &mdash; <span style="color:var(--warn)">your ' + co2_info.bps + ' BPS may be too high</span>';
+        else                                   bps_feedback = ' &mdash; <span style="color:var(--ok)">your ' + co2_info.bps + ' BPS is in range</span>';
+      }
+      h += '<div style="font-size:12px;color:var(--muted);margin-top:4px">Recommended starting point: <strong>' + rec_bps + ' BPS</strong> for ' + Math.round(tank.liters) + ' L, ' + bps_density + bps_feedback + '.</div>';
+      h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + (is_diy ? 'DIY yeast output varies with temperature &mdash; a CO2 drop checker is more reliable than counting bubbles.' : 'Fine-tune using a CO2 drop checker &mdash; target the green zone (20&ndash;30 ppm).') + '</div>';
+    }
+    if (is_liquid) {
+      h += '<div style="font-size:12px;color:var(--muted);margin-top:3px">Liquid supplement &mdash; dose per label, not by BPS. Most effective in low-tech tanks with slow-growing plants.</div>';
+    }
   }
   h += '</div>';
   // Heater row
