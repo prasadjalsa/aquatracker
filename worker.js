@@ -840,7 +840,7 @@ function do_edit_stock(id) {
   var d = ld(), s = d.stock.find(function(x){return x.id===id;}); if (!s) return;
   var sp = get_sp(d)[s.species_id];
   var gender_row = sp && sp.breeds
-    ? fg('Gender (optional)', '<div style="display:flex;gap:8px;align-items:center"><input type="number" name="male" min="0" placeholder="Males" value="' + (s.male || '') + '" style="width:80px"><span style="color:var(--muted)">M /</span><input type="number" name="female" min="0" placeholder="Females" value="' + (s.female || '') + '" style="width:80px"><span style="color:var(--muted)">F</span></div>')
+    ? fg('Gender (optional)', '<div style="display:flex;gap:8px;align-items:center"><input type="number" name="male" min="0" placeholder="Males" value="' + (s.male || '') + '" style="width:80px" oninput="upd_gender_qty()"><span style="color:var(--muted)">M /</span><input type="number" name="female" min="0" placeholder="Females" value="' + (s.female || '') + '" style="width:80px" oninput="upd_gender_qty()"><span style="color:var(--muted)">F</span></div>')
     : '';
   om('<div class="mtitle">Edit Livestock</div>' +
     '<form onsubmit="sub_edit_stock(event)">' +
@@ -3336,6 +3336,16 @@ function sub_add_plant(e) {
 
 // ===== LIVESTOCK MODAL =====
 function upd_stk_qty() { var s = document.querySelector('#mb select[name=sid]'); if (s) upd_stock_compat(s); }
+function upd_gender_qty() {
+  var m_el = document.querySelector('#mb input[name=male]');
+  var f_el = document.querySelector('#mb input[name=female]');
+  var m = m_el ? (parseInt(m_el.value) || 0) : 0;
+  var f = f_el ? (parseInt(f_el.value) || 0) : 0;
+  if (m > 0 || f > 0) {
+    var qty_el = document.querySelector('#mb input[name=qty]');
+    if (qty_el) { qty_el.value = m + f; upd_stk_qty(); }
+  }
+}
 function upd_stock_compat(sel) {
   var sid = sel.value, d = ld(), tid = at(), sp_all = get_sp(d);
   var result_el = document.getElementById('stk_compat');
@@ -3552,7 +3562,7 @@ function do_add_stock() {
     fg('Date Added', '<input type="date" name="added" value="' + td + '">') +
     '</div>' +
     '<div id="stk_gender_row" style="display:none"><div class="frow">' +
-    fg('Gender (optional)', '<div style="display:flex;gap:8px;align-items:center"><input type="number" name="male" min="0" placeholder="Males" style="width:80px"><span style="color:var(--muted)">M /</span><input type="number" name="female" min="0" placeholder="Females" style="width:80px"><span style="color:var(--muted)">F</span></div>') +
+    fg('Gender (optional)', '<div style="display:flex;gap:8px;align-items:center"><input type="number" name="male" min="0" placeholder="Males" style="width:80px" oninput="upd_gender_qty()"><span style="color:var(--muted)">M /</span><input type="number" name="female" min="0" placeholder="Females" style="width:80px" oninput="upd_gender_qty()"><span style="color:var(--muted)">F</span></div>') +
     '</div></div>' +
     fg('Notes', '<input type="text" name="notes" placeholder="Optional">') +
     '<div style="background:#fef3d5;border-radius:6px;padding:8px 10px;font-size:12px;color:#8a5a00;margin:10px 0"><strong>&#x1F41F; Acclimation:</strong> Float the sealed bag in your tank for 15-20 min to equalise temperature. Then add a small cup of tank water to the bag every 5 minutes for 30 minutes. Net the fish out — do not pour store water into your tank.</div>' +
