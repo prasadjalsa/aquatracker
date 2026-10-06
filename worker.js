@@ -3422,7 +3422,7 @@ function build_stock_opts(level_filter, heater_filter, type_filter, search) {
   var opts = Object.keys(sp_all)
     .filter(function(k) {
       var sp = sp_all[k];
-      if (level_filter && level_filter !== 'All' && sp.level !== level_filter) return false;
+      if (!q && level_filter && level_filter !== 'All' && sp.level !== level_filter) return false;
       if (rt_min != null && heater_filter === 'no_heater' && rt_min < sp.tmin) return false;
       if (rt_min != null && heater_filter === 'heater_req' && rt_min >= sp.tmin) return false;
       if (type_filter && type_filter !== 'All' && sp.type !== type_filter) return false;
