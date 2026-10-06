@@ -2618,37 +2618,6 @@ function r_recs() {
   }
   h += '</div></div>';
 
-  // Riparian / Emersed plant suggestion card
-  var em_keys = Object.keys(PL).filter(function(k){ return PL[k].group === 'Riparian / Emersed'; });
-  var em_in_tank = {};
-  pl_in_tank.forEach(function(p){ if (PL[p.plant_id] && PL[p.plant_id].group === 'Riparian / Emersed') em_in_tank[p.plant_id] = true; });
-  var em_suggest = em_keys.filter(function(k){ return !em_in_tank[k]; });
-  var em_have_names = pl_in_tank.filter(function(p){ return em_in_tank[p.plant_id]; }).map(function(p){ return esc(p.name); });
-  h += '<div class="card"><div class="ctitle">Riparian / Emersed Plants</div>';
-  h += '<p style="font-size:13px;color:var(--muted);margin:0 0 10px">Grown above the waterline with roots dangling in the tank water — no aquatic conditions, no CO2, no special lighting. Roots absorb nitrates directly from the water. Most of these are easy to find in India.</p>';
-  if (em_have_names.length) {
-    h += '<p style="font-size:13px;color:var(--ok);margin:0 0 8px">&#x2713; Already using: ' + em_have_names.join(', ') + '</p>';
-  }
-  if (em_suggest.length) {
-    h += '<div class="tw"><table><tr><th>Plant</th><th>Absorption</th><th>Score</th><th>Notes</th></tr>';
-    em_suggest.forEach(function(k){
-      var pl = PL[k];
-      var abs = pl.nitrate_abs || 'medium';
-      var abs_lbl = abs === 'very_high' ? 'Very High' : abs === 'high' ? 'High' : abs === 'medium' ? 'Medium' : 'Low';
-      var abs_col = (abs === 'very_high' || abs === 'high') ? 'var(--ok)' : 'var(--muted)';
-      var sc = abs === 'very_high' ? '+3' : abs === 'high' ? '+2' : abs === 'low' ? '+0.5' : '+1';
-      h += '<tr><td><strong>' + esc(pl.name) + '</strong></td>' +
-           '<td style="color:' + abs_col + ';font-weight:600">' + abs_lbl + '</td>' +
-           '<td>' + sc + '</td>' +
-           '<td style="font-size:12px;color:var(--muted)">' + esc(pl.note) + '</td></tr>';
-    });
-    h += '</table></div>';
-    h += '<p style="font-size:11px;color:var(--muted);margin-top:8px">Score tiers: 1+ = +10% capacity &bull; 3+ = +20% &bull; 6+ = +30% &bull; 10+ = +40%</p>';
-  } else {
-    h += '<p style="font-size:13px;color:var(--ok)">You are using all available emersed plants.</p>';
-  }
-  h += '</div>';
-
   if (!sk.length) {
     h += '<div class="card"><div class="empty-s"><h2>No Livestock Added</h2>' +
       '<p>Add fish or shrimp in the Equipment &amp; Life tab to see parameter recommendations.</p></div></div>';
@@ -4251,7 +4220,180 @@ document.querySelectorAll('.tab').forEach(function(btn) {
   });
 });
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+
+// ===== REC WIZARD =====
+function open_rec_wizard() {
+  var el = document.getElementById('rec_wiz');
+  if (el) { el.style.display = 'flex'; rec_step1(); }
+}
+function close_rec_wizard() {
+  var el = document.getElementById('rec_wiz');
+  if (el) el.style.display = 'none';
+}
+function rec_wiz_set(bh, fh) {
+  var b = document.getElementById('rec_wiz_body'), f = document.getElementById('rec_wiz_foot');
+  if (b) b.innerHTML = bh;
+  if (f) f.innerHTML = fh;
+}
+function rec_step1() {
+  var d = ld(), tid = at();
+  var tank = d.tanks.find(function(t){ return t.id === tid; });
+  if (!tank) { rec_wiz_set('<p style="font-size:13px;color:var(--muted)">Add a tank first.</p>', ''); return; }
+  var water = d.water.filter(function(e){ return e.tank_id === tid; }).sort(function(a,b){ return a.date < b.date ? -1 : 1; });
+  var lw = water.length ? water[water.length - 1] : null;
+  var h = '<div style="font-size:13px;font-weight:700;color:var(--deep);margin-bottom:12px">&#x1F4CB; ' + esc(tank.name) + ' &mdash; ' + Math.round(d_v(tank.gallons)) + ' ' + v_lbl() + '</div>';
+  function p_row(label, val, unit, s, msg) {
+    var ic = s === 'ok' ? '&#x2705;' : s === 'warn' ? '&#x26A0;' : '&#x274C;';
+    var col = s === 'ok' ? 'var(--ok)' : s === 'warn' ? 'var(--warn)' : 'var(--danger)';
+    var r = '<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f5f5f5"><span style="font-size:13px">' + ic + ' <strong>' + label + '</strong></span><span style="font-size:13px;color:' + col + ';font-weight:600">' + val + (unit ? ' ' + unit : '') + '</span></div>';
+    if (s !== 'ok' && msg) r += '<div style="font-size:12px;color:' + col + ';padding:2px 0 5px 22px">' + msg + '</div>';
+    return r;
+  }
+  var has_danger = false, has_warn = false, rows = '';
+  if (!lw) {
+    h += '<div style="background:#fff8e1;border-left:3px solid var(--warn);padding:10px 12px;border-radius:0 6px 6px 0;font-size:13px;margin-bottom:14px">&#x26A0; No water test logged. Results will be based on tank size only.</div>';
+  } else {
+    var nh3 = lw.ammonia, no2 = lw.nitrite, no3 = lw.nitrate;
+    if (nh3 != null) { var nh3s = nh3 > 1 ? 'danger' : nh3 > 0 ? 'warn' : 'ok'; if (nh3s === 'danger') has_danger = true; else if (nh3s === 'warn') has_warn = true; rows += p_row('Ammonia', nh3, 'ppm', nh3s, nh3 > 1 ? 'Dangerous &mdash; do not add stock' : 'Detectable &mdash; water change first'); }
+    if (no2 != null) { var no2s = no2 > 1 ? 'danger' : no2 > 0 ? 'warn' : 'ok'; if (no2s === 'danger') has_danger = true; else if (no2s === 'warn') has_warn = true; rows += p_row('Nitrite', no2, 'ppm', no2s, no2 > 1 ? 'Dangerous &mdash; do not add stock' : 'Detectable &mdash; water change first'); }
+    if (no3 != null) { var no3s = no3 > 40 ? 'danger' : no3 > 20 ? 'warn' : 'ok'; if (no3s === 'danger') has_danger = true; else if (no3s === 'warn') has_warn = true; rows += p_row('Nitrate', no3, 'ppm', no3s, no3 > 40 ? 'Very high &mdash; water change before adding stock' : 'Elevated &mdash; partial water change recommended'); }
+    if (lw.ph     != null) rows += p_row('pH',          lw.ph,          '',      'ok', '');
+    if (lw.temp_f != null) rows += p_row('Temperature', d_t(lw.temp_f), t_lbl(), 'ok', '');
+    if (lw.gh     != null) rows += p_row('GH',          lw.gh + ' dGH', '(' + Math.round(lw.gh * 17.9) + ' ppm)', 'ok', '');
+    if (rows) h += '<div style="margin-bottom:12px">' + rows + '</div>';
+    if (has_danger)
+      h += '<div style="background:#fde8e8;border-left:3px solid var(--danger);padding:10px 12px;border-radius:0 6px 6px 0;font-size:13px;color:#a01818;font-weight:600;margin-bottom:14px">&#x274C; Fix dangerous parameters before adding any stock.</div>';
+    else if (has_warn)
+      h += '<div style="background:#fff8e1;border-left:3px solid var(--warn);padding:10px 12px;border-radius:0 6px 6px 0;font-size:13px;color:#7a5c00;margin-bottom:14px">&#x26A0; Some parameters are borderline. A water change is recommended first.</div>';
+    else
+      h += '<div style="background:#eaf8f1;border-left:3px solid var(--ok);padding:10px 12px;border-radius:0 6px 6px 0;font-size:13px;color:#1a5c3a;font-weight:600;margin-bottom:14px">&#x2705; Water looks good &mdash; safe to add new stock.</div>';
+  }
+  rec_wiz_set(h, '<button class="btn bp" style="flex:1" onclick="rec_step2()">Choose what to add &#x25B6;</button>');
+}
+function rec_step2() {
+  var h = '<p style="font-size:13px;color:var(--muted);margin:0 0 14px">Tick the types you are interested in, then tap Find Matches.</p>';
+  h += '<div style="font-size:13px;font-weight:700;color:var(--deep);margin-bottom:8px">&#x1F41F; Livestock</div>';
+  var ls_cats = ['Schooling Fish','Bottom Dwellers','Algae Eaters','Shrimp','Snails','Livebearers','Centerpiece Fish','Cichlids'];
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:16px">';
+  ls_cats.forEach(function(c){ h += '<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;cursor:pointer;background:#fafafa"><input type="checkbox" data-cat="ls" value="' + esc(c) + '" style="width:16px;height:16px;flex-shrink:0"> ' + esc(c) + '</label>'; });
+  h += '</div>';
+  h += '<div style="font-size:13px;font-weight:700;color:var(--deep);margin-bottom:8px">&#x1F33F; Plants</div>';
+  var pl_cats = ['Anubias','Bucephalandra','Cryptocoryne','Swords & Rosettes','Java Fern','Mosses','Floating','Stem Plants','Foreground & Carpet','Riparian / Emersed'];
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">';
+  pl_cats.forEach(function(c){ h += '<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;cursor:pointer;background:#fafafa"><input type="checkbox" data-cat="pl" value="' + esc(c) + '" style="width:16px;height:16px;flex-shrink:0"> ' + esc(c) + '</label>'; });
+  h += '</div>';
+  rec_wiz_set(h, '<button class="btn bg bs" style="flex:1" onclick="rec_step1()">&#x25C4; Back</button><button class="btn bp" style="flex:2" onclick="rec_find_matches()">Find Matches &#x1F50D;</button>');
+}
+function rec_find_matches() {
+  var body_el = document.getElementById('rec_wiz_body');
+  if (!body_el) return;
+  var checked_ls = [], checked_pl = [];
+  body_el.querySelectorAll('input[type="checkbox"]:checked').forEach(function(inp) {
+    if (inp.dataset.cat === 'ls') checked_ls.push(inp.value);
+    else checked_pl.push(inp.value);
+  });
+  if (!checked_ls.length && !checked_pl.length) {
+    body_el.insertAdjacentHTML('afterbegin', '<p style="color:var(--danger);font-size:13px;margin:0 0 10px">Please select at least one category.</p>');
+    return;
+  }
+  var d = ld(), tid = at();
+  var tank = d.tanks.find(function(t){ return t.id === tid; });
+  if (!tank) return;
+  var water = d.water.filter(function(e){ return e.tank_id === tid; }).sort(function(a,b){ return a.date < b.date ? -1 : 1; });
+  var lw = water.length ? water[water.length - 1] : null;
+  var last_t = lw ? lw.temp_f : null, last_ph = lw ? lw.ph : null, last_gh = lw ? lw.gh : null;
+  var cur_sk = d.stock.filter(function(s){ return s.tank_id === tid; }).map(function(s){ return s.species_id; });
+  var cur_pl = d.plants.filter(function(p){ return p.tank_id === tid; }).map(function(p){ return p.plant_id; });
+  var lights = d.equip.filter(function(x){ return x.tank_id === tid && x.type === 'Light' && x.config; });
+  var total_w = lights.reduce(function(s,x){ return s + (x.config.watts || 0); }, 0);
+  var lrank = {Low:1, Medium:2, High:3};
+  var light_lv = total_w >= 50 ? 'High' : total_w >= 25 ? 'Medium' : 'Low';
+  var has_co2 = d.equip.some(function(x){ return x.tank_id === tid && x.type === 'CO2 System'; });
+  var sp_all = get_sp(d);
+  var LS_GRP = {
+    'Schooling Fish':   ['neon_tetra','cardinal_tetra','rummy_nose_tetra','lemon_tetra','glowlight_tetra','black_skirt_tetra','serpae_tetra','ember_tetra','congo_tetra','harlequin_rasbora','chili_rasbora','celestial_pearl_danio','zebra_danio','pearl_danio','boesemani_rainbow','neon_rainbowfish','rosy_barb','red_cherry_barb','tiger_barb','clown_killifish','scarlet_badis'],
+    'Bottom Dwellers':  ['corydoras','panda_corydoras','pygmy_corydoras','kuhli_loach','yoyo_loach','clown_loach','hillstream_loach'],
+    'Algae Eaters':     ['otocinclus','siamese_algae_eater','flying_fox','bristlenose_pleco'],
+    'Shrimp':           ['cherry_shrimp','amano_shrimp','ghost_shrimp','crystal_shrimp','blue_velvet_shrimp','snowball_shrimp','bamboo_shrimp'],
+    'Snails':           ['nerite_snail','mystery_snail','assassin_snail','ramshorn_snail','trumpet_snail'],
+    'Livebearers':      ['guppy','molly','platy','swordtail','endlers_livebearer','white_cloud_minnow'],
+    'Centerpiece Fish': ['betta','honey_gourami','dwarf_gourami','sparkling_gourami','pearl_gourami','blue_gourami','angelfish','discus','dwarf_puffer','red_tail_shark','african_dwarf_frog'],
+    'Cichlids':         ['ram_cichlid','bolivian_ram','electric_blue_ram','firemouth_cichlid','convict_cichlid','oscar','african_cichlid','peacock_cichlid'],
+  };
+  var T_CAU = 4, P_CAU = 0.5, G_CAU = 2;
+  function chk_ls(key) {
+    var sp = sp_all[key];
+    if (!sp || cur_sk.indexOf(key) !== -1) return null;
+    var cau = [], inc = [];
+    if (tank.gallons < sp.min_gal) inc.push('Needs ' + sp.min_gal + '+ gal (tank is ' + Math.round(tank.gallons) + ' gal)');
+    if (last_t !== null) {
+      if (last_t < sp.tmin - T_CAU || last_t > sp.tmax + T_CAU) inc.push('Temp ' + d_t(last_t) + t_lbl() + ' outside range (' + d_t(sp.tmin) + '&ndash;' + d_t(sp.tmax) + t_lbl() + ')');
+      else if (last_t < sp.tmin || last_t > sp.tmax) cau.push('Temp ' + d_t(last_t) + t_lbl() + ' borderline (ideal ' + d_t(sp.tmin) + '&ndash;' + d_t(sp.tmax) + t_lbl() + ')');
+    }
+    if (last_ph !== null) {
+      if (last_ph < sp.pmin - P_CAU || last_ph > sp.pmax + P_CAU) inc.push('pH ' + last_ph + ' outside range (' + sp.pmin + '&ndash;' + sp.pmax + ')');
+      else if (last_ph < sp.pmin || last_ph > sp.pmax) cau.push('pH ' + last_ph + ' borderline (ideal ' + sp.pmin + '&ndash;' + sp.pmax + ')');
+    }
+    if (last_gh !== null) {
+      if (last_gh < sp.gmin - G_CAU || last_gh > sp.gmax + G_CAU) inc.push('GH ' + last_gh + ' dGH outside range (' + sp.gmin + '&ndash;' + sp.gmax + ' dGH)');
+      else if (last_gh < sp.gmin || last_gh > sp.gmax) cau.push('GH ' + last_gh + ' dGH borderline (ideal ' + sp.gmin + '&ndash;' + sp.gmax + ' dGH)');
+    }
+    cur_sk.forEach(function(ek) {
+      var es = sp_all[ek];
+      if (es && es.incompat && es.incompat[key]) inc.push(esc(es.incompat[key]));
+      if (sp.incompat && sp.incompat[ek]) inc.push(esc(sp.incompat[ek]));
+    });
+    if (sp.hard_reason && !inc.length && !cau.length) cau.push(esc(sp.hard_reason));
+    return {name:sp.name, note:sp.note||'', level:sp.level||'', cau:cau, inc:inc};
+  }
+  function chk_pl(key) {
+    var pl = PL[key];
+    if (!pl || cur_pl.indexOf(key) !== -1) return null;
+    var cau = [], inc = [];
+    if (pl.co2 && !has_co2) inc.push('Needs CO2 injection');
+    var need_r = lrank[pl.light] || 1, avail_r = lrank[light_lv] || 1;
+    if (need_r > avail_r + 1) inc.push('Needs ' + pl.light + ' light (tank has ' + light_lv + ')');
+    else if (need_r > avail_r) cau.push('Prefers ' + pl.light + ' light &mdash; will grow slowly under ' + light_lv);
+    return {name:pl.name, note:pl.note||'', level:pl.diff||'Easy', cau:cau, inc:inc};
+  }
+  function r_card(r) {
+    var ii = r.inc.length > 0, ic = !ii && r.cau.length > 0;
+    var em = ii ? '&#x274C;' : ic ? '&#x26A0;' : '&#x2705;';
+    var bg = ii ? '#fff5f5' : ic ? '#fffbf0' : '#f8fffe';
+    var bd = ii ? '#fbc4c4' : ic ? '#ffe0a0' : '#b2ecd4';
+    var h = '<div style="background:' + bg + ';border:1px solid ' + bd + ';border-radius:8px;padding:10px 12px;margin-bottom:7px">';
+    h += '<div style="font-size:13px;font-weight:700">' + em + ' ' + esc(r.name);
+    if (r.level) h += '<span style="background:#e8e8e8;color:#555;font-size:11px;padding:1px 6px;border-radius:3px;margin-left:5px">' + r.level + '</span>';
+    h += '</div>';
+    if (ii) h += '<div style="font-size:12px;color:#a01818;margin-top:3px"><strong>Not suitable:</strong> ' + r.inc[0] + '</div>';
+    else if (ic) h += '<div style="font-size:12px;color:#8a5a00;margin-top:3px"><strong>Caution:</strong> ' + r.cau[0] + '</div>';
+    if (r.note && !ii) h += '<div style="font-size:12px;color:var(--muted);margin-top:3px">' + esc(r.note) + '</div>';
+    return h + '</div>';
+  }
+  function r_sec(title, icon, items) {
+    if (!items.length) return '';
+    items.sort(function(a,b){ return (a.inc.length?2:a.cau.length?1:0) - (b.inc.length?2:b.cau.length?1:0); });
+    var h = '<div style="margin-bottom:20px"><div style="font-size:13px;font-weight:700;color:var(--deep);margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid #f0f0f0">' + icon + ' ' + esc(title) + '</div>';
+    items.forEach(function(r){ h += r_card(r); });
+    return h + '</div>';
+  }
+  var h = '';
+  checked_ls.forEach(function(cat) { h += r_sec(cat, '&#x1F41F;', (LS_GRP[cat]||[]).map(chk_ls).filter(Boolean)); });
+  checked_pl.forEach(function(cat) { h += r_sec(cat, '&#x1F33F;', Object.keys(PL).filter(function(k){ return PL[k].group === cat; }).map(chk_pl).filter(Boolean)); });
+  if (!h) h = '<p style="font-size:13px;color:var(--muted);text-align:center;padding:24px 0">No options found for these categories.</p>';
+  rec_wiz_set(h, '<button class="btn bg bs" style="flex:1" onclick="rec_step2()">&#x25C4; Back</button><button class="btn bp" style="flex:1" onclick="close_rec_wizard()">Done &#x2713;</button>');
+}
+
 window.addEventListener('DOMContentLoaded', init);
 <\/script>
+<button id="rec_fab" onclick="open_rec_wizard()" style="position:fixed;bottom:24px;right:20px;z-index:910;background:#4db8d4;color:#fff;border:none;border-radius:28px;padding:0 18px;height:52px;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,.25);cursor:pointer;display:flex;align-items:center;gap:8px;white-space:nowrap">&#x1F4AC; What can I add?</button>
+<div id="rec_wiz" style="display:none;position:fixed;top:0;right:0;bottom:0;width:100%;max-width:400px;background:#fff;box-shadow:-4px 0 32px rgba(0,0,0,.18);z-index:920;flex-direction:column">
+  <div style="background:var(--deep);color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+    <div style="font-size:14px;font-weight:700">&#x1F4AC; What can I add to my tank?</div>
+    <button onclick="close_rec_wizard()" style="background:none;border:none;color:#fff;font-size:22px;line-height:1;cursor:pointer;padding:0 2px">&#x2715;</button>
+  </div>
+  <div id="rec_wiz_body" style="flex:1;overflow-y:auto;padding:16px"></div>
+  <div id="rec_wiz_foot" style="padding:12px 16px;border-top:1px solid #eee;display:flex;gap:8px;flex-shrink:0"></div>
+</div>
 </body>
 </html>`;
