@@ -4386,7 +4386,7 @@ function rec_find_matches() {
     return h + '</div>';
   }
   var h = '';
-  checked_ls.forEach(function(cat) { h += r_sec(cat, '&#x1F41F;', (LS_GRP[cat]||[]).map(chk_ls).filter(Boolean)); });
+  checked_ls.forEach(function(cat) { h += r_sec(cat, '&#x1F41F;', (LS_GRP[cat]||[]).map(chk_ls).filter(Boolean).filter(function(r){ return r.inc.length === 0; })); });
   var PL_CAT_MAP = {
     'Easy / No CO2':      ['Anubias','Bucephalandra','Java Fern','Mosses','Cryptocoryne'],
     'Background & Stem':  ['Swords & Rosettes','Stem Plants'],
@@ -4396,7 +4396,7 @@ function rec_find_matches() {
   };
   checked_pl.forEach(function(cat) {
     var groups = PL_CAT_MAP[cat] || [cat];
-    h += r_sec(cat, '&#x1F33F;', Object.keys(PL).filter(function(k){ return groups.indexOf(PL[k].group) !== -1; }).map(chk_pl).filter(Boolean));
+    h += r_sec(cat, '&#x1F33F;', Object.keys(PL).filter(function(k){ return groups.indexOf(PL[k].group) !== -1; }).map(chk_pl).filter(Boolean).filter(function(r){ return r.inc.length === 0; }));
   });
   if (!h) h = '<p style="font-size:13px;color:var(--muted);text-align:center;padding:24px 0">No options found for these categories.</p>';
   rec_wiz_set(h, '<button class="btn bg bs" style="flex:1" onclick="rec_step2()">&#x25C4; Back</button><button class="btn bp" style="flex:1" onclick="close_rec_wizard()">Done &#x2713;</button>');
