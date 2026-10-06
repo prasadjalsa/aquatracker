@@ -4273,9 +4273,15 @@ function rec_step1() {
 function rec_step2() {
   var h = '<p style="font-size:13px;color:var(--muted);margin:0 0 14px">Tick the types you are interested in, then tap Find Matches.</p>';
   h += '<div style="font-size:13px;font-weight:700;color:var(--deep);margin-bottom:8px">&#x1F41F; Livestock</div>';
-  var ls_cats = ['Schooling Fish','Bottom Dwellers','Algae Eaters','Shrimp','Snails','Livebearers','Centerpiece Fish','Cichlids'];
+  h += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">By Tank Type</div>';
+  var ls_tank_type = ['Peaceful Community','Semi-Aggressive','Aggressive / Specialist'];
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">';
+  ls_tank_type.forEach(function(c){ h += '<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;cursor:pointer;background:#fafafa"><input type="checkbox" data-cat="ls" value="' + esc(c) + '" style="width:16px;height:16px;flex-shrink:0"> ' + esc(c) + '</label>'; });
+  h += '</div>';
+  h += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">By Role</div>';
+  var ls_role = ['Schooling Fish','Bottom Dwellers','Algae Eaters','Shrimp','Snails','Livebearers','Centerpiece Fish'];
   h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:16px">';
-  ls_cats.forEach(function(c){ h += '<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;cursor:pointer;background:#fafafa"><input type="checkbox" data-cat="ls" value="' + esc(c) + '" style="width:16px;height:16px;flex-shrink:0"> ' + esc(c) + '</label>'; });
+  ls_role.forEach(function(c){ h += '<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;cursor:pointer;background:#fafafa"><input type="checkbox" data-cat="ls" value="' + esc(c) + '" style="width:16px;height:16px;flex-shrink:0"> ' + esc(c) + '</label>'; });
   h += '</div>';
   h += '<div style="font-size:13px;font-weight:700;color:var(--deep);margin-bottom:8px">&#x1F33F; Plants</div>';
   var pl_cats = ['Easy / No CO2','Background & Stem','Foreground & Carpet','Floating','Emersed / Riparian'];
@@ -4311,14 +4317,16 @@ function rec_find_matches() {
   var has_co2 = d.equip.some(function(x){ return x.tank_id === tid && x.type === 'CO2 System'; });
   var sp_all = get_sp(d);
   var LS_GRP = {
-    'Schooling Fish':   ['neon_tetra','cardinal_tetra','rummy_nose_tetra','lemon_tetra','glowlight_tetra','black_skirt_tetra','serpae_tetra','ember_tetra','congo_tetra','harlequin_rasbora','chili_rasbora','celestial_pearl_danio','zebra_danio','pearl_danio','boesemani_rainbow','neon_rainbowfish','rosy_barb','red_cherry_barb','tiger_barb','clown_killifish','scarlet_badis'],
-    'Bottom Dwellers':  ['corydoras','panda_corydoras','pygmy_corydoras','kuhli_loach','yoyo_loach','clown_loach','hillstream_loach'],
-    'Algae Eaters':     ['otocinclus','siamese_algae_eater','flying_fox','bristlenose_pleco'],
-    'Shrimp':           ['cherry_shrimp','amano_shrimp','ghost_shrimp','crystal_shrimp','blue_velvet_shrimp','snowball_shrimp','bamboo_shrimp'],
-    'Snails':           ['nerite_snail','mystery_snail','assassin_snail','ramshorn_snail','trumpet_snail'],
-    'Livebearers':      ['guppy','molly','platy','swordtail','endlers_livebearer','white_cloud_minnow'],
-    'Centerpiece Fish': ['betta','honey_gourami','dwarf_gourami','sparkling_gourami','pearl_gourami','blue_gourami','angelfish','discus','dwarf_puffer','red_tail_shark','african_dwarf_frog'],
-    'Cichlids':         ['ram_cichlid','bolivian_ram','electric_blue_ram','firemouth_cichlid','convict_cichlid','oscar','african_cichlid','peacock_cichlid'],
+    'Peaceful Community':    ['neon_tetra','cardinal_tetra','rummy_nose_tetra','lemon_tetra','glowlight_tetra','ember_tetra','harlequin_rasbora','chili_rasbora','celestial_pearl_danio','zebra_danio','pearl_danio','boesemani_rainbow','neon_rainbowfish','red_cherry_barb','clown_killifish','guppy','molly','platy','swordtail','endlers_livebearer','white_cloud_minnow','honey_gourami','sparkling_gourami','pearl_gourami','african_dwarf_frog','corydoras','panda_corydoras','pygmy_corydoras','hillstream_loach','kuhli_loach','otocinclus','cherry_shrimp','amano_shrimp','ghost_shrimp','crystal_shrimp','blue_velvet_shrimp','snowball_shrimp','bamboo_shrimp','nerite_snail','mystery_snail','ramshorn_snail','trumpet_snail'],
+    'Semi-Aggressive':       ['betta','dwarf_gourami','blue_gourami','red_tail_shark','dwarf_puffer','black_skirt_tetra','serpae_tetra','congo_tetra','rosy_barb','tiger_barb','scarlet_badis','siamese_algae_eater','flying_fox','bristlenose_pleco','yoyo_loach','clown_loach','ram_cichlid','bolivian_ram','electric_blue_ram','firemouth_cichlid','assassin_snail'],
+    'Aggressive / Specialist':['oscar','convict_cichlid','african_cichlid','peacock_cichlid','angelfish','discus'],
+    'Schooling Fish':        ['neon_tetra','cardinal_tetra','rummy_nose_tetra','lemon_tetra','glowlight_tetra','black_skirt_tetra','serpae_tetra','ember_tetra','congo_tetra','harlequin_rasbora','chili_rasbora','celestial_pearl_danio','zebra_danio','pearl_danio','boesemani_rainbow','neon_rainbowfish','rosy_barb','red_cherry_barb','tiger_barb','clown_killifish','scarlet_badis'],
+    'Bottom Dwellers':       ['corydoras','panda_corydoras','pygmy_corydoras','kuhli_loach','yoyo_loach','clown_loach','hillstream_loach'],
+    'Algae Eaters':          ['otocinclus','siamese_algae_eater','flying_fox','bristlenose_pleco'],
+    'Shrimp':                ['cherry_shrimp','amano_shrimp','ghost_shrimp','crystal_shrimp','blue_velvet_shrimp','snowball_shrimp','bamboo_shrimp'],
+    'Snails':                ['nerite_snail','mystery_snail','assassin_snail','ramshorn_snail','trumpet_snail'],
+    'Livebearers':           ['guppy','molly','platy','swordtail','endlers_livebearer','white_cloud_minnow'],
+    'Centerpiece Fish':      ['betta','honey_gourami','dwarf_gourami','sparkling_gourami','pearl_gourami','blue_gourami','angelfish','discus','dwarf_puffer','red_tail_shark','african_dwarf_frog'],
   };
   var T_CAU = 4, P_CAU = 0.5, G_CAU = 2;
   function chk_ls(key) {
