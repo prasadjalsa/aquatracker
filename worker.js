@@ -4278,7 +4278,7 @@ function rec_step2() {
   ls_cats.forEach(function(c){ h += '<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;cursor:pointer;background:#fafafa"><input type="checkbox" data-cat="ls" value="' + esc(c) + '" style="width:16px;height:16px;flex-shrink:0"> ' + esc(c) + '</label>'; });
   h += '</div>';
   h += '<div style="font-size:13px;font-weight:700;color:var(--deep);margin-bottom:8px">&#x1F33F; Plants</div>';
-  var pl_cats = ['Anubias','Bucephalandra','Cryptocoryne','Swords & Rosettes','Java Fern','Mosses','Floating','Stem Plants','Foreground & Carpet','Riparian / Emersed'];
+  var pl_cats = ['Easy / No CO2','Background & Stem','Foreground & Carpet','Floating','Emersed / Riparian'];
   h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">';
   pl_cats.forEach(function(c){ h += '<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;cursor:pointer;background:#fafafa"><input type="checkbox" data-cat="pl" value="' + esc(c) + '" style="width:16px;height:16px;flex-shrink:0"> ' + esc(c) + '</label>'; });
   h += '</div>';
@@ -4379,7 +4379,17 @@ function rec_find_matches() {
   }
   var h = '';
   checked_ls.forEach(function(cat) { h += r_sec(cat, '&#x1F41F;', (LS_GRP[cat]||[]).map(chk_ls).filter(Boolean)); });
-  checked_pl.forEach(function(cat) { h += r_sec(cat, '&#x1F33F;', Object.keys(PL).filter(function(k){ return PL[k].group === cat; }).map(chk_pl).filter(Boolean)); });
+  var PL_CAT_MAP = {
+    'Easy / No CO2':      ['Anubias','Bucephalandra','Java Fern','Mosses','Cryptocoryne'],
+    'Background & Stem':  ['Swords & Rosettes','Stem Plants'],
+    'Foreground & Carpet':['Foreground & Carpet'],
+    'Floating':           ['Floating'],
+    'Emersed / Riparian': ['Riparian / Emersed'],
+  };
+  checked_pl.forEach(function(cat) {
+    var groups = PL_CAT_MAP[cat] || [cat];
+    h += r_sec(cat, '&#x1F33F;', Object.keys(PL).filter(function(k){ return groups.indexOf(PL[k].group) !== -1; }).map(chk_pl).filter(Boolean));
+  });
   if (!h) h = '<p style="font-size:13px;color:var(--muted);text-align:center;padding:24px 0">No options found for these categories.</p>';
   rec_wiz_set(h, '<button class="btn bg bs" style="flex:1" onclick="rec_step2()">&#x25C4; Back</button><button class="btn bp" style="flex:1" onclick="close_rec_wizard()">Done &#x2713;</button>');
 }
