@@ -2845,7 +2845,7 @@ function r_recs() {
       var st_entry = sk.find(function(s){ return s.species_id === sp.sid; });
       var m_cnt = st_entry ? (st_entry.male || 0) : 0;
       var f_cnt = st_entry ? (st_entry.female || 0) : 0;
-      var sex_warn = (sp.breed_cond && sp.breed_cond.pair && (m_cnt > 0 || f_cnt > 0) && (m_cnt === 0 || f_cnt === 0))
+      var sex_warn = ((m_cnt > 0 || f_cnt > 0) && (m_cnt === 0 || f_cnt === 0))
         ? '<div style="color:var(--warn);font-size:11px;font-weight:700;margin-bottom:2px">&#x26A0; ' + (m_cnt === 0 ? 'All female' : 'All male') + ' — cannot breed</div>'
         : '';
       var bc_color = sp.breeds === 'Easy' ? 'var(--ok)' : sp.breeds === 'Moderate' ? 'var(--warn)' : 'var(--muted)';
