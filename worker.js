@@ -2860,6 +2860,11 @@ function r_recs() {
         var short_note = sp.breed_note.length > 45 ? sp.breed_note.slice(0, 45) + '…' : sp.breed_note;
         breed_cell += '<br><span style="font-size:11px;color:var(--muted)" title="' + esc(sp.breed_note) + '">' + esc(short_note) + '</span>';
       }
+      if (sp.fry_fate) {
+        var ff_color = sp.fry_fate === 'guarded' ? 'var(--ok)' : sp.fry_fate === 'hidden' ? 'var(--warn)' : 'var(--danger)';
+        var ff_lbl = sp.fry_fate === 'guarded' ? '&#x1F6E1; Parents guard fry' : sp.fry_fate === 'hidden' ? '&#x1F33F; Fry hide in plants' : '&#x26A0; Fry eaten in community';
+        breed_cell += '<br><span style="font-size:11px;color:' + ff_color + '">' + ff_lbl + '</span>';
+      }
     }
     h += '<tr><td><strong>' + esc(sp.name) + '</strong></td>' +
          '<td style="color:' + lvl_color + ';font-weight:700;font-size:12px">' + (sp.level || 'Beginner') + '</td>' +
