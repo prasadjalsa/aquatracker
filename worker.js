@@ -192,45 +192,45 @@ tr:hover td{background:#f9fbfc}
 var SP = {
   betta:             {name:'Betta',              tmin:72,tmax:86,pmin:6.0,pmax:8.0,gmin:1, gmax:15,bioload:2,size_in:3,  min_gal:5,  level:'Beginner',     note:'Keep males alone or in a sorority.',
     incompat:{betta:'Two male bettas fight to the death.',guppy:'Bettas attack guppies for their long flowing fins.',tiger_barb:'Tiger barbs will relentlessly nip betta fins.',serpae_tetra:'Serpae tetras are fin nippers — dangerous for a betta.',black_skirt_tetra:'Black skirt tetras are known fin nippers.',blue_gourami:'Blue gouramis often bully and injure bettas.',dwarf_puffer:'Dwarf puffers bite at betta fins.'}},
-  neon_tetra:        {name:'Neon Tetra',          tmin:70,tmax:77,pmin:4.0,pmax:7.5,gmin:1, gmax:12,bioload:1,size_in:1.5,min_gal:10, level:'Beginner',     note:'School of 6+. Sensitive to nitrates.'},
-  cardinal_tetra:    {name:'Cardinal Tetra',      tmin:73,tmax:79,pmin:4.5,pmax:7.5,gmin:1, gmax:12,bioload:1,size_in:2,  min_gal:20, level:'Intermediate', hard_reason:'More sensitive to water chemistry than neon tetras. Needs consistently soft, acidic water.',note:'School of 6+. Similar to neon tetra.'},
-  guppy:             {name:'Guppy',               tmin:63,tmax:82,pmin:7.0,pmax:8.5,gmin:8, gmax:30,bioload:2,size_in:2,  min_gal:10, level:'Beginner',     note:'Hardy livebearer. Prefers hard water.'},
-  molly:             {name:'Molly',               tmin:72,tmax:82,pmin:7.0,pmax:8.5,gmin:15,gmax:35,bioload:3,size_in:4,  min_gal:20, level:'Beginner',     note:'Needs hard water. Shimmies in soft water.'},
-  platy:             {name:'Platy',               tmin:68,tmax:79,pmin:7.0,pmax:8.2,gmin:14,gmax:30,bioload:2,size_in:2.5,min_gal:15, level:'Beginner',     note:'Hardy livebearer. Avoid acidic water.'},
-  corydoras:         {name:'Corydoras',           tmin:70,tmax:81,pmin:6.0,pmax:8.0,gmin:2, gmax:15,bioload:2,size_in:2.5,min_gal:20, level:'Beginner',     note:'Group of 4+. Fine sand substrate needed.'},
+  neon_tetra:        {min_fish:6, name:'Neon Tetra',          tmin:70,tmax:77,pmin:4.0,pmax:7.5,gmin:1, gmax:12,bioload:1,size_in:1.5,min_gal:10, level:'Beginner',     note:'School of 6+. Sensitive to nitrates.'},
+  cardinal_tetra:    {min_fish:6, name:'Cardinal Tetra',      tmin:73,tmax:79,pmin:4.5,pmax:7.5,gmin:1, gmax:12,bioload:1,size_in:2,  min_gal:20, level:'Intermediate', hard_reason:'More sensitive to water chemistry than neon tetras. Needs consistently soft, acidic water.',note:'School of 6+. Similar to neon tetra.'},
+  guppy:             {min_fish:3, name:'Guppy',               tmin:63,tmax:82,pmin:7.0,pmax:8.5,gmin:8, gmax:30,bioload:2,size_in:2,  min_gal:10, level:'Beginner',     note:'Hardy livebearer. Prefers hard water.'},
+  molly:             {min_fish:3, name:'Molly',               tmin:72,tmax:82,pmin:7.0,pmax:8.5,gmin:15,gmax:35,bioload:3,size_in:4,  min_gal:20, level:'Beginner',     note:'Needs hard water. Shimmies in soft water.'},
+  platy:             {min_fish:3, name:'Platy',               tmin:68,tmax:79,pmin:7.0,pmax:8.2,gmin:14,gmax:30,bioload:2,size_in:2.5,min_gal:15, level:'Beginner',     note:'Hardy livebearer. Avoid acidic water.'},
+  corydoras:         {min_fish:4, name:'Corydoras',           tmin:70,tmax:81,pmin:6.0,pmax:8.0,gmin:2, gmax:15,bioload:2,size_in:2.5,min_gal:20, level:'Beginner',     note:'Group of 4+. Fine sand substrate needed.'},
   angelfish:         {name:'Angelfish',           tmin:75,tmax:86,pmin:6.0,pmax:7.4,gmin:0, gmax:15,bioload:3,size_in:6,  min_gal:30, level:'Intermediate', hard_reason:'Grows large (6 in body, taller with fins). May eat small fish. Needs tall tank.',note:'Tall tank needed. May eat small fish.',
     incompat:{tiger_barb:'Tiger barbs nip angelfish flowing fins.',serpae_tetra:'Serpae tetras nip angelfish fins.',black_skirt_tetra:'Black skirt tetras nip angelfish fins.',neon_tetra:'Angelfish eat small tetras in the wild — risky pairing.',cardinal_tetra:'Angelfish eat small tetras in the wild.',ember_tetra:'Angelfish will eat tiny ember tetras.',chili_rasbora:'Angelfish will eat micro fish like chili rasboras.',guppy:'Angelfish eat guppies — both occupy mid-water and angels grow too large.',endlers_livebearer:'Angelfish eat small livebearers like endlers.',cherry_shrimp:'Angelfish may eat cherry shrimp, especially smaller ones.',ghost_shrimp:'Angelfish eat ghost shrimp.'}},
-  discus:            {name:'Discus',              tmin:80,tmax:86,pmin:4.5,pmax:7.0,gmin:1, gmax:8, bioload:4,size_in:8,  min_gal:55, level:'Advanced',     hard_reason:'Requires expert-level care. Extremely sensitive to all water parameters. Daily water changes often needed.',note:'Expert level. Needs pristine water quality.'},
-  ram_cichlid:       {name:'Ram Cichlid',         tmin:81,tmax:86,pmin:4.0,pmax:7.0,gmin:1, gmax:10,bioload:2,size_in:3,  min_gal:20, level:'Intermediate', hard_reason:'Very sensitive to water quality and temperature drops. Not forgiving of new-tank mistakes.',note:'Very sensitive to water quality issues.'},
-  african_cichlid:   {name:'African Cichlid',     tmin:75,tmax:81,pmin:7.5,pmax:8.5,gmin:12,gmax:25,bioload:4,size_in:5,  min_gal:55, level:'Intermediate', hard_reason:'Aggressive. Requires alkaline hard water and specific rockwork setup. Overstocking is deliberate.',note:'Alkaline hard water essential.',
+  discus:            {min_fish:5, name:'Discus',              tmin:80,tmax:86,pmin:4.5,pmax:7.0,gmin:1, gmax:8, bioload:4,size_in:8,  min_gal:55, level:'Advanced',     hard_reason:'Requires expert-level care. Extremely sensitive to all water parameters. Daily water changes often needed.',note:'Expert level. Needs pristine water quality.'},
+  ram_cichlid:       {min_fish:2, name:'Ram Cichlid',         tmin:81,tmax:86,pmin:4.0,pmax:7.0,gmin:1, gmax:10,bioload:2,size_in:3,  min_gal:20, level:'Intermediate', hard_reason:'Very sensitive to water quality and temperature drops. Not forgiving of new-tank mistakes.',note:'Very sensitive to water quality issues.'},
+  african_cichlid:   {min_fish:5, name:'African Cichlid',     tmin:75,tmax:81,pmin:7.5,pmax:8.5,gmin:12,gmax:25,bioload:4,size_in:5,  min_gal:55, level:'Intermediate', hard_reason:'Aggressive. Requires alkaline hard water and specific rockwork setup. Overstocking is deliberate.',note:'Alkaline hard water essential.',
     incompat:{neon_tetra:'African cichlids eat small tetras.',cardinal_tetra:'African cichlids eat small tetras.',guppy:'African cichlids attack and eat guppies.',corydoras:'African cichlids harass and injure corydoras.',discus:'Opposite water needs — discus need soft acid water, cichlids need hard alkaline.',angelfish:'African cichlids are too aggressive for angelfish.',ram_cichlid:'Different water chemistry — cichlids need alkaline hard water, rams need soft acid.',betta:'African cichlids are too aggressive for bettas.',cherry_shrimp:'African cichlids eat shrimp.',amano_shrimp:'African cichlids eat shrimp.',ghost_shrimp:'African cichlids eat shrimp.',crystal_shrimp:'African cichlids eat shrimp.',blue_velvet_shrimp:'African cichlids eat shrimp.',snowball_shrimp:'African cichlids eat shrimp.',bamboo_shrimp:'African cichlids eat shrimp.',ember_tetra:'African cichlids eat small fish.',chili_rasbora:'African cichlids eat micro fish.',harlequin_rasbora:'African cichlids eat small fish.',zebra_danio:'African cichlids attack danios.',endlers_livebearer:'African cichlids eat small livebearers.',honey_gourami:'African cichlids are too aggressive for honey gouramis.',dwarf_gourami:'African cichlids are too aggressive for dwarf gouramis.',panda_corydoras:'African cichlids harass corydoras.',pygmy_corydoras:'African cichlids eat tiny corydoras.',otocinclus:'African cichlids harass and injure otocinclus.'}},
   goldfish:          {name:'Goldfish',            tmin:50,tmax:72,pmin:7.0,pmax:8.0,gmin:6, gmax:16,bioload:5,size_in:12, min_gal:40, level:'Beginner',     note:'Cold water. Very high bioload. Needs large tank. Not compatible with tropical fish.'},
-  cherry_shrimp:     {name:'Cherry Shrimp',       tmin:65,tmax:80,pmin:6.2,pmax:8.0,gmin:4, gmax:8, bioload:1,size_in:1.5,min_gal:5,  level:'Beginner',     inv:true, note:'Forgiving. Avoid copper-based medications.'},
-  crystal_shrimp:    {name:'Crystal Shrimp',      tmin:62,tmax:72,pmin:5.5,pmax:6.5,gmin:4, gmax:6, bioload:1,size_in:1.2,min_gal:10, level:'Advanced',     inv:true, hard_reason:'Requires RO water with remineralizer. Narrow pH and GH range. Very sensitive to any parameter shift.',note:'Advanced keeper. RO water + remineralizer.'},
-  hillstream_loach:  {name:'Hillstream Loach',    tmin:62,tmax:72,pmin:6.5,pmax:7.5,gmin:4, gmax:8, bioload:1,size_in:3,  min_gal:20, level:'Intermediate', hard_reason:'Needs very high flow, strong oxygenation, and cooler water. Standard setups do not suit them.',note:'Needs very high flow and oxygenation.'},
+  cherry_shrimp:     {min_fish:6, name:'Cherry Shrimp',       tmin:65,tmax:80,pmin:6.2,pmax:8.0,gmin:4, gmax:8, bioload:1,size_in:1.5,min_gal:5,  level:'Beginner',     inv:true, note:'Forgiving. Avoid copper-based medications.'},
+  crystal_shrimp:    {min_fish:6, name:'Crystal Shrimp',      tmin:62,tmax:72,pmin:5.5,pmax:6.5,gmin:4, gmax:6, bioload:1,size_in:1.2,min_gal:10, level:'Advanced',     inv:true, hard_reason:'Requires RO water with remineralizer. Narrow pH and GH range. Very sensitive to any parameter shift.',note:'Advanced keeper. RO water + remineralizer.'},
+  hillstream_loach:  {min_fish:3, name:'Hillstream Loach',    tmin:62,tmax:72,pmin:6.5,pmax:7.5,gmin:4, gmax:8, bioload:1,size_in:3,  min_gal:20, level:'Intermediate', hard_reason:'Needs very high flow, strong oxygenation, and cooler water. Standard setups do not suit them.',note:'Needs very high flow and oxygenation.'},
   nerite_snail:      {name:'Nerite Snail',        tmin:72,tmax:82,pmin:6.5,pmax:8.0,gmin:6, gmax:15,bioload:1,size_in:1,  min_gal:5,  level:'Beginner',     inv:true, note:'Great algae eater. Needs calcium for shell.'},
   mystery_snail:     {name:'Mystery Snail',       tmin:72,tmax:82,pmin:6.5,pmax:8.0,gmin:5, gmax:15,bioload:1,size_in:2,  min_gal:5,  level:'Beginner',     inv:true, note:'Peaceful. Supplement calcium for shell health.'},
-  zebra_danio:       {name:'Zebra Danio',         tmin:64,tmax:75,pmin:6.0,pmax:8.0,gmin:2, gmax:20,bioload:2,size_in:2,  min_gal:10, level:'Beginner',     note:'Active schooler of 6+. Very hardy beginner fish.'},
-  harlequin_rasbora: {name:'Harlequin Rasbora',   tmin:72,tmax:82,pmin:6.0,pmax:7.5,gmin:1, gmax:12,bioload:1,size_in:2,  min_gal:10, level:'Beginner',     note:'School of 6+. Peaceful community fish.'},
-  rummy_nose_tetra:  {name:'Rummy Nose Tetra',    tmin:75,tmax:82,pmin:5.5,pmax:7.0,gmin:1, gmax:10,bioload:1,size_in:2,  min_gal:20, level:'Intermediate', hard_reason:'Red nose fades quickly with any water quality issue. Sensitive to nitrates and pH. Needs aged, soft water.',note:'School of 8+. Red head intensifies in good water.'},
-  black_skirt_tetra: {name:'Black Skirt Tetra',   tmin:70,tmax:81,pmin:6.0,pmax:7.5,gmin:4, gmax:15,bioload:2,size_in:2.5,min_gal:20, level:'Beginner',     note:'School of 6+. May nip long-finned tankmates.',
+  zebra_danio:       {min_fish:6, name:'Zebra Danio',         tmin:64,tmax:75,pmin:6.0,pmax:8.0,gmin:2, gmax:20,bioload:2,size_in:2,  min_gal:10, level:'Beginner',     note:'Active schooler of 6+. Very hardy beginner fish.'},
+  harlequin_rasbora: {min_fish:6, name:'Harlequin Rasbora',   tmin:72,tmax:82,pmin:6.0,pmax:7.5,gmin:1, gmax:12,bioload:1,size_in:2,  min_gal:10, level:'Beginner',     note:'School of 6+. Peaceful community fish.'},
+  rummy_nose_tetra:  {min_fish:8, name:'Rummy Nose Tetra',    tmin:75,tmax:82,pmin:5.5,pmax:7.0,gmin:1, gmax:10,bioload:1,size_in:2,  min_gal:20, level:'Intermediate', hard_reason:'Red nose fades quickly with any water quality issue. Sensitive to nitrates and pH. Needs aged, soft water.',note:'School of 8+. Red head intensifies in good water.'},
+  black_skirt_tetra: {min_fish:6, name:'Black Skirt Tetra',   tmin:70,tmax:81,pmin:6.0,pmax:7.5,gmin:4, gmax:15,bioload:2,size_in:2.5,min_gal:20, level:'Beginner',     note:'School of 6+. May nip long-finned tankmates.',
     incompat:{betta:'Black skirt tetras nip long fins — dangerous for bettas.',guppy:'Black skirt tetras target guppy tails.',angelfish:'Black skirt tetras may nip angelfish fins.'}},
   dwarf_gourami:     {name:'Dwarf Gourami',       tmin:72,tmax:82,pmin:6.0,pmax:7.5,gmin:4, gmax:10,bioload:2,size_in:3.5,min_gal:15, level:'Beginner',     note:'Males territorial with each other. Peaceful otherwise.'},
-  kuhli_loach:       {name:'Kuhli Loach',         tmin:74,tmax:86,pmin:5.5,pmax:7.0,gmin:1, gmax:10,bioload:2,size_in:4,  min_gal:20, level:'Beginner',     note:'Nocturnal. Needs hiding spots and soft substrate.'},
+  kuhli_loach:       {min_fish:4, name:'Kuhli Loach',         tmin:74,tmax:86,pmin:5.5,pmax:7.0,gmin:1, gmax:10,bioload:2,size_in:4,  min_gal:20, level:'Beginner',     note:'Nocturnal. Needs hiding spots and soft substrate.'},
   bristlenose_pleco: {name:'Bristlenose Pleco',   tmin:73,tmax:81,pmin:6.5,pmax:7.5,gmin:2, gmax:20,bioload:4,size_in:5,  min_gal:30, level:'Beginner',     note:'Great algae eater. Needs driftwood in diet.'},
-  otocinclus:        {name:'Otocinclus',          tmin:72,tmax:79,pmin:6.0,pmax:7.5,gmin:4, gmax:15,bioload:1,size_in:2,  min_gal:10, level:'Intermediate', hard_reason:'Often starve if insufficient algae. Sensitive initially. Keep in groups of 4+.',note:'Groups of 4+. Feeds on soft algae and blanched veg.'},
-  ember_tetra:       {name:'Ember Tetra',         tmin:73,tmax:84,pmin:5.0,pmax:7.0,gmin:1, gmax:10,bioload:1,size_in:0.8,min_gal:10, level:'Beginner',     note:'Tiny nano fish. School of 8+. Loves planted tanks.'},
-  chili_rasbora:     {name:'Chili Rasbora',       tmin:68,tmax:82,pmin:4.0,pmax:7.0,gmin:1, gmax:8, bioload:1,size_in:0.7,min_gal:5,  level:'Intermediate', hard_reason:'Tiny fish needing soft, acidic water. Sensitive to hard water and high pH.',note:'Micro fish (0.7 in). School of 10+. Nano tank gem.'},
-  white_cloud_minnow:{name:'White Cloud Minnow',  tmin:59,tmax:72,pmin:6.0,pmax:8.0,gmin:5, gmax:19,bioload:1,size_in:1.5,min_gal:10, level:'Beginner',     note:'Cold water fish. Do not keep with tropical species.'},
-  swordtail:         {name:'Swordtail',           tmin:65,tmax:82,pmin:7.0,pmax:8.3,gmin:12,gmax:30,bioload:3,size_in:5,  min_gal:20, level:'Beginner',     note:'Active jumper - use a lid. Males aggressive together.'},
-  tiger_barb:        {name:'Tiger Barb',          tmin:68,tmax:79,pmin:6.0,pmax:7.0,gmin:5, gmax:15,bioload:2,size_in:3,  min_gal:20, level:'Intermediate', hard_reason:'Notorious fin nippers. Must be kept in large groups (8+) or they terrorise tankmates.',note:'Semi-aggressive fin nipper. Keep 8+ to spread chasing.',
+  otocinclus:        {min_fish:4, name:'Otocinclus',          tmin:72,tmax:79,pmin:6.0,pmax:7.5,gmin:4, gmax:15,bioload:1,size_in:2,  min_gal:10, level:'Intermediate', hard_reason:'Often starve if insufficient algae. Sensitive initially. Keep in groups of 4+.',note:'Groups of 4+. Feeds on soft algae and blanched veg.'},
+  ember_tetra:       {min_fish:8, name:'Ember Tetra',         tmin:73,tmax:84,pmin:5.0,pmax:7.0,gmin:1, gmax:10,bioload:1,size_in:0.8,min_gal:10, level:'Beginner',     note:'Tiny nano fish. School of 8+. Loves planted tanks.'},
+  chili_rasbora:     {min_fish:10, name:'Chili Rasbora',       tmin:68,tmax:82,pmin:4.0,pmax:7.0,gmin:1, gmax:8, bioload:1,size_in:0.7,min_gal:5,  level:'Intermediate', hard_reason:'Tiny fish needing soft, acidic water. Sensitive to hard water and high pH.',note:'Micro fish (0.7 in). School of 10+. Nano tank gem.'},
+  white_cloud_minnow:{min_fish:6, name:'White Cloud Minnow',  tmin:59,tmax:72,pmin:6.0,pmax:8.0,gmin:5, gmax:19,bioload:1,size_in:1.5,min_gal:10, level:'Beginner',     note:'Cold water fish. Do not keep with tropical species.'},
+  swordtail:         {min_fish:3, name:'Swordtail',           tmin:65,tmax:82,pmin:7.0,pmax:8.3,gmin:12,gmax:30,bioload:3,size_in:5,  min_gal:20, level:'Beginner',     note:'Active jumper - use a lid. Males aggressive together.'},
+  tiger_barb:        {min_fish:8, name:'Tiger Barb',          tmin:68,tmax:79,pmin:6.0,pmax:7.0,gmin:5, gmax:15,bioload:2,size_in:3,  min_gal:20, level:'Intermediate', hard_reason:'Notorious fin nippers. Must be kept in large groups (8+) or they terrorise tankmates.',note:'Semi-aggressive fin nipper. Keep 8+ to spread chasing.',
     incompat:{betta:'Tiger barbs will relentlessly nip betta fins.',angelfish:'Tiger barbs nip angelfish flowing fins.',guppy:'Tiger barbs target guppy tails.',endlers_livebearer:'Tiger barbs nip fins of endler livebearers.',dwarf_gourami:'Tiger barbs nip the soft fins of dwarf gouramis.',honey_gourami:'Tiger barbs nip honey gourami fins.',pearl_gourami:'Tiger barbs nip pearl gourami fins.',swordtail:'Tiger barbs target the long tail fins of swordtails.'}},
-  endlers_livebearer:{name:'Endler Livebearer',   tmin:72,tmax:82,pmin:6.5,pmax:8.5,gmin:10,gmax:30,bioload:1,size_in:1.5,min_gal:5,  level:'Beginner',     note:'Hardy livebearer. Males are brilliantly colored.'},
-  electric_blue_ram: {name:'Electric Blue Ram',   tmin:78,tmax:85,pmin:5.0,pmax:7.0,gmin:1, gmax:8, bioload:2,size_in:3,  min_gal:20, level:'Advanced',     hard_reason:'Selectively bred variety with weaker immunity. Extremely sensitive to temperature swings and poor water quality.',note:'Very temperature sensitive. Needs stable warm water.'},
-  boesemani_rainbow: {name:'Boesemani Rainbow',   tmin:75,tmax:86,pmin:7.0,pmax:8.0,gmin:9, gmax:19,bioload:3,size_in:4.5,min_gal:55, level:'Intermediate', hard_reason:'Grows to 4.5 inches and needs a school of 6+ in a 55g+ tank. Specific water chemistry needed.',note:'School of 6+. Active swimmer. Grows to 4.5 inches.'},
-  amano_shrimp:      {name:'Amano Shrimp',        tmin:65,tmax:80,pmin:6.0,pmax:8.0,gmin:4, gmax:12,bioload:1,size_in:2,  min_gal:10, level:'Beginner',     inv:true, note:'Best algae-eating shrimp. Safe with most fish.'},
-  panda_corydoras:   {name:'Panda Corydoras',     tmin:68,tmax:77,pmin:6.0,pmax:7.4,gmin:2, gmax:12,bioload:1,size_in:2,  min_gal:15, level:'Beginner',     note:'Smaller cory species. Cooler water. Group of 4+.'},
-  red_cherry_barb:   {name:'Red Cherry Barb',     tmin:72,tmax:79,pmin:6.0,pmax:7.5,gmin:5, gmax:19,bioload:2,size_in:2,  min_gal:20, level:'Beginner',     note:'Peaceful despite the barb name. Males are bright red.'},
+  endlers_livebearer:{min_fish:3, name:'Endler Livebearer',   tmin:72,tmax:82,pmin:6.5,pmax:8.5,gmin:10,gmax:30,bioload:1,size_in:1.5,min_gal:5,  level:'Beginner',     note:'Hardy livebearer. Males are brilliantly colored.'},
+  electric_blue_ram: {min_fish:2, name:'Electric Blue Ram',   tmin:78,tmax:85,pmin:5.0,pmax:7.0,gmin:1, gmax:8, bioload:2,size_in:3,  min_gal:20, level:'Advanced',     hard_reason:'Selectively bred variety with weaker immunity. Extremely sensitive to temperature swings and poor water quality.',note:'Very temperature sensitive. Needs stable warm water.'},
+  boesemani_rainbow: {min_fish:6, name:'Boesemani Rainbow',   tmin:75,tmax:86,pmin:7.0,pmax:8.0,gmin:9, gmax:19,bioload:3,size_in:4.5,min_gal:55, level:'Intermediate', hard_reason:'Grows to 4.5 inches and needs a school of 6+ in a 55g+ tank. Specific water chemistry needed.',note:'School of 6+. Active swimmer. Grows to 4.5 inches.'},
+  amano_shrimp:      {min_fish:3, name:'Amano Shrimp',        tmin:65,tmax:80,pmin:6.0,pmax:8.0,gmin:4, gmax:12,bioload:1,size_in:2,  min_gal:10, level:'Beginner',     inv:true, note:'Best algae-eating shrimp. Safe with most fish.'},
+  panda_corydoras:   {min_fish:4, name:'Panda Corydoras',     tmin:68,tmax:77,pmin:6.0,pmax:7.4,gmin:2, gmax:12,bioload:1,size_in:2,  min_gal:15, level:'Beginner',     note:'Smaller cory species. Cooler water. Group of 4+.'},
+  red_cherry_barb:   {min_fish:6, name:'Red Cherry Barb',     tmin:72,tmax:79,pmin:6.0,pmax:7.5,gmin:5, gmax:19,bioload:2,size_in:2,  min_gal:20, level:'Beginner',     note:'Peaceful despite the barb name. Males are bright red.'},
   honey_gourami:     {name:'Honey Gourami',       tmin:72,tmax:82,pmin:6.0,pmax:7.5,gmin:4, gmax:10,bioload:1,size_in:2,  min_gal:10, level:'Beginner',     note:'Very peaceful and shy. Good beginner community fish.'},
   // --- Additional species ---
   oscar:                {name:'Oscar',                 tmin:74,tmax:81,pmin:6.0,pmax:8.0,gmin:5, gmax:20,bioload:5,size_in:14, min_gal:75,  level:'Intermediate', hard_reason:'Grows to 14 inches and produces enormous waste. Needs 75g+ and frequent large water changes.',note:'Highly intelligent. Very messy feeder. Needs 75g minimum.',
@@ -239,9 +239,9 @@ var SP = {
     incompat:{neon_tetra:'Convicts are extremely aggressive — will kill small tetras.',cardinal_tetra:'Convicts will kill small tetras.',guppy:'Convicts attack and kill guppies.',molly:'Convicts are too aggressive for mollies.',platy:'Convicts are too aggressive for platys.',corydoras:'Convicts harass and injure corydoras.',honey_gourami:'Convicts are too aggressive for honey gouramis.',cherry_shrimp:'Convicts eat shrimp.',amano_shrimp:'Convicts eat shrimp.',angelfish:'Convicts are extremely aggressive — will attack and injure angelfish.',betta:'Convicts will attack and injure bettas.',dwarf_gourami:'Convicts are too aggressive for dwarf gouramis.',pearl_gourami:'Convicts are too aggressive for pearl gouramis.',sparkling_gourami:'Convicts eat tiny fish like sparkling gouramis.',ember_tetra:'Convicts will kill small fish like ember tetras.',chili_rasbora:'Convicts will kill micro fish.',harlequin_rasbora:'Convicts are too aggressive for rasboras.',zebra_danio:'Convicts are too aggressive for danios.',rummy_nose_tetra:'Convicts will kill small tetras.',lemon_tetra:'Convicts attack small tetras.',glowlight_tetra:'Convicts attack small tetras.',black_skirt_tetra:'Convicts are too aggressive for tetras.',serpae_tetra:'Convicts attack all small fish.',endlers_livebearer:'Convicts attack small livebearers.',swordtail:'Convicts are too aggressive for swordtails.',otocinclus:'Convicts harass and injure otocinclus.',ghost_shrimp:'Convicts eat shrimp.',blue_velvet_shrimp:'Convicts eat shrimp.',snowball_shrimp:'Convicts eat shrimp.',crystal_shrimp:'Convicts eat shrimp.',panda_corydoras:'Convicts harass and injure corydoras.',pygmy_corydoras:'Convicts eat or injure tiny corydoras.',red_cherry_barb:'Convicts are too aggressive for small barbs.',african_dwarf_frog:'Convicts attack African dwarf frogs.'}},
   firemouth_cichlid:    {name:'Firemouth Cichlid',     tmin:75,tmax:86,pmin:6.5,pmax:8.0,gmin:5, gmax:25,bioload:3,size_in:5,  min_gal:30,  level:'Intermediate', hard_reason:'Semi-aggressive, especially when breeding. Pair bond strongly and defend territory vigorously.',note:'Brilliant red throat display. Semi-aggressive when breeding.',
     incompat:{neon_tetra:'Firemouths eat small tetras, especially during breeding.',cardinal_tetra:'Firemouths eat small tetras.',ember_tetra:'Firemouths eat tiny fish.',chili_rasbora:'Firemouths eat micro fish.',cherry_shrimp:'Firemouths eat shrimp.',amano_shrimp:'Firemouths eat shrimp.',ghost_shrimp:'Firemouths eat shrimp.',blue_velvet_shrimp:'Firemouths eat shrimp.',snowball_shrimp:'Firemouths eat shrimp.',otocinclus:'Firemouths harass and may injure otocinclus.',pygmy_corydoras:'Firemouths eat tiny corydoras.',celestial_pearl_danio:'Firemouths eat nano fish.'}},
-  clown_loach:          {name:'Clown Loach',           tmin:77,tmax:86,pmin:6.0,pmax:7.5,gmin:5, gmax:12,bioload:3,size_in:12, min_gal:75,  level:'Intermediate', hard_reason:'Sold small but grows to 12 inches over years. Needs a school of 5+ and a large tank long term.',note:'Grows very large slowly. Great snail eater. School of 5+.',
+  clown_loach:          {min_fish:5, name:'Clown Loach',           tmin:77,tmax:86,pmin:6.0,pmax:7.5,gmin:5, gmax:12,bioload:3,size_in:12, min_gal:75,  level:'Intermediate', hard_reason:'Sold small but grows to 12 inches over years. Needs a school of 5+ and a large tank long term.',note:'Grows very large slowly. Great snail eater. School of 5+.',
     incompat:{nerite_snail:'Clown loaches eat snails — nerites will not survive.',mystery_snail:'Clown loaches eat snails.',assassin_snail:'Clown loaches eat snails.',trumpet_snail:'Clown loaches eat snails.',ramshorn_snail:'Clown loaches eat snails.'}},
-  yoyo_loach:           {name:'Yo-yo Loach',           tmin:75,tmax:86,pmin:6.0,pmax:7.5,gmin:3, gmax:12,bioload:2,size_in:3,  min_gal:20,  level:'Beginner',     note:'Active snail eater. Playful and social. Keep in groups of 4+.',
+  yoyo_loach:           {min_fish:4, name:'Yo-yo Loach',           tmin:75,tmax:86,pmin:6.0,pmax:7.5,gmin:3, gmax:12,bioload:2,size_in:3,  min_gal:20,  level:'Beginner',     note:'Active snail eater. Playful and social. Keep in groups of 4+.',
     incompat:{nerite_snail:'Yo-yo loaches eat snails.',mystery_snail:'Yo-yo loaches eat snails.',assassin_snail:'Yo-yo loaches eat snails.',trumpet_snail:'Yo-yo loaches eat snails.',ramshorn_snail:'Yo-yo loaches eat snails.'}},
   siamese_algae_eater:  {name:'Siamese Algae Eater',   tmin:75,tmax:79,pmin:6.5,pmax:7.5,gmin:5, gmax:20,bioload:2,size_in:5,  min_gal:30,  level:'Beginner',     note:'One of the few fish that eats black beard algae. Peaceful. Best in schools or alone.'},
   red_tail_shark:       {name:'Red-tail Black Shark',  tmin:72,tmax:79,pmin:6.5,pmax:7.5,gmin:5, gmax:20,bioload:2,size_in:6,  min_gal:30,  level:'Intermediate', hard_reason:'Highly territorial with own kind and similar-shaped fish. Only one per tank. Aggression increases with age.',note:'Only one per tank. Territorial with similar-shaped fish.',
@@ -249,51 +249,51 @@ var SP = {
   pearl_gourami:        {name:'Pearl Gourami',         tmin:77,tmax:82,pmin:6.0,pmax:8.0,gmin:5, gmax:25,bioload:2,size_in:4.5,min_gal:30,  level:'Beginner',     note:'Peaceful and beautiful. One of the best community gouramis. Hardy.'},
   blue_gourami:         {name:'Blue Gourami',          tmin:72,tmax:82,pmin:6.0,pmax:8.5,gmin:5, gmax:35,bioload:2,size_in:5,  min_gal:20,  level:'Beginner',     note:'Very hardy and adaptable. Males can be aggressive with each other. Keep one male.',
     incompat:{betta:'Blue gouramis often bully and injure bettas.'}},
-  sparkling_gourami:    {name:'Sparkling Gourami',     tmin:72,tmax:82,pmin:6.0,pmax:7.5,gmin:5, gmax:15,bioload:1,size_in:1.5,min_gal:10,  level:'Beginner',     note:'Tiny gourami that makes audible clicking sounds. Peaceful nano fish.'},
-  congo_tetra:          {name:'Congo Tetra',           tmin:73,tmax:82,pmin:6.0,pmax:7.5,gmin:3, gmax:18,bioload:2,size_in:3.5,min_gal:30,  level:'Beginner',     note:'Large, spectacular tetra. Males develop flowing fins. School of 6+.'},
-  serpae_tetra:         {name:'Serpae Tetra',          tmin:72,tmax:79,pmin:5.5,pmax:7.5,gmin:5, gmax:15,bioload:1,size_in:1.5,min_gal:20,  level:'Intermediate', hard_reason:'Notorious fin nippers with slow or long-finned fish. Must be in large groups (8+) to reduce nipping behavior.',note:'School of 8+. Do not keep with slow or long-finned fish.',
+  sparkling_gourami:    {min_fish:3, name:'Sparkling Gourami',     tmin:72,tmax:82,pmin:6.0,pmax:7.5,gmin:5, gmax:15,bioload:1,size_in:1.5,min_gal:10,  level:'Beginner',     note:'Tiny gourami that makes audible clicking sounds. Peaceful nano fish.'},
+  congo_tetra:          {min_fish:6, name:'Congo Tetra',           tmin:73,tmax:82,pmin:6.0,pmax:7.5,gmin:3, gmax:18,bioload:2,size_in:3.5,min_gal:30,  level:'Beginner',     note:'Large, spectacular tetra. Males develop flowing fins. School of 6+.'},
+  serpae_tetra:         {min_fish:8, name:'Serpae Tetra',          tmin:72,tmax:79,pmin:5.5,pmax:7.5,gmin:5, gmax:15,bioload:1,size_in:1.5,min_gal:20,  level:'Intermediate', hard_reason:'Notorious fin nippers with slow or long-finned fish. Must be in large groups (8+) to reduce nipping behavior.',note:'School of 8+. Do not keep with slow or long-finned fish.',
     incompat:{betta:'Serpae tetras are known fin nippers — dangerous for bettas.',angelfish:'Serpae tetras nip angelfish fins.',guppy:'Serpae tetras target guppy tails.',endlers_livebearer:'Serpae tetras nip fins of endler livebearers.'}},
-  lemon_tetra:          {name:'Lemon Tetra',           tmin:72,tmax:82,pmin:6.0,pmax:7.5,gmin:5, gmax:20,bioload:1,size_in:1.5,min_gal:15,  level:'Beginner',     note:'Peaceful schooler of 6+. Yellow color intensifies in good water.'},
-  glowlight_tetra:      {name:'Glowlight Tetra',       tmin:72,tmax:80,pmin:5.5,pmax:7.5,gmin:4, gmax:15,bioload:1,size_in:1.5,min_gal:10,  level:'Beginner',     note:'Peaceful schooler of 6+. Bright orange stripe glows under aquarium lighting.'},
-  rosy_barb:            {name:'Rosy Barb',             tmin:64,tmax:75,pmin:6.5,pmax:7.5,gmin:5, gmax:19,bioload:2,size_in:4,  min_gal:30,  level:'Beginner',     note:'Cooler water barb. Active schooler of 6+. Males turn rosy-red when breeding.'},
-  pygmy_corydoras:      {name:'Pygmy Corydoras',       tmin:68,tmax:77,pmin:6.0,pmax:7.8,gmin:2, gmax:15,bioload:1,size_in:1,  min_gal:10,  level:'Beginner',     note:'Tiny cory (1 in). Mid-water swimmer unlike most corys. Group of 8+.'},
-  neon_rainbowfish:     {name:'Neon Rainbowfish',      tmin:72,tmax:82,pmin:7.0,pmax:8.0,gmin:8, gmax:18,bioload:2,size_in:2.5,min_gal:20,  level:'Beginner',     note:'Vivid red and blue coloration. Active schooler of 6+. Easy to keep.'},
-  celestial_pearl_danio:{name:'Celestial Pearl Danio', tmin:73,tmax:79,pmin:6.5,pmax:7.5,gmin:2, gmax:15,bioload:1,size_in:1,  min_gal:10,  level:'Intermediate', hard_reason:'Shy and easily outcompeted for food. Needs a calm, planted nano setup away from boisterous fish.',note:'Stunning nano fish. Calm planted tank only. School of 8+.'},
-  pearl_danio:          {name:'Pearl Danio',           tmin:64,tmax:77,pmin:6.5,pmax:7.5,gmin:5, gmax:20,bioload:1,size_in:2,  min_gal:15,  level:'Beginner',     note:'Hardy active schooler. Very forgiving beginner fish. Group of 6+.'},
-  african_dwarf_frog:   {name:'African Dwarf Frog',    tmin:72,tmax:82,pmin:6.5,pmax:7.5,gmin:5, gmax:20,bioload:1,size_in:1.5,min_gal:10,  level:'Beginner',     note:'Fully aquatic amphibian. Peaceful. Must surface for air. Avoid strong flow.'},
+  lemon_tetra:          {min_fish:6, name:'Lemon Tetra',           tmin:72,tmax:82,pmin:6.0,pmax:7.5,gmin:5, gmax:20,bioload:1,size_in:1.5,min_gal:15,  level:'Beginner',     note:'Peaceful schooler of 6+. Yellow color intensifies in good water.'},
+  glowlight_tetra:      {min_fish:6, name:'Glowlight Tetra',       tmin:72,tmax:80,pmin:5.5,pmax:7.5,gmin:4, gmax:15,bioload:1,size_in:1.5,min_gal:10,  level:'Beginner',     note:'Peaceful schooler of 6+. Bright orange stripe glows under aquarium lighting.'},
+  rosy_barb:            {min_fish:6, name:'Rosy Barb',             tmin:64,tmax:75,pmin:6.5,pmax:7.5,gmin:5, gmax:19,bioload:2,size_in:4,  min_gal:30,  level:'Beginner',     note:'Cooler water barb. Active schooler of 6+. Males turn rosy-red when breeding.'},
+  pygmy_corydoras:      {min_fish:8, name:'Pygmy Corydoras',       tmin:68,tmax:77,pmin:6.0,pmax:7.8,gmin:2, gmax:15,bioload:1,size_in:1,  min_gal:10,  level:'Beginner',     note:'Tiny cory (1 in). Mid-water swimmer unlike most corys. Group of 8+.'},
+  neon_rainbowfish:     {min_fish:6, name:'Neon Rainbowfish',      tmin:72,tmax:82,pmin:7.0,pmax:8.0,gmin:8, gmax:18,bioload:2,size_in:2.5,min_gal:20,  level:'Beginner',     note:'Vivid red and blue coloration. Active schooler of 6+. Easy to keep.'},
+  celestial_pearl_danio:{min_fish:6, name:'Celestial Pearl Danio', tmin:73,tmax:79,pmin:6.5,pmax:7.5,gmin:2, gmax:15,bioload:1,size_in:1,  min_gal:10,  level:'Intermediate', hard_reason:'Shy and easily outcompeted for food. Needs a calm, planted nano setup away from boisterous fish.',note:'Stunning nano fish. Calm planted tank only. School of 8+.'},
+  pearl_danio:          {min_fish:6, name:'Pearl Danio',           tmin:64,tmax:77,pmin:6.5,pmax:7.5,gmin:5, gmax:20,bioload:1,size_in:2,  min_gal:15,  level:'Beginner',     note:'Hardy active schooler. Very forgiving beginner fish. Group of 6+.'},
+  african_dwarf_frog:   {min_fish:2, name:'African Dwarf Frog',    tmin:72,tmax:82,pmin:6.5,pmax:7.5,gmin:5, gmax:20,bioload:1,size_in:1.5,min_gal:10,  level:'Beginner',     note:'Fully aquatic amphibian. Peaceful. Must surface for air. Avoid strong flow.'},
   dwarf_puffer:         {name:'Dwarf Puffer',          tmin:74,tmax:82,pmin:6.5,pmax:7.5,gmin:5, gmax:15,bioload:2,size_in:1,  min_gal:5,   level:'Advanced',     hard_reason:'Nips fins of any tankmate including its own kind. Needs live snails or frozen foods — will not eat dry food.',note:'Keep alone or in species tank. Needs live snails or frozen food.',
     incompat:{betta:'Dwarf puffers bite betta fins.',guppy:'Dwarf puffers nip guppy fins and tails.',angelfish:'Dwarf puffers bite at fins.',tiger_barb:'Both species are aggressive — conflict is inevitable.',cherry_shrimp:'Puffers eat shrimp.',amano_shrimp:'Puffers eat shrimp.',ghost_shrimp:'Puffers eat shrimp.',nerite_snail:'Puffers eat snails.',mystery_snail:'Puffers eat snails.'}},
   scarlet_badis:        {name:'Scarlet Badis',         tmin:72,tmax:82,pmin:6.5,pmax:7.5,gmin:5, gmax:15,bioload:1,size_in:0.8,min_gal:5,   level:'Intermediate', hard_reason:'Refuses dry food in most cases. Needs live or frozen micro foods. Males highly territorial with each other.',note:'Micro fish. Needs live or frozen food. One male per tank.'},
-  clown_killifish:      {name:'Clown Killifish',       tmin:72,tmax:79,pmin:5.5,pmax:7.0,gmin:1, gmax:10,bioload:1,size_in:1.5,min_gal:5,   level:'Intermediate', hard_reason:'Needs soft, slightly acidic water. Surface-dwelling and will jump — a tight-fitting lid is essential.',note:'Beautiful surface fish. Must have a tight lid — it jumps.'},
-  peacock_cichlid:      {name:'Peacock Cichlid',       tmin:76,tmax:82,pmin:7.8,pmax:8.5,gmin:10,gmax:25,bioload:3,size_in:6,  min_gal:55,  level:'Advanced',     hard_reason:'Requires Lake Malawi water chemistry: very alkaline and hard. Still shows cichlid territorial behavior.',note:'Stunning Lake Malawi cichlid. Less aggressive than mbuna.',
+  clown_killifish:      {min_fish:3, name:'Clown Killifish',       tmin:72,tmax:79,pmin:5.5,pmax:7.0,gmin:1, gmax:10,bioload:1,size_in:1.5,min_gal:5,   level:'Intermediate', hard_reason:'Needs soft, slightly acidic water. Surface-dwelling and will jump — a tight-fitting lid is essential.',note:'Beautiful surface fish. Must have a tight lid — it jumps.'},
+  peacock_cichlid:      {min_fish:5, name:'Peacock Cichlid',       tmin:76,tmax:82,pmin:7.8,pmax:8.5,gmin:10,gmax:25,bioload:3,size_in:6,  min_gal:55,  level:'Advanced',     hard_reason:'Requires Lake Malawi water chemistry: very alkaline and hard. Still shows cichlid territorial behavior.',note:'Stunning Lake Malawi cichlid. Less aggressive than mbuna.',
     incompat:{neon_tetra:'Peacock cichlids eat small tetras.',cardinal_tetra:'Peacock cichlids eat small tetras.',ember_tetra:'Peacock cichlids eat tiny fish.',chili_rasbora:'Peacock cichlids eat micro fish.',guppy:'Peacock cichlids eat guppies.',endlers_livebearer:'Peacock cichlids eat small livebearers.',cherry_shrimp:'Peacock cichlids eat shrimp.',amano_shrimp:'Peacock cichlids eat shrimp.',ghost_shrimp:'Peacock cichlids eat shrimp.',blue_velvet_shrimp:'Peacock cichlids eat shrimp.',discus:'Opposite water needs — discus need soft acidic water, peacocks need hard alkaline.',ram_cichlid:'Opposite water needs — rams need soft acidic water, peacocks need hard alkaline.'}},
   flying_fox:           {name:'Flying Fox',            tmin:72,tmax:79,pmin:6.0,pmax:7.5,gmin:5, gmax:15,bioload:2,size_in:5,  min_gal:30,  level:'Intermediate', hard_reason:'Territorial with own kind and similar-shaped fish. Often confused with false siamese algae eater which is more aggressive.',note:'Good algae eater. One per tank unless very large.',
     incompat:{flying_fox:'Flying foxes are territorial with each other — keep only one unless the tank is very large (100g+).',red_tail_shark:'Flying foxes and red-tail sharks compete aggressively for the same territory.'}},
-  bolivian_ram:         {name:'Bolivian Ram',          tmin:72,tmax:79,pmin:6.5,pmax:7.5,gmin:5, gmax:15,bioload:2,size_in:3.5,min_gal:20,  level:'Beginner',     note:'Hardier and more forgiving than German Blue Ram. Great beginner cichlid.'},
+  bolivian_ram:         {min_fish:2, name:'Bolivian Ram',          tmin:72,tmax:79,pmin:6.5,pmax:7.5,gmin:5, gmax:15,bioload:2,size_in:3.5,min_gal:20,  level:'Beginner',     note:'Hardier and more forgiving than German Blue Ram. Great beginner cichlid.'},
   // --- Shrimp ---
-  ghost_shrimp:         {name:'Ghost Shrimp',          tmin:65,tmax:80,pmin:6.5,pmax:8.0,gmin:3, gmax:15,bioload:1,size_in:1.5,min_gal:5,   level:'Beginner',     inv:true, note:'Very cheap and hardy. Great tank cleaners. Avoid copper-based meds.'},
-  blue_velvet_shrimp:   {name:'Blue Velvet Shrimp',    tmin:65,tmax:80,pmin:6.5,pmax:8.0,gmin:4, gmax:12,bioload:1,size_in:1.5,min_gal:5,   level:'Beginner',     inv:true, note:'Color variant of Neocaridina. Same easy care as Cherry Shrimp.'},
-  snowball_shrimp:      {name:'Snowball Shrimp',        tmin:65,tmax:80,pmin:6.5,pmax:8.0,gmin:4, gmax:12,bioload:1,size_in:1.5,min_gal:5,   level:'Beginner',     inv:true, note:'White Neocaridina variant. Beginner-friendly. Avoid copper meds.'},
+  ghost_shrimp:         {min_fish:3, name:'Ghost Shrimp',          tmin:65,tmax:80,pmin:6.5,pmax:8.0,gmin:3, gmax:15,bioload:1,size_in:1.5,min_gal:5,   level:'Beginner',     inv:true, note:'Very cheap and hardy. Great tank cleaners. Avoid copper-based meds.'},
+  blue_velvet_shrimp:   {min_fish:6, name:'Blue Velvet Shrimp',    tmin:65,tmax:80,pmin:6.5,pmax:8.0,gmin:4, gmax:12,bioload:1,size_in:1.5,min_gal:5,   level:'Beginner',     inv:true, note:'Color variant of Neocaridina. Same easy care as Cherry Shrimp.'},
+  snowball_shrimp:      {min_fish:6, name:'Snowball Shrimp',        tmin:65,tmax:80,pmin:6.5,pmax:8.0,gmin:4, gmax:12,bioload:1,size_in:1.5,min_gal:5,   level:'Beginner',     inv:true, note:'White Neocaridina variant. Beginner-friendly. Avoid copper meds.'},
   bamboo_shrimp:        {name:'Bamboo Shrimp',          tmin:72,tmax:82,pmin:6.5,pmax:7.5,gmin:3, gmax:12,bioload:1,size_in:3,  min_gal:20,  level:'Intermediate', inv:true, hard_reason:'Filter feeder — needs good flow and fine particles in the water. Will starve without regular feeding of powdered food.',note:'Fan-feeds from the current. Needs good water flow and fine food.'},
   // --- Additional Fish ---
-  black_neon_tetra:     {name:'Black Neon Tetra',         tmin:72,tmax:80,pmin:5.0,pmax:7.5,gmin:1, gmax:10,bioload:1,size_in:1.5,min_gal:10, level:'Beginner',     note:'School of 6+. Hardier than neon tetra. Distinctive black and white horizontal stripe.'},
-  pristella_tetra:      {name:'Pristella Tetra',           tmin:72,tmax:82,pmin:6.0,pmax:8.0,gmin:5, gmax:19,bioload:1,size_in:1.8,min_gal:10, level:'Beginner',     note:'School of 6+. Very adaptable to wide pH range. Also called X-ray tetra. Peaceful community fish.'},
-  silvertip_tetra:      {name:'Silvertip Tetra',            tmin:64,tmax:82,pmin:6.0,pmax:8.0,gmin:5, gmax:20,bioload:1,size_in:1.5,min_gal:15, level:'Beginner',     note:'School of 6+. Silver-tipped fins with copper body. Wide temperature and pH tolerance.'},
-  peppered_corydoras:   {name:'Peppered Corydoras',        tmin:64,tmax:75,pmin:6.0,pmax:7.5,gmin:2, gmax:15,bioload:1,size_in:2.5,min_gal:15, level:'Beginner',     note:'Cooler water cory. Group of 4+. Very hardy. One of the first corys bred in captivity.'},
-  sterbai_corydoras:    {name:'Sterbai Corydoras',          tmin:75,tmax:86,pmin:6.0,pmax:7.5,gmin:2, gmax:15,bioload:1,size_in:2.5,min_gal:15, level:'Beginner',     note:'Warm-water cory with white spots on dark body. Great companion for discus. Group of 4+.'},
+  black_neon_tetra:     {min_fish:6, name:'Black Neon Tetra',         tmin:72,tmax:80,pmin:5.0,pmax:7.5,gmin:1, gmax:10,bioload:1,size_in:1.5,min_gal:10, level:'Beginner',     note:'School of 6+. Hardier than neon tetra. Distinctive black and white horizontal stripe.'},
+  pristella_tetra:      {min_fish:6, name:'Pristella Tetra',           tmin:72,tmax:82,pmin:6.0,pmax:8.0,gmin:5, gmax:19,bioload:1,size_in:1.8,min_gal:10, level:'Beginner',     note:'School of 6+. Very adaptable to wide pH range. Also called X-ray tetra. Peaceful community fish.'},
+  silvertip_tetra:      {min_fish:6, name:'Silvertip Tetra',            tmin:64,tmax:82,pmin:6.0,pmax:8.0,gmin:5, gmax:20,bioload:1,size_in:1.5,min_gal:15, level:'Beginner',     note:'School of 6+. Silver-tipped fins with copper body. Wide temperature and pH tolerance.'},
+  peppered_corydoras:   {min_fish:4, name:'Peppered Corydoras',        tmin:64,tmax:75,pmin:6.0,pmax:7.5,gmin:2, gmax:15,bioload:1,size_in:2.5,min_gal:15, level:'Beginner',     note:'Cooler water cory. Group of 4+. Very hardy. One of the first corys bred in captivity.'},
+  sterbai_corydoras:    {min_fish:4, name:'Sterbai Corydoras',          tmin:75,tmax:86,pmin:6.0,pmax:7.5,gmin:2, gmax:15,bioload:1,size_in:2.5,min_gal:15, level:'Beginner',     note:'Warm-water cory with white spots on dark body. Great companion for discus. Group of 4+.'},
   paradise_fish:        {name:'Paradise Fish',              tmin:61,tmax:79,pmin:6.0,pmax:8.0,gmin:5, gmax:30,bioload:2,size_in:4,  min_gal:20, level:'Beginner',     hard_reason:'Males fight with each other and attack bettas or long-finned fish. Keep one male per tank with robust fast-moving tankmates.',note:'Cold-tolerant and very hardy. Males aggressive with each other and bettas.'},
   moonlight_gourami:    {name:'Moonlight Gourami',          tmin:77,tmax:86,pmin:6.0,pmax:7.5,gmin:2, gmax:15,bioload:2,size_in:5,  min_gal:30, level:'Beginner',     note:'Large peaceful gourami with a silver sheen. Graceful swimmer. One male recommended.'},
   kissing_gourami:      {name:'Kissing Gourami',            tmin:72,tmax:82,pmin:6.0,pmax:8.0,gmin:5, gmax:30,bioload:3,size_in:12, min_gal:55, level:'Intermediate', hard_reason:'Grows up to 12 inches. The kissing behaviour is dominance fighting, not affection. Needs a large tank long term.',note:'Grows very large. Kissing is dominance fighting, not affection.'},
   thick_lipped_gourami: {name:'Thick-lipped Gourami',      tmin:72,tmax:82,pmin:6.0,pmax:7.5,gmin:4, gmax:15,bioload:2,size_in:3.5,min_gal:15, level:'Beginner',     note:'Peaceful gourami. Orange-striped males with distinctive thick lips. Good community fish.'},
-  indian_glass_fish:    {name:'Indian Glass Fish',          tmin:68,tmax:82,pmin:6.5,pmax:8.0,gmin:8, gmax:25,bioload:1,size_in:3,  min_gal:20, level:'Intermediate', hard_reason:'Often sold dye-injected — avoid these as the dye shortens lifespan. Needs live or frozen food; usually refuses dry food.',note:'Translucent body. Avoid dye-injected fish. Needs live or frozen food. School of 6+.'},
-  roseline_shark:       {name:'Roseline Shark',             tmin:60,tmax:77,pmin:6.5,pmax:7.8,gmin:5, gmax:25,bioload:3,size_in:6,  min_gal:55, level:'Intermediate', hard_reason:'Active schooler needing 6+ fish in a long 55g+ tank. Prefers cooler well-oxygenated water with moderate to high flow.',note:'Endemic to Kerala. Striking red and black lateral stripe. School of 6+. Needs long tank.'},
-  odessa_barb:          {name:'Odessa Barb',                tmin:68,tmax:79,pmin:6.5,pmax:7.5,gmin:5, gmax:20,bioload:2,size_in:3,  min_gal:20, level:'Beginner',     note:'Males develop a brilliant red blaze. School of 6+. Peaceful and easy to keep.'},
-  giant_danio:          {name:'Giant Danio',                tmin:64,tmax:79,pmin:6.0,pmax:8.0,gmin:5, gmax:20,bioload:2,size_in:4,  min_gal:30, level:'Beginner',     note:'Larger faster version of the zebra danio. School of 6+. Great dither fish for shy tankmates.'},
-  filament_barb:        {name:'Filament Barb',              tmin:72,tmax:82,pmin:6.0,pmax:7.5,gmin:5, gmax:20,bioload:2,size_in:5,  min_gal:30, level:'Beginner',     note:'Endemic to South India. Males develop a long dorsal filament. School of 6+.'},
-  tinfoil_barb:         {name:'Tinfoil Barb',               tmin:72,tmax:82,pmin:6.5,pmax:7.5,gmin:5, gmax:15,bioload:4,size_in:14, min_gal:75, level:'Intermediate', hard_reason:'Grows to 14 inches. Needs a school of 6+ in a large tank. Sold as 2-inch juveniles but outgrows most home aquariums. Will uproot and eat live plants.',note:'Grows very large. School of 6+ in 75g+. Eats and uproots live plants.'},
-  malabar_danio:        {name:'Malabar Danio',              tmin:64,tmax:79,pmin:6.0,pmax:7.5,gmin:5, gmax:20,bioload:2,size_in:4,  min_gal:30, level:'Beginner',     note:'Active schooler from the Western Ghats. Blue and silver with yellow fins. Group of 6+.'},
-  checker_barb:         {name:'Checker Barb',               tmin:68,tmax:79,pmin:6.0,pmax:7.5,gmin:5, gmax:15,bioload:2,size_in:2,  min_gal:20, level:'Beginner',     note:'Small peaceful barb. Males develop orange-red coloring when in condition. School of 6+.'},
-  black_ruby_barb:      {name:'Black Ruby Barb',            tmin:68,tmax:79,pmin:6.0,pmax:7.5,gmin:5, gmax:15,bioload:2,size_in:2.5,min_gal:20, level:'Beginner',     note:'Males turn stunning ruby-black when breeding. School of 6+. Peaceful and beautiful.'},
+  indian_glass_fish:    {min_fish:6, name:'Indian Glass Fish',          tmin:68,tmax:82,pmin:6.5,pmax:8.0,gmin:8, gmax:25,bioload:1,size_in:3,  min_gal:20, level:'Intermediate', hard_reason:'Often sold dye-injected — avoid these as the dye shortens lifespan. Needs live or frozen food; usually refuses dry food.',note:'Translucent body. Avoid dye-injected fish. Needs live or frozen food. School of 6+.'},
+  roseline_shark:       {min_fish:6, name:'Roseline Shark',             tmin:60,tmax:77,pmin:6.5,pmax:7.8,gmin:5, gmax:25,bioload:3,size_in:6,  min_gal:55, level:'Intermediate', hard_reason:'Active schooler needing 6+ fish in a long 55g+ tank. Prefers cooler well-oxygenated water with moderate to high flow.',note:'Endemic to Kerala. Striking red and black lateral stripe. School of 6+. Needs long tank.'},
+  odessa_barb:          {min_fish:6, name:'Odessa Barb',                tmin:68,tmax:79,pmin:6.5,pmax:7.5,gmin:5, gmax:20,bioload:2,size_in:3,  min_gal:20, level:'Beginner',     note:'Males develop a brilliant red blaze. School of 6+. Peaceful and easy to keep.'},
+  giant_danio:          {min_fish:6, name:'Giant Danio',                tmin:64,tmax:79,pmin:6.0,pmax:8.0,gmin:5, gmax:20,bioload:2,size_in:4,  min_gal:30, level:'Beginner',     note:'Larger faster version of the zebra danio. School of 6+. Great dither fish for shy tankmates.'},
+  filament_barb:        {min_fish:6, name:'Filament Barb',              tmin:72,tmax:82,pmin:6.0,pmax:7.5,gmin:5, gmax:20,bioload:2,size_in:5,  min_gal:30, level:'Beginner',     note:'Endemic to South India. Males develop a long dorsal filament. School of 6+.'},
+  tinfoil_barb:         {min_fish:6, name:'Tinfoil Barb',               tmin:72,tmax:82,pmin:6.5,pmax:7.5,gmin:5, gmax:15,bioload:4,size_in:14, min_gal:75, level:'Intermediate', hard_reason:'Grows to 14 inches. Needs a school of 6+ in a large tank. Sold as 2-inch juveniles but outgrows most home aquariums. Will uproot and eat live plants.',note:'Grows very large. School of 6+ in 75g+. Eats and uproots live plants.'},
+  malabar_danio:        {min_fish:6, name:'Malabar Danio',              tmin:64,tmax:79,pmin:6.0,pmax:7.5,gmin:5, gmax:20,bioload:2,size_in:4,  min_gal:30, level:'Beginner',     note:'Active schooler from the Western Ghats. Blue and silver with yellow fins. Group of 6+.'},
+  checker_barb:         {min_fish:6, name:'Checker Barb',               tmin:68,tmax:79,pmin:6.0,pmax:7.5,gmin:5, gmax:15,bioload:2,size_in:2,  min_gal:20, level:'Beginner',     note:'Small peaceful barb. Males develop orange-red coloring when in condition. School of 6+.'},
+  black_ruby_barb:      {min_fish:6, name:'Black Ruby Barb',            tmin:68,tmax:79,pmin:6.0,pmax:7.5,gmin:5, gmax:15,bioload:2,size_in:2.5,min_gal:20, level:'Beginner',     note:'Males turn stunning ruby-black when breeding. School of 6+. Peaceful and beautiful.'},
   giant_gourami:        {name:'Giant Gourami',              tmin:68,tmax:86,pmin:6.5,pmax:8.0,gmin:5, gmax:25,bioload:5,size_in:24, min_gal:200,level:'Intermediate', hard_reason:'Grows to 2 feet and lives 20+ years. Requires a pond or enormous tank. Most home aquariums cannot accommodate a full-grown specimen.',note:'Can reach 2 feet. Highly intelligent and recognises its owner. Needs pond-sized setup long term.'},
   common_pleco:         {name:'Common Pleco',               tmin:72,tmax:82,pmin:6.5,pmax:7.5,gmin:5, gmax:20,bioload:5,size_in:24, min_gal:100,level:'Intermediate', hard_reason:'Sold at 2-3 inches but grows to 24 inches with an enormous bioload. Most home aquariums cannot house a full-grown specimen long term.',note:'The "janitor fish." Grows enormous — most end up rehomed. Needs driftwood in diet.'},
   // --- Snails ---
@@ -2094,8 +2094,9 @@ function r_life() {
       var bl_contrib = sp && sp.inv ? Math.round(bl * s.qty * 0.3 * 10) / 10 : bl * s.qty;
       var bl_inv_tag = sp && sp.inv ? ' <span style="font-size:10px;color:var(--muted)">(Inv.)</span>' : '';
       var too_small = sp && sp.min_gal && tank_life && tank_life.gallons < sp.min_gal;
+      var too_few = sp && sp.min_fish && sp.min_fish > 1 && s.qty < sp.min_fish;
       h += '<tr><td>' + (sp ? sp.name : 'Unknown') + (too_small ? ' <span style="color:var(--danger)" title="Tank too small">&#x26A0;</span>' : '') + '</td>' +
-           '<td>' + esc(s.display_name) + '</td><td>' + s.qty + '</td>' +
+           '<td>' + esc(s.display_name) + '</td><td>' + s.qty + (too_few ? ' <span style="color:var(--warn);font-size:11px" title="Recommended minimum: ' + sp.min_fish + '">&#x26A0; min ' + sp.min_fish + '</span>' : '') + '</td>' +
            '<td style="font-size:12px">' + (sp && sp.size_in ? sp.size_in + '"' : '-') + '</td>' +
            '<td><span style="font-size:12px;font-weight:700;color:' + bl_color + '">' + bl_lbl + bl_inv_tag + ' (' + bl_contrib + ')</span></td>' +
            '<td>' + s.added_date + '</td><td>' + esc(s.notes) + '</td>' +
@@ -2784,145 +2785,8 @@ function r_recs() {
     h += '</table></div></div>';
   }
 
-  // ── Fish suggestions ──
-  var already_sp_ids = d.stock.filter(function(x){ return x.tank_id === tid; }).map(function(x){ return x.species_id; });
-  var exc_small = 0, exc_compat = 0;
-  Object.keys(SP).forEach(function(spid) {
-    if (already_sp_ids.indexOf(spid) !== -1) return;
-    var sp = SP[spid];
-    if (sp.min_gal && tank.gallons < sp.min_gal) { exc_small++; return; }
-    if (rng &&
-        ((rng.temp.ok && (sp.tmax < rng.temp.min || sp.tmin > rng.temp.max)) ||
-         (rng.ph.ok   && (sp.pmax < rng.ph.min   || sp.pmin > rng.ph.max))   ||
-         (rng.gh.ok   && (sp.gmax < rng.gh.min   || sp.gmin > rng.gh.max)))) { exc_compat++; }
-  });
-
-  var fish_sugg = Object.keys(SP).filter(function(spid) {
-    if (already_sp_ids.indexOf(spid) !== -1) return false;
-    var sp = SP[spid];
-    if (sp.min_gal && tank.gallons < sp.min_gal) return false;
-    if (rng) {
-      if (rng.temp.ok && (sp.tmax < rng.temp.min || sp.tmin > rng.temp.max)) return false;
-      if (rng.ph.ok   && (sp.pmax < rng.ph.min   || sp.pmin > rng.ph.max))   return false;
-      if (rng.gh.ok   && (sp.gmax < rng.gh.min   || sp.gmin > rng.gh.max))   return false;
-    }
-    return true;
-  }).map(function(spid) {
-    var sp = SP[spid];
-    var warns = [];
-    if (lr) {
-      if (lr.temp_f !== null && (lr.temp_f < sp.tmin || lr.temp_f > sp.tmax))
-        warns.push('Current temp ' + d_t(lr.temp_f) + t_lbl() + ' — needs ' + d_t(sp.tmin) + '-' + d_t(sp.tmax) + t_lbl());
-      if (lr.ph !== null && (lr.ph < sp.pmin || lr.ph > sp.pmax))
-        warns.push('Current pH ' + lr.ph + ' — needs ' + sp.pmin + '-' + sp.pmax);
-      if (lr.gh !== null && (lr.gh < sp.gmin || lr.gh > sp.gmax))
-        warns.push('Current GH ' + lr.gh + ' — needs ' + sp.gmin + '-' + sp.gmax);
-    }
-    if (cur_bl > 0 && max_bl > 0 && (cur_bl + sp.bioload) > max_bl)
-      warns.push('Would exceed bioload capacity');
-    else if (max_bl > 0 && (cur_bl + sp.bioload) > Math.round(max_bl * 0.9))
-      warns.push('Would push tank to ' + Math.round((cur_bl + sp.bioload) / max_bl * 100) + '% capacity');
-    return {id: spid, sp: sp, warns: warns};
-  }).sort(function(a, b) {
-    if (a.warns.length !== b.warns.length) return a.warns.length - b.warns.length;
-    var o = {Beginner: 0, Intermediate: 1, Advanced: 2};
-    return (o[a.sp.level] || 0) - (o[b.sp.level] || 0);
-  });
-
-  h += '<div class="card"><div class="ctitle">Suggested Fish</div>';
-  var fctx = [];
-  if (exc_small > 0)  fctx.push(exc_small + ' species excluded — tank too small');
-  if (exc_compat > 0) fctx.push(exc_compat + ' species excluded — water parameters conflict with current livestock');
-  fctx.push('species already in tank are hidden');
-  h += '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">' + fctx.join(' &middot; ') + '.</div>';
-
-  if (fish_sugg.length === 0) {
-    h += '<p class="emsg">No compatible species found for this tank setup.</p>';
-  } else {
-    h += '<div class="tw"><table>' +
-         '<tr><th>Species</th><th>Level</th><th>Size</th><th>Min Tank</th><th>Temp (' + t_lbl() + ')</th><th>pH</th><th>GH</th><th>Bioload</th><th>Compatibility</th></tr>';
-    fish_sugg.forEach(function(item) {
-      var sp = item.sp;
-      var lc = sp.level === 'Advanced' ? 'var(--danger)' : sp.level === 'Intermediate' ? 'var(--warn)' : 'var(--ok)';
-      var tank_warn = sp.min_gal && tank && tank.gallons < sp.min_gal * 1.2;
-      var compat;
-      if (item.warns.length === 0 && !sp.hard_reason) {
-        compat = pill_lbl('pok', '&#x2713; Good fit');
-      } else {
-        compat = (item.warns.length > 0 ? pill_lbl('pwarn', '&#x26A0; Notes') : pill_lbl('pok', '&#x2713; Good fit'));
-        if (sp.hard_reason) compat += '<div style="color:var(--muted);font-size:11px;margin-top:3px">' + esc(sp.hard_reason) + '</div>';
-        if (item.warns.length > 0) {
-          compat += '<ul style="margin:3px 0 0;padding-left:14px;font-size:11px;color:var(--warn)">';
-          item.warns.forEach(function(w){ compat += '<li>' + w + '</li>'; });
-          compat += '</ul>';
-        }
-      }
-      h += '<tr>' +
-           '<td><strong>' + esc(sp.name) + '</strong></td>' +
-           '<td style="color:' + lc + ';font-weight:700;font-size:12px">' + (sp.level || 'Beginner') + '</td>' +
-           '<td>' + (sp.size_in ? sp.size_in + '"' : '-') + '</td>' +
-           '<td>' + (sp.min_gal ? d_v(sp.min_gal) + ' ' + v_lbl() : '-') + '</td>' +
-           '<td>' + d_t(sp.tmin) + '-' + d_t(sp.tmax) + '</td>' +
-           '<td>' + sp.pmin + '-' + sp.pmax + '</td>' +
-           '<td>' + sp.gmin + '-' + sp.gmax + '</td>' +
-           '<td>' + sp.bioload + '</td>' +
-           '<td style="font-size:12px">' + compat + '</td>' +
-           '</tr>';
-    });
-    h += '</table></div>';
-  }
-  h += '</div>';
-
-  // Plant suggestions
-  var already_ids = pl_in_tank.map(function(p){ return p.plant_id; });
-  var fish_tmin_s = rng.temp.ok ? rng.temp.min : null;
-  var fish_tmax_s = rng.temp.ok ? rng.temp.max : null;
-
-  var suggested = Object.keys(PL).filter(function(k) {
-    var p = PL[k];
-    if (already_ids.indexOf(k) !== -1) return false;
-    // Skip CO2-requiring plants when no CO2 system is set up
-    if (p.co2 && !co2_info) return false;
-    // Skip plants that need more light than available
-    if (p.light === 'High'   && light_hours < 8) return false;
-    if (p.light === 'Medium' && light_hours > 0 && light_hours < 4) return false;
-    // Must overlap with the fish temperature range
-    if (fish_tmin_s !== null && fish_tmax_s !== null) {
-      if (p.tmax < fish_tmin_s || p.tmin > fish_tmax_s) return false;
-    }
-    return true;
-  }).sort(function(a, b) {
-    var o = {Easy: 0, Medium: 1, Hard: 2};
-    return (o[PL[a].diff] || 0) - (o[PL[b].diff] || 0);
-  });
-
-  var ctx = [];
-  if (light_hours > 0) ctx.push(light_hours + 'h/day light');
-  else if (lights_eq.length) ctx.push('light configured — set hours in equipment');
-  else ctx.push('no light configured — showing low-light plants only');
-  if (co2_info) ctx.push('CO2 active');
-  else ctx.push('no CO2 — CO2-requiring plants hidden');
-
-  h += '<div class="card"><div class="ctitle">Suggested Plants</div>';
-  h += '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">Plants that suit your current setup (' + ctx.join(' &middot; ') + '). Plants already in your tank are excluded.</div>';
-  if (suggested.length === 0) {
-    h += '<p class="emsg">All compatible plants are already in your tank, or none match your current light and CO2 setup.</p>';
-  } else {
-    h += '<div class="tw"><table><tr><th>Plant</th><th>Difficulty</th><th>Light</th><th>CO2</th><th>Temp (' + t_lbl() + ')</th><th>Care Note</th></tr>';
-    suggested.forEach(function(k) {
-      var p = PL[k];
-      var dc = p.diff === 'Easy' ? 'var(--ok)' : p.diff === 'Medium' ? 'var(--warn)' : 'var(--danger)';
-      h += '<tr>' +
-           '<td><strong>' + esc(p.name) + '</strong></td>' +
-           '<td style="color:' + dc + ';font-weight:700;font-size:12px">' + p.diff + '</td>' +
-           '<td>' + p.light + '</td>' +
-           '<td>' + (p.co2 ? '<strong style="color:var(--warn)">Yes</strong>' : 'No') + '</td>' +
-           '<td>' + d_t(p.tmin) + '-' + d_t(p.tmax) + '</td>' +
-           '<td style="font-size:12px;color:var(--muted)">' + esc(p.note) + '</td></tr>';
-    });
-    h += '</table></div>';
-  }
-  h += '</div>';
+  el.innerHTML = h;
+}
 
   el.innerHTML = h;
 }
@@ -3362,6 +3226,15 @@ function upd_stock_compat(sel) {
     }
   }
 
+  // Minimum group size
+  if (new_sp.min_fish && new_sp.min_fish > 1) {
+    var qty_el = document.querySelector('#mb input[name=qty]');
+    var qty_val = qty_el ? (parseInt(qty_el.value) || 1) : 1;
+    if (qty_val < new_sp.min_fish) {
+      parts.push('<div style="color:var(--warn);font-size:12px;font-weight:700;margin-top:2px">&#x1F41F; Keep at least ' + new_sp.min_fish + ' — ' + esc(new_sp.name) + ' needs a group</div>');
+    }
+  }
+
   // Min tank size
   var tank = d.tanks.find(function(t){ return t.id === tid; });
   if (tank && new_sp.min_gal && tank.gallons < new_sp.min_gal) {
@@ -3522,7 +3395,7 @@ function do_add_stock() {
     '</div>' +
     '</div>' +
     '<div class="frow">' +
-    fg('Quantity', '<input type="number" name="qty" value="1" min="1">') +
+    fg('Quantity', '<input type="number" name="qty" value="1" min="1" oninput="(function(){var s=document.querySelector(\'#mb select[name=sid]\');if(s)upd_stock_compat(s);})()">' ) +
     fg('Date Added', '<input type="date" name="added" value="' + td + '">') +
     '</div>' +
     fg('Notes', '<input type="text" name="notes" placeholder="Optional">') +
@@ -3796,8 +3669,6 @@ function r_howto() {
     bullets([
       '<strong>Recommended Schedule:</strong> water change frequency, filter clean, water test, glass wipe, gravel vac, plant trimming, fertilizer doses — all tuned to your bioload and setup. Click <em>Add Task</em> to send any recommendation to Maintenance.',
       '<strong>Livestock Compatibility:</strong> shows the safe temperature, pH, and GH range that all your current fish agree on. Flags any incompatible pairs.',
-      '<strong>Suggested Fish:</strong> fish from the database that fit your water parameters and do not conflict with existing livestock.',
-      '<strong>Suggested Plants:</strong> plants that match your lighting, CO2, and fish temperature range, sorted by difficulty.',
     ])
   );
 
