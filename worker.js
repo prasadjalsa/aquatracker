@@ -3375,6 +3375,17 @@ function upd_stock_compat(sel) {
     }
   }
 
+  // Single-sex warning for species that need a pair
+  if (new_sp.breed_cond && new_sp.breed_cond.pair) {
+    var m_el = document.querySelector('#mb input[name=male]');
+    var f_el = document.querySelector('#mb input[name=female]');
+    var m_val = m_el ? (parseInt(m_el.value) || 0) : 0;
+    var f_val = f_el ? (parseInt(f_el.value) || 0) : 0;
+    if ((m_val > 0 || f_val > 0) && (m_val === 0 || f_val === 0)) {
+      parts.push('<div style="color:var(--warn);font-size:12px;font-weight:700;margin-top:2px">&#x26A0; ' + (m_val === 0 ? 'All female' : 'All male') + ' — ' + esc(new_sp.name) + ' needs both sexes to breed</div>');
+    }
+  }
+
   // Min tank size
   var tank = d.tanks.find(function(t){ return t.id === tid; });
   if (tank && new_sp.min_gal && tank.gallons < new_sp.min_gal) {
