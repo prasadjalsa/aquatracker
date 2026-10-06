@@ -380,8 +380,30 @@ var SP_BREEDS = {
   honey_gourami:     {breeds:'Moderate', fry_fate:'guarded', breed_note:'Bubble nest builder. Male guards nest. Less aggressive than Dwarf Gourami.', breed_cond:{pair:true,ratio:'1M:1F'}},
   sparkling_gourami: {breeds:'Moderate', fry_fate:'guarded', breed_note:'Bubble nest builder. Male guards eggs. Best bred in a species-only tank.', breed_cond:{pair:true,ratio:'1M:1F'}},
   african_dwarf_frog:{breeds:'Moderate', fry_fate:'eaten',   breed_note:'Will amplexus and lay floating eggs. Tadpoles are very difficult to raise in a community tank.'},
+  // Additional species missing from initial list
+  otocinclus:        {breeds:'Rare',     fry_fate:'hidden',  breed_note:'Rarely bred in captivity. Needs a group, well-planted tank, and a cool water change trigger.', breed_cond:{tmax:75}},
+  white_cloud_minnow:{breeds:'Easy',     fry_fate:'eaten',   breed_note:'Prolific egg scatterer. Spawns readily in cool water. Fry hidden among fine plants but eaten if hungry.', breed_cond:{tmax:68}},
+  harlequin_rasbora: {breeds:'Moderate', fry_fate:'hidden',  breed_note:'Lays eggs on underside of broad-leaved plants (Anubias, Cryptocoryne). Needs soft acidic water.', breed_cond:{pmax:6.8,gmax:8}},
+  chili_rasbora:     {breeds:'Moderate', fry_fate:'eaten',   breed_note:'Egg scatterer. Spawns among fine plants in soft acidic water. Fry tiny and easily eaten.', breed_cond:{pmax:6.5,gmax:6}},
+  blue_gourami:      {breeds:'Moderate', fry_fate:'guarded', breed_note:'Male builds a large bubble nest. Guards eggs aggressively. Remove female after spawning.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  pearl_gourami:     {breeds:'Moderate', fry_fate:'guarded', breed_note:'Bubble nest builder. One of the easier gouramis to breed. Male guards nest.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  paradise_fish:     {breeds:'Easy',     fry_fate:'guarded', breed_note:'Bubble nest builder. One of the first fish bred in captivity. Male is very aggressive after spawning — remove female immediately.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  black_devil_snail: {breeds:'Easy',     fry_fate:'hidden',  breed_note:'Live-bearing — produces single fully-formed young. Slow reproducer, will not overpopulate.'},
+  pagoda_snail:      {breeds:'Moderate', fry_fate:'hidden',  breed_note:'Live-bearing but reproduces slowly. Needs clean well-oxygenated water.'},
+  rosy_barb:         {breeds:'Moderate', fry_fate:'eaten',   breed_note:'Egg scatterer in cooler water. Males turn vivid red when in breeding condition.', breed_cond:{tmax:72}},
+  tiger_barb:        {breeds:'Moderate', fry_fate:'eaten',   breed_note:'Egg scatterer — spawns over plants or spawning mop. Fry eaten in community tanks.', breed_cond:{pmax:7.0,gmax:10}},
+  red_cherry_barb:   {breeds:'Moderate', fry_fate:'eaten',   breed_note:'Egg scatterer. Males turn bright red when in breeding condition. Fry eaten in community tanks.'},
+  checker_barb:      {breeds:'Moderate', fry_fate:'eaten',   breed_note:'Egg scatterer. Males develop orange-red coloring when in condition.'},
+  odessa_barb:       {breeds:'Moderate', fry_fate:'eaten',   breed_note:'Egg scatterer. Males display brilliant red blaze when ready to breed.'},
+  black_ruby_barb:   {breeds:'Moderate', fry_fate:'eaten',   breed_note:'Egg scatterer. Males turn stunning ruby-black when breeding. Fry eaten in community tanks.'},
+  congo_tetra:       {breeds:'Moderate', fry_fate:'eaten',   breed_note:'Egg scatterer over fine plants. Males display flowing fins during courtship. Separate tank needed to raise fry.', breed_cond:{pmax:7.0,gmax:12}},
 };
 Object.keys(SP_BREEDS).forEach(function(k){ if(SP[k]) Object.assign(SP[k], SP_BREEDS[k]); });
+
+// Species that definitively cannot breed in freshwater — shown explicitly in Breeding column
+['nerite_snail','zebra_nerite','horned_nerite','red_racer_nerite','winged_nerite'].forEach(function(k){
+  if(SP[k]) Object.assign(SP[k], {breeds:false, breed_note:'Cannot breed in freshwater — larvae require brackish or marine water.'});
+});
 
 // Species that eat invertebrates (shrimp/snails) — catches pairs not covered by explicit incompat entries
 ['oscar','convict_cichlid','firemouth_cichlid','african_cichlid','peacock_cichlid','angelfish','discus','dwarf_puffer','clown_loach','yoyo_loach','betta','blue_gourami'].forEach(function(k){ if(SP[k]) SP[k].eats_inv=true; });
@@ -2816,7 +2838,10 @@ function r_recs() {
     var tank_warn = tank && sp.min_gal && tank.gallons < sp.min_gal;
     // Breeding column — water-aware
     var breed_cell = '<span style="color:var(--muted)">—</span>';
-    if (sp.breeds) {
+    if (sp.breeds === false) {
+      breed_cell = '<span style="color:var(--muted);font-size:12px">No</span>';
+      if (sp.breed_note) breed_cell += '<br><span style="font-size:11px;color:var(--muted)" title="' + esc(sp.breed_note) + '">' + esc(sp.breed_note.length > 45 ? sp.breed_note.slice(0,45)+'…' : sp.breed_note) + '</span>';
+    } else if (sp.breeds) {
       var bc_color = sp.breeds === 'Easy' ? 'var(--ok)' : sp.breeds === 'Moderate' ? 'var(--warn)' : 'var(--muted)';
       breed_cell = '<span style="color:' + bc_color + ';font-weight:700;font-size:12px">' + sp.breeds + '</span>';
       var bc = sp.breed_cond, unmet = [];
