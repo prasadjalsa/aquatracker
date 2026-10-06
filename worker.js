@@ -2842,8 +2842,14 @@ function r_recs() {
       breed_cell = '<span style="color:var(--muted);font-size:12px">No</span>';
       if (sp.breed_note) breed_cell += '<br><span style="font-size:11px;color:var(--muted)" title="' + esc(sp.breed_note) + '">' + esc(sp.breed_note.length > 45 ? sp.breed_note.slice(0,45)+'…' : sp.breed_note) + '</span>';
     } else if (sp.breeds) {
+      var st_entry = sk.find(function(s){ return s.species_id === sp.sid; });
+      var m_cnt = st_entry ? (st_entry.male || 0) : 0;
+      var f_cnt = st_entry ? (st_entry.female || 0) : 0;
+      var sex_warn = (sp.breed_cond && sp.breed_cond.pair && (m_cnt > 0 || f_cnt > 0) && (m_cnt === 0 || f_cnt === 0))
+        ? '<div style="color:var(--warn);font-size:11px;font-weight:700;margin-bottom:2px">&#x26A0; ' + (m_cnt === 0 ? 'All female' : 'All male') + ' — cannot breed</div>'
+        : '';
       var bc_color = sp.breeds === 'Easy' ? 'var(--ok)' : sp.breeds === 'Moderate' ? 'var(--warn)' : 'var(--muted)';
-      breed_cell = '<span style="color:' + bc_color + ';font-weight:700;font-size:12px">' + sp.breeds + '</span>';
+      breed_cell = sex_warn + '<span style="color:' + bc_color + ';font-weight:700;font-size:12px">' + sp.breeds + '</span>';
       var bc = sp.breed_cond, unmet = [];
       if (bc && lr) {
         if (bc.tmin != null && lr.temp_f != null && d_t(lr.temp_f) < d_t(bc.tmin)) unmet.push('needs &ge;' + d_t(bc.tmin) + t_lbl());
@@ -2864,14 +2870,6 @@ function r_recs() {
         var ff_color = sp.fry_fate === 'guarded' ? 'var(--ok)' : sp.fry_fate === 'hidden' ? 'var(--warn)' : 'var(--danger)';
         var ff_lbl = sp.fry_fate === 'guarded' ? '&#x1F6E1; Parents guard fry' : sp.fry_fate === 'hidden' ? '&#x1F33F; Fry hide in plants' : '&#x26A0; Fry eaten in community';
         breed_cell += '<br><span style="font-size:11px;color:' + ff_color + '">' + ff_lbl + '</span>';
-      }
-      if (sp.breed_cond && sp.breed_cond.pair) {
-        var st_entry = sk.find(function(s){ return s.species_id === sp.sid; });
-        var m_cnt = st_entry ? (st_entry.male || 0) : 0;
-        var f_cnt = st_entry ? (st_entry.female || 0) : 0;
-        if ((m_cnt > 0 || f_cnt > 0) && (m_cnt === 0 || f_cnt === 0)) {
-          breed_cell += '<br><span style="color:var(--warn);font-size:11px;font-weight:700">&#x26A0; ' + (m_cnt === 0 ? 'All female' : 'All male') + ' — cannot breed</span>';
-        }
       }
     }
     h += '<tr><td><strong>' + esc(sp.name) + '</strong></td>' +
@@ -3572,9 +3570,9 @@ function do_add_stock() {
     fg('Quantity', '<input type="number" name="qty" value="1" min="1" oninput="upd_stk_qty()">') +
     fg('Date Added', '<input type="date" name="added" value="' + td + '">') +
     '</div>' +
-    '<div id="stk_gender_row" style="display:none"><div class="frow">' +
+    '<div id="stk_gender_row" style="display:none"><div id="stk_gender_warn" style="padding:0 2px;min-height:4px"></div><div class="frow">' +
     fg('Gender (optional)', '<div style="display:flex;gap:8px;align-items:center"><input type="number" name="male" min="0" placeholder="Males" style="width:80px" oninput="upd_gender_qty()"><span style="color:var(--muted)">M /</span><input type="number" name="female" min="0" placeholder="Females" style="width:80px" oninput="upd_gender_qty()"><span style="color:var(--muted)">F</span></div>') +
-    '</div><div id="stk_gender_warn" style="padding:0 2px;min-height:4px"></div></div>' +
+    '</div></div>' +
     fg('Notes', '<input type="text" name="notes" placeholder="Optional">') +
     '<div style="background:#fef3d5;border-radius:6px;padding:8px 10px;font-size:12px;color:#8a5a00;margin:10px 0"><strong>&#x1F41F; Acclimation:</strong> Float the sealed bag in your tank for 15-20 min to equalise temperature. Then add a small cup of tank water to the bag every 5 minutes for 30 minutes. Net the fish out — do not pour store water into your tank.</div>' +
     '<div style="background:#e8f4fb;border-radius:6px;padding:8px 10px;font-size:12px;color:#1a5a7a;margin-bottom:10px"><strong>&#x1F4A1; Quarantine tip:</strong> Ideally quarantine new fish in a separate tank for 2-4 weeks before adding to your main tank. This prevents disease from spreading to existing livestock.</div>' +
