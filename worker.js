@@ -3345,6 +3345,17 @@ function upd_gender_qty() {
     var qty_el = document.querySelector('#mb input[name=qty]');
     if (qty_el) { qty_el.value = m + f; upd_stk_qty(); }
   }
+  var warn_el = document.getElementById('stk_gender_warn');
+  if (warn_el) {
+    var sid = document.querySelector('#mb select[name=sid]');
+    var sp = sid ? get_sp(ld())[sid.value] : null;
+    var needs_pair = sp && sp.breed_cond && sp.breed_cond.pair;
+    if (needs_pair && (m > 0 || f > 0) && (m === 0 || f === 0)) {
+      warn_el.innerHTML = '<div style="color:var(--warn);font-size:12px;font-weight:700;margin-bottom:6px">&#x26A0; ' + (m === 0 ? 'All female' : 'All male') + ' — ' + esc(sp.name) + ' needs both sexes to breed</div>';
+    } else {
+      warn_el.innerHTML = '';
+    }
+  }
 }
 function upd_stock_compat(sel) {
   var sid = sel.value, d = ld(), tid = at(), sp_all = get_sp(d);
@@ -3372,17 +3383,6 @@ function upd_stock_compat(sel) {
     var qty_val = qty_el ? (parseInt(qty_el.value) || 1) : 1;
     if (qty_val < new_sp.min_fish) {
       parts.push('<div style="color:var(--warn);font-size:12px;font-weight:700;margin-top:2px">&#x1F41F; Keep at least ' + new_sp.min_fish + ' — ' + esc(new_sp.name) + ' needs a group</div>');
-    }
-  }
-
-  // Single-sex warning for species that need a pair
-  if (new_sp.breed_cond && new_sp.breed_cond.pair) {
-    var m_el = document.querySelector('#mb input[name=male]');
-    var f_el = document.querySelector('#mb input[name=female]');
-    var m_val = m_el ? (parseInt(m_el.value) || 0) : 0;
-    var f_val = f_el ? (parseInt(f_el.value) || 0) : 0;
-    if ((m_val > 0 || f_val > 0) && (m_val === 0 || f_val === 0)) {
-      parts.push('<div style="color:var(--warn);font-size:12px;font-weight:700;margin-top:2px">&#x26A0; ' + (m_val === 0 ? 'All female' : 'All male') + ' — ' + esc(new_sp.name) + ' needs both sexes to breed</div>');
     }
   }
 
@@ -3574,7 +3574,7 @@ function do_add_stock() {
     '</div>' +
     '<div id="stk_gender_row" style="display:none"><div class="frow">' +
     fg('Gender (optional)', '<div style="display:flex;gap:8px;align-items:center"><input type="number" name="male" min="0" placeholder="Males" style="width:80px" oninput="upd_gender_qty()"><span style="color:var(--muted)">M /</span><input type="number" name="female" min="0" placeholder="Females" style="width:80px" oninput="upd_gender_qty()"><span style="color:var(--muted)">F</span></div>') +
-    '</div></div>' +
+    '</div><div id="stk_gender_warn" style="padding:0 2px;min-height:4px"></div></div>' +
     fg('Notes', '<input type="text" name="notes" placeholder="Optional">') +
     '<div style="background:#fef3d5;border-radius:6px;padding:8px 10px;font-size:12px;color:#8a5a00;margin:10px 0"><strong>&#x1F41F; Acclimation:</strong> Float the sealed bag in your tank for 15-20 min to equalise temperature. Then add a small cup of tank water to the bag every 5 minutes for 30 minutes. Net the fish out — do not pour store water into your tank.</div>' +
     '<div style="background:#e8f4fb;border-radius:6px;padding:8px 10px;font-size:12px;color:#1a5a7a;margin-bottom:10px"><strong>&#x1F4A1; Quarantine tip:</strong> Ideally quarantine new fish in a separate tank for 2-4 weeks before adding to your main tank. This prevents disease from spreading to existing livestock.</div>' +
