@@ -3343,17 +3343,6 @@ function upd_gender_qty() {
     var qty_el = document.querySelector('#mb input[name=qty]');
     if (qty_el) { qty_el.value = m + f; upd_stk_qty(); }
   }
-  var warn_el = document.getElementById('stk_gender_warn');
-  if (warn_el) {
-    var sid = document.querySelector('#mb select[name=sid]');
-    var sp = sid ? get_sp(ld())[sid.value] : null;
-    var needs_pair = sp && sp.breed_cond && sp.breed_cond.pair;
-    if (needs_pair && (m > 0 || f > 0) && (m === 0 || f === 0)) {
-      warn_el.innerHTML = '<div style="color:var(--warn);font-size:12px;font-weight:700;margin-bottom:6px">&#x26A0; ' + (m === 0 ? 'All female' : 'All male') + ' — ' + esc(sp.name) + ' needs both sexes to breed</div>';
-    } else {
-      warn_el.innerHTML = '';
-    }
-  }
 }
 function upd_stock_compat(sel) {
   var sid = sel.value, d = ld(), tid = at(), sp_all = get_sp(d);
@@ -3570,7 +3559,7 @@ function do_add_stock() {
     fg('Quantity', '<input type="number" name="qty" value="1" min="1" oninput="upd_stk_qty()">') +
     fg('Date Added', '<input type="date" name="added" value="' + td + '">') +
     '</div>' +
-    '<div id="stk_gender_row" style="display:none"><div id="stk_gender_warn" style="padding:0 2px;min-height:4px"></div><div class="frow">' +
+    '<div id="stk_gender_row" style="display:none"><div class="frow">' +
     fg('Gender (optional)', '<div style="display:flex;gap:8px;align-items:center"><input type="number" name="male" min="0" placeholder="Males" style="width:80px" oninput="upd_gender_qty()"><span style="color:var(--muted)">M /</span><input type="number" name="female" min="0" placeholder="Females" style="width:80px" oninput="upd_gender_qty()"><span style="color:var(--muted)">F</span></div>') +
     '</div></div>' +
     fg('Notes', '<input type="text" name="notes" placeholder="Optional">') +
