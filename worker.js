@@ -2163,14 +2163,14 @@ function r_wlog() {
     fgh('Notes', '<input type="text" name="notes" placeholder="Optional notes">', '') +
     '</div>' +
     '<div style="margin:8px 0 10px">' +
-    '<button type="button" class="btn bg bs" style="font-size:12px" onclick="tog_wlog_adv()">' +
+    '<button id="wlog_adv_btn" type="button" class="btn bg bs" style="font-size:12px" onclick="tog_wlog_adv()">' +
     (wlog_adv ? '&#x25BC;' : '&#x25B6;') + ' Calcium &amp; Magnesium (optional &mdash; for planted tanks &amp; shrimp)</button>' +
     '</div>' +
-    (wlog_adv ?
-      '<div class="frow" style="margin-bottom:10px">' +
-      fgh('Calcium (ppm)', '<input type="number" name="ca" step="0.1" placeholder="e.g. 40">', 'Ideal: 20&ndash;60 ppm. Test with BIONIX or similar Ca/Mg kit.') +
-      fgh('Magnesium (ppm)', '<input type="number" name="mg" step="0.1" placeholder="e.g. 10">', 'Ideal: 5&ndash;20 ppm. Ca:Mg ratio should be 3:1 to 5:1.') +
-      '</div>' : '') +
+    '<div id="wlog_ca_mg_wrap" style="display:' + (wlog_adv ? '' : 'none') + ';margin-bottom:10px">' +
+    '<div class="frow">' +
+    fgh('Calcium (ppm)', '<input type="number" name="ca" step="0.1" placeholder="e.g. 40">', 'Ideal: 20&ndash;60 ppm. Test with BIONIX or similar Ca/Mg kit.') +
+    fgh('Magnesium (ppm)', '<input type="number" name="mg" step="0.1" placeholder="e.g. 10">', 'Ideal: 5&ndash;20 ppm. Ca:Mg ratio should be 3:1 to 5:1.') +
+    '</div></div>' +
     '<button type="submit" class="btn bp">Save Reading</button></form></div>';
   var entries = get_water(tid);
   if (entries.length >= 2) {
@@ -2254,11 +2254,17 @@ function r_wlog() {
   if (entries.length >= 2) draw_chart(tid, 'temp_f');
 }
 var wlog_adv = false;
-function tog_wlog_adv() { wlog_adv = !wlog_adv; r_wlog(); }
+function tog_wlog_adv() {
+  wlog_adv = !wlog_adv;
+  var wrap = document.getElementById('wlog_ca_mg_wrap');
+  if (wrap) wrap.style.display = wlog_adv ? '' : 'none';
+  var btn = document.getElementById('wlog_adv_btn');
+  if (btn) btn.innerHTML = (wlog_adv ? '&#x25BC;' : '&#x25B6;') + ' Calcium &amp; Magnesium (optional &mdash; for planted tanks &amp; shrimp)';
+}
 function sub_water(e) {
   e.preventDefault(); var f = e.target, tid = at();
-  var ca = wlog_adv && f.ca ? f.ca.value : '';
-  var mg = wlog_adv && f.mg ? f.mg.value : '';
+  var ca = f.ca ? f.ca.value : '';
+  var mg = f.mg ? f.mg.value : '';
   var gh_ppm = f.gh ? pn(f.gh.value) : null;
   var gh_dgh = gh_ppm !== null ? Math.round(gh_ppm / 17.9 * 100) / 100 : '';
   add_water(tid, f.date.value, f.tf ? inp_t(f.tf.value) : null, f.nh3.value, f.no2.value, f.no3.value, f.ph.value, gh_dgh, f.notes.value, ca, mg);
