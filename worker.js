@@ -3205,6 +3205,7 @@ function sub_add_plant(e) {
 }
 
 // ===== LIVESTOCK MODAL =====
+function upd_stk_qty() { var s = document.querySelector('#mb select[name=sid]'); if (s) upd_stock_compat(s); }
 function upd_stock_compat(sel) {
   var sid = sel.value, d = ld(), tid = at(), sp_all = get_sp(d);
   var result_el = document.getElementById('stk_compat');
@@ -3392,7 +3393,7 @@ function do_add_stock() {
     '</div>' +
     '</div>' +
     '<div class="frow">' +
-    fg('Quantity', '<input type="number" name="qty" value="1" min="1" oninput="(function(){var s=document.querySelector(\'#mb select[name=sid]\');if(s)upd_stock_compat(s);})()">' ) +
+    fg('Quantity', '<input type="number" name="qty" value="1" min="1" oninput="upd_stk_qty()">') +
     fg('Date Added', '<input type="date" name="added" value="' + td + '">') +
     '</div>' +
     fg('Notes', '<input type="text" name="notes" placeholder="Optional">') +
