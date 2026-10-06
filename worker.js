@@ -328,6 +328,64 @@ var SP = {
 ['red_eared_slider','indian_flapshell','painted_turtle'].forEach(function(k){ if(SP[k]) SP[k].type='Turtle'; });
 Object.keys(SP).forEach(function(k){ if(!SP[k].type) SP[k].type='Fish'; });
 
+// Breeding behaviour — assigned post-definition to keep SP entries readable
+var SP_BREEDS = {
+  guppy:             {breeds:'Easy',     fry_fate:'eaten',   breed_note:'Livebearer — drops fry every 4-6 weeks. Fry eaten in community tanks unless separated.', breed_cond:{pair:true,ratio:'1M:2F'}},
+  molly:             {breeds:'Easy',     fry_fate:'eaten',   breed_note:'Livebearer — frequent fry producer. Keep one male to two or three females.', breed_cond:{pair:true,ratio:'1M:3F'}},
+  platy:             {breeds:'Easy',     fry_fate:'eaten',   breed_note:'Livebearer — prolific and easy. Fry eaten in community tanks unless removed.', breed_cond:{pair:true,ratio:'1M:3F'}},
+  swordtail:         {breeds:'Easy',     fry_fate:'eaten',   breed_note:'Livebearer — breeds readily. Males fight each other; keep only one male.', breed_cond:{pair:true,ratio:'1M:3F'}},
+  endlers_livebearer:{breeds:'Easy',     fry_fate:'eaten',   breed_note:'Livebearer — breeds constantly. Fry at risk in community tanks.', breed_cond:{pair:true,ratio:'1M:3F'}},
+  cherry_shrimp:     {breeds:'Easy',     fry_fate:'eaten',   breed_note:'Colony grows on its own. Berried females visibly carry eggs. Fry eaten by most fish.'},
+  blue_velvet_shrimp:{breeds:'Easy',     fry_fate:'eaten',   breed_note:'Colony grows on its own. Same ease as Cherry Shrimp.'},
+  snowball_shrimp:   {breeds:'Easy',     fry_fate:'eaten',   breed_note:'Colony grows naturally. Fry at risk from fish.'},
+  crystal_shrimp:    {breeds:'Moderate', fry_fate:'hidden',  breed_note:'Breeds in soft acidic water. Colony grows slowly. Keep fish out to protect fry.', breed_cond:{pmax:6.5,gmax:6}},
+  ghost_shrimp:      {breeds:'Rare',     fry_fate:'eaten',   breed_note:'Larvae need brackish water to survive. Fry rarely make it in a freshwater home tank.'},
+  amano_shrimp:      {breeds:'Rare',     fry_fate:'eaten',   breed_note:'Larvae require marine water. Virtually impossible to breed in a home aquarium.'},
+  ramshorn_snail:    {breeds:'Easy',     fry_fate:'hidden',  breed_note:'Hermaphrodite — multiplies rapidly if overfed. Population self-regulates if food is controlled.'},
+  trumpet_snail:     {breeds:'Easy',     fry_fate:'hidden',  breed_note:'Hermaphrodite — multiplies rapidly if overfed. Useful substrate aerator.'},
+  bladder_snail:     {breeds:'Easy',     fry_fate:'hidden',  breed_note:'Hermaphrodite — very fast breeder. Population explodes with overfeeding.'},
+  pond_snail:        {breeds:'Easy',     fry_fate:'hidden',  breed_note:'Hermaphrodite — fast breeder. Control food to prevent overpopulation.'},
+  mystery_snail:     {breeds:'Easy',     fry_fate:'hidden',  breed_note:'Lays pink egg clusters above the waterline. Easy to remove if unwanted. Will not overpopulate.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  ivory_mystery:     {breeds:'Easy',     fry_fate:'hidden',  breed_note:'Lays egg clusters above the waterline. Easy to remove if unwanted.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  gold_mystery:      {breeds:'Easy',     fry_fate:'hidden',  breed_note:'Lays egg clusters above the waterline. Easy to remove if unwanted.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  spike_apple_snail: {breeds:'Easy',     fry_fate:'hidden',  breed_note:'Lays eggs above the waterline. Plant-safe apple snail.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  giant_apple_snail: {breeds:'Easy',     fry_fate:'hidden',  breed_note:'Lays bright pink egg clusters above the waterline.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  rabbit_snail:      {breeds:'Easy',     fry_fate:'hidden',  breed_note:'Live-bearing — produces single fully-formed young. Very slow rate, will not overpopulate.'},
+  trapdoor_snail:    {breeds:'Easy',     fry_fate:'hidden',  breed_note:'Live-bearing. Slow reproducer — rarely overpopulates.'},
+  chocolate_rabbit_snail:{breeds:'Easy', fry_fate:'hidden',  breed_note:'Live-bearing rabbit snail. Slow rate, will not overpopulate.'},
+  assassin_snail:    {breeds:'Moderate', fry_fate:'hidden',  breed_note:'Lays individual eggs slowly. Rarely overpopulates. Needs a pair.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  corydoras:         {breeds:'Moderate', fry_fate:'eaten',   breed_note:'Egg scatterer — a cool water change triggers spawning. Eggs eaten in community tanks.', breed_cond:{tmax:76}},
+  panda_corydoras:   {breeds:'Moderate', fry_fate:'eaten',   breed_note:'Egg scatterer — cool water change triggers spawning.', breed_cond:{tmax:74}},
+  peppered_corydoras:{breeds:'Moderate', fry_fate:'eaten',   breed_note:'Egg scatterer — cool water change triggers spawning.', breed_cond:{tmax:72}},
+  sterbai_corydoras: {breeds:'Moderate', fry_fate:'eaten',   breed_note:'Warm-water cory. Cool water change triggers spawning.', breed_cond:{tmax:80}},
+  pygmy_corydoras:   {breeds:'Moderate', fry_fate:'eaten',   breed_note:'Egg scatterer — tiny cory. Eggs scattered on glass. Raise fry separately.'},
+  ram_cichlid:       {breeds:'Moderate', fry_fate:'guarded', breed_note:'Pair bonds and spawns on flat surfaces. Parents guard eggs aggressively. Breeding triggers increased aggression.', breed_cond:{tmin:82,pmax:6.8,gmax:8,pair:true,ratio:'1M:1F'}},
+  electric_blue_ram: {breeds:'Moderate', fry_fate:'guarded', breed_note:'Same behaviour as German Blue Ram. Pair spawns and guards eggs. Very sensitive to water quality during breeding.', breed_cond:{tmin:82,pmax:6.8,gmax:8,pair:true,ratio:'1M:1F'}},
+  bolivian_ram:      {breeds:'Moderate', fry_fate:'guarded', breed_note:'More forgiving than German Blue Ram. Pair spawns on flat surfaces and guards fry.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  convict_cichlid:   {breeds:'Easy',     fry_fate:'guarded', breed_note:'One of the easiest cichlids to breed. Prolific — both parents defend eggs fiercely. Becomes very aggressive when breeding.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  firemouth_cichlid: {breeds:'Moderate', fry_fate:'guarded', breed_note:'Pair bond forms naturally. Lays eggs on flat surfaces. Breeding increases territorial aggression.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  african_cichlid:   {breeds:'Moderate', fry_fate:'guarded', breed_note:'Mouthbrooder — female holds eggs and fry in her mouth for weeks. Needs a harem ratio.', breed_cond:{pair:true,ratio:'1M:3F'}},
+  peacock_cichlid:   {breeds:'Moderate', fry_fate:'guarded', breed_note:'Mouthbrooder — female holds eggs in her mouth. Males display intensely when ready.', breed_cond:{pair:true,ratio:'1M:3F'}},
+  oscar:             {breeds:'Moderate', fry_fate:'guarded', breed_note:'Pair spawns on a flat surface and guards eggs. Difficult to sex — buy 6 juveniles and let them pair naturally.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  angelfish:         {breeds:'Moderate', fry_fate:'guarded', breed_note:'Pair bonds and lays eggs on flat surfaces or plants. Parents guard eggs. Fry need separation in a community tank.', breed_cond:{tmin:78,pmax:7.0,pair:true,ratio:'1M:1F'}},
+  discus:            {breeds:'Rare',     fry_fate:'guarded', breed_note:'Very difficult — requires pristine water, conditioning diet, and a bonded pair. Young feed on parental skin secretions.', breed_cond:{tmin:84,pmax:6.5,gmax:4,pair:true,ratio:'1M:1F'}},
+  neon_tetra:        {breeds:'Rare',     fry_fate:'eaten',   breed_note:'Requires very soft acidic water and a dedicated breeding tank. Eggs eaten immediately in community tanks.', breed_cond:{pmax:6.5,gmax:4}},
+  cardinal_tetra:    {breeds:'Rare',     fry_fate:'eaten',   breed_note:'Even harder than Neon Tetra. Requires very soft acidic dim water. Not practical without a specialist setup.', breed_cond:{pmax:6.5,gmax:4}},
+  ember_tetra:       {breeds:'Moderate', fry_fate:'eaten',   breed_note:'Can spawn in a heavily planted tank. Eggs scattered among plants. Fry eaten in community tanks.', breed_cond:{pmax:6.8,gmax:8}},
+  zebra_danio:       {breeds:'Easy',     fry_fate:'eaten',   breed_note:'Prolific egg scatterer — spawns readily. Parents eat eggs immediately. Separate tank needed to raise fry.'},
+  celestial_pearl_danio:{breeds:'Moderate',fry_fate:'eaten', breed_note:'Spawns in a planted tank. Eggs hidden among plants. Fry eaten in community tanks.'},
+  pearl_danio:       {breeds:'Moderate', fry_fate:'eaten',   breed_note:'Egg scatterer similar to Zebra Danio. Separate breeding tank needed to raise fry.'},
+  betta:             {breeds:'Moderate', fry_fate:'guarded', breed_note:'Male builds a bubble nest. Eggs and fry guarded by male. Remove female immediately after spawning.', breed_cond:{tmin:78,pair:true,ratio:'1M:1F'}},
+  dwarf_gourami:     {breeds:'Moderate', fry_fate:'guarded', breed_note:'Male builds bubble nest. Remove female after spawning as male may harass her.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  honey_gourami:     {breeds:'Moderate', fry_fate:'guarded', breed_note:'Bubble nest builder. Male guards nest. Less aggressive than Dwarf Gourami.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  sparkling_gourami: {breeds:'Moderate', fry_fate:'guarded', breed_note:'Bubble nest builder. Male guards eggs. Best bred in a species-only tank.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  african_dwarf_frog:{breeds:'Moderate', fry_fate:'eaten',   breed_note:'Will amplexus and lay floating eggs. Tadpoles are very difficult to raise in a community tank.'},
+};
+Object.keys(SP_BREEDS).forEach(function(k){ if(SP[k]) Object.assign(SP[k], SP_BREEDS[k]); });
+
+// Species that eat invertebrates (shrimp/snails) — catches pairs not covered by explicit incompat entries
+['oscar','convict_cichlid','firemouth_cichlid','african_cichlid','peacock_cichlid','angelfish','discus','dwarf_puffer','clown_loach','yoyo_loach','betta','blue_gourami'].forEach(function(k){ if(SP[k]) SP[k].eats_inv=true; });
+
 // ===== PLANT DATABASE (20 species) =====
 var PL = {
   // ── Anubias ──
@@ -744,10 +802,12 @@ function sub_edit_plant(e) {
 }
 
 // ===== LIVESTOCK =====
-function add_stock(tid, sid, dname, qty, added, notes) {
+function add_stock(tid, sid, dname, qty, added, notes, male, female) {
   var d = ld();
-  d.stock.push({id:gid(), tank_id:tid, species_id:sid, display_name:dname||(get_sp(d)[sid]?get_sp(d)[sid].name:sid), qty:parseInt(qty)||1, added_date:added, notes:notes||''});
-  sv(d);
+  var entry = {id:gid(), tank_id:tid, species_id:sid, display_name:dname||(get_sp(d)[sid]?get_sp(d)[sid].name:sid), qty:parseInt(qty)||1, added_date:added, notes:notes||''};
+  if (male !== undefined && male !== '') entry.male = parseInt(male) || 0;
+  if (female !== undefined && female !== '') entry.female = parseInt(female) || 0;
+  d.stock.push(entry); sv(d);
 }
 function del_stock(id) {
   var d = ld(), item = d.stock.find(function(x){return x.id===id;});
@@ -757,12 +817,16 @@ function del_stock(id) {
 function do_edit_stock(id) {
   var d = ld(), s = d.stock.find(function(x){return x.id===id;}); if (!s) return;
   var sp = get_sp(d)[s.species_id];
+  var gender_row = sp && sp.breeds
+    ? fg('Gender (optional)', '<div style="display:flex;gap:8px;align-items:center"><input type="number" name="male" min="0" placeholder="Males" value="' + (s.male || '') + '" style="width:80px"><span style="color:var(--muted)">M /</span><input type="number" name="female" min="0" placeholder="Females" value="' + (s.female || '') + '" style="width:80px"><span style="color:var(--muted)">F</span></div>')
+    : '';
   om('<div class="mtitle">Edit Livestock</div>' +
     '<form onsubmit="sub_edit_stock(event)">' +
     '<input type="hidden" name="sid" value="' + s.id + '">' +
     fg('Species', '<input type="text" value="' + esc(sp ? sp.name : s.species_id) + '" disabled style="color:var(--muted)">') +
     fg('Display Name', '<input type="text" name="dname" value="' + esc(s.display_name) + '">') +
     fg('Quantity', '<input type="number" name="qty" min="1" value="' + s.qty + '" required>') +
+    gender_row +
     fg('Notes', '<input type="text" name="notes" value="' + esc(s.notes) + '">') +
     '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Save</button></div>' +
     '</form>');
@@ -771,7 +835,10 @@ function sub_edit_stock(e) {
   e.preventDefault(); var f = e.target, d = ld();
   d.stock = d.stock.map(function(s) {
     if (s.id !== f.sid.value) return s;
-    return Object.assign({}, s, {qty:parseInt(f.qty.value)||1, display_name:f.dname.value||s.display_name, notes:f.notes.value});
+    var upd = {qty:parseInt(f.qty.value)||1, display_name:f.dname.value||s.display_name, notes:f.notes.value};
+    if (f.male && f.male.value !== '') upd.male = parseInt(f.male.value) || 0;
+    if (f.female && f.female.value !== '') upd.female = parseInt(f.female.value) || 0;
+    return Object.assign({}, s, upd);
   });
   sv(d); cm(); r_life(); r_dash();
 }
@@ -2085,7 +2152,7 @@ function r_life() {
     if (small_tank_warns.length) {
       h += '<div style="background:#fde0e0;border-radius:6px;padding:8px 10px;font-size:12px;color:#a01818;font-weight:600;margin-bottom:10px">&#x26A0; Tank may be too small: ' + small_tank_warns.join('; ') + '</div>';
     }
-    h += '<div class="tw"><table><tr><th>Species</th><th>Name</th><th>Qty</th><th>Adult Size</th><th>Bioload</th><th>Added</th><th>Notes</th><th></th></tr>';
+    h += '<div class="tw"><table><tr><th>Species</th><th>Name</th><th>Qty</th><th>Gender</th><th>Adult Size</th><th>Bioload</th><th>Added</th><th>Notes</th><th></th></tr>';
     sk.forEach(function(s) {
       var sp = sp_all_life[s.species_id];
       var bl = sp ? sp.bioload : 0;
@@ -2095,8 +2162,10 @@ function r_life() {
       var bl_inv_tag = sp && sp.inv ? ' <span style="font-size:10px;color:var(--muted)">(Inv.)</span>' : '';
       var too_small = sp && sp.min_gal && tank_life && tank_life.gallons < sp.min_gal;
       var too_few = sp && sp.min_fish && sp.min_fish > 1 && s.qty < sp.min_fish;
+      var gender_txt = (s.male || s.female) ? ((s.male||0) + 'M / ' + (s.female||0) + 'F') : (sp && sp.breeds ? '<span style="color:var(--muted);font-size:11px">—</span>' : '');
       h += '<tr><td>' + (sp ? sp.name : 'Unknown') + (too_small ? ' <span style="color:var(--danger)" title="Tank too small">&#x26A0;</span>' : '') + '</td>' +
            '<td>' + esc(s.display_name) + '</td><td>' + s.qty + (too_few ? ' <span style="color:var(--warn);font-size:11px" title="Recommended minimum: ' + sp.min_fish + '">&#x26A0; min ' + sp.min_fish + '</span>' : '') + '</td>' +
+           '<td style="font-size:12px;white-space:nowrap">' + gender_txt + '</td>' +
            '<td style="font-size:12px">' + (sp && sp.size_in ? sp.size_in + '"' : '-') + '</td>' +
            '<td><span style="font-size:12px;font-weight:700;color:' + bl_color + '">' + bl_lbl + bl_inv_tag + ' (' + bl_contrib + ')</span></td>' +
            '<td>' + s.added_date + '</td><td>' + esc(s.notes) + '</td>' +
@@ -2739,12 +2808,34 @@ function r_recs() {
   h += '</table></div></div>';
 
   h += '<div class="card"><div class="ctitle">Per-Species Requirements</div>' +
-    '<div class="tw"><table><tr><th>Species</th><th>Level</th><th>Adult Size</th><th>Min Tank</th><th>Temp (' + t_lbl() + ')</th><th>pH</th><th>Hardness</th><th>Bioload</th><th>Notes</th></tr>';
+    '<div class="tw"><table><tr><th>Species</th><th>Level</th><th>Adult Size</th><th>Min Tank</th><th>Temp (' + t_lbl() + ')</th><th>pH</th><th>Hardness</th><th>Bioload</th><th>Breeding</th><th>Notes</th></tr>';
   rng.sl.forEach(function(sp) {
     var bl_lbl = sp.bioload <= 1 ? 'Very Low' : sp.bioload <= 2 ? 'Low' : sp.bioload <= 3 ? 'Medium' : sp.bioload <= 4 ? 'High' : 'Very High';
     var bl_inv_note = sp.inv ? ' <span style="font-size:10px;color:var(--muted)">(×0.3 inv.)</span>' : '';
     var lvl_color = sp.level === 'Advanced' ? 'var(--danger)' : sp.level === 'Intermediate' ? 'var(--warn)' : 'var(--ok)';
     var tank_warn = tank && sp.min_gal && tank.gallons < sp.min_gal;
+    // Breeding column — water-aware
+    var breed_cell = '<span style="color:var(--muted)">—</span>';
+    if (sp.breeds) {
+      var bc_color = sp.breeds === 'Easy' ? 'var(--ok)' : sp.breeds === 'Moderate' ? 'var(--warn)' : 'var(--muted)';
+      breed_cell = '<span style="color:' + bc_color + ';font-weight:700;font-size:12px">' + sp.breeds + '</span>';
+      var bc = sp.breed_cond, unmet = [];
+      if (bc && lr) {
+        if (bc.tmin != null && lr.temp_f != null && d_t(lr.temp_f) < d_t(bc.tmin)) unmet.push('needs &ge;' + d_t(bc.tmin) + t_lbl());
+        if (bc.tmax != null && lr.temp_f != null && d_t(lr.temp_f) > d_t(bc.tmax)) unmet.push('needs &le;' + d_t(bc.tmax) + t_lbl());
+        if (bc.pmax != null && lr.ph != null && lr.ph > bc.pmax) unmet.push('needs pH &le;' + bc.pmax);
+        if (bc.gmax != null && lr.gh != null && lr.gh > bc.gmax) unmet.push('needs GH &le;' + bc.gmax);
+        breed_cell += unmet.length
+          ? '<br><span style="color:var(--muted);font-size:11px">' + unmet.join(', ') + '</span>'
+          : '<br><span style="color:var(--ok);font-size:11px">&#x1F95A; Conditions met</span>';
+      } else if (!lr) {
+        breed_cell += '<br><span style="color:var(--muted);font-size:11px">Log water to check</span>';
+      }
+      if (sp.breed_note) {
+        var short_note = sp.breed_note.length > 45 ? sp.breed_note.slice(0, 45) + '…' : sp.breed_note;
+        breed_cell += '<br><span style="font-size:11px;color:var(--muted)" title="' + esc(sp.breed_note) + '">' + esc(short_note) + '</span>';
+      }
+    }
     h += '<tr><td><strong>' + esc(sp.name) + '</strong></td>' +
          '<td style="color:' + lvl_color + ';font-weight:700;font-size:12px">' + (sp.level || 'Beginner') + '</td>' +
          '<td>' + (sp.size_in ? sp.size_in + '"' : '-') + '</td>' +
@@ -2752,6 +2843,7 @@ function r_recs() {
          '<td>' + d_t(sp.tmin) + '-' + d_t(sp.tmax) + '</td>' +
          '<td>' + sp.pmin + '-' + sp.pmax + '</td><td>' + sp.gmin + '-' + sp.gmax + '</td>' +
          '<td>' + bl_lbl + bl_inv_note + ' (' + sp.bioload + ')</td>' +
+         '<td style="font-size:12px">' + breed_cell + '</td>' +
          '<td style="font-size:12px;color:var(--muted)">' + esc(sp.note) + '</td></tr>';
   });
   h += '</table></div></div>';
@@ -3211,6 +3303,8 @@ function upd_stock_compat(sel) {
   var result_el = document.getElementById('stk_compat');
   var custom_el = document.getElementById('stk_custom_fields');
   if (custom_el) custom_el.style.display = (sid === '_custom') ? 'block' : 'none';
+  var gender_row_el = document.getElementById('stk_gender_row');
+  if (gender_row_el) gender_row_el.style.display = (sid !== '_custom' && sp_all[sid] && sp_all[sid].breeds) ? '' : 'none';
   if (!result_el) return;
   if (sid === '_custom' || !sp_all[sid]) { result_el.innerHTML = ''; return; }
   var new_sp = sp_all[sid], parts = [];
@@ -3280,6 +3374,29 @@ function upd_stock_compat(sel) {
       });
     } else {
       parts.push('<div style="color:var(--ok);font-size:12px;font-weight:700">&#x2713; Compatible with all current livestock</div>');
+    }
+    // Predation risk — catches pairs not covered by explicit incompat entries
+    var new_size = new_sp.size_in || 0;
+    if (new_sp.inv) {
+      existing.forEach(function(s) {
+        var sp = sp_all[s.species_id]; if (!sp || !sp.eats_inv) return;
+        if (!conflicts.some(function(c){ return c.name === sp.name; }))
+          parts.push('<div style="color:var(--danger);font-size:12px;margin-top:4px">&#x1F9A0; ' + esc(sp.name) + ' in this tank may eat invertebrates — risk to ' + esc(new_sp.name) + '</div>');
+      });
+    }
+    if (new_sp.eats_inv) {
+      existing.forEach(function(s) {
+        var sp = sp_all[s.species_id]; if (!sp || !sp.inv) return;
+        if (!conflicts.some(function(c){ return c.name === sp.name; }))
+          parts.push('<div style="color:var(--danger);font-size:12px;margin-top:4px">&#x1F9A0; ' + esc(sp.name) + ' in this tank — ' + esc(new_sp.name) + ' may eat them</div>');
+      });
+    }
+    if (!new_sp.inv && new_size > 0 && new_size < 2) {
+      existing.forEach(function(s) {
+        var sp = sp_all[s.species_id]; if (!sp || sp.inv || !sp.size_in || sp.type !== 'Fish') return;
+        if (sp.size_in >= new_size * 4 && !conflicts.some(function(c){ return c.name === sp.name; }))
+          parts.push('<div style="color:var(--warn);font-size:12px;margin-top:4px">&#x26A0; ' + esc(sp.name) + ' (' + sp.size_in + '") is much larger — may eat ' + esc(new_sp.name) + ' (' + new_size + '")</div>');
+      });
     }
   }
 
@@ -3396,6 +3513,9 @@ function do_add_stock() {
     fg('Quantity', '<input type="number" name="qty" value="1" min="1" oninput="upd_stk_qty()">') +
     fg('Date Added', '<input type="date" name="added" value="' + td + '">') +
     '</div>' +
+    '<div id="stk_gender_row" style="display:none"><div class="frow">' +
+    fg('Gender (optional)', '<div style="display:flex;gap:8px;align-items:center"><input type="number" name="male" min="0" placeholder="Males" style="width:80px"><span style="color:var(--muted)">M /</span><input type="number" name="female" min="0" placeholder="Females" style="width:80px"><span style="color:var(--muted)">F</span></div>') +
+    '</div></div>' +
     fg('Notes', '<input type="text" name="notes" placeholder="Optional">') +
     '<div style="background:#fef3d5;border-radius:6px;padding:8px 10px;font-size:12px;color:#8a5a00;margin:10px 0"><strong>&#x1F41F; Acclimation:</strong> Float the sealed bag in your tank for 15-20 min to equalise temperature. Then add a small cup of tank water to the bag every 5 minutes for 30 minutes. Net the fish out — do not pour store water into your tank.</div>' +
     '<div style="background:#e8f4fb;border-radius:6px;padding:8px 10px;font-size:12px;color:#1a5a7a;margin-bottom:10px"><strong>&#x1F4A1; Quarantine tip:</strong> Ideally quarantine new fish in a separate tank for 2-4 weeks before adding to your main tank. This prevents disease from spreading to existing livestock.</div>' +
@@ -3416,7 +3536,7 @@ function sub_add_stock(e) {
       f.csp_size.value, f.csp_mingal.value, f.csp_bioload.value, f.csp_level.value, '');
     add_stock(at(), sid, cname, f.qty.value, f.added.value, f.notes.value);
   } else {
-    add_stock(at(), sid, f.dname.value, f.qty.value, f.added.value, f.notes.value);
+    add_stock(at(), sid, f.dname.value, f.qty.value, f.added.value, f.notes.value, f.male ? f.male.value : '', f.female ? f.female.value : '');
   }
   cm(); r_life();
 }
