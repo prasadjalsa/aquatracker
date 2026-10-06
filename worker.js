@@ -2865,6 +2865,14 @@ function r_recs() {
         var ff_lbl = sp.fry_fate === 'guarded' ? '&#x1F6E1; Parents guard fry' : sp.fry_fate === 'hidden' ? '&#x1F33F; Fry hide in plants' : '&#x26A0; Fry eaten in community';
         breed_cell += '<br><span style="font-size:11px;color:' + ff_color + '">' + ff_lbl + '</span>';
       }
+      if (sp.breed_cond && sp.breed_cond.pair) {
+        var st_entry = sk.find(function(s){ return s.species_id === sp.sid; });
+        var m_cnt = st_entry ? (st_entry.male || 0) : 0;
+        var f_cnt = st_entry ? (st_entry.female || 0) : 0;
+        if ((m_cnt > 0 || f_cnt > 0) && (m_cnt === 0 || f_cnt === 0)) {
+          breed_cell += '<br><span style="color:var(--warn);font-size:11px;font-weight:700">&#x26A0; ' + (m_cnt === 0 ? 'All female' : 'All male') + ' — cannot breed</span>';
+        }
+      }
     }
     h += '<tr><td><strong>' + esc(sp.name) + '</strong></td>' +
          '<td style="color:' + lvl_color + ';font-weight:700;font-size:12px">' + (sp.level || 'Beginner') + '</td>' +
