@@ -2929,7 +2929,7 @@ function r_recs() {
     var lvl_color = sp.level === 'Advanced' ? 'var(--danger)' : sp.level === 'Intermediate' ? 'var(--warn)' : 'var(--ok)';
     var tank_warn = tank && sp.min_gal && tank.gallons < sp.min_gal;
     // Gender Ratio column
-    var ratio_cell = sp.breeds === false ? '<span style="color:var(--muted);font-size:11px">Can\'t breed</span>' :
+    var ratio_cell = sp.breeds === false ? '<span style="color:var(--muted);font-size:11px">Can&#39;t breed</span>' :
       (sp.breed_cond && sp.breed_cond.ratio) ? '<span style="font-weight:700">' + sp.breed_cond.ratio + '</span>' :
       sp.breeds ? '<span style="color:var(--muted)">Any</span>' : '<span style="color:var(--muted)">—</span>';
     // Breeding column — water-aware
