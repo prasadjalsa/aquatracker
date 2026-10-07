@@ -2548,12 +2548,16 @@ function r_maint() {
   var existing_types = d.tasks.filter(function(x){ return x.tank_id === tid; }).map(function(t){ return t.type; });
   var rec_tasks = get_rec_tasks(tid);
   var tank = d.tanks.find(function(t){ return t.id === tid; });
-  var h = '';
+  var wc_sub_l = calc_substrate_liters(tid);
+  var wc_sub_gal = wc_sub_l / 3.78541;
+  var wc_eff_gal = Math.max((tank ? tank.gallons : 0) - wc_sub_gal, 0);
+  var wc_eff_lbl = get_pref().vol === 'L' ? (Math.round(wc_eff_gal * 3.78541 * 10) / 10) + ' L' : (Math.round(wc_eff_gal * 10) / 10) + ' gal';
 
   // Water change calculator
   h += '<div class="card"><div class="ctitle">Water Change Calculator</div>' +
        '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:13px">' +
-       '<span>Tank: <strong>' + d_v(tank ? tank.gallons : 0) + ' ' + v_lbl() + '</strong></span>' +
+       '<span>Effective water volume: <strong>' + wc_eff_lbl + '</strong>' + (wc_sub_l > 0 ? ' <span style="color:var(--muted);font-size:11px">(tank minus ' + wc_sub_l + ' L substrate)</span>' : '') + '</span>' +
+       '</div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;margin-top:8px">' +
        '<span>Change:</span>' +
        '<input type="number" id="wc_pct" value="25" min="1" max="100" style="width:70px" oninput="calc_wc()">' +
        '<span>%</span>' +
@@ -2632,9 +2636,7 @@ function calc_wc() {
   var lit = Math.round(gal * 3.78541 * 10) / 10;
   var primary = get_pref().vol === 'L' ? lit + ' L' : gal + ' gal';
   var secondary = get_pref().vol === 'L' ? gal + ' gal' : lit + ' L';
-  var eff_note = sub_l > 0
-    ? ' <span style="color:var(--muted);font-size:11px">(eff. vol: ' + (get_pref().vol === 'L' ? Math.round(eff_gal * 3.78541 * 10) / 10 + ' L' : Math.round(eff_gal * 10) / 10 + ' gal') + ' after ' + sub_l + ' L substrate)</span>'
-    : '';
+  var eff_note = '';
   res_el.innerHTML = 'Remove <strong>' + primary + '</strong> (' + secondary + ') &mdash; treat replacement water with dechlorinator before adding.' + eff_note;
 }
 function sub_task(e) {
