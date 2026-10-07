@@ -2552,6 +2552,7 @@ function r_maint() {
   var wc_sub_gal = wc_sub_l / 3.78541;
   var wc_eff_gal = Math.max((tank ? tank.gallons : 0) - wc_sub_gal, 0);
   var wc_eff_lbl = get_pref().vol === 'L' ? (Math.round(wc_eff_gal * 3.78541 * 10) / 10) + ' L' : (Math.round(wc_eff_gal * 10) / 10) + ' gal';
+  var h = '';
 
   // Water change calculator
   h += '<div class="card"><div class="ctitle">Water Change Calculator</div>' +
