@@ -977,7 +977,10 @@ function do_add_fert() {
   var d = ld();
   var tank = d.tanks.find(function(t){ return t.id === at(); });
   if (!tank) return;
-  _fert_gal = tank.gallons || 0;
+  var sub_l = calc_substrate_liters(at());
+  var sub_gal = sub_l / 3.78541;
+  _fert_gal = Math.max((tank.gallons || 0) - sub_gal, 0);
+  var vol_note = sub_l > 0 ? Math.round(_fert_gal * 10) / 10 + ' gal effective (after ' + sub_l + ' L substrate)' : Math.round(_fert_gal) + ' gal tank';
   var opts = Object.keys(FERT).map(function(k) {
     return '<option value="' + k + '">' + FERT[k].name + '</option>';
   }).join('');
@@ -985,7 +988,7 @@ function do_add_fert() {
     '<form id="fert_frm" onsubmit="event.preventDefault();sub_fert()">' +
     fg('Preset', '<select name="fert_preset" onchange="calc_fert_dose(this)">' + opts + '</select>') +
     fg('Name', '<input type="text" name="fert_name" value="' + esc(FERT[Object.keys(FERT)[0]].name) + '" required>') +
-    fg('Dose per application (ml)', '<input type="number" name="fert_dose" step="0.1" min="0" value="' + (Math.round(FERT[Object.keys(FERT)[0]].ml_per_gal * _fert_gal * 10) / 10) + '" required placeholder="e.g. 2.5"><small style="color:var(--muted);font-size:11px">Calculated from ' + Math.round(_fert_gal) + ' gal tank — edit if needed</small>') +
+    fg('Dose per application (ml)', '<input type="number" name="fert_dose" step="0.1" min="0" value="' + (Math.round(FERT[Object.keys(FERT)[0]].ml_per_gal * _fert_gal * 10) / 10) + '" required placeholder="e.g. 2.5"><small style="color:var(--muted);font-size:11px">Calculated from ' + vol_note + ' — edit if needed</small>') +
     fg('Dose every (days)', '<input type="number" name="fert_freq" min="1" value="' + FERT[Object.keys(FERT)[0]].freq + '" required>') +
     fg('Notes', '<input type="text" name="fert_notes" placeholder="Optional">') +
     '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Add Fertilizer</button></div>' +
