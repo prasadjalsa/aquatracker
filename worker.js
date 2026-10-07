@@ -2198,7 +2198,14 @@ function r_life() {
     h += '<div class="tw"><table><tr><th>Type</th><th>Name</th><th>Brand</th><th>Configuration</th><th>Notes</th><th></th></tr>';
     eq.forEach(function(e) {
       var cfg_txt = eq_cfg_txt(e);
-      h += '<tr><td>' + esc(e.type) + '</td><td>' + esc(e.name) + '</td><td>' + esc(e.brand) + '</td>' +
+      var type_badge = '';
+      if (e.type === 'CO2 System') {
+        var co2_cfg = e.config || {};
+        var co2_active = co2_cfg.bps > 0 || co2_cfg.hours > 0;
+        var co2_type_short = co2_cfg.co2_type ? co2_cfg.co2_type.replace('Pressurized Cylinder','Pressurized').replace('DIY Yeast','DIY').replace('Liquid CO2 (Excel)','Liquid') : '';
+        type_badge = ' <span style="background:' + (co2_active ? 'var(--ok)' : 'var(--muted)') + ';color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;white-space:nowrap">&#x1F4A8; ' + (co2_active ? (co2_type_short || 'Active') : 'Not configured') + '</span>';
+      }
+      h += '<tr><td>' + esc(e.type) + type_badge + '</td><td>' + esc(e.name) + '</td><td>' + esc(e.brand) + '</td>' +
            '<td style="font-size:12px;color:' + (cfg_txt === '-' ? 'var(--muted)' : 'var(--text)') + '">' + esc(cfg_txt) + '</td>' +
            '<td>' + esc(e.notes) + '</td>' +
            '<td style="white-space:nowrap">' +
@@ -2211,13 +2218,23 @@ function r_life() {
 
   h += '<div class="card"><div class="ctitle">Plants <button class="btn bp bs" onclick="do_add_plant()">+ Add</button></div>';
   if (pl.length) {
-    h += '<div class="tw"><table><tr><th>Plant</th><th>Qty</th><th>Light</th><th>CO2</th><th>Added</th><th>Notes</th><th></th></tr>';
+    h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">' +
+      '<input type="text" id="pl_list_q" placeholder="Search plants..." oninput="filter_pl_list()" style="flex:1;min-width:120px;padding:5px 8px;border:1px solid #ccd5de;border-radius:4px;font-size:12px">' +
+      '<select id="pl_list_pos" onchange="filter_pl_list()" style="width:auto">' +
+      '<option value="">All positions</option><option value="Foreground">Foreground</option><option value="Midground">Midground</option><option value="Background">Background</option><option value="Floating">Floating</option><option value="Emersed">Emersed</option>' +
+      '</select></div>';
+    h += '<div class="tw"><table id="pl_list_tbl"><tr><th>Plant</th><th>Qty</th><th>Position</th><th>Light</th><th>CO2</th><th>Added</th><th>Notes</th><th></th></tr>';
     pl.forEach(function(p) {
       var pd = PL[p.plant_id];
       var light_txt = pd ? pd.light : '-';
       var co2_txt = pd ? (pd.co2 ? '<span style="color:var(--warn);font-weight:700">Yes</span>' : 'No') : '-';
-      h += '<tr><td><strong>' + esc(p.name) + '</strong>' + (pd ? '<br><small style="color:var(--muted)">' + pd.diff + '</small>' : '') + '</td>' +
-           '<td>' + p.qty + '</td><td>' + light_txt + '</td><td>' + co2_txt + '</td>' +
+      var pos_txt = pd ? (GROUP_POS[pd.group] || '') : '';
+      var pos_color = pos_txt === 'Foreground' ? 'var(--ok)' : pos_txt === 'Background' ? 'var(--deep)' : pos_txt === 'Floating' ? '#4db8d4' : pos_txt === 'Emersed' ? 'var(--muted)' : 'var(--mid)';
+      h += '<tr data-pname="' + esc((p.name||'').toLowerCase()) + '" data-ppos="' + esc(pos_txt) + '">' +
+           '<td><strong>' + esc(p.name) + '</strong>' + (pd ? '<br><small style="color:var(--muted)">' + pd.diff + '</small>' : '') + '</td>' +
+           '<td>' + p.qty + '</td>' +
+           '<td>' + (pos_txt ? '<span style="color:' + pos_color + ';font-weight:600;font-size:11px">' + pos_txt + '</span>' : '-') + '</td>' +
+           '<td>' + light_txt + '</td><td>' + co2_txt + '</td>' +
            '<td>' + p.added_date + '</td><td>' + esc(p.notes) + '</td>' +
            '<td style="white-space:nowrap"><button class="btn bg bs" data-id="' + p.id + '" onclick="do_edit_plant(this.dataset.id)">Edit</button> <button class="btn bd bs" data-id="' + p.id + '" onclick="del_plant(this.dataset.id);r_life()">&#x2715;</button></td></tr>';
     });
@@ -2602,14 +2619,20 @@ function calc_wc() {
   var pct_el = document.getElementById('wc_pct');
   var res_el = document.getElementById('wc_result');
   if (!pct_el || !res_el) return;
-  var d = ld(), tank = d.tanks.find(function(t){ return t.id === at(); });
+  var d = ld(), tid = at(), tank = d.tanks.find(function(t){ return t.id === tid; });
   if (!tank) return;
   var pct = parseFloat(pct_el.value) || 25;
-  var gal = Math.round(tank.gallons * pct / 100 * 10) / 10;
+  var sub_l = calc_substrate_liters(tid);
+  var sub_gal = sub_l / 3.78541;
+  var eff_gal = Math.max((tank.gallons || 0) - sub_gal, 0);
+  var gal = Math.round(eff_gal * pct / 100 * 10) / 10;
   var lit = Math.round(gal * 3.78541 * 10) / 10;
   var primary = get_pref().vol === 'L' ? lit + ' L' : gal + ' gal';
   var secondary = get_pref().vol === 'L' ? gal + ' gal' : lit + ' L';
-  res_el.innerHTML = 'Remove <strong>' + primary + '</strong> (' + secondary + ') &mdash; treat replacement water with dechlorinator before adding to tank.';
+  var eff_note = sub_l > 0
+    ? ' <span style="color:var(--muted);font-size:11px">(eff. vol: ' + (get_pref().vol === 'L' ? Math.round(eff_gal * 3.78541 * 10) / 10 + ' L' : Math.round(eff_gal * 10) / 10 + ' gal') + ' after ' + sub_l + ' L substrate)</span>'
+    : '';
+  res_el.innerHTML = 'Remove <strong>' + primary + '</strong> (' + secondary + ') &mdash; treat replacement water with dechlorinator before adding.' + eff_note;
 }
 function sub_task(e) {
   e.preventDefault(); var f = e.target, tid = at();
@@ -2896,12 +2919,16 @@ function r_recs() {
   h += '</table></div></div>';
 
   h += '<div class="card"><div class="ctitle">Per-Species Requirements</div>' +
-    '<div class="tw"><table><tr><th>Species</th><th>Level</th><th>Adult Size</th><th>Min Tank</th><th>Temp (' + t_lbl() + ')</th><th>pH</th><th>Hardness</th><th>Bioload</th><th>Breeding</th><th>Notes</th></tr>';
+    '<div class="tw"><table style="font-size:11px"><tr><th>Species</th><th>Level</th><th>Size</th><th>Min Tank</th><th>Temp (' + t_lbl() + ')</th><th>pH</th><th>GH</th><th>Bioload</th><th>M:F Ratio</th><th>Breeding</th><th>Notes</th></tr>';
   rng.sl.forEach(function(sp) {
-    var bl_lbl = sp.bioload <= 1 ? 'Very Low' : sp.bioload <= 2 ? 'Low' : sp.bioload <= 3 ? 'Medium' : sp.bioload <= 4 ? 'High' : 'Very High';
-    var bl_inv_note = sp.inv ? ' <span style="font-size:10px;color:var(--muted)">(×0.3 inv.)</span>' : '';
+    var bl_lbl = sp.bioload <= 1 ? 'VLow' : sp.bioload <= 2 ? 'Low' : sp.bioload <= 3 ? 'Med' : sp.bioload <= 4 ? 'High' : 'VHigh';
+    var bl_inv_note = sp.inv ? '<br><span style="font-size:10px;color:var(--muted)">×0.3 inv.</span>' : '';
     var lvl_color = sp.level === 'Advanced' ? 'var(--danger)' : sp.level === 'Intermediate' ? 'var(--warn)' : 'var(--ok)';
     var tank_warn = tank && sp.min_gal && tank.gallons < sp.min_gal;
+    // Gender Ratio column
+    var ratio_cell = sp.breeds === false ? '<span style="color:var(--muted)">N/A</span>' :
+      (sp.breed_cond && sp.breed_cond.ratio) ? '<span style="font-weight:700">' + sp.breed_cond.ratio + '</span>' :
+      sp.breeds ? '<span style="color:var(--muted)">Any</span>' : '<span style="color:var(--muted)">—</span>';
     // Breeding column — water-aware
     var breed_cell = '<span style="color:var(--muted)">—</span>';
     if (sp.breeds === false) {
@@ -2914,8 +2941,15 @@ function r_recs() {
       var sex_warn = ((m_cnt > 0 || f_cnt > 0) && (m_cnt === 0 || f_cnt === 0))
         ? '<div style="color:var(--warn);font-size:11px;font-weight:700;margin-bottom:2px">&#x26A0; ' + (m_cnt === 0 ? 'All female' : 'All male') + ' — cannot breed</div>'
         : '';
+      var ratio_warn = '';
+      if (sp.breed_cond && sp.breed_cond.ratio && m_cnt > 0 && f_cnt > 0) {
+        var rp = sp.breed_cond.ratio.match(/(\d+)M:(\d+)F/);
+        if (rp && (m_cnt * parseInt(rp[2]) !== f_cnt * parseInt(rp[1]))) {
+          ratio_warn = '<div style="color:var(--warn);font-size:11px">Ratio ' + m_cnt + 'M:' + f_cnt + 'F &mdash; rec. ' + sp.breed_cond.ratio + '</div>';
+        }
+      }
       var bc_color = sp.breeds === 'Easy' ? 'var(--ok)' : sp.breeds === 'Moderate' ? 'var(--warn)' : 'var(--muted)';
-      breed_cell = sex_warn + '<span style="color:' + bc_color + ';font-weight:700;font-size:12px">' + sp.breeds + '</span>';
+      breed_cell = sex_warn + ratio_warn + '<span style="color:' + bc_color + ';font-weight:700;font-size:12px">' + sp.breeds + '</span>';
       var bc = sp.breed_cond, unmet = [];
       if (bc && lr) {
         if (bc.tmin != null && lr.temp_f != null && d_t(lr.temp_f) < d_t(bc.tmin)) unmet.push('needs &ge;' + d_t(bc.tmin) + t_lbl());
@@ -2938,15 +2972,18 @@ function r_recs() {
         breed_cell += '<br><span style="font-size:11px;color:' + ff_color + '">' + ff_lbl + '</span>';
       }
     }
+    var sp_note_short = sp.note ? (sp.note.length > 38 ? sp.note.slice(0, 38) + '…' : sp.note) : '';
     h += '<tr><td><strong>' + esc(sp.name) + '</strong></td>' +
-         '<td style="color:' + lvl_color + ';font-weight:700;font-size:12px">' + (sp.level || 'Beginner') + '</td>' +
-         '<td>' + (sp.size_in ? sp.size_in + '"' : '-') + '</td>' +
-         '<td style="' + (tank_warn ? 'color:var(--danger);font-weight:700' : '') + '">' + (sp.min_gal ? d_v(sp.min_gal) + ' ' + v_lbl() : '-') + (tank_warn ? ' &#x26A0;' : '') + '</td>' +
-         '<td>' + d_t(sp.tmin) + '-' + d_t(sp.tmax) + '</td>' +
-         '<td>' + sp.pmin + '-' + sp.pmax + '</td><td>' + sp.gmin + '-' + sp.gmax + '</td>' +
-         '<td>' + bl_lbl + bl_inv_note + ' (' + sp.bioload + ')</td>' +
-         '<td style="font-size:12px">' + breed_cell + '</td>' +
-         '<td style="font-size:12px;color:var(--muted)">' + esc(sp.note) + '</td></tr>';
+         '<td style="color:' + lvl_color + ';font-weight:700">' + (sp.level || 'Beginner') + '</td>' +
+         '<td style="white-space:nowrap">' + (sp.size_in ? sp.size_in + '"' : '-') + '</td>' +
+         '<td style="white-space:nowrap' + (tank_warn ? ';color:var(--danger);font-weight:700' : '') + '">' + (sp.min_gal ? d_v(sp.min_gal) + ' ' + v_lbl() : '-') + (tank_warn ? ' &#x26A0;' : '') + '</td>' +
+         '<td style="white-space:nowrap">' + d_t(sp.tmin) + '-' + d_t(sp.tmax) + '</td>' +
+         '<td style="white-space:nowrap">' + sp.pmin + '-' + sp.pmax + '</td>' +
+         '<td style="white-space:nowrap">' + sp.gmin + '-' + sp.gmax + '</td>' +
+         '<td style="white-space:nowrap">' + bl_lbl + bl_inv_note + '</td>' +
+         '<td style="white-space:nowrap">' + ratio_cell + '</td>' +
+         '<td>' + breed_cell + '</td>' +
+         '<td style="color:var(--muted)" title="' + esc(sp.note) + '">' + esc(sp_note_short) + '</td></tr>';
   });
   h += '</table></div></div>';
 
@@ -3347,6 +3384,16 @@ function build_plant_opts(co2_f, light_f, search, pos_f) {
   h += '<option value="_custom">-- Other / Custom Plant --</option>';
   return h;
 }
+function filter_pl_list() {
+  var q = (document.getElementById('pl_list_q') || {}).value || '';
+  var pos = (document.getElementById('pl_list_pos') || {}).value || '';
+  var rows = document.querySelectorAll('#pl_list_tbl tr[data-pname]');
+  rows.forEach(function(row) {
+    var nm = row.getAttribute('data-pname') || '';
+    var rp = row.getAttribute('data-ppos') || '';
+    row.style.display = ((!q || nm.indexOf(q.toLowerCase()) !== -1) && (!pos || rp === pos)) ? '' : 'none';
+  });
+}
 function filter_plants() {
   var sel = document.querySelector('#mb select[name=pid]');
   var co2_sel = document.getElementById('pl_co2_filter');
@@ -3425,7 +3472,7 @@ function upd_stock_compat(sel) {
   var custom_el = document.getElementById('stk_custom_fields');
   if (custom_el) custom_el.style.display = (sid === '_custom') ? 'block' : 'none';
   var gender_row_el = document.getElementById('stk_gender_row');
-  if (gender_row_el) gender_row_el.style.display = (sid !== '_custom' && sp_all[sid] && sp_all[sid].breeds) ? '' : 'none';
+  if (gender_row_el) gender_row_el.style.display = (sid === '_custom' || (sp_all[sid] && sp_all[sid].breeds)) ? '' : 'none';
   if (!result_el) return;
   if (sid === '_custom' || !sp_all[sid]) { result_el.innerHTML = ''; return; }
   var new_sp = sp_all[sid], parts = [];
@@ -3597,15 +3644,15 @@ function do_add_stock() {
     '<option value="Amphibian">Amphibian</option>' +
     '</select>' +
     '<select name="level_f" onchange="filter_stock_level(this)" style="width:auto">' +
-    '<option value="All">All levels</option>' +
-    '<option value="Beginner" selected>Beginner only</option>' +
+    '<option value="All" selected>All levels</option>' +
+    '<option value="Beginner">Beginner only</option>' +
     '<option value="Intermediate">Intermediate</option>' +
     '<option value="Advanced">Advanced</option>' +
     '</select>' +
     heater_row +
     '</div>' +
     '<div class="frow">' +
-    fg('Species', '<select name="sid" onchange="upd_stock_compat(this)">' + build_stock_opts('Beginner', 'All', 'All', '') + '</select>') +
+    fg('Species', '<select name="sid" onchange="upd_stock_compat(this)">' + build_stock_opts('All', 'All', 'All', '') + '</select>') +
     fg('Display Name', '<input type="text" name="dname" placeholder="Leave blank for species name">') +
     '</div>' +
     '<div id="stk_compat" style="min-height:18px;margin:4px 0 0;padding:0 2px"></div>' +
