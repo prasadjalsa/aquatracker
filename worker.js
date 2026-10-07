@@ -749,7 +749,8 @@ function cycle_status(tid) {
   var tank = d.tanks.find(function(t){ return t.id === tid; }) || {};
   var chk = tank.setup_chk || {};
   var has_fish = d.stock.filter(function(s){ return s.tank_id === tid; }).length > 0;
-  var has_source = has_fish || chk.cycle_src;
+  var is_soil_start = tank.startup_method === 'dark' || tank.startup_method === 'dry';
+  var has_source = has_fish || chk.cycle_src || is_soil_start;
 
   if (!entries.length) {
     if (!has_source) return {phase:0, pct:5, label:'Not started', color:'#9ca3af', test_freq:null, desc:'Add an ammonia source (pure ammonia, fish food, or a few hardy starter fish) and log your first water test to begin tracking.'};
@@ -820,6 +821,14 @@ function del_equip(id) {
   var d = ld(), item = d.equip.find(function(x){return x.id===id;});
   if (!confirm('Delete "' + (item ? item.name : 'this equipment') + '"? Cannot be undone.')) return;
   d.equip = d.equip.filter(function(x){return x.id!==id;}); sv(d);
+}
+function mark_equip_svc(eid) {
+  var d = ld();
+  d.equip = d.equip.map(function(e) {
+    if (e.id !== eid) return e;
+    return Object.assign({}, e, {config: Object.assign({}, e.config || {}, {svc_last: today_str()})});
+  });
+  sv(d); r_maint();
 }
 
 function eq_cfg_txt(eq) {
@@ -1680,6 +1689,29 @@ function r_startup_card(tid) {
     if (tip) {
       h += '<div style="display:flex;align-items:center;gap:8px;margin-top:8px;background:#e8f4fd;border-left:3px solid ' + color + ';padding:8px 10px;border-radius:0 6px 6px 0">' + tip + '</div>';
     }
+
+    // Nitrogen cycle sub-tracker (cycle runs simultaneously during the dark period)
+    var cyc_ds = cycle_status(tid);
+    var cyc_steps = ['Pre-cycle', 'NH3 spike', 'NO2 spike', 'NO2 falling', 'Cycled'];
+    var cyc_descs = [
+      'Log your first NH3 and NO2 test to begin tracking.',
+      'Ammonia detected — bacteria are seeding. Keep testing every 3-4 days, do not do water changes.',
+      'Nitrite spike — NH3 bacteria established. NO2 bacteria now multiplying. Both still toxic.',
+      'Ammonia falling, nitrite still present. End is near — test every 2 days.',
+      'NH3 and NO2 both at 0 with nitrate building. Cycle is complete!'
+    ];
+    h += '<div style="margin-top:12px;padding:10px 12px;background:#f0f6ff;border-radius:8px;border-left:3px solid ' + cyc_ds.color + '">';
+    h += '<div style="font-size:12px;font-weight:600;color:var(--mid);margin-bottom:6px">Nitrogen Cycle <span class="pill" style="background:' + cyc_ds.color + ';color:#fff;font-size:10px;font-weight:700;margin-left:4px">' + cyc_ds.label + '</span></div>';
+    h += '<div class="bl-bar"><div class="bl-fill" style="width:' + cyc_ds.pct + '%;background:' + cyc_ds.color + '"></div></div>';
+    h += '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin:3px 0 6px">';
+    cyc_steps.forEach(function(s, i) {
+      var cur = i === cyc_ds.phase, done = i < cyc_ds.phase;
+      h += '<span style="' + (cur ? 'color:' + cyc_ds.color + ';font-weight:700' : done ? 'color:var(--ok)' : '') + '">' + s + '</span>';
+    });
+    h += '</div>';
+    h += '<div style="font-size:12px;color:var(--muted)">' + cyc_descs[cyc_ds.phase] + '</div>';
+    h += '</div>';
+
     h += '<p style="font-size:12px;color:var(--muted);margin-top:8px;background:#f5f8fb;padding:8px 10px;border-radius:6px">' +
          '<strong>Timeline:</strong> 4 weeks dark → 2 weeks light intro → confirm water → add fish. ' +
          'Total: ~7 weeks. Cycling happens during the dark period, so no extra cycling time is needed afterward.</p>';
@@ -2043,6 +2075,9 @@ function r_dash() {
   var tank = d.tanks.find(function(t){ return t.id === tid; });
   if (!tank) { el.innerHTML = no_tank(); return; }
   var has_therm = d.equip.some(function(e){ return e.tank_id === tid && e.type === 'Thermometer'; });
+  var has_fish = d.stock.filter(function(s){ return s.tank_id === tid && !s.preview; }).length > 0;
+  var cyc_dash = cycle_status(tid);
+  var cycling_active = !tank.cycled && cyc_dash && cyc_dash.phase >= 1 && cyc_dash.phase < 4;
 
   var tasks = d.tasks.filter(function(x){ return x.tank_id === tid; })
     .sort(function(a,b){ return days_til(a.next_due) - days_til(b.next_due); });
@@ -2145,21 +2180,32 @@ function r_dash() {
     h += '<div class="tw"><table><tr><th>Parameter</th><th>Reading</th><th>Safe Range</th><th>Status</th></tr>';
     ps.forEach(function(p) {
       var raw = lr[p.k], val = (p.conv && raw !== null) ? p.conv(raw) : raw;
-      var c = cls_val(raw, p.k === 'temp_f' ? (rng&&rng.temp.ok?rng.temp.min:null) : p.mn, p.k === 'temp_f' ? (rng&&rng.temp.ok?rng.temp.max:null) : p.mx, p.tox);
-      var rng_txt = p.tox ? '0 ppm' : (p.mn !== null && p.mx !== null ? p.mn + '-' + p.mx + (p.u?' '+p.u:'') : '-');
-      h += '<tr><td>' + p.l + '</td><td>' + (val !== null ? val + (p.u?' '+p.u:'') : '-') + '</td><td style="color:var(--muted)">' + rng_txt + '</td><td>' + pill(c) + '</td></tr>';
+      var pill_html, rng_txt;
+      if (cycling_active && (p.k === 'ammonia' || p.k === 'nitrite')) {
+        pill_html = '<span class="pill pmuted" title="Normal during nitrogen cycle">Cycling</span>';
+        rng_txt = 'Normal during cycle';
+      } else {
+        var c = cls_val(raw, p.k === 'temp_f' ? (rng&&rng.temp.ok?rng.temp.min:null) : p.mn, p.k === 'temp_f' ? (rng&&rng.temp.ok?rng.temp.max:null) : p.mx, p.tox);
+        pill_html = pill(c);
+        rng_txt = p.tox ? '0 ppm' : (p.mn !== null && p.mx !== null ? p.mn + '-' + p.mx + (p.u?' '+p.u:'') : '-');
+      }
+      h += '<tr><td>' + p.l + '</td><td>' + (val !== null ? val + (p.u?' '+p.u:'') : '-') + '</td><td style="color:var(--muted)">' + rng_txt + '</td><td>' + pill_html + '</td></tr>';
     });
     h += '</table></div>';
     // UIA — auto-calculated toxic ammonia fraction
     var dash_uia = calc_uia(lr.ammonia, lr.ph, lr.temp_f);
     if (dash_uia !== null) {
-      var uia_col = dash_uia === 0 ? 'var(--ok)' : dash_uia < 0.05 ? 'var(--warn)' : 'var(--danger)';
-      var uia_lbl = dash_uia === 0 ? 'Safe' : dash_uia < 0.05 ? 'Caution' : 'Toxic';
-      var uia_temp_note = uia_temp_defaulted(lr.temp_f) ? ' <span style="color:var(--muted)">(temp assumed 25&deg;C)</span>' : '';
-      h += '<div style="font-size:12px;margin-top:6px">Ammonia UIA (toxic fraction): <strong style="color:' + uia_col + '">' + dash_uia + ' ppm</strong>' +
-           ' <span class="pill p' + (dash_uia === 0 ? 'ok' : dash_uia < 0.05 ? 'warn' : 'danger') + '" style="font-size:10px">' + uia_lbl + '</span>' +
-           uia_temp_note +
-           '<span style="color:var(--muted)"> &mdash; danger threshold 0.05 ppm</span></div>';
+      if (cycling_active && !has_fish) {
+        h += '<div style="font-size:12px;margin-top:6px;color:var(--muted)">Ammonia UIA: <strong>' + dash_uia + ' ppm</strong> <span class="pill pmuted" style="font-size:10px">Cycling</span> &mdash; fishless cycle, elevated UIA is expected and harmless without fish.</div>';
+      } else {
+        var uia_col = dash_uia === 0 ? 'var(--ok)' : dash_uia < 0.05 ? 'var(--warn)' : 'var(--danger)';
+        var uia_lbl = dash_uia === 0 ? 'Safe' : dash_uia < 0.05 ? 'Caution' : 'Toxic';
+        var uia_temp_note = uia_temp_defaulted(lr.temp_f) ? ' <span style="color:var(--muted)">(temp assumed 25&deg;C)</span>' : '';
+        h += '<div style="font-size:12px;margin-top:6px">Ammonia UIA (toxic fraction): <strong style="color:' + uia_col + '">' + dash_uia + ' ppm</strong>' +
+             ' <span class="pill p' + (dash_uia === 0 ? 'ok' : dash_uia < 0.05 ? 'warn' : 'danger') + '" style="font-size:10px">' + uia_lbl + '</span>' +
+             uia_temp_note +
+             '<span style="color:var(--muted)"> &mdash; danger threshold 0.05 ppm</span></div>';
+      }
     }
     // Per-parameter recommendations when values are out of range
     var w_recs = get_water_recs(lr, tid);
@@ -2575,6 +2621,36 @@ function r_maint() {
        '<span>%</span>' +
        '</div><div id="wc_result" style="margin-top:8px;font-size:13px;color:var(--text)"></div></div>';
 
+  // Equipment service reminders
+  var svc_items = d.equip.filter(function(e) {
+    return e.tank_id === tid && e.config && e.config.svc_interval > 0;
+  });
+  if (svc_items.length) {
+    h += '<div class="card"><div class="ctitle">Equipment Service</div>';
+    svc_items.forEach(function(e) {
+      var last = e.config.svc_last || '';
+      var interval = e.config.svc_interval;
+      var days_since = last ? Math.floor((Date.now() - new Date(last + 'T00:00:00').getTime()) / 86400000) : null;
+      var days_til_svc = days_since !== null ? interval - days_since : null;
+      var overdue = days_til_svc !== null && days_til_svc < 0;
+      var due_soon = days_til_svc !== null && days_til_svc >= 0 && days_til_svc <= 3;
+      var row_cls = overdue ? 'tover' : due_soon ? 'tsoon' : '';
+      var status_txt = days_til_svc === null ? 'Never serviced'
+        : overdue ? 'Overdue ' + Math.abs(days_til_svc) + 'd'
+        : days_til_svc === 0 ? 'Due today'
+        : 'In ' + days_til_svc + 'd';
+      var status_col = overdue ? 'var(--danger)' : due_soon ? 'var(--warn)' : 'var(--ok)';
+      h += '<div class="trow ' + row_cls + '" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 4px;border-bottom:1px solid #eee">' +
+           '<div><strong>' + esc(e.name) + '</strong> <span style="color:var(--muted);font-size:12px">(' + esc(e.type) + ')</span>' +
+           '<br><small style="color:var(--muted)">' + (last ? 'Last: ' + last : 'Never serviced') + ' &mdash; every ' + interval + ' days</small></div>' +
+           '<div style="text-align:right;flex-shrink:0">' +
+           '<div style="font-weight:700;color:' + status_col + '">' + status_txt + '</div>' +
+           '<button class="btn bp bs" style="font-size:11px;margin-top:4px" data-eid="' + e.id + '" onclick="mark_equip_svc(this.dataset.eid)">Mark Done</button>' +
+           '</div></div>';
+    });
+    h += '</div>';
+  }
+
   // Recommended tasks card
   h += '<div class="card"><div class="ctitle">Recommended Schedule <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:6px">Based on your setup</span></div>';
   if (rec_tasks.length) {
@@ -2834,6 +2910,29 @@ function r_recs() {
     }
   }
   h += '</div>';
+  // Drop Checker row
+  var dc_eq = d.equip.find(function(x){ return x.tank_id === tid && x.type === 'CO2 Drop Checker'; });
+  if (co2_info || dc_eq) {
+    h += '<div style="display:flex;align-items:flex-start;gap:8px;margin-top:8px;font-size:13px">';
+    h += '<span style="font-weight:600;min-width:80px;padding-top:1px">Drop<br>Checker:</span>';
+    if (!dc_eq) {
+      h += '<span style="color:var(--muted)">Not added. Recommended for fine-tuning CO2 &mdash; add it in Equipment &amp; Life.</span>';
+    } else {
+      var dc_col = (dc_eq.config || {}).dc_color;
+      var dc_sol = (dc_eq.config || {}).dc_solution;
+      if (!dc_col) {
+        h += '<span style="color:var(--muted)">Added but not checked yet. Edit the equipment entry to log the current color reading.</span>';
+      } else {
+        var dc_pill = dc_col === 'Green' ? pill_lbl('pok', 'CO2 Ideal') : dc_col === 'Yellow' ? pill_lbl('pdanger', 'CO2 Too High') : pill_lbl('pwarn', 'CO2 Too Low');
+        var dc_note = dc_col === 'Green' ? 'CO2 is in the ideal range (20&ndash;30 ppm).'
+          : dc_col === 'Yellow' ? 'CO2 is too high (&gt;30 ppm). Reduce injection rate. Watch fish for gasping at the surface.'
+          : 'CO2 is too low. Increase injection rate or check diffuser placement.';
+        if (dc_sol === 'Tap Water') dc_note += ' <span style="color:var(--warn);font-size:11px">(Tap water reference &mdash; switch to 4 dKH solution for accurate readings.)</span>';
+        h += '<div>' + dc_pill + '<div style="font-size:12px;color:var(--muted);margin-top:3px">' + dc_note + '</div></div>';
+      }
+    }
+    h += '</div>';
+  }
   // Heater row
   var heater_w = get_heater_watts(tid);
   var rec_w = tank ? Math.ceil(tank.gallons * 5) : 0;
@@ -3207,6 +3306,8 @@ function upd_equip_form(sel) {
   if (he_div) he_div.style.display = t === 'Heater' ? 'block' : 'none';
   if (su_div) su_div.style.display = t === 'Substrate' ? 'block' : 'none';
   if (dc_div) dc_div.style.display = t === 'CO2 Drop Checker' ? 'block' : 'none';
+  var sv_div = document.getElementById('eq_svc_cfg');
+  if (sv_div) sv_div.style.display = ['Filter','Heater','Light','CO2 System'].indexOf(t) !== -1 ? 'block' : 'none';
 }
 
 function build_equip_cfg_html(type, cfg) {
@@ -3263,7 +3364,13 @@ function build_equip_cfg_html(type, cfg) {
     '<div class="frow">' +
     fg('Solution', '<select name="dc_solution"><option' + (c.dc_solution==='4 dKH Reference'?' selected':'') + '>4 dKH Reference</option><option' + (c.dc_solution==='Tap Water'?' selected':'') + '>Tap Water</option></select>', 'Use 4 dKH reference water for accurate readings') +
     fg('Current Reading', '<select name="dc_color"><option value="">Not checked</option><option value="Blue"' + (c.dc_color==='Blue'?' selected':'') + '>Blue — CO2 too low</option><option value="Green"' + (c.dc_color==='Green'?' selected':'') + '>Green — CO2 ideal</option><option value="Yellow"' + (c.dc_color==='Yellow'?' selected':'') + '>Yellow — CO2 too high</option></select>') +
-    '</div></div>';
+    '</div></div>' +
+  '<div id="eq_svc_cfg" style="display:' + (['Filter','Heater','Light','CO2 System'].indexOf(type) !== -1 ? 'block' : 'none') + '">' +
+  '<div class="cfg-sep"></div><div style="font-size:12px;font-weight:600;color:var(--mid);margin-bottom:6px">Service Reminder</div>' +
+  '<div class="frow">' +
+  fg('Service every (days)', '<input type="number" name="svc_interval" min="1" placeholder="e.g. 14" value="' + (c.svc_interval || '') + '">', 'How often this equipment needs cleaning or servicing') +
+  fg('Last serviced', '<input type="date" name="svc_last" value="' + (c.svc_last || '') + '">') +
+  '</div></div>';
 }
 
 function toggle_co2_fields(sel) {
@@ -3296,6 +3403,10 @@ function read_equip_cfg(f) {
     cfg.dc_solution = f.dc_solution.value;
     cfg.dc_color = f.dc_color.value;
   }
+  var svc_i = f.svc_interval ? (parseInt(f.svc_interval.value) || 0) : 0;
+  var svc_l = f.svc_last ? f.svc_last.value : '';
+  if (svc_i > 0) cfg.svc_interval = svc_i;
+  if (svc_l) cfg.svc_last = svc_l;
   return cfg;
 }
 
