@@ -492,7 +492,73 @@ var PL = {
   aglaonema:        {group:'Riparian / Emersed', name:'Aglaonema (Chinese Evergreen)',tmin:60,tmax:85,light:'Low',co2:false,diff:'Easy',nitrate_abs:'low',   note:'Very popular office plant in India. Slow growing but extremely tolerant. Suspend roots in the tank.'},
   coleus:           {group:'Riparian / Emersed', name:'Coleus',                 tmin:65,tmax:88,light:'Medium',co2:false,diff:'Easy',nitrate_abs:'high',         note:'Very common in Indian gardens. Colourful foliage. Fast grower — roots take hold in water quickly.'},
   wandering_jew:    {group:'Riparian / Emersed', name:'Wandering Jew (Tradescantia)',tmin:60,tmax:86,light:'Medium',co2:false,diff:'Easy',nitrate_abs:'very_high', note:'Extremely common in Indian gardens. Grows very fast. Trail cuttings with roots directly into the tank.'},
+  // ── Anubias (additional) ──
+  anubias_lanceolata:      {group:'Anubias',           name:'Anubias Lanceolata',           tmin:60,tmax:84,light:'Low',   co2:false,diff:'Easy',  nitrate_abs:'low',      note:'Long lance-shaped leaves. More elegant than barteri. Attach to hardscape — never bury the rhizome.'},
+  anubias_hastifolia:      {group:'Anubias',           name:'Anubias Hastifolia',           tmin:60,tmax:84,light:'Low',   co2:false,diff:'Easy',  nitrate_abs:'low',      note:'Very large leaves — one of the tallest anubias. Attach to a large piece of driftwood.'},
+  // ── Bucephalandra (additional) ──
+  bucephalandra_kedagang:  {group:'Bucephalandra',     name:'Bucephalandra Kedagang',       tmin:68,tmax:82,light:'Low',   co2:false,diff:'Easy',  nitrate_abs:'low',      note:'Popular variety with rounded dark-green wavy leaves. Attach to hardscape. Slow grower.'},
+  bucephalandra_green_wavy:{group:'Bucephalandra',     name:'Bucephalandra Green Wavy',     tmin:68,tmax:82,light:'Low',   co2:false,diff:'Easy',  nitrate_abs:'low',      note:'Bright green wavy leaves. Smaller than Kedagang — great for nano tanks and small rocks.'},
+  // ── Cryptocoryne (additional) ──
+  crypt_willisii:          {group:'Cryptocoryne',      name:'Crypt. Willisii',              tmin:68,tmax:82,light:'Low',   co2:false,diff:'Easy',                          note:'Small compact Crypt with narrow green leaves. Excellent undemanding foreground plant.'},
+  crypt_pontederiifolia:   {group:'Cryptocoryne',      name:'Crypt. Pontederiifolia',       tmin:68,tmax:82,light:'Low',   co2:false,diff:'Easy',                          note:'Heart-shaped leaves with a distinct midrib. Less prone to melting than most Crypts.'},
+  crypt_albida:            {group:'Cryptocoryne',      name:'Crypt. Albida',                tmin:68,tmax:82,light:'Medium',co2:false,diff:'Easy',                          note:'Narrow reddish-brown leaves. Very distinctive Crypt — easy once settled.'},
+  // ── Aponogeton ──
+  aponogeton_undulatus:    {group:'Aponogeton',        name:'Aponogeton Undulatus',         tmin:65,tmax:82,light:'Medium',co2:false,diff:'Easy',                          note:'Very common in Indian LFS. Wavy light-green leaves grow from a bulb. May go dormant — normal.'},
+  aponogeton_crispus:      {group:'Aponogeton',        name:'Aponogeton Crispus',           tmin:65,tmax:82,light:'Medium',co2:false,diff:'Easy',                          note:'Widely available across India. Ruffled bright-green leaves. Fast grower from a bulb.'},
+  aponogeton_boivinianus:  {group:'Aponogeton',        name:'Aponogeton Boivinianus',       tmin:65,tmax:82,light:'Medium',co2:false,diff:'Easy',                          note:'Large dark-green leaves with a distinctive bumpy texture. Striking midground or background specimen.'},
+  aponogeton_natans:       {group:'Aponogeton',        name:'Aponogeton Natans',            tmin:65,tmax:82,light:'Medium',co2:false,diff:'Easy',                          note:'Indian native found in ponds across South India. Submerged wavy leaves + floating surface leaves. Grows from bulb.'},
+  aponogeton_rigidifolius: {group:'Aponogeton',        name:'Aponogeton Rigidifolius',      tmin:68,tmax:82,light:'Medium',co2:false,diff:'Easy',                          note:'Long stiff wavy-edged leaves. Does not go dormant unlike other aponogetons — grows year-round.'},
+  // ── Lily & Bulb ──
+  red_tiger_lotus:         {group:'Lily & Bulb',       name:'Red Tiger Lotus',              tmin:72,tmax:86,light:'Medium',co2:false,diff:'Easy',                          note:'Grows from a bulb. Deep red leaves. Trim surface pads to keep it a submerged rosette, or let it bloom.'},
+  tiger_lotus_green:       {group:'Lily & Bulb',       name:'Green Tiger Lotus',            tmin:72,tmax:86,light:'Medium',co2:false,diff:'Easy',                          note:'Green form of tiger lotus. Same care as the red variety. Very popular in Indian aquarium stores.'},
+  barclaya_longifolia:     {group:'Lily & Bulb',       name:'Barclaya Longifolia',          tmin:72,tmax:84,light:'Medium',co2:false,diff:'Medium',                        note:'Long wavy leaves, reddish underside. Grows from a bulb. Soft water brings out the best color.'},
+  nymphaea_micrantha:      {group:'Lily & Bulb',       name:'Dwarf Blue Lily',              tmin:68,tmax:84,light:'Medium',co2:false,diff:'Easy',                          note:'Indian native found in South Indian ponds. Grows from a bulb. Produces tiny floating lily flowers above water.'},
+  // ── Java Fern (additional) ──
+  java_fern_needle:        {group:'Java Fern',         name:'Java Fern Needle Leaf',        tmin:60,tmax:82,light:'Low',   co2:false,diff:'Easy',  nitrate_abs:'low',      note:'Very slender needle-like leaves. Striking attached to thin branches or dragon stone.'},
+  java_fern_philippine:    {group:'Java Fern',         name:'Java Fern Philippine',         tmin:60,tmax:82,light:'Low',   co2:false,diff:'Easy',  nitrate_abs:'low',      note:'Broad ruffled leaves — larger than standard Java Fern. Excellent for big driftwood pieces.'},
+  // ── Mosses (additional) ──
+  weeping_moss:            {group:'Mosses',            name:'Weeping Moss',                 tmin:65,tmax:82,light:'Low',   co2:false,diff:'Easy',  nitrate_abs:'low',      note:'Graceful drooping strands that resemble a weeping willow. Very popular in Indian aquascaping stores.'},
+  fissidens:               {group:'Mosses',            name:'Fissidens (Phoenix Moss)',     tmin:65,tmax:78,light:'Medium',co2:false,diff:'Medium', nitrate_abs:'low',      note:'Distinctive feather-like structure. Slow grower but forms a beautiful flat mat on hardscape.'},
+  spiky_moss:              {group:'Mosses',            name:'Spiky Moss',                   tmin:65,tmax:82,light:'Low',   co2:false,diff:'Easy',  nitrate_abs:'low',      note:'Textured spiky appearance. Easy to attach to wood and rock. Great shrimp habitat.'},
+  taiwan_moss:             {group:'Mosses',            name:'Taiwan Moss',                  tmin:65,tmax:82,light:'Low',   co2:false,diff:'Easy',  nitrate_abs:'low',      note:'Similar to Christmas Moss. Grows in flat overlapping layers. Commonly sold in Indian aquarium shops.'},
+  // ── Floating (additional) ──
+  azolla:                  {group:'Floating',          name:'Azolla',                       tmin:59,tmax:82,light:'Medium',co2:false,diff:'Easy',  nitrate_abs:'very_high', note:'Tiny fern found in Indian paddy fields. Turns red under bright light. One of the fastest nitrogen absorbers.'},
+  amazon_frogbit:          {group:'Floating',          name:'Amazon Frogbit',               tmin:64,tmax:84,light:'Medium',co2:false,diff:'Easy',  nitrate_abs:'very_high', note:'Larger than common frogbit. Long feathery roots provide excellent cover for fry and shrimp.'},
+  red_root_floater:        {group:'Floating',          name:'Red Root Floater',             tmin:70,tmax:86,light:'High',  co2:false,diff:'Medium', nitrate_abs:'high',     note:'Vivid red roots and reddish leaf undersides under high light. Increasingly available in Indian stores.'},
+  // ── Stem Plants (additional) ──
+  limnophila_indica:       {group:'Stem Plants',       name:'Indian Ambulia',               tmin:64,tmax:86,light:'Medium',co2:false,diff:'Easy',  nitrate_abs:'high',     note:'Indian native — found in ponds and rice paddies across India. Very easy, fast growing, and cheap.'},
+  limnophila_aquatica:     {group:'Stem Plants',       name:'Giant Ambulia',                tmin:68,tmax:84,light:'Medium',co2:false,diff:'Easy',  nitrate_abs:'high',     note:'Larger and fluffier than Indian Ambulia. Feathery whorled leaves. Commonly available in Indian LFS.'},
+  limnophila_heterophylla: {group:'Stem Plants',       name:'Limnophila Heterophylla',      tmin:68,tmax:86,light:'Medium',co2:false,diff:'Easy',  nitrate_abs:'high',     note:'Another Indian native ambulia variant. Adapts well between emersed and submersed growth.'},
+  rotala_indica:           {group:'Stem Plants',       name:'Rotala Indica',                tmin:68,tmax:82,light:'Medium',co2:false,diff:'Easy',  nitrate_abs:'high',     note:'Indian native. Commonly sold in local shops as rotala. Small leaves, pink stems under good light.'},
+  rotala_green:            {group:'Stem Plants',       name:'Rotala sp. Green',             tmin:68,tmax:82,light:'Medium',co2:false,diff:'Easy',  nitrate_abs:'high',     note:'Green form of rotala. Very easy and fast growing. Good background filler and nitrate absorber.'},
+  hygrophila_stricta:      {group:'Stem Plants',       name:'Temple Plant',                 tmin:68,tmax:86,light:'Medium',co2:false,diff:'Easy',  nitrate_abs:'high',     note:'Sold as Temple Plant or Nomaphila stricta in Indian stores. Very large leaves, fast grower, extremely hardy.'},
+  hygrophila_pinnatifida:  {group:'Stem Plants',       name:'Hygrophila Pinnatifida',       tmin:68,tmax:82,light:'Medium',co2:false,diff:'Medium', nitrate_abs:'high',    note:'Indian native with lobed leaves — green above, reddish-purple below. Uniquely can be tied to hardscape like an epiphyte.'},
+  pogostemon_erectus:      {group:'Stem Plants',       name:'Pogostemon Erectus',           tmin:72,tmax:82,light:'High',  co2:true, diff:'Medium',                        note:'Bright green needle-like whorls forming striking vertical columns. Increasingly available in Indian stores.'},
+  lobelia_cardinalis:      {group:'Stem Plants',       name:'Lobelia Cardinalis (Dwarf)',   tmin:60,tmax:82,light:'Medium',co2:false,diff:'Easy',  nitrate_abs:'medium',   note:'Lush green above, reddish-purple below. Rosette form makes a great midground. Undemanding and widely available.'},
+  hydrocotyle_tripartita:  {group:'Stem Plants',       name:'Hydrocotyle Tripartita',       tmin:68,tmax:82,light:'Medium',co2:false,diff:'Easy',  nitrate_abs:'medium',   note:'Clover-like leaves grow upright or carpet depending on light intensity. Very popular in Indian aquascaping.'},
+  nesaea_crassicaulis:     {group:'Stem Plants',       name:'Nesaea Crassicaulis',          tmin:68,tmax:82,light:'High',  co2:true, diff:'Medium',                        note:'Orange-red stems under high light. Makes a warm colour contrast. Increasingly available in Indian stores.'},
+  didiplis_diandra:        {group:'Stem Plants',       name:'Didiplis Diandra',             tmin:65,tmax:82,light:'High',  co2:true, diff:'Medium',                        note:'Needle-like leaves turn deep red under strong light. CO2 recommended for best colour.'},
+  persicaria_sp_red:       {group:'Stem Plants',       name:'Persicaria sp. Red',           tmin:65,tmax:82,light:'High',  co2:false,diff:'Medium',                        note:'Bright red broad leaves under strong light. Fast grower. Becoming common in Indian aquascaping shops.'},
+  ottelia_alismoides:      {group:'Stem Plants',       name:'Ottelia Alismoides',           tmin:65,tmax:86,light:'Medium',co2:false,diff:'Medium',                        note:'Indian native found in ponds and ditches. Large oval leaves. Needs soft water; may melt in very hard water.'},
+  nymphoides_indica:       {group:'Stem Plants',       name:'Nymphoides Indica',            tmin:65,tmax:86,light:'Medium',co2:false,diff:'Easy',  nitrate_abs:'high',     note:'Indian native. Round floating leaves with small white fringed flowers above water. Very common in Indian ponds.'},
+  hydrocotyle_leucocephala:{group:'Stem Plants',       name:'Brazilian Pennywort',          tmin:64,tmax:84,light:'Medium',co2:false,diff:'Easy',  nitrate_abs:'medium',   note:'Fast growing pennywort with round leaves. Can float or be planted. Excellent beginner stem plant.'},
+  blyxa_echinosperma:      {group:'Stem Plants',       name:'Blyxa Echinosperma',           tmin:68,tmax:82,light:'Medium',co2:false,diff:'Easy',  nitrate_abs:'low',      note:'Indian native grass-like rosette. Found in South Indian waterways. Easier than Blyxa japonica.'},
+  nymphoides_hydrophylla:  {group:'Stem Plants',       name:'Nymphoides Hydrophylla',       tmin:65,tmax:86,light:'Medium',co2:false,diff:'Easy',  nitrate_abs:'high',     note:'Indian native water snowflake. Triangular floating leaves with fringed yellow flowers. Very common in Indian ponds.'},
+  // ── Foreground & Carpet (additional) ──
+  glossostigma_elatinoides:{group:'Foreground & Carpet',name:'Glossostigma',               tmin:59,tmax:80,light:'High',  co2:true, diff:'Advanced',nitrate_abs:'low',     note:'One of the smallest carpet plants. Needs very high light and CO2 — will not carpet under low light.'},
+  lilaeopsis_brasiliensis: {group:'Foreground & Carpet',name:'Brazilian Microsword',       tmin:60,tmax:82,light:'Medium',co2:false,diff:'Medium', nitrate_abs:'low',      note:'Dense grass-like carpet. Spreads via runners but slower than hairgrass without CO2.'},
+  echinodorus_tenellus:    {group:'Foreground & Carpet',name:'Narrow Chain Sword',         tmin:60,tmax:82,light:'Medium',co2:false,diff:'Easy',  nitrate_abs:'low',      note:'Thin grass-like leaves spread via runners. Easy foreground plant that does not need CO2.'},
+  hydrocotyle_verticillata:{group:'Foreground & Carpet',name:'Whorled Pennywort',          tmin:64,tmax:84,light:'Medium',co2:false,diff:'Easy',  nitrate_abs:'medium',   note:'Small coin-shaped leaves on upright stems. Stays low under bright light; grows tall in shade.'},
+  mayaca_fluviatilis:      {group:'Foreground & Carpet',name:'Mayaca (Bog Moss)',          tmin:64,tmax:82,light:'Medium',co2:false,diff:'Easy',  nitrate_abs:'medium',   note:'Soft feathery texture resembling moss. Can be kept as a low foreground fill or a dense midground clump.'},
 };
+
+var GROUP_POS = {
+  'Foreground & Carpet':'Foreground', 'Mosses':'Foreground', 'Bucephalandra':'Foreground',
+  'Floating':'Floating', 'Riparian / Emersed':'Emersed',
+  'Anubias':'Midground', 'Cryptocoryne':'Midground', 'Java Fern':'Midground', 'Lily & Bulb':'Midground',
+  'Swords & Rosettes':'Background', 'Aponogeton':'Background', 'Stem Plants':'Background'
+};
+function get_plant_pos(pid) { var p = PL[pid]; return p ? (GROUP_POS[p.group] || 'Midground') : ''; }
 
 // ===== FERTILIZER PRESETS =====
 var FERT = {
@@ -3247,13 +3313,16 @@ function upd_plant_form(sel) {
     var p = PL[pid];
     if (p && req_el) {
       var co2_str = p.co2 ? 'Required' : 'Not needed';
-      req_el.innerHTML = 'Temp: ' + d_t(p.tmin) + '-' + d_t(p.tmax) + t_lbl() + ' &nbsp;|&nbsp; Light: <strong>' + p.light + '</strong> &nbsp;|&nbsp; CO2: <strong>' + co2_str + '</strong> &nbsp;|&nbsp; ' + p.diff + '<br><span style="color:var(--muted)">' + esc(p.note) + '</span>';
+      var pos_str = get_plant_pos(pid);
+      var pos_color = pos_str === 'Foreground' ? 'var(--ok)' : pos_str === 'Midground' ? 'var(--mid)' : pos_str === 'Background' ? 'var(--deep)' : pos_str === 'Floating' ? '#4db8d4' : 'var(--muted)';
+      req_el.innerHTML = '<span style="background:' + pos_color + ';color:#fff;font-size:11px;font-weight:700;padding:1px 7px;border-radius:10px;margin-right:6px">' + pos_str + '</span>' +
+        'Temp: ' + d_t(p.tmin) + '-' + d_t(p.tmax) + t_lbl() + ' &nbsp;|&nbsp; Light: <strong>' + p.light + '</strong> &nbsp;|&nbsp; CO2: <strong>' + co2_str + '</strong> &nbsp;|&nbsp; ' + p.diff + '<br><span style="color:var(--muted)">' + esc(p.note) + '</span>';
       if (info_row) info_row.style.display = 'block';
     }
   }
 }
-function build_plant_opts(co2_f, light_f, search) {
-  var groups = ['Anubias','Bucephalandra','Cryptocoryne','Swords & Rosettes','Java Fern','Mosses','Floating','Stem Plants','Foreground & Carpet','Riparian / Emersed'];
+function build_plant_opts(co2_f, light_f, search, pos_f) {
+  var groups = ['Anubias','Bucephalandra','Cryptocoryne','Swords & Rosettes','Aponogeton','Lily & Bulb','Java Fern','Mosses','Floating','Stem Plants','Foreground & Carpet','Riparian / Emersed'];
   var q = search ? search.toLowerCase() : '';
   var h = '';
   groups.forEach(function(g) {
@@ -3263,6 +3332,7 @@ function build_plant_opts(co2_f, light_f, search) {
       if (co2_f === 'Yes' && !p.co2) return false;
       if (co2_f === 'No'  &&  p.co2) return false;
       if (light_f !== 'All' && p.light !== light_f) return false;
+      if (pos_f && pos_f !== 'All' && get_plant_pos(k) !== pos_f) return false;
       if (q && p.name.toLowerCase().indexOf(q) === -1) return false;
       return true;
     });
@@ -3281,12 +3351,14 @@ function filter_plants() {
   var sel = document.querySelector('#mb select[name=pid]');
   var co2_sel = document.getElementById('pl_co2_filter');
   var light_sel = document.getElementById('pl_light_filter');
+  var pos_sel = document.getElementById('pl_pos_filter');
   var search_el = document.getElementById('pl_search');
   if (!sel) return;
   var co2_f   = co2_sel   ? co2_sel.value   : 'All';
   var light_f = light_sel ? light_sel.value : 'All';
+  var pos_f   = pos_sel   ? pos_sel.value   : 'All';
   var q       = search_el ? search_el.value : '';
-  sel.innerHTML = build_plant_opts(co2_f, light_f, q);
+  sel.innerHTML = build_plant_opts(co2_f, light_f, q, pos_f);
   upd_plant_form(sel);
 }
 function do_add_plant() {
@@ -3302,6 +3374,9 @@ function do_add_plant() {
     '</select>' +
     '<select id="pl_co2_filter" onchange="filter_plants()" style="width:auto">' +
     '<option value="All">CO2: Any</option><option value="No">No CO2 needed</option><option value="Yes">CO2 required</option>' +
+    '</select>' +
+    '<select id="pl_pos_filter" onchange="filter_plants()" style="width:auto">' +
+    '<option value="All">Any position</option><option value="Foreground">Foreground</option><option value="Midground">Midground</option><option value="Background">Background</option><option value="Floating">Floating</option><option value="Emersed">Emersed</option>' +
     '</select>' +
     '</div>' +
     fg('Plant Species', '<select name="pid" onchange="upd_plant_form(this)">' + popts + '</select>') +
