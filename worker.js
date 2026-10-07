@@ -841,6 +841,11 @@ function eq_cfg_txt(eq) {
     var cb = cfg.bps ? cfg.bps + ' BPS' : '';
     return [ct, ch, cb].filter(function(x){return x;}).join(', ') || '-';
   }
+  if (eq.type === 'CO2 Drop Checker') {
+    var sol = cfg.dc_solution || '';
+    var col = cfg.dc_color || '';
+    return [sol, col].filter(function(x){return x;}).join(', ') || '-';
+  }
   if (eq.type === 'Heater') {
     var hw = cfg.watts ? cfg.watts + 'W' : '';
     var ht = cfg.heater_type || '';
@@ -2205,8 +2210,14 @@ function r_life() {
       if (e.type === 'CO2 System') {
         var co2_cfg = e.config || {};
         var co2_active = co2_cfg.bps > 0 || co2_cfg.hours > 0;
-        var co2_type_short = co2_cfg.co2_type ? co2_cfg.co2_type.replace('Pressurized Cylinder','Pressurized').replace('DIY Yeast','DIY').replace('Liquid CO2 (Excel)','Liquid') : '';
+        var co2_type_short = co2_cfg.co2_type ? co2_cfg.co2_type.replace('Pressurized / Paintball','Pressurized').replace('DIY Yeast','DIY').replace('Liquid Supplement','Liquid') : '';
         type_badge = ' <span style="background:' + (co2_active ? 'var(--ok)' : 'var(--muted)') + ';color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;white-space:nowrap">&#x1F4A8; ' + (co2_active ? (co2_type_short || 'Active') : 'Not configured') + '</span>';
+      }
+      if (e.type === 'CO2 Drop Checker') {
+        var dc_col = (e.config || {}).dc_color;
+        var dc_bg = dc_col === 'Green' ? '#3ab87a' : dc_col === 'Blue' ? '#4db8d4' : dc_col === 'Yellow' ? '#e8a838' : '#aab';
+        var dc_lbl = dc_col === 'Green' ? '&#x1F7E2; Ideal' : dc_col === 'Blue' ? '&#x1F535; Low CO2' : dc_col === 'Yellow' ? '&#x1F7E1; High CO2' : 'Not checked';
+        type_badge = ' <span style="background:' + dc_bg + ';color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;white-space:nowrap">' + dc_lbl + '</span>';
       }
       h += '<tr><td>' + esc(e.type) + type_badge + '</td><td>' + esc(e.name) + '</td><td>' + esc(e.brand) + '</td>' +
            '<td style="font-size:12px;color:' + (cfg_txt === '-' ? 'var(--muted)' : 'var(--text)') + '">' + esc(cfg_txt) + '</td>' +
@@ -3189,17 +3200,20 @@ function upd_equip_form(sel) {
   var co_div = document.getElementById('eq_co2_cfg');
   var he_div = document.getElementById('eq_heater_cfg');
   var su_div = document.getElementById('eq_substrate_cfg');
+  var dc_div = document.getElementById('eq_dc_cfg');
   if (ld_div) ld_div.style.display = t === 'Light' ? 'block' : 'none';
   if (fi_div) fi_div.style.display = t === 'Filter' ? 'block' : 'none';
   if (co_div) co_div.style.display = t === 'CO2 System' ? 'block' : 'none';
   if (he_div) he_div.style.display = t === 'Heater' ? 'block' : 'none';
   if (su_div) su_div.style.display = t === 'Substrate' ? 'block' : 'none';
+  if (dc_div) dc_div.style.display = t === 'CO2 Drop Checker' ? 'block' : 'none';
 }
 
 function build_equip_cfg_html(type, cfg) {
   var light_d = type === 'Light' ? 'block' : 'none';
   var filt_d = type === 'Filter' ? 'block' : 'none';
   var co2_d = type === 'CO2 System' ? 'block' : 'none';
+  var dc_d = type === 'CO2 Drop Checker' ? 'block' : 'none';
   var c = cfg || {};
   var spec_opts = ['WRGB','White','RGB','Plant/Full Spectrum','Basic Fluorescent']
     .map(function(o){ return '<option' + (c.spectrum === o ? ' selected' : '') + '>' + o + '</option>'; }).join('');
@@ -3243,6 +3257,12 @@ function build_equip_cfg_html(type, cfg) {
     '<div class="cfg-sep"></div><div style="font-size:12px;font-weight:600;color:var(--mid);margin-bottom:6px">Substrate Settings</div>' +
     '<div class="frow">' +
     fg('Volume (L)', '<input type="number" name="substrate_vol" value="' + (c.substrate_liters||'') + '" placeholder="e.g. 11" min="0" step="0.5">', 'Volume of substrate in litres — used to calculate effective water volume for bioload') +
+    '</div></div>' +
+    '<div id="eq_dc_cfg" style="display:' + dc_d + '">' +
+    '<div class="cfg-sep"></div><div style="font-size:12px;font-weight:600;color:var(--mid);margin-bottom:6px">Drop Checker Settings</div>' +
+    '<div class="frow">' +
+    fg('Solution', '<select name="dc_solution"><option' + (c.dc_solution==='4 dKH Reference'?' selected':'') + '>4 dKH Reference</option><option' + (c.dc_solution==='Tap Water'?' selected':'') + '>Tap Water</option></select>', 'Use 4 dKH reference water for accurate readings') +
+    fg('Current Reading', '<select name="dc_color"><option value="">Not checked</option><option value="Blue"' + (c.dc_color==='Blue'?' selected':'') + '>Blue — CO2 too low</option><option value="Green"' + (c.dc_color==='Green'?' selected':'') + '>Green — CO2 ideal</option><option value="Yellow"' + (c.dc_color==='Yellow'?' selected':'') + '>Yellow — CO2 too high</option></select>') +
     '</div></div>';
 }
 
@@ -3272,6 +3292,9 @@ function read_equip_cfg(f) {
     cfg.heater_type = f.heater_type.value;
   } else if (t === 'Substrate') {
     cfg.substrate_liters = parseFloat(f.substrate_vol.value) || 0;
+  } else if (t === 'CO2 Drop Checker') {
+    cfg.dc_solution = f.dc_solution.value;
+    cfg.dc_color = f.dc_color.value;
   }
   return cfg;
 }
@@ -3295,7 +3318,7 @@ function calc_plant_score(tid) {
 }
 
 function do_add_equip() {
-  var type_opts = '<option>Filter</option><option>Heater</option><option>Light</option><option>CO2 System</option><option>Pump</option><option>Substrate</option><option>Thermometer</option><option>Other</option>';
+  var type_opts = '<option>Filter</option><option>Heater</option><option>Light</option><option>CO2 System</option><option>CO2 Drop Checker</option><option>Pump</option><option>Substrate</option><option>Thermometer</option><option>Other</option>';
   om('<div class="mtitle">Add Equipment</div>' +
     '<form onsubmit="sub_add_equip(event)">' +
     '<div class="frow">' +
@@ -3317,7 +3340,7 @@ function sub_add_equip(e) {
 
 function do_edit_equip(eid) {
   var eq = ld().equip.find(function(x){ return x.id === eid; }); if (!eq) return;
-  var type_opts = ['Filter','Heater','Light','CO2 System','Pump','Substrate','Thermometer','Other']
+  var type_opts = ['Filter','Heater','Light','CO2 System','CO2 Drop Checker','Pump','Substrate','Thermometer','Other']
     .map(function(o){ return '<option' + (eq.type === o ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('');
   om('<div class="mtitle">Edit Equipment</div>' +
     '<form data-id="' + eid + '" onsubmit="sub_edit_equip(event)">' +
