@@ -2153,10 +2153,12 @@ function r_dash() {
   var fed_txt = last_f ? ts_ago(last_f.ts) : 'Never';
   var feed_sub = ft > 0 ? 'Today: ' + ft + 'x' + (ft > 2 ? ' &#x26A0; Overfeeding!' : '') : 'Not fed today';
   var feed_color = ft > 2 ? 'var(--danger)' : 'var(--deep)';
-  h += '<div class="scard"><div class="slbl">LAST FED</div>' +
-       '<div class="sval" style="font-size:16px;color:' + feed_color + '">' + fed_txt + '</div>' +
-       '<div class="ssub">' + feed_sub + '</div>' +
-       '<button class="btn bp bs" style="margin-top:8px;width:100%" onclick="open_feed_modal(at())">Log Feeding</button></div>';
+  if (has_fish) {
+    h += '<div class="scard"><div class="slbl">LAST FED</div>' +
+         '<div class="sval" style="font-size:16px;color:' + feed_color + '">' + fed_txt + '</div>' +
+         '<div class="ssub">' + feed_sub + '</div>' +
+         '<button class="btn bp bs" style="margin-top:8px;width:100%" onclick="open_feed_modal(at())">Log Feeding</button></div>';
+  }
   h += '</div>';
 
   h += '<div class="card"><div class="ctitle">Last Water Reading';
