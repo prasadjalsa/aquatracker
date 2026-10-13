@@ -1044,25 +1044,57 @@ function mark_done(id) {
 }
 function mark_done_prompt(id) {
   var task = ld().tasks.find(function(t){ return t.id === id; }); if (!task) return;
+  var vol_unit = get_pref().vol === 'L' ? 'L' : 'gal';
+  var extra = '';
+  if (task.type === 'Water Change') {
+    extra = '<div class="fg"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Volume changed (' + vol_unit + ') <span style="font-weight:400;color:var(--muted)">(optional)</span></label>' +
+      '<input type="number" id="mlog_vol" min="0" step="0.1" placeholder="e.g. 15" style="width:100%;box-sizing:border-box"></div>';
+  } else if (task.type === 'Fertilizer') {
+    extra = '<div class="fg"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Dose <span style="font-weight:400;color:var(--muted)">(optional)</span></label>' +
+      '<input type="text" id="mlog_detail" placeholder="e.g. 5 ml" style="width:100%;box-sizing:border-box"></div>';
+  }
   om('<div class="mtitle">&#x2705; Mark Done</div>' +
-    '<div style="font-size:14px;font-weight:600;margin-bottom:4px">' + esc(task.name) + '</div>' +
-    '<div style="font-size:12px;color:var(--muted);margin-bottom:12px">Date: ' + today_str() + '</div>' +
+    '<div style="font-size:14px;font-weight:600;margin-bottom:8px">' + esc(task.name) + '</div>' +
+    '<div class="fg"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Date</label>' +
+    '<input type="date" id="mlog_date" value="' + today_str() + '" style="width:100%;box-sizing:border-box"></div>' +
+    extra +
     '<div class="fg"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Note <span style="font-weight:400;color:var(--muted)">(optional)</span></label>' +
-    '<input type="text" id="mlog_note" placeholder="e.g. Changed 25%, dosed Prime" style="width:100%;box-sizing:border-box"></div>' +
+    '<input type="text" id="mlog_note" placeholder="e.g. dosed Prime, used RO mix" style="width:100%;box-sizing:border-box"></div>' +
     '<div class="mact"><button class="btn bg" onclick="cm()">Cancel</button>' +
+    '<button class="btn bg" style="color:var(--warn);border-color:var(--warn)" data-id="' + id + '" onclick="confirm_skip_task(this.dataset.id)">Skip</button>' +
     '<button class="btn bp" data-id="' + id + '" onclick="confirm_mark_done(this.dataset.id)">Mark Done</button></div>');
   setTimeout(function(){ var el = document.getElementById('mlog_note'); if (el) el.focus(); }, 50);
 }
 function confirm_mark_done(id) {
+  var date_el = document.getElementById('mlog_date');
+  var note_el = document.getElementById('mlog_note');
+  var vol_el  = document.getElementById('mlog_vol');
+  var det_el  = document.getElementById('mlog_detail');
+  var done_date = (date_el && date_el.value) ? date_el.value : today_str();
+  var parts = [];
+  if (vol_el  && vol_el.value)  parts.push(vol_el.value + ' ' + (get_pref().vol === 'L' ? 'L' : 'gal') + ' changed');
+  if (det_el  && det_el.value)  parts.push(det_el.value);
+  if (note_el && note_el.value.trim()) parts.push(note_el.value.trim());
+  var full_note = parts.join(' — ');
+  var d = ld();
+  var task = d.tasks.find(function(t){ return t.id === id; }); if (!task) { cm(); return; }
+  d.tasks = d.tasks.map(function(t) {
+    return t.id === id ? Object.assign({}, t, {last_done:done_date, next_due:next_due(done_date,t.freq)}) : t;
+  });
+  if (!Array.isArray(d.maint_log)) d.maint_log = [];
+  d.maint_log.push({id:gid(), tank_id:task.tank_id, task_id:id, task_name:task.name, task_type:task.type, date:done_date, notes:full_note});
+  sv(d); cm(); r_maint();
+}
+function confirm_skip_task(id) {
   var note_el = document.getElementById('mlog_note');
   var note = note_el ? note_el.value.trim() : '';
   var d = ld(), today = today_str();
   var task = d.tasks.find(function(t){ return t.id === id; }); if (!task) { cm(); return; }
   d.tasks = d.tasks.map(function(t) {
-    return t.id === id ? Object.assign({}, t, {last_done:today, next_due:next_due(today,t.freq)}) : t;
+    return t.id === id ? Object.assign({}, t, {next_due:next_due(today, t.freq)}) : t;
   });
   if (!Array.isArray(d.maint_log)) d.maint_log = [];
-  d.maint_log.push({id:gid(), tank_id:task.tank_id, task_id:id, task_name:task.name, task_type:task.type, date:today, notes:note});
+  d.maint_log.push({id:gid(), tank_id:task.tank_id, task_id:id, task_name:task.name, task_type:task.type, date:today, notes:note, skipped:true});
   sv(d); cm(); r_maint();
 }
 function del_mlog(id) {
@@ -2770,7 +2802,7 @@ function r_maint() {
     h += '<div class="tw"><table><tr><th>Date</th><th>Task</th><th>Type</th><th>Notes</th><th></th></tr>';
     ml.slice(0, 100).forEach(function(entry) {
       h += '<tr><td style="white-space:nowrap">' + entry.date + '</td>' +
-           '<td><strong>' + esc(entry.task_name) + '</strong></td>' +
+           '<td><strong>' + esc(entry.task_name) + '</strong>' + (entry.skipped ? ' <span class="pill pwarn" style="font-size:10px">Skipped</span>' : '') + '</td>' +
            '<td style="color:var(--muted)">' + esc(entry.task_type) + '</td>' +
            '<td style="font-size:12px;color:var(--muted)">' + (entry.notes ? esc(entry.notes) : '&mdash;') + '</td>' +
            '<td><button class="btn bd bs" style="font-size:11px" data-lid="' + entry.id + '" onclick="del_mlog(this.dataset.lid)">&#x2715;</button></td></tr>';
