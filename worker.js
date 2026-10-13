@@ -1070,6 +1070,28 @@ function del_mlog(id) {
   d.maint_log = (d.maint_log || []).filter(function(x){ return x.id !== id; });
   sv(d); r_maint();
 }
+function do_add_mlog() {
+  var type_opts = ['Water Change','Filter Clean','Gravel Vac','Glass Wipe','Fertilizer','Pruning','Water Test','Equipment Service','Other']
+    .map(function(o){ return '<option>' + o + '</option>'; }).join('');
+  om('<div class="mtitle">Log Activity</div>' +
+    '<form onsubmit="sub_add_mlog(event)">' +
+    '<div class="frow">' +
+    fg('Type', '<select name="type">' + type_opts + '</select>') +
+    fg('Activity', '<input type="text" name="name" placeholder="e.g. 30% water change" required>') +
+    '</div><div class="frow">' +
+    fg('Date', '<input type="date" name="date" value="' + today_str() + '" required>') +
+    fg('Notes', '<input type="text" name="notes" placeholder="Optional">') +
+    '</div>' +
+    '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Save Log</button></div>' +
+    '</form>');
+}
+function sub_add_mlog(e) {
+  e.preventDefault(); var f = e.target;
+  var d = ld();
+  if (!Array.isArray(d.maint_log)) d.maint_log = [];
+  d.maint_log.push({id:gid(), tank_id:at(), task_id:null, task_name:f.name.value, task_type:f.type.value, date:f.date.value, notes:f.notes.value.trim()});
+  sv(d); cm(); r_maint();
+}
 
 // ===== WATER LOG =====
 function add_water(tid, date, tf, nh3, no2, no3, ph, gh, notes, ca, mg) {
@@ -2743,8 +2765,8 @@ function r_maint() {
   // Maintenance Logs
   var ml = (d.maint_log || []).filter(function(x){ return x.tank_id === tid; })
     .sort(function(a, b){ return b.date.localeCompare(a.date); });
+  h += '<div class="card"><div class="ctitle">Logs <button class="btn bp bs" onclick="do_add_mlog()">+ Log Activity</button></div>';
   if (ml.length) {
-    h += '<div class="card"><div class="ctitle">Logs</div>';
     h += '<div class="tw"><table><tr><th>Date</th><th>Task</th><th>Type</th><th>Notes</th><th></th></tr>';
     ml.slice(0, 100).forEach(function(entry) {
       h += '<tr><td style="white-space:nowrap">' + entry.date + '</td>' +
@@ -2755,8 +2777,10 @@ function r_maint() {
     });
     h += '</table></div>';
     if (ml.length > 100) h += '<p style="font-size:12px;color:var(--muted);text-align:center;margin-top:6px">Showing latest 100 entries</p>';
-    h += '</div>';
+  } else {
+    h += '<p class="emsg">No logs yet. Mark a task done or tap + Log Activity to add your first entry.</p>';
   }
+  h += '</div>';
 
   el.innerHTML = h;
   calc_wc();
