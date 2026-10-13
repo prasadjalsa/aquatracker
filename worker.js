@@ -3117,6 +3117,17 @@ function r_recs() {
     var mx_chk = p.k === 'temp_f' ? (rng.temp.ok?rng.temp.max:null) : p.mx;
     var c = cls_val(raw, mn_chk, mx_chk, p.tox);
     var rt = p.tox ? '0 ppm' : (p.mn !== null && p.mx !== null ? p.mn + (p.u?' '+p.u:'') + ' – ' + p.mx + (p.u?' '+p.u:'') : '—');
+    // Mute ammonia/nitrite during active nitrogen cycle
+    var cyc_recs = cycle_status(tid);
+    var cyc_active_recs = tank && !tank.cycled && cyc_recs && cyc_recs.phase >= 1 && cyc_recs.phase < 4;
+    if (cyc_active_recs && (p.k === 'ammonia' || p.k === 'nitrite') && c !== 'muted') {
+      c = 'ok';
+      var note_style = 'color:var(--muted)';
+      h += '<tr><td>' + p.l + '</td><td>' + rt + '</td><td>' + (cur !== null ? cur + (p.u?' '+p.u:'') : '—') + '</td>' +
+           '<td><span class="pill pmuted" title="Normal during nitrogen cycle">Cycling</span></td>' +
+           '<td style="font-size:12px;color:var(--muted)">Normal during nitrogen cycle — no action needed.</td></tr>';
+      return;
+    }
     // Build explanation for warn/danger
     var note = '';
     if (c !== 'ok' && c !== 'muted' && raw !== null) {
@@ -4666,21 +4677,32 @@ function req_notif() {
 }
 function check_notifs() {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
-  var d = ld(), tid = at();
-  var tasks = d.tasks.filter(function(x){ return x.tank_id === tid; });
-  var overdue  = tasks.filter(function(t){ return days_til(t.next_due) < 0; });
-  var due_soon = tasks.filter(function(t){ return days_til(t.next_due) === 0; });
+  // Only fire once per calendar day
+  var last_notif = localStorage.getItem('aq_last_notif') || '';
+  if (last_notif === today_str()) return;
+  var d = ld();
+  var all_tanks = d.tanks.filter(function(t){ return !t.preview; });
+  var overdue = [], due_soon = [];
+  all_tanks.forEach(function(tank) {
+    d.tasks.filter(function(x){ return x.tank_id === tank.id; }).forEach(function(t) {
+      var dt = days_til(t.next_due);
+      var label = all_tanks.length > 1 ? t.name + ' (' + tank.name + ')' : t.name;
+      if (dt < 0)      overdue.push(label);
+      else if (dt === 0) due_soon.push(label);
+    });
+  });
   var total = overdue.length + due_soon.length;
   if (!total) return;
-  var names = overdue.concat(due_soon).slice(0, 3).map(function(t){ return t.name; });
+  var all_names = overdue.concat(due_soon);
   var summary = [];
   if (overdue.length)  summary.push(overdue.length  + ' overdue');
   if (due_soon.length) summary.push(due_soon.length + ' due today');
   try {
     new Notification('AquaTracker — Maintenance Due', {
-      body: summary.join(', ') + ': ' + names.join(', ') + (total > 3 ? ' +' + (total - 3) + ' more' : ''),
+      body: summary.join(', ') + ': ' + all_names.slice(0,3).join(', ') + (total > 3 ? ' +' + (total - 3) + ' more' : ''),
       tag: 'aqt-maint'
     });
+    localStorage.setItem('aq_last_notif', today_str());
   } catch(e) {}
 }
 function export_task_ics(id) {
