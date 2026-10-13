@@ -2179,6 +2179,14 @@ function r_dash() {
 
   var h = '';
 
+  // Notification enable banner
+  if ('Notification' in window && Notification.permission === 'default') {
+    h += '<div style="display:flex;align-items:center;gap:10px;background:#eef6ff;border-left:4px solid var(--mid);padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:12px">' +
+         '<span style="font-size:16px">&#x1F514;</span>' +
+         '<span style="font-size:13px;flex:1">Get browser reminders when maintenance tasks are due.</span>' +
+         '<button class="btn bp bs" onclick="req_notif()" style="white-space:nowrap;font-size:12px">Enable Notifications</button></div>';
+  }
+
   // Export reminder: warn if no backup in 30+ days (or never)
   var last_exp = parseInt(localStorage.getItem('aq_last_export') || '0', 10);
   var days_since_exp = last_exp ? Math.floor((Date.now() - last_exp) / 86400000) : 999;
@@ -2777,6 +2785,7 @@ function r_maint() {
            '<td>' + t.last_done + '</td><td>' + t.freq + 'd</td>' +
            '<td style="white-space:nowrap">' +
            '<button class="btn bp bs" data-id="' + t.id + '" onclick="mark_done_prompt(this.dataset.id)">Done</button> ' +
+           '<button class="btn bg bs" title="Export to calendar (.ics)" data-id="' + t.id + '" onclick="export_task_ics(this.dataset.id)">&#x1F4C5;</button> ' +
            '<button class="btn bd bs" data-id="' + t.id + '" onclick="del_task(this.dataset.id);r_maint()">&#x2715;</button></td></tr>';
     });
     h += '</table></div></div>';
@@ -4648,11 +4657,63 @@ function render_tab() {
   else if (cur_tab === 'tools') r_tools();
   else if (cur_tab === 'howto') r_howto();
 }
+function req_notif() {
+  if (!('Notification' in window)) return;
+  Notification.requestPermission().then(function(perm) {
+    if (perm === 'granted') check_notifs();
+    r_dash();
+  });
+}
+function check_notifs() {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  var d = ld(), tid = at();
+  var tasks = d.tasks.filter(function(x){ return x.tank_id === tid; });
+  var overdue  = tasks.filter(function(t){ return days_til(t.next_due) < 0; });
+  var due_soon = tasks.filter(function(t){ return days_til(t.next_due) === 0; });
+  var total = overdue.length + due_soon.length;
+  if (!total) return;
+  var names = overdue.concat(due_soon).slice(0, 3).map(function(t){ return t.name; });
+  var summary = [];
+  if (overdue.length)  summary.push(overdue.length  + ' overdue');
+  if (due_soon.length) summary.push(due_soon.length + ' due today');
+  try {
+    new Notification('AquaTracker — Maintenance Due', {
+      body: summary.join(', ') + ': ' + names.join(', ') + (total > 3 ? ' +' + (total - 3) + ' more' : ''),
+      tag: 'aqt-maint'
+    });
+  } catch(e) {}
+}
+function export_task_ics(id) {
+  var d = ld(), task = d.tasks.find(function(t){ return t.id === id; }); if (!task) return;
+  var tank = d.tanks.find(function(t){ return t.id === task.tank_id; });
+  var tank_name = tank ? tank.name : 'Tank';
+  var due_dt = task.next_due.replace(/-/g, '');
+  var safe_name = task.name.replace(/[^\w\s-]/g, '').trim();
+  var ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//AquaTracker//EN\r\n' +
+    'BEGIN:VEVENT\r\n' +
+    'UID:' + task.id + '@aquatracker\r\n' +
+    'DTSTART;VALUE=DATE:' + due_dt + '\r\n' +
+    'DTEND;VALUE=DATE:' + due_dt + '\r\n' +
+    'SUMMARY:' + safe_name + ' (' + tank_name + ')\r\n' +
+    'DESCRIPTION:AquaTracker maintenance task — every ' + task.freq + ' days\r\n' +
+    'RRULE:FREQ=DAILY;INTERVAL=' + task.freq + '\r\n' +
+    'BEGIN:VALARM\r\nTRIGGER:PT8H\r\nACTION:DISPLAY\r\n' +
+    'DESCRIPTION:' + safe_name + ' due today\r\n' +
+    'END:VALARM\r\n' +
+    'END:VEVENT\r\nEND:VCALENDAR';
+  var blob = new Blob([ics], {type:'text/calendar'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a'); a.href = url;
+  a.download = task.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.ics';
+  a.click(); URL.revokeObjectURL(url);
+}
+
 function init() {
   build_sel();
   var d = ld(), tid = at();
   if (d.tanks.length && !d.tanks.find(function(t){ return t.id === tid; })) sat(d.tanks[0].id);
   render_tab();
+  check_notifs();
 }
 
 document.getElementById('t_sel').addEventListener('change', function() { sat(this.value); render_tab(); });
