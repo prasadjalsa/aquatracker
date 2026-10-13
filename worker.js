@@ -577,12 +577,13 @@ function ld() {
     var d = JSON.parse(localStorage.getItem('aq')) || mt();
     if (!Array.isArray(d.feeding)) d.feeding = [];
     if (!Array.isArray(d.ferts))   d.ferts   = [];
+    if (!Array.isArray(d.maint_log)) d.maint_log = [];
     if (!d.custom_sp)              d.custom_sp = {};
     return d;
   } catch(e) { return mt(); }
 }
 function sv(d) { localStorage.setItem('aq', JSON.stringify(d)); }
-function mt() { return {tanks:[], equip:[], plants:[], stock:[], tasks:[], water:[], feeding:[], ferts:[], custom_sp:{}}; }
+function mt() { return {tanks:[], equip:[], plants:[], stock:[], tasks:[], water:[], feeding:[], ferts:[], custom_sp:{}, maint_log:[]}; }
 // Merged species lookup: built-in SP + user custom_sp
 function get_sp(d) { return Object.assign({}, SP, d ? d.custom_sp : {}); }
 function add_custom_sp(sp_id, name, type, tmin, tmax, pmin, pmax, gmin, gmax, size_in, min_gal, bioload, level, note) {
@@ -1041,6 +1042,34 @@ function mark_done(id) {
   });
   sv(d);
 }
+function mark_done_prompt(id) {
+  var task = ld().tasks.find(function(t){ return t.id === id; }); if (!task) return;
+  om('<div class="mtitle">&#x2705; Mark Done</div>' +
+    '<div style="font-size:14px;font-weight:600;margin-bottom:4px">' + esc(task.name) + '</div>' +
+    '<div style="font-size:12px;color:var(--muted);margin-bottom:12px">Date: ' + today_str() + '</div>' +
+    '<div class="fg"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Note <span style="font-weight:400;color:var(--muted)">(optional)</span></label>' +
+    '<input type="text" id="mlog_note" placeholder="e.g. Changed 25%, dosed Prime" style="width:100%;box-sizing:border-box"></div>' +
+    '<div class="mact"><button class="btn bg" onclick="cm()">Cancel</button>' +
+    '<button class="btn bp" data-id="' + id + '" onclick="confirm_mark_done(this.dataset.id)">Mark Done</button></div>');
+  setTimeout(function(){ var el = document.getElementById('mlog_note'); if (el) el.focus(); }, 50);
+}
+function confirm_mark_done(id) {
+  var note_el = document.getElementById('mlog_note');
+  var note = note_el ? note_el.value.trim() : '';
+  var d = ld(), today = today_str();
+  var task = d.tasks.find(function(t){ return t.id === id; }); if (!task) { cm(); return; }
+  d.tasks = d.tasks.map(function(t) {
+    return t.id === id ? Object.assign({}, t, {last_done:today, next_due:next_due(today,t.freq)}) : t;
+  });
+  if (!Array.isArray(d.maint_log)) d.maint_log = [];
+  d.maint_log.push({id:gid(), tank_id:task.tank_id, task_id:id, task_name:task.name, task_type:task.type, date:today, notes:note});
+  sv(d); cm(); r_maint();
+}
+function del_mlog(id) {
+  var d = ld();
+  d.maint_log = (d.maint_log || []).filter(function(x){ return x.id !== id; });
+  sv(d); r_maint();
+}
 
 // ===== WATER LOG =====
 function add_water(tid, date, tf, nh3, no2, no3, ph, gh, notes, ca, mg) {
@@ -1347,6 +1376,7 @@ function do_export() {
     water:   d.water.filter(function(x){ return prev_ids.indexOf(x.tank_id) === -1; }),
     feeding: d.feeding.filter(function(x){ return prev_ids.indexOf(x.tank_id) === -1; }),
     ferts:   d.ferts.filter(function(x){ return prev_ids.indexOf(x.tank_id) === -1; }),
+    maint_log: (d.maint_log || []).filter(function(x){ return prev_ids.indexOf(x.tank_id) === -1; }),
     custom_sp: d.custom_sp || {},
     pref:    get_pref()
   };
@@ -1366,6 +1396,7 @@ function do_import(inp) {
       var ok = ['tanks','equip','plants','stock','tasks','water'].every(function(k){ return Array.isArray(p[k]); });
       if (!ok) { alert('Invalid backup file format.'); return; }
       if (!p.custom_sp || typeof p.custom_sp !== 'object' || Array.isArray(p.custom_sp)) p.custom_sp = {};
+      if (!Array.isArray(p.maint_log)) p.maint_log = [];
       sv(p); inp.value = '';
       if (p.pref) sv_pref(p.pref);
       if (p.tanks.length) sat(p.tanks[0].id);
@@ -2691,7 +2722,7 @@ function r_maint() {
            '<td><strong>' + due + '</strong><br><small style="color:var(--muted)">' + t.next_due + '</small></td>' +
            '<td>' + t.last_done + '</td><td>' + t.freq + 'd</td>' +
            '<td style="white-space:nowrap">' +
-           '<button class="btn bp bs" data-id="' + t.id + '" onclick="mark_done(this.dataset.id);r_maint()">Done</button> ' +
+           '<button class="btn bp bs" data-id="' + t.id + '" onclick="mark_done_prompt(this.dataset.id)">Done</button> ' +
            '<button class="btn bd bs" data-id="' + t.id + '" onclick="del_task(this.dataset.id);r_maint()">&#x2715;</button></td></tr>';
     });
     h += '</table></div></div>';
@@ -2708,6 +2739,24 @@ function r_maint() {
     '</div>' +
     fg('Notes', '<input type="text" name="notes" placeholder="Optional">') +
     '<button type="submit" class="btn bp" style="margin-top:8px">Add Task</button></form></div>';
+
+  // Maintenance Logs
+  var ml = (d.maint_log || []).filter(function(x){ return x.tank_id === tid; })
+    .sort(function(a, b){ return b.date.localeCompare(a.date); });
+  if (ml.length) {
+    h += '<div class="card"><div class="ctitle">Logs</div>';
+    h += '<div class="tw"><table><tr><th>Date</th><th>Task</th><th>Type</th><th>Notes</th><th></th></tr>';
+    ml.slice(0, 100).forEach(function(entry) {
+      h += '<tr><td style="white-space:nowrap">' + entry.date + '</td>' +
+           '<td><strong>' + esc(entry.task_name) + '</strong></td>' +
+           '<td style="color:var(--muted)">' + esc(entry.task_type) + '</td>' +
+           '<td style="font-size:12px;color:var(--muted)">' + (entry.notes ? esc(entry.notes) : '&mdash;') + '</td>' +
+           '<td><button class="btn bd bs" style="font-size:11px" data-lid="' + entry.id + '" onclick="del_mlog(this.dataset.lid)">&#x2715;</button></td></tr>';
+    });
+    h += '</table></div>';
+    if (ml.length > 100) h += '<p style="font-size:12px;color:var(--muted);text-align:center;margin-top:6px">Showing latest 100 entries</p>';
+    h += '</div>';
+  }
 
   el.innerHTML = h;
   calc_wc();
