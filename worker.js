@@ -4689,18 +4689,18 @@ function export_task_ics(id) {
   var tank_name = tank ? tank.name : 'Tank';
   var due_dt = task.next_due.replace(/-/g, '');
   var safe_name = task.name.replace(/[^\w\s-]/g, '').trim();
-  var ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//AquaTracker//EN\r\n' +
-    'BEGIN:VEVENT\r\n' +
-    'UID:' + task.id + '@aquatracker\r\n' +
-    'DTSTART;VALUE=DATE:' + due_dt + '\r\n' +
-    'DTEND;VALUE=DATE:' + due_dt + '\r\n' +
-    'SUMMARY:' + safe_name + ' (' + tank_name + ')\r\n' +
-    'DESCRIPTION:AquaTracker maintenance task — every ' + task.freq + ' days\r\n' +
-    'RRULE:FREQ=DAILY;INTERVAL=' + task.freq + '\r\n' +
-    'BEGIN:VALARM\r\nTRIGGER:PT8H\r\nACTION:DISPLAY\r\n' +
-    'DESCRIPTION:' + safe_name + ' due today\r\n' +
-    'END:VALARM\r\n' +
-    'END:VEVENT\r\nEND:VCALENDAR';
+  var ics = 'BEGIN:VCALENDAR\\r\\nVERSION:2.0\\r\\nPRODID:-//AquaTracker//EN\\r\\n' +
+    'BEGIN:VEVENT\\r\\n' +
+    'UID:' + task.id + '@aquatracker\\r\\n' +
+    'DTSTART;VALUE=DATE:' + due_dt + '\\r\\n' +
+    'DTEND;VALUE=DATE:' + due_dt + '\\r\\n' +
+    'SUMMARY:' + safe_name + ' (' + tank_name + ')\\r\\n' +
+    'DESCRIPTION:AquaTracker maintenance task - every ' + task.freq + ' days\\r\\n' +
+    'RRULE:FREQ=DAILY;INTERVAL=' + task.freq + '\\r\\n' +
+    'BEGIN:VALARM\\r\\nTRIGGER:PT8H\\r\\nACTION:DISPLAY\\r\\n' +
+    'DESCRIPTION:' + safe_name + ' due today\\r\\n' +
+    'END:VALARM\\r\\n' +
+    'END:VEVENT\\r\\nEND:VCALENDAR';
   var blob = new Blob([ics], {type:'text/calendar'});
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a'); a.href = url;
