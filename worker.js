@@ -2921,8 +2921,8 @@ var FOOD_INFO = {
   shrimp_food: {name:'Shrimp-specific pellets',             desc:'Micro pellets formulated for shrimp (e.g. Hikari Shrimp Cuisine).',     cat:'daily'},
   calcium:     {name:'Calcium supplement or cuttlebone',    desc:'Essential for shell and exoskeleton health in snails, shrimp, and crayfish.', cat:'supplement'},
   blanched_veg:{name:'Blanched vegetables',                 desc:'Zucchini, spinach, or cucumber — vital dietary variety for shrimp, snails, and crayfish.', cat:'supplement'},
-  bloodworm:   {name:'Frozen/freeze-dried bloodworms',      desc:'Protein-rich treat enjoyed by most fish, crayfish, and frogs.',         cat:'treat'},
-  brine_shrimp:{name:'Frozen/freeze-dried brine shrimp',    desc:'Excellent variety treat for almost all fish species.',                  cat:'treat'},
+  bloodworm:   {name:'Frozen/freeze-dried bloodworms',      desc:'Protein-rich treat for most fish, crayfish, and frogs. Alternate with brine shrimp for variety.', cat:'treat'},
+  brine_shrimp:{name:'Frozen/freeze-dried brine shrimp',    desc:'Variety treat when bloodworms are not available.',                      cat:'treat'},
   powder_food: {name:'Powdered food or phytoplankton',      desc:'Fine enough to stay suspended — essential for filter-feeding bamboo shrimp.', cat:'daily'},
   goldfish_f:  {name:'Goldfish flakes or pellets',          desc:'Low-protein, high-carb formulation specific to goldfish. Add blanched peas weekly.', cat:'daily'},
   frog_pellet: {name:'Sinking bloodworm pellets',           desc:'Small sinking pellets sized for African dwarf frogs — they cannot reach surface food.', cat:'daily'}
@@ -2966,6 +2966,8 @@ function get_food_recs(tid) {
       else { need('flake', nm); need('bloodworm', nm); need('brine_shrimp', nm); } // default omnivore
     }
   });
+  // Suppress brine shrimp when bloodworms already cover the same role
+  if (needs.bloodworm && needs.brine_shrimp) delete needs.brine_shrimp;
   return needs;
 }
 
