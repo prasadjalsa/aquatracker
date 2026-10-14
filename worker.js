@@ -210,6 +210,22 @@ var SP = {
   hillstream_loach:  {min_fish:3, name:'Hillstream Loach',    tmin:62,tmax:72,pmin:6.5,pmax:7.5,gmin:4, gmax:8, bioload:1,size_in:3,  min_gal:20, level:'Intermediate', hard_reason:'Needs very high flow, strong oxygenation, and cooler water. Standard setups do not suit them.',note:'Needs very high flow and oxygenation.'},
   nerite_snail:      {name:'Nerite Snail',        tmin:72,tmax:82,pmin:6.5,pmax:8.0,gmin:6, gmax:15,bioload:1,size_in:1,  min_gal:5,  level:'Beginner',     inv:true, note:'Great algae eater. Needs calcium for shell.'},
   mystery_snail:     {name:'Mystery Snail',       tmin:72,tmax:82,pmin:6.5,pmax:8.0,gmin:5, gmax:15,bioload:1,size_in:2,  min_gal:5,  level:'Beginner',     inv:true, note:'Peaceful. Supplement calcium for shell health.'},
+  cpo_crayfish:      {name:'Dwarf Orange Crayfish (CPO)', tmin:65,tmax:77,pmin:6.5,pmax:8.0,gmin:6, gmax:15,bioload:2,size_in:2,  min_gal:10, level:'Intermediate', inv:true, note:'Smallest aquarium crayfish (~2"). Less aggressive than larger species but will still eat small shrimp. Needs caves and hiding spots.',
+    incompat:{cherry_shrimp:'CPO will hunt and eat small shrimp.',crystal_shrimp:'CPO will eat crystal shrimp.',amano_shrimp:'CPO will hunt shrimp.',ghost_shrimp:'CPO eats ghost shrimp.',blue_velvet_shrimp:'CPO will eat neocaridina shrimp.',snowball_shrimp:'CPO will eat snowball shrimp.',bamboo_shrimp:'CPO will eat or harass bamboo shrimp.'}},
+  electric_blue_crayfish: {name:'Electric Blue Crayfish', tmin:65,tmax:75,pmin:6.5,pmax:8.0,gmin:6, gmax:15,bioload:3,size_in:5,  min_gal:30, level:'Intermediate', inv:true, note:'Striking blue coloration. Highly aggressive — best kept alone or with very fast fish. Catches and eats anything slow enough.',
+    incompat:{cherry_shrimp:'Electric blue crayfish eat all shrimp.',crystal_shrimp:'Electric blue crayfish eat shrimp.',amano_shrimp:'Electric blue crayfish eat shrimp.',ghost_shrimp:'Electric blue crayfish eat shrimp.',blue_velvet_shrimp:'Electric blue crayfish eat shrimp.',snowball_shrimp:'Electric blue crayfish eat shrimp.',bamboo_shrimp:'Electric blue crayfish eat shrimp.',nerite_snail:'Crayfish harass and crack snail shells.',mystery_snail:'Crayfish attack and crack snail shells.',betta:'Crayfish grab and injure slow-moving fish like bettas.',angelfish:'Crayfish can grab angelfish fins and body.',discus:'Crayfish injure slow fish like discus.',corydoras:'Crayfish attack bottom-dwelling corydoras.',guppy:'Crayfish catch and eat guppies.',neon_tetra:'Crayfish catch slow or sleeping tetras.',cardinal_tetra:'Crayfish catch small tetras.'}},
+  marbled_crayfish:  {name:'Marbled Crayfish',    tmin:68,tmax:77,pmin:6.5,pmax:8.0,gmin:4, gmax:15,bioload:2,size_in:4,  min_gal:20, level:'Beginner',     inv:true, note:'All-female species that reproduces without a mate (parthenogenesis). Check local laws — invasive and banned in many countries and EU states.',
+    incompat:{cherry_shrimp:'Marbled crayfish eat shrimp.',crystal_shrimp:'Marbled crayfish eat shrimp.',amano_shrimp:'Marbled crayfish eat shrimp.',ghost_shrimp:'Marbled crayfish eat shrimp.',blue_velvet_shrimp:'Marbled crayfish eat shrimp.',snowball_shrimp:'Marbled crayfish eat shrimp.',nerite_snail:'Marbled crayfish harass snails.',mystery_snail:'Marbled crayfish attack snails.',corydoras:'Marbled crayfish attack bottom dwellers.'}},
+  red_swamp_crayfish: {name:'Red Swamp Crayfish',  tmin:60,tmax:75,pmin:6.5,pmax:8.5,gmin:4, gmax:20,bioload:3,size_in:5,  min_gal:30, level:'Beginner',     inv:true, note:'Extremely hardy and adaptable. Highly aggressive, digs heavily, and uproots plants. Best kept alone in a species tank.',
+    incompat:{cherry_shrimp:'Red swamp crayfish eat all invertebrates.',crystal_shrimp:'Red swamp crayfish eat shrimp.',amano_shrimp:'Red swamp crayfish eat shrimp.',ghost_shrimp:'Red swamp crayfish eat shrimp.',blue_velvet_shrimp:'Red swamp crayfish eat shrimp.',snowball_shrimp:'Red swamp crayfish eat shrimp.',bamboo_shrimp:'Red swamp crayfish eat shrimp.',nerite_snail:'Crayfish crack and eat snails.',mystery_snail:'Crayfish crack and eat snails.',betta:'Crayfish grab and injure bettas.',angelfish:'Crayfish grab angelfish.',corydoras:'Crayfish attack and injure corydoras.',guppy:'Crayfish eat guppies.',neon_tetra:'Crayfish catch small tetras.',cardinal_tetra:'Crayfish catch small tetras.',hillstream_loach:'Crayfish grab bottom-clinging loaches.'}},
+  white_specter_crayfish: {name:'White Specter Crayfish', tmin:60,tmax:75,pmin:6.5,pmax:8.5,gmin:4, gmax:20,bioload:3,size_in:5,  min_gal:30, level:'Beginner',     inv:true, note:'Albino/white color morph of the red swamp crayfish. Identical care requirements and aggression level. Very visually striking.',
+    incompat:{cherry_shrimp:'White specter crayfish eat all shrimp.',crystal_shrimp:'White specter crayfish eat shrimp.',amano_shrimp:'White specter crayfish eat shrimp.',ghost_shrimp:'White specter crayfish eat shrimp.',blue_velvet_shrimp:'White specter crayfish eat shrimp.',snowball_shrimp:'White specter crayfish eat shrimp.',bamboo_shrimp:'White specter crayfish eat shrimp.',nerite_snail:'Crayfish crack and eat snails.',mystery_snail:'Crayfish crack and eat snails.',betta:'Crayfish grab and injure bettas.',corydoras:'Crayfish attack bottom-dwelling corydoras.',guppy:'Crayfish eat guppies.'}},
+  brazos_dwarf_crayfish: {name:'Brazos Dwarf Crayfish',tmin:60,tmax:74,pmin:6.5,pmax:8.0,gmin:4, gmax:15,bioload:1,size_in:1.5,min_gal:10, level:'Intermediate', inv:true, note:'Cooler-water dwarf crayfish under 1.5". More peaceful than larger species but still eats small shrimp. Appreciates dense planting.',
+    incompat:{cherry_shrimp:'Brazos dwarf crayfish hunt small shrimp.',crystal_shrimp:'Brazos dwarf crayfish eat shrimp.',amano_shrimp:'Brazos dwarf crayfish eat shrimp.',ghost_shrimp:'Brazos dwarf crayfish eat ghost shrimp.',blue_velvet_shrimp:'Brazos dwarf crayfish eat neocaridina shrimp.',snowball_shrimp:'Brazos dwarf crayfish eat snowball shrimp.'}},
+  cajun_dwarf_crayfish: {name:'Cajun Dwarf Crayfish',  tmin:65,tmax:75,pmin:6.5,pmax:8.0,gmin:4, gmax:15,bioload:1,size_in:1.5,min_gal:10, level:'Intermediate', inv:true, note:'One of the smallest crayfish (~1.5"). Brown with lateral stripes. Similar temperament to CPO. Rarely available but worth seeking out.',
+    incompat:{cherry_shrimp:'Cajun dwarf crayfish eat small shrimp.',crystal_shrimp:'Cajun dwarf crayfish eat shrimp.',amano_shrimp:'Cajun dwarf crayfish hunt shrimp.',ghost_shrimp:'Cajun dwarf crayfish eat ghost shrimp.',blue_velvet_shrimp:'Cajun dwarf crayfish eat neocaridina shrimp.',snowball_shrimp:'Cajun dwarf crayfish eat snowball shrimp.'}},
+  red_claw_crayfish: {name:'Red Claw Crayfish',    tmin:70,tmax:82,pmin:7.0,pmax:8.5,gmin:6, gmax:20,bioload:4,size_in:8,  min_gal:55, level:'Advanced',     inv:true, hard_reason:'Large Australian species reaching 8". Needs 55+ gal, strong filtration, and meaty diet. Highly aggressive — eats most tankmates.',note:'Australian species, one of the largest aquarium crayfish. Males have red patches on claws. Best kept alone in a large species tank.',
+    incompat:{cherry_shrimp:'Red claw crayfish eat all invertebrates.',crystal_shrimp:'Red claw crayfish eat shrimp.',amano_shrimp:'Red claw crayfish eat shrimp.',ghost_shrimp:'Red claw crayfish eat shrimp.',blue_velvet_shrimp:'Red claw crayfish eat shrimp.',snowball_shrimp:'Red claw crayfish eat shrimp.',bamboo_shrimp:'Red claw crayfish eat shrimp.',nerite_snail:'Red claw crayfish crack and eat snails.',mystery_snail:'Red claw crayfish crack and eat snails.',betta:'Red claw crayfish grab and injure bettas.',angelfish:'Red claw crayfish grab fish.',discus:'Red claw crayfish injure slow fish.',corydoras:'Red claw crayfish attack corydoras.',guppy:'Red claw crayfish eat guppies.',neon_tetra:'Red claw crayfish catch small fish.',cardinal_tetra:'Red claw crayfish catch small fish.',hillstream_loach:'Red claw crayfish grab bottom-clinging fish.',kuhli_loach:'Red claw crayfish grab kuhli loaches.'}},
   zebra_danio:       {min_fish:6, name:'Zebra Danio',         tmin:64,tmax:75,pmin:6.0,pmax:8.0,gmin:2, gmax:20,bioload:2,size_in:2,  min_gal:10, level:'Beginner',     note:'Active schooler of 6+. Very hardy beginner fish.'},
   harlequin_rasbora: {min_fish:6, name:'Harlequin Rasbora',   tmin:72,tmax:82,pmin:6.0,pmax:7.5,gmin:1, gmax:12,bioload:1,size_in:2,  min_gal:10, level:'Beginner',     note:'School of 6+. Peaceful community fish.'},
   rummy_nose_tetra:  {min_fish:8, name:'Rummy Nose Tetra',    tmin:75,tmax:82,pmin:5.5,pmax:7.0,gmin:1, gmax:10,bioload:1,size_in:2,  min_gal:20, level:'Intermediate', hard_reason:'Red nose fades quickly with any water quality issue. Sensitive to nitrates and pH. Needs aged, soft water.',note:'School of 8+. Red head intensifies in good water.'},
@@ -260,6 +276,10 @@ var SP = {
   neon_rainbowfish:     {min_fish:6, name:'Neon Rainbowfish',      tmin:72,tmax:82,pmin:7.0,pmax:8.0,gmin:8, gmax:18,bioload:2,size_in:2.5,min_gal:20,  level:'Beginner',     note:'Vivid red and blue coloration. Active schooler of 6+. Easy to keep.'},
   celestial_pearl_danio:{min_fish:6, name:'Celestial Pearl Danio', tmin:73,tmax:79,pmin:6.5,pmax:7.5,gmin:2, gmax:15,bioload:1,size_in:1,  min_gal:10,  level:'Intermediate', hard_reason:'Shy and easily outcompeted for food. Needs a calm, planted nano setup away from boisterous fish.',note:'Stunning nano fish. Calm planted tank only. School of 8+.'},
   pearl_danio:          {min_fish:6, name:'Pearl Danio',           tmin:64,tmax:77,pmin:6.5,pmax:7.5,gmin:5, gmax:20,bioload:1,size_in:2,  min_gal:15,  level:'Beginner',     note:'Hardy active schooler. Very forgiving beginner fish. Group of 6+.'},
+  medaka:               {min_fish:4, name:'Medaka (Japanese Rice Fish)', tmin:64,tmax:80,pmin:6.5,pmax:8.5,gmin:4, gmax:20,bioload:1,size_in:1.5,min_gal:5,   level:'Beginner',     note:'Extremely hardy Japanese rice fish. Adapts to a wide range of water conditions. Can be kept outdoors in warm climates. Many colour varieties share identical care.'},
+  blue_medaka:          {min_fish:4, name:'Blue Medaka',            tmin:64,tmax:80,pmin:6.5,pmax:8.5,gmin:4, gmax:20,bioload:1,size_in:1.5,min_gal:5,   level:'Beginner',     note:'Popular blue colour morph of Oryzias latipes. Identical care to standard Medaka. Great for nano and planted tanks.'},
+  white_medaka:         {min_fish:4, name:'White/Platinum Medaka',  tmin:64,tmax:80,pmin:6.5,pmax:8.5,gmin:4, gmax:20,bioload:1,size_in:1.5,min_gal:5,   level:'Beginner',     note:'Platinum/white colour morph. Same easy care as standard Medaka. Very striking against a dark substrate.'},
+  koi_medaka:           {min_fish:4, name:'Koi Medaka',             tmin:64,tmax:80,pmin:6.5,pmax:8.5,gmin:4, gmax:20,bioload:1,size_in:1.5,min_gal:5,   level:'Beginner',     note:'Multicolour koi-patterned medaka morph. Same care as standard Medaka. Popular in Japanese pond and nano aquarium keeping.'},
   african_dwarf_frog:   {min_fish:2, name:'African Dwarf Frog',    tmin:72,tmax:82,pmin:6.5,pmax:7.5,gmin:5, gmax:20,bioload:1,size_in:1.5,min_gal:10,  level:'Beginner',     note:'Fully aquatic amphibian. Peaceful. Must surface for air. Avoid strong flow.'},
   dwarf_puffer:         {name:'Dwarf Puffer',          tmin:74,tmax:82,pmin:6.5,pmax:7.5,gmin:5, gmax:15,bioload:2,size_in:1,  min_gal:5,   level:'Advanced',     hard_reason:'Nips fins of any tankmate including its own kind. Needs live snails or frozen foods — will not eat dry food.',note:'Keep alone or in species tank. Needs live snails or frozen food.',
     incompat:{betta:'Dwarf puffers bite betta fins.',guppy:'Dwarf puffers nip guppy fins and tails.',angelfish:'Dwarf puffers bite at fins.',tiger_barb:'Both species are aggressive — conflict is inevitable.',cherry_shrimp:'Puffers eat shrimp.',amano_shrimp:'Puffers eat shrimp.',ghost_shrimp:'Puffers eat shrimp.',nerite_snail:'Puffers eat snails.',mystery_snail:'Puffers eat snails.'}},
@@ -324,6 +344,7 @@ var SP = {
 // assign livestock types (override per species, default Fish)
 ['cherry_shrimp','crystal_shrimp','amano_shrimp','ghost_shrimp','blue_velvet_shrimp','snowball_shrimp','bamboo_shrimp'].forEach(function(k){ if(SP[k]) SP[k].type='Shrimp'; });
 ['nerite_snail','mystery_snail','assassin_snail','trumpet_snail','ramshorn_snail','zebra_nerite','horned_nerite','red_racer_nerite','rabbit_snail','black_devil_snail','pagoda_snail','spike_apple_snail','giant_apple_snail','trapdoor_snail','bladder_snail','pond_snail','ivory_mystery','gold_mystery','chocolate_rabbit_snail','winged_nerite'].forEach(function(k){ if(SP[k]) SP[k].type='Snail'; });
+['cpo_crayfish','electric_blue_crayfish','marbled_crayfish','red_swamp_crayfish','white_specter_crayfish','brazos_dwarf_crayfish','cajun_dwarf_crayfish','red_claw_crayfish'].forEach(function(k){ if(SP[k]) SP[k].type='Crayfish'; });
 ['african_dwarf_frog'].forEach(function(k){ if(SP[k]) SP[k].type='Amphibian'; });
 ['red_eared_slider','indian_flapshell','painted_turtle'].forEach(function(k){ if(SP[k]) SP[k].type='Turtle'; });
 Object.keys(SP).forEach(function(k){ if(!SP[k].type) SP[k].type='Fish'; });
@@ -346,6 +367,14 @@ var SP_BREEDS = {
   bladder_snail:     {breeds:'Easy',     fry_fate:'hidden',  breed_note:'Hermaphrodite — very fast breeder. Population explodes with overfeeding.'},
   pond_snail:        {breeds:'Easy',     fry_fate:'hidden',  breed_note:'Hermaphrodite — fast breeder. Control food to prevent overpopulation.'},
   mystery_snail:     {breeds:'Easy',     fry_fate:'hidden',  breed_note:'Lays pink egg clusters above the waterline. Easy to remove if unwanted. Will not overpopulate.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  cpo_crayfish:      {breeds:'Easy',     fry_fate:'hidden',  breed_note:'Female carries eggs under tail for 3-4 weeks. Fry are miniature adults. Remove male after mating to protect female.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  electric_blue_crayfish: {breeds:'Moderate', fry_fate:'hidden', breed_note:'Female carries eggs under tail. Remove male after mating — he may cannibalize. Fry grow quickly.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  marbled_crayfish:  {breeds:'Easy',     fry_fate:'hidden',  breed_note:'Reproduces alone — no male needed (parthenogenesis). All offspring are female clones. Can overpopulate quickly.'},
+  red_swamp_crayfish: {breeds:'Easy',    fry_fate:'hidden',  breed_note:'Prolific breeder. Female carries large clutch under tail. Fry are miniature adults. Separate if unwanted.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  white_specter_crayfish: {breeds:'Easy', fry_fate:'hidden', breed_note:'Same as red swamp crayfish — prolific breeder. Female carries eggs under tail.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  brazos_dwarf_crayfish: {breeds:'Moderate', fry_fate:'hidden', breed_note:'Female carries eggs under tail. Cooler water (65-70°F) encourages breeding. Fry are miniature adults.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  cajun_dwarf_crayfish: {breeds:'Moderate', fry_fate:'hidden', breed_note:'Female carries eggs under tail. Provide hiding spots for juveniles. Fry are miniature adults.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  red_claw_crayfish: {breeds:'Moderate', fry_fate:'hidden',  breed_note:'Female carries a large clutch under tail for 6-8 weeks. Fry grow slowly. Provide hiding spots to reduce cannibalism.', breed_cond:{pair:true,ratio:'1M:1F'}},
   ivory_mystery:     {breeds:'Easy',     fry_fate:'hidden',  breed_note:'Lays egg clusters above the waterline. Easy to remove if unwanted.', breed_cond:{pair:true,ratio:'1M:1F'}},
   gold_mystery:      {breeds:'Easy',     fry_fate:'hidden',  breed_note:'Lays egg clusters above the waterline. Easy to remove if unwanted.', breed_cond:{pair:true,ratio:'1M:1F'}},
   spike_apple_snail: {breeds:'Easy',     fry_fate:'hidden',  breed_note:'Lays eggs above the waterline. Plant-safe apple snail.', breed_cond:{pair:true,ratio:'1M:1F'}},
@@ -375,6 +404,10 @@ var SP_BREEDS = {
   zebra_danio:       {breeds:'Easy',     fry_fate:'eaten',   breed_note:'Prolific egg scatterer — spawns readily. Parents eat eggs immediately. Separate tank needed to raise fry.'},
   celestial_pearl_danio:{breeds:'Moderate',fry_fate:'eaten', breed_note:'Spawns in a planted tank. Eggs hidden among plants. Fry eaten in community tanks.'},
   pearl_danio:       {breeds:'Moderate', fry_fate:'eaten',   breed_note:'Egg scatterer similar to Zebra Danio. Separate breeding tank needed to raise fry.'},
+  medaka:            {breeds:'Easy',     fry_fate:'hidden',  breed_note:'Female carries egg clusters on belly after spawning. Eggs hatch in 10-14 days. Fry eat infusoria or powdered food.', breed_cond:{pair:true,ratio:'1M:2F'}},
+  blue_medaka:       {breeds:'Easy',     fry_fate:'hidden',  breed_note:'Identical to standard Medaka — female carries eggs on belly. Fry are tiny and need powdered food.', breed_cond:{pair:true,ratio:'1M:2F'}},
+  white_medaka:      {breeds:'Easy',     fry_fate:'hidden',  breed_note:'Identical to standard Medaka — female carries eggs on belly until they hatch.', breed_cond:{pair:true,ratio:'1M:2F'}},
+  koi_medaka:        {breeds:'Easy',     fry_fate:'hidden',  breed_note:'Identical to standard Medaka. Colour patterns do not always breed true — fry may vary in pattern.', breed_cond:{pair:true,ratio:'1M:2F'}},
   betta:             {breeds:'Moderate', fry_fate:'guarded', breed_note:'Male builds a bubble nest. Eggs and fry guarded by male. Remove female immediately after spawning.', breed_cond:{tmin:78,pair:true,ratio:'1M:1F'}},
   dwarf_gourami:     {breeds:'Moderate', fry_fate:'guarded', breed_note:'Male builds bubble nest. Remove female after spawning as male may harass her.', breed_cond:{pair:true,ratio:'1M:1F'}},
   honey_gourami:     {breeds:'Moderate', fry_fate:'guarded', breed_note:'Bubble nest builder. Male guards nest. Less aggressive than Dwarf Gourami.', breed_cond:{pair:true,ratio:'1M:1F'}},
@@ -2850,6 +2883,92 @@ function sub_task(e) {
 }
 
 // ===== RECOMMENDATIONS =====
+// ===== FOOD RECOMMENDATIONS =====
+var DIET_MAP = {
+  // Bottom feeders
+  corydoras:'bottom', panda_corydoras:'bottom', pygmy_corydoras:'nano_bottom',
+  sterbai_corydoras:'bottom', peppered_corydoras:'bottom',
+  kuhli_loach:'bottom', clown_loach:'bottom',
+  // Algae eaters
+  otocinclus:'algae', hillstream_loach:'algae',
+  bristlenose_pleco:'algae', rubber_pleco:'algae', sailfin_pleco:'algae',
+  // Carnivores
+  betta:'carnivore', discus:'carnivore', oscar:'carnivore',
+  flowerhorn:'carnivore', convict_cichlid:'carnivore',
+  firemouth_cichlid:'carnivore', african_cichlid:'carnivore',
+  peacock_cichlid:'carnivore', ram_cichlid:'carnivore',
+  dwarf_puffer:'carnivore',
+  // Livebearers — benefit from spirulina
+  guppy:'livebearer', molly:'livebearer', platy:'livebearer',
+  swordtail:'livebearer', endlers_livebearer:'livebearer',
+  // Nano fish — need micro-sized food
+  ember_tetra:'nano', chili_rasbora:'nano', celestial_pearl_danio:'nano',
+  sparkling_gourami:'nano', scarlet_badis:'nano',
+  // Cold-water / goldfish
+  goldfish:'goldfish', white_cloud_minnow:'coldwater',
+  // Filter feeders
+  bamboo_shrimp:'filter_feed',
+  // Frogs
+  african_dwarf_frog:'frog'
+};
+var FOOD_INFO = {
+  flake:       {name:'Quality flake food',                  desc:'Daily staple for surface and mid-water community fish.',                  cat:'daily'},
+  nano_pellet: {name:'Micro/nano pellets',                  desc:'Tiny pellets for small-mouthed fish — regular flakes are too large.',    cat:'daily'},
+  sinking:     {name:'Sinking catfish pellets or wafers',   desc:'Sink to the bottom for corydoras, loaches, and other bottom feeders.',   cat:'daily'},
+  algae_wafer: {name:'Algae wafers',                        desc:'Pressed algae discs for otocinclus, plecos, snails, and algae grazers.', cat:'daily'},
+  carnivore_p: {name:'Carnivore / betta pellets',           desc:'High-protein pellets for bettas, cichlids, and predatory fish.',         cat:'daily'},
+  spirulina:   {name:'Spirulina flakes',                    desc:'Plant-based supplement for livebearers, herbivores, and snails.',        cat:'supplement'},
+  shrimp_food: {name:'Shrimp-specific pellets',             desc:'Micro pellets formulated for shrimp (e.g. Hikari Shrimp Cuisine).',     cat:'daily'},
+  calcium:     {name:'Calcium supplement or cuttlebone',    desc:'Essential for shell and exoskeleton health in snails, shrimp, and crayfish.', cat:'supplement'},
+  blanched_veg:{name:'Blanched vegetables',                 desc:'Zucchini, spinach, or cucumber — vital dietary variety for shrimp, snails, and crayfish.', cat:'supplement'},
+  bloodworm:   {name:'Frozen/freeze-dried bloodworms',      desc:'Protein-rich treat enjoyed by most fish, crayfish, and frogs.',         cat:'treat'},
+  brine_shrimp:{name:'Frozen/freeze-dried brine shrimp',    desc:'Excellent variety treat for almost all fish species.',                  cat:'treat'},
+  powder_food: {name:'Powdered food or phytoplankton',      desc:'Fine enough to stay suspended — essential for filter-feeding bamboo shrimp.', cat:'daily'},
+  goldfish_f:  {name:'Goldfish flakes or pellets',          desc:'Low-protein, high-carb formulation specific to goldfish. Add blanched peas weekly.', cat:'daily'},
+  frog_pellet: {name:'Sinking bloodworm pellets',           desc:'Small sinking pellets sized for African dwarf frogs — they cannot reach surface food.', cat:'daily'}
+};
+function get_food_recs(tid) {
+  var d = ld();
+  var sk = d.stock.filter(function(s){ return s.tank_id === tid && !s.preview; });
+  if (!sk.length) return null;
+  var needs = {}; // food_id -> [species names]
+  function need(fid, name) {
+    if (!needs[fid]) needs[fid] = [];
+    if (needs[fid].indexOf(name) === -1) needs[fid].push(name);
+  }
+  sk.forEach(function(s) {
+    var sp = get_sp(d)[s.species_id]; if (!sp) return;
+    var nm = sp.name, type = sp.type, diet = DIET_MAP[s.species_id];
+    if (type === 'Shrimp') {
+      need('shrimp_food', nm); need('blanched_veg', nm);
+      if (s.species_id === 'bamboo_shrimp') need('powder_food', nm);
+      else need('brine_shrimp', nm);
+    } else if (type === 'Snail') {
+      need('algae_wafer', nm); need('calcium', nm); need('blanched_veg', nm);
+    } else if (type === 'Crayfish') {
+      need('sinking', nm); need('blanched_veg', nm); need('bloodworm', nm); need('calcium', nm);
+    } else if (type === 'Amphibian') {
+      need('frog_pellet', nm); need('bloodworm', nm);
+    } else if (type === 'Turtle') {
+      need('carnivore_p', nm); need('bloodworm', nm);
+    } else {
+      // Fish
+      if (diet === 'bottom')       { need('sinking', nm); need('bloodworm', nm); }
+      else if (diet === 'nano_bottom') { need('nano_pellet', nm); need('sinking', nm); }
+      else if (diet === 'algae')   { need('algae_wafer', nm); need('spirulina', nm); }
+      else if (diet === 'carnivore') { need('carnivore_p', nm); need('bloodworm', nm); need('brine_shrimp', nm); }
+      else if (diet === 'livebearer') { need('flake', nm); need('spirulina', nm); need('bloodworm', nm); }
+      else if (diet === 'nano')    { need('nano_pellet', nm); need('brine_shrimp', nm); need('bloodworm', nm); }
+      else if (diet === 'goldfish') { need('goldfish_f', nm); need('bloodworm', nm); }
+      else if (diet === 'coldwater') { need('flake', nm); need('bloodworm', nm); }
+      else if (diet === 'filter_feed') { need('powder_food', nm); }
+      else if (diet === 'frog')    { need('frog_pellet', nm); need('bloodworm', nm); }
+      else { need('flake', nm); need('bloodworm', nm); need('brine_shrimp', nm); } // default omnivore
+    }
+  });
+  return needs;
+}
+
 function r_recs() {
   var tid = at(), d = ld(), el = document.getElementById('p-recs');
   if (!d.tanks.find(function(t){return t.id===tid;})) { el.innerHTML = no_tank(); return; }
@@ -3257,6 +3376,34 @@ function r_recs() {
       }
     });
     h += '</table></div></div>';
+  }
+
+  // Food Guide card
+  var food_needs = get_food_recs(tid);
+  if (food_needs && Object.keys(food_needs).length) {
+    var daily = [], supplement = [], treat = [];
+    Object.keys(food_needs).forEach(function(fid) {
+      var info = FOOD_INFO[fid]; if (!info) return;
+      var for_names = food_needs[fid].join(', ');
+      var row = '<tr><td style="font-weight:600;font-size:13px">' + esc(info.name) + '</td>' +
+                '<td style="font-size:12px;color:var(--muted)">' + esc(info.desc) + '</td>' +
+                '<td style="font-size:12px;color:var(--mid);white-space:nowrap">' + esc(for_names) + '</td></tr>';
+      if (info.cat === 'daily')       daily.push(row);
+      else if (info.cat === 'supplement') supplement.push(row);
+      else                            treat.push(row);
+    });
+    function food_section(title, color, rows) {
+      if (!rows.length) return '';
+      return '<div style="margin-bottom:12px">' +
+        '<div style="font-size:11px;font-weight:700;color:' + color + ';text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">' + title + '</div>' +
+        '<div class="tw"><table><tr><th>Food</th><th>Notes</th><th>Species</th></tr>' + rows.join('') + '</table></div></div>';
+    }
+    h += '<div class="card"><div class="ctitle">Food Guide</div>' +
+         '<p style="font-size:12px;color:var(--muted);margin:0 0 10px">Recommended foods based on your current livestock. Where possible, a single food covers multiple species.</p>' +
+         food_section('Daily feeding', 'var(--ok)', daily) +
+         food_section('Supplements', 'var(--mid)', supplement) +
+         food_section('Treats (2-3x per week)', 'var(--warn)', treat) +
+         '</div>';
   }
 
   el.innerHTML = h;
@@ -4809,7 +4956,7 @@ function rec_step2() {
   ls_tank_type.forEach(function(c){ h += '<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;cursor:pointer;background:#fafafa"><input type="checkbox" data-cat="ls" value="' + esc(c) + '" style="width:16px;height:16px;flex-shrink:0"> ' + esc(c) + '</label>'; });
   h += '</div>';
   h += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">By Role</div>';
-  var ls_role = ['Schooling Fish','Bottom Dwellers','Algae Eaters','Shrimp','Snails','Livebearers','Centerpiece Fish'];
+  var ls_role = ['Schooling Fish','Bottom Dwellers','Algae Eaters','Shrimp','Snails','Crayfish','Livebearers','Centerpiece Fish'];
   h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:16px">';
   ls_role.forEach(function(c){ h += '<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;cursor:pointer;background:#fafafa"><input type="checkbox" data-cat="ls" value="' + esc(c) + '" style="width:16px;height:16px;flex-shrink:0"> ' + esc(c) + '</label>'; });
   h += '</div>';
@@ -4847,13 +4994,14 @@ function rec_find_matches() {
   var has_co2 = d.equip.some(function(x){ return x.tank_id === tid && x.type === 'CO2 System'; });
   var sp_all = get_sp(d);
   var LS_GRP = {
-    'Peaceful Community':    ['neon_tetra','cardinal_tetra','rummy_nose_tetra','lemon_tetra','glowlight_tetra','ember_tetra','harlequin_rasbora','chili_rasbora','celestial_pearl_danio','zebra_danio','pearl_danio','boesemani_rainbow','neon_rainbowfish','red_cherry_barb','clown_killifish','guppy','molly','platy','swordtail','endlers_livebearer','white_cloud_minnow','honey_gourami','sparkling_gourami','pearl_gourami','african_dwarf_frog','corydoras','panda_corydoras','pygmy_corydoras','hillstream_loach','kuhli_loach','otocinclus','cherry_shrimp','amano_shrimp','ghost_shrimp','crystal_shrimp','blue_velvet_shrimp','snowball_shrimp','bamboo_shrimp','nerite_snail','mystery_snail','ramshorn_snail','trumpet_snail','black_neon_tetra','pristella_tetra','silvertip_tetra','peppered_corydoras','sterbai_corydoras','moonlight_gourami','thick_lipped_gourami','odessa_barb','giant_danio','filament_barb','malabar_danio','checker_barb','black_ruby_barb','roseline_shark','indian_glass_fish','zebra_nerite','horned_nerite','red_racer_nerite','rabbit_snail','black_devil_snail','pagoda_snail','spike_apple_snail','trapdoor_snail','bladder_snail','pond_snail','ivory_mystery','gold_mystery','chocolate_rabbit_snail','winged_nerite'],
+    'Peaceful Community':    ['neon_tetra','cardinal_tetra','rummy_nose_tetra','lemon_tetra','glowlight_tetra','ember_tetra','harlequin_rasbora','chili_rasbora','celestial_pearl_danio','zebra_danio','pearl_danio','medaka','blue_medaka','white_medaka','koi_medaka','boesemani_rainbow','neon_rainbowfish','red_cherry_barb','clown_killifish','guppy','molly','platy','swordtail','endlers_livebearer','white_cloud_minnow','honey_gourami','sparkling_gourami','pearl_gourami','african_dwarf_frog','corydoras','panda_corydoras','pygmy_corydoras','hillstream_loach','kuhli_loach','otocinclus','cherry_shrimp','amano_shrimp','ghost_shrimp','crystal_shrimp','blue_velvet_shrimp','snowball_shrimp','bamboo_shrimp','nerite_snail','mystery_snail','ramshorn_snail','trumpet_snail','black_neon_tetra','pristella_tetra','silvertip_tetra','peppered_corydoras','sterbai_corydoras','moonlight_gourami','thick_lipped_gourami','odessa_barb','giant_danio','filament_barb','malabar_danio','checker_barb','black_ruby_barb','roseline_shark','indian_glass_fish','zebra_nerite','horned_nerite','red_racer_nerite','rabbit_snail','black_devil_snail','pagoda_snail','spike_apple_snail','trapdoor_snail','bladder_snail','pond_snail','ivory_mystery','gold_mystery','chocolate_rabbit_snail','winged_nerite'],
     'Semi-Aggressive':       ['betta','dwarf_gourami','blue_gourami','red_tail_shark','dwarf_puffer','black_skirt_tetra','serpae_tetra','congo_tetra','rosy_barb','tiger_barb','scarlet_badis','siamese_algae_eater','flying_fox','bristlenose_pleco','yoyo_loach','clown_loach','ram_cichlid','bolivian_ram','electric_blue_ram','firemouth_cichlid','assassin_snail','paradise_fish','kissing_gourami','tinfoil_barb','giant_gourami','giant_apple_snail'],
     'Aggressive / Specialist':['oscar','convict_cichlid','african_cichlid','peacock_cichlid','angelfish','discus'],
-    'Schooling Fish':        ['neon_tetra','cardinal_tetra','rummy_nose_tetra','lemon_tetra','glowlight_tetra','black_skirt_tetra','serpae_tetra','ember_tetra','congo_tetra','harlequin_rasbora','chili_rasbora','celestial_pearl_danio','zebra_danio','pearl_danio','boesemani_rainbow','neon_rainbowfish','rosy_barb','red_cherry_barb','tiger_barb','clown_killifish','scarlet_badis','black_neon_tetra','pristella_tetra','silvertip_tetra','odessa_barb','giant_danio','filament_barb','tinfoil_barb','malabar_danio','checker_barb','black_ruby_barb','indian_glass_fish','roseline_shark'],
+    'Schooling Fish':        ['neon_tetra','cardinal_tetra','rummy_nose_tetra','lemon_tetra','glowlight_tetra','black_skirt_tetra','serpae_tetra','ember_tetra','congo_tetra','harlequin_rasbora','chili_rasbora','celestial_pearl_danio','zebra_danio','pearl_danio','medaka','blue_medaka','white_medaka','koi_medaka','boesemani_rainbow','neon_rainbowfish','rosy_barb','red_cherry_barb','tiger_barb','clown_killifish','scarlet_badis','black_neon_tetra','pristella_tetra','silvertip_tetra','odessa_barb','giant_danio','filament_barb','tinfoil_barb','malabar_danio','checker_barb','black_ruby_barb','indian_glass_fish','roseline_shark'],
     'Bottom Dwellers':       ['corydoras','panda_corydoras','pygmy_corydoras','kuhli_loach','yoyo_loach','clown_loach','hillstream_loach','peppered_corydoras','sterbai_corydoras'],
     'Algae Eaters':          ['otocinclus','siamese_algae_eater','flying_fox','bristlenose_pleco','common_pleco'],
     'Shrimp':                ['cherry_shrimp','amano_shrimp','ghost_shrimp','crystal_shrimp','blue_velvet_shrimp','snowball_shrimp','bamboo_shrimp'],
+    'Crayfish':              ['cpo_crayfish','brazos_dwarf_crayfish','cajun_dwarf_crayfish','electric_blue_crayfish','marbled_crayfish','white_specter_crayfish','red_swamp_crayfish','red_claw_crayfish'],
     'Snails':                ['nerite_snail','mystery_snail','assassin_snail','ramshorn_snail','trumpet_snail','zebra_nerite','horned_nerite','red_racer_nerite','rabbit_snail','black_devil_snail','pagoda_snail','spike_apple_snail','giant_apple_snail','trapdoor_snail','bladder_snail','pond_snail','ivory_mystery','gold_mystery','chocolate_rabbit_snail','winged_nerite'],
     'Livebearers':           ['guppy','molly','platy','swordtail','endlers_livebearer','white_cloud_minnow'],
     'Centerpiece Fish':      ['betta','honey_gourami','dwarf_gourami','sparkling_gourami','pearl_gourami','blue_gourami','angelfish','discus','dwarf_puffer','red_tail_shark','african_dwarf_frog','paradise_fish','moonlight_gourami','kissing_gourami','thick_lipped_gourami','giant_gourami'],
