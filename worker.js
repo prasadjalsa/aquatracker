@@ -5102,11 +5102,20 @@ function get_algae_risks(tid) {
   var light_h = get_light_hours(tid), co2 = get_co2_info(tid);
   var lr = d.water.filter(function(w){ return w.tank_id === tid; }).sort(function(a,b){ return b.date.localeCompare(a.date); })[0];
   var nitrate = lr ? lr.nitrate : null;
+  var ammonia = lr ? lr.ammonia : null;
+  var nitrite = lr ? lr.nitrite : null;
+  var temp_f  = lr ? lr.temp_f  : null;
   var has_plants = d.plants.filter(function(p){ return p.tank_id === tid; }).length > 0;
+  var filters = d.equip.filter(function(x){ return x.tank_id === tid && x.type === 'Filter' && x.config && x.config.flow_gph > 0; });
+  var total_gph = 0; filters.forEach(function(f){ total_gph += (f.config.flow_gph || 0); });
+  var turnover = (tank && tank.gallons && total_gph) ? total_gph / tank.gallons : null;
   var risks = [];
   if (tank && tank.setup_date) {
     var age_days = Math.floor((new Date() - new Date(tank.setup_date + 'T00:00:00')) / 86400000);
     if (age_days < 90) risks.push({id:'brown_diatom', reason:'Tank under 3 months old (age: ' + age_days + ' days)'});
+  }
+  if ((ammonia !== null && ammonia > 0) || (nitrite !== null && nitrite > 0)) {
+    risks.push({id:'brown_diatom', reason:'Ammonia/nitrite detected — tank may still be cycling'});
   }
   if (light_h >= 8 && !co2) {
     risks.push({id:'hair_algae',  reason:'High light (' + light_h + ' h/day) without CO2'});
@@ -5122,6 +5131,13 @@ function get_algae_risks(tid) {
   if (nitrate !== null && nitrate > 20) {
     risks.push({id:'hair_algae',   reason:'Elevated nitrate (' + nitrate + ' ppm)'});
     risks.push({id:'cyanobacteria',reason:'High nutrients — nitrate ' + nitrate + ' ppm'});
+  }
+  if (temp_f !== null && temp_f > 82) {
+    var tc = Math.round((temp_f - 32) * 5 / 9);
+    risks.push({id:'cyanobacteria', reason:'High temperature (' + tc + '\xB0C) — cyanobacteria thrives in warm water'});
+  }
+  if (turnover !== null && turnover < 4) {
+    risks.push({id:'cyanobacteria', reason:'Low filter turnover (' + turnover.toFixed(1) + 'x/hr) — poor flow favours cyanobacteria'});
   }
   if (!has_plants) {
     risks.push({id:'cyanobacteria', reason:'No plants to compete for nutrients'});
