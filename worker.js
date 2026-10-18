@@ -2955,7 +2955,7 @@ var DISEASE_DATA = {
     symptom_tag: 'Tiny white salt-like spots on body and fins',
     symptoms: ['White spots resembling grains of salt on fins and body', 'Fish flashing or scratching against surfaces', 'Clamped fins, lethargy, loss of appetite', 'Spots may disappear and reappear as the parasite cycles'],
     causes: 'Ichthyophthirius multifiliis — a parasitic protozoan. Triggered by temperature stress, new fish, or contaminated equipment.',
-    treatment: ['Raise temperature gradually to 28-30°C (82-86°F) — speeds up parasite life cycle so treatment is more effective', 'Treat with an ich medication (e.g. Ich-X, Waterlife Protozin, methylene blue) — follow packaging directions', 'Continue treatment for at least 2 days after all spots disappear (treat the free-swimming stage, not just visible spots)', 'Daily 25% water changes and vacuum substrate during treatment', 'Remove carbon from filter during treatment'],
+    treatment: ['Raise temperature gradually to 28-30°C (82-86°F) — speeds up the parasite life cycle making treatment more effective', 'Mild cases: heat treatment alone can work — hold at 30°C for 5-7 days with daily 25% water changes (free, no medication needed)', 'Medication: malachite green or methylene blue are widely available in Indian fish shops at low cost and very effective', 'Continue treatment for at least 2 days after all spots disappear — you are treating the free-swimming stage, not the visible spots', 'Remove carbon from filter during treatment'],
     prevention: 'Quarantine all new fish for 2-4 weeks. Maintain stable water temperature. Avoid sudden temperature drops.',
     search: 'ich+white+spot+disease+fish'
   },
@@ -2964,7 +2964,7 @@ var DISEASE_DATA = {
     symptom_tag: 'Fine gold or rust-coloured dust on body, clamped fins',
     symptoms: ['Fine gold, yellow or rust-coloured dust visible on skin — use a torch in a dark room', 'Clamped fins, rapid gill movement, scratching', 'Fish may appear to shimmer or glitter', 'Lethargy and loss of appetite'],
     causes: 'Oodinium (Piscinoodinium pillulare) — a dinoflagellate parasite. Very contagious and can kill within days if untreated.',
-    treatment: ['Dim or cover the tank — the parasite requires light to survive', 'Raise temperature to 28°C (82°F)', 'Treat with a copper-based medication or velvet-specific treatment (e.g. Waterlife Octozin, Seachem Cupramine)', 'Remove carbon from filter. Continue treatment for the full recommended course', 'Daily water changes during treatment'],
+    treatment: ['Dim or cover the tank — the parasite requires light to survive; darkness slows its spread', 'Raise temperature to 28°C (82°F)', 'Treat with copper-based medication (e.g. Seachem Cupramine) or velvet-specific treatment. India alternative: malachite green is more accessible and effective against velvet', 'Remove carbon from filter. Continue treatment for the full recommended course', 'Daily water changes during treatment'],
     prevention: 'Quarantine all new fish. Keep water quality high. Velvet spreads extremely fast — treat the whole tank at first sign.',
     search: 'velvet+disease+oodinium+fish'
   },
@@ -2973,7 +2973,7 @@ var DISEASE_DATA = {
     symptom_tag: 'Frayed, ragged, or dissolving fins',
     symptoms: ['Fins look tattered, frayed or have white edges', 'Fins may appear shorter over time as they dissolve', 'Red or inflamed base of fins in severe cases', 'Tail or fins may look semi-transparent'],
     causes: 'Bacterial infection (Aeromonas, Pseudomonas, Flavobacterium). Usually secondary to poor water quality, injury from fin nipping, or stress.',
-    treatment: ['Improve water quality immediately — test and do a 30% water change', 'Identify and remove any fin-nipping tankmates', 'Treat with antibacterial medication (e.g. API Fin & Body Cure, Waterlife Myxazin)', 'Add aquarium salt (1 tsp per 10 L) to aid recovery in non-scaleless fish', 'Fins will regrow once infection is cleared — may take weeks'],
+    treatment: ['Improve water quality immediately — test and do a 30% water change; fin rot will not heal in poor water', 'Identify and remove any fin-nipping tankmates', 'Medication: antibacterial such as API Fin and Body Cure or Waterlife Myxazin. India alternatives: potassium permanganate (PP) dip (5 mg/L for 15-30 min) or methylene blue — both widely available at fish shops or pharmacies', 'Add non-iodised aquarium salt (1 tsp per 10 L) to aid recovery — skip for scaleless fish like loaches', 'Fins will regrow once infection clears — may take several weeks'],
     prevention: 'Maintain excellent water quality. Keep nitrates below 20 ppm. Remove fin-nipping fish.',
     search: 'fin+rot+bacterial+infection+fish'
   },
@@ -2982,16 +2982,16 @@ var DISEASE_DATA = {
     symptom_tag: 'Severe bloating, raised pinecone-like scales',
     symptoms: ['Severely bloated abdomen', 'Scales sticking out like a pinecone when viewed from above', 'Lethargic, hiding, loss of appetite', 'Possible ulcers or sores'],
     causes: 'Bacterial infection causing kidney failure and fluid accumulation. Usually a sign of serious internal damage — poor water quality, stress, or other underlying illness.',
-    treatment: ['Isolate the fish immediately in a hospital tank', 'Add Epsom salt (1 tsp per 40 L) to help reduce fluid retention', 'Treat with antibacterial medication — kanamycin or maracyn are commonly used', 'Note: dropsy has a poor prognosis. Many fish do not survive even with treatment', 'Keep water pristine and reduce stress as much as possible'],
+    treatment: ['Isolate the fish immediately in a hospital tank', 'Add Epsom salt (1 tsp per 40 L) to help reduce fluid retention', 'Antibacterial medication is needed: kanamycin or maracyn if available. India alternatives: oxytetracycline (aquarium or vet grade) or metronidazole (Flagyl from pharmacies) for suspected internal bacterial/parasitic cause', 'Note: dropsy has a poor prognosis — many fish do not survive even with treatment. Early detection improves the odds.', 'Keep water pristine and reduce stress as much as possible'],
     prevention: 'Maintain excellent water quality and avoid chronic stress. Quarantine new fish. Feed a varied high-quality diet.',
     search: 'dropsy+pinecone+disease+fish'
   },
   columnaris: {
     name: 'Columnaris (Mouth Fungus / Saddleback)',
-    symptom_tag: 'White or grey patches near mouth or on body',
+    symptom_tag: 'White/grey patches near mouth or body — often mistaken for fungus',
     symptoms: ['White or grey-yellow lesions around the mouth, gills, or along the body', 'May look like fungus but is actually bacterial', 'Gills may look pale or brown, fish gasping at surface', '"Saddleback" lesion across the back is common in severe cases', 'Rapid progression — fish can die within 24-48 hours'],
     causes: 'Flexibacter columnaris — a highly contagious bacterial infection. Triggered by poor water quality, high temperature, or stress.',
-    treatment: ['Act fast — columnaris progresses very rapidly', 'Treat with antibacterial medication (kanamycin + furanace combination is most effective)', 'Lower temperature slightly (if compatible with fish) — bacteria thrives in warmer water', 'Improve oxygenation — add an air stone', 'Remove carbon from filter. Do daily 25% water changes'],
+    treatment: ['Act fast — columnaris progresses very rapidly and can kill within 24-48 hours', 'Antibacterial medication: kanamycin + furanace is most effective but hard to find in India. India alternatives: oxytetracycline or enrofloxacin (from a vet) — both work well', 'Lower temperature slightly if fish tolerate it — columnaris thrives above 28°C', 'Improve oxygenation — add an air stone', 'Remove carbon from filter. Do daily 25% water changes'],
     prevention: 'Maintain water quality and keep temperature stable. Quarantine new fish. Avoid overcrowding.',
     search: 'columnaris+mouth+fungus+fish+disease'
   },
@@ -3009,7 +3009,7 @@ var DISEASE_DATA = {
     symptom_tag: 'One or both eyes bulging outward',
     symptoms: ['One eye (unilateral) or both eyes (bilateral) visibly protruding', 'Cloudy or damaged eye surface in severe cases', 'Fish may still eat and swim normally in mild cases', 'Bilateral pop-eye is usually more serious than one eye alone'],
     causes: 'Fluid build-up behind the eye caused by bacterial infection or injury. Unilateral usually indicates injury. Bilateral usually indicates systemic bacterial infection.',
-    treatment: ['Isolate in a hospital tank', 'Treat with broad-spectrum antibacterial (kanamycin works well)', 'Add Epsom salt (1 tsp per 40 L) to reduce swelling', 'Keep water pristine — daily 25% water changes in hospital tank', 'Recovery takes time — the eye may not return to normal even after infection clears'],
+    treatment: ['Isolate in a hospital tank', 'Treat with broad-spectrum antibacterial. India: oxytetracycline is widely available and effective — follow dosage on packaging. Kanamycin works well if available.', 'Add Epsom salt (1 tsp per 40 L) to reduce swelling', 'Keep water pristine — daily 25% water changes in hospital tank', 'Recovery takes time — the eye may not fully return to normal even after infection clears'],
     prevention: 'Maintain water quality. Avoid sharp decorations that can injure fish. Quarantine new arrivals.',
     search: 'pop+eye+exophthalmia+fish+treatment'
   },
@@ -3018,7 +3018,7 @@ var DISEASE_DATA = {
     symptom_tag: 'Pits or eroded holes on head and lateral line',
     symptoms: ['Small pits or cavities on the head and along the lateral line', 'Pits may release white, stringy mucus', 'Most common in cichlids (oscars, discus, severums) and large catfish', 'Fish may still eat and behave normally in early stages'],
     causes: 'Hexamita parasite combined with nutritional deficiencies (vitamin C, D, minerals) and poor water quality. Activated carbon is also suspected as a contributing factor.',
-    treatment: ['Improve water quality immediately — large water changes and reduce nitrates below 10 ppm', 'Remove activated carbon from filter', 'Treat with metronidazole (Flagyl) — add to food or treat the water', 'Supplement diet with vitamin C and varied fresh/frozen foods', 'Improve diet — reduce dry food, add frozen bloodworms, brine shrimp, varied fresh foods'],
+    treatment: ['Improve water quality immediately — large water changes and reduce nitrates below 10 ppm', 'Remove activated carbon from filter', 'Treat with metronidazole (Flagyl) — the most accessible option in India. Flagyl 400mg tablets are available at pharmacies without prescription. Crush 1 tablet, dissolve in a small cup of tank water, add to food or directly to the hospital tank (1 tablet per 40 L). Repeat every 48 hours for 3 doses.', 'Supplement diet with vitamin C — crush vitamin C tablets and mix with food', 'Improve diet — reduce dry pellets, add frozen bloodworms, prawns, or varied fresh foods'],
     prevention: 'Excellent water quality with low nitrates. Varied high-quality diet. Avoid long-term use of activated carbon in filter.',
     search: 'hole+in+the+head+HITH+cichlid+disease'
   },
@@ -3027,7 +3027,7 @@ var DISEASE_DATA = {
     symptom_tag: 'Flashing and scratching, excess mucus, rapid gilling',
     symptoms: ['Fish scratching or flashing (rubbing) against surfaces repeatedly', 'Rapid gill movement or gasping at surface', 'Excess mucus on body — cloudy or slimy appearance', 'Redness or inflammation around gills', 'Clamped fins'],
     causes: 'Microscopic flatworm parasites — Dactylogyrus (gill flukes) and Gyrodactylus (skin flukes). Introduced via new fish, plants, or water.',
-    treatment: ['Treat with praziquantel-based medication (e.g. Hikari PraziPro, Sera Tremazol)', 'Treat for a full course — skin flukes reproduce live young, gill flukes lay eggs requiring repeat doses', 'Raise temperature slightly during treatment to speed up parasite life cycle', 'Do a 25-30% water change before treating'],
+    treatment: ['Treat with praziquantel-based medication (e.g. Hikari PraziPro, Sera Tremazol). India alternatives: fenbendazole (Panacur dog dewormer — 1g per 100 L) is accessible and effective. Potassium permanganate (PP) dips (10 mg/L for 30 min) also work for skin flukes.', 'Skin flukes reproduce live young; gill flukes lay eggs — both require repeat treatments 5-7 days apart to catch all life stages', 'Raise temperature slightly to 28-30°C during treatment to speed up the parasite life cycle', 'Do a 30% water change before each treatment round'],
     prevention: 'Quarantine all new fish. Dip new plants in a potassium permanganate solution before adding to tank.',
     search: 'gill+flukes+skin+flukes+fish+treatment'
   },
@@ -3036,9 +3036,45 @@ var DISEASE_DATA = {
     symptom_tag: 'Visible worm-like parasites attached to body or fins',
     symptoms: ['Thin, white or green thread-like worms visibly attached to the skin, fins, or gill cover', 'Red, inflamed attachment sites', 'Fish may flash or rub against surfaces', 'Ulcers or sores at attachment points'],
     causes: 'Lernaea cyprinacea — a crustacean parasite, not actually a worm. Introduced via new fish, live plants, or water from an infected source.',
-    treatment: ['Remove worms individually with tweezers or forceps — grasp as close to skin as possible and pull gently', 'Treat the tank with a crustacean parasite medication (diflubenzuron / Dimilin, or potassium permanganate dip)', 'Apply antiseptic (e.g. iodine, mercurochrome) to attachment wounds after removal', 'Treat for multiple rounds — medication kills larval stages but not adults. Multiple treatments 1-2 weeks apart are needed', 'Do water changes between treatments'],
+    treatment: ['Remove worms individually with tweezers or forceps — grasp as close to skin as possible and pull gently', 'Medication: diflubenzuron (Dimilin) if available. India alternative: potassium permanganate (PP) dips are the most accessible option — 10 mg/L for 30 minutes, repeat once a week for 3-4 weeks to catch all larval stages', 'Apply povidone-iodine (Betadine) to attachment wounds after removal to prevent secondary infection', 'Do water changes between treatment rounds'],
     prevention: 'Quarantine all new fish for 4 weeks. Avoid adding pond fish to aquariums.',
     search: 'anchor+worm+lernaea+fish+treatment'
+  },
+  saprolegnia: {
+    name: 'Fungal Infection (Saprolegnia)',
+    symptom_tag: 'White cotton-wool tufts on body, fins, or wounds',
+    symptoms: ['Fluffy white or grey cotton-like growth on skin, fins, mouth, or eyes', 'Usually appears on an existing wound, ulcer, or site of injury', 'Affected area may appear red or raw underneath the growth', 'Fish may become lethargic and stop eating'],
+    causes: 'Saprolegnia fungus — opportunistic, attacks stressed or injured fish. Triggered by poor water quality, physical injury, or a secondary infection following ich or fin rot.',
+    treatment: ['Isolate the fish if possible', 'Treat with antifungal medication — methylene blue, malachite green, or aquarium salt baths (1 tsp per litre for 15-30 min)', 'Salt baths are widely available in India and very effective for mild cases', 'Address the underlying wound or bacterial infection causing it', 'Improve water quality — do a 30% water change and clean the filter'],
+    prevention: 'Prevent injury during handling and transport. Treat wounds promptly. Maintain good water quality.',
+    search: 'saprolegnia+fungal+infection+fish+cotton+wool'
+  },
+  aeromonas: {
+    name: 'Bacterial Ulcer (Aeromonas / Red Sores)',
+    symptom_tag: 'Red open sores, ulcers, or bleeding patches on body',
+    symptoms: ['Red, open sores or ulcers on the body or fins', 'Reddening around the base of fins, vent, or belly', 'Haemorrhaging (bleeding) under the skin', 'Fish may appear bloated or lethargic', 'Scale loss around the ulcer site'],
+    causes: 'Aeromonas or Pseudomonas bacteria — opportunistic pathogens that strike when fish are stressed or water quality is poor. Very common in Indian aquariums with fluctuating water parameters.',
+    treatment: ['Perform a 30-40% water change immediately', 'Treat with broad-spectrum antibacterial medication — enrofloxacin or oxytetracycline if available', 'Salt the tank lightly (1-2 tsp per 10 L) to reduce osmotic stress', 'For surface ulcers: gently apply povidone-iodine (Betadine) to the wound with a cotton swab during a brief net transfer', 'Continue treatment for 5-7 days even if the fish looks better'],
+    prevention: 'Consistent water changes, avoid overcrowding, and quarantine new fish for 2-4 weeks.',
+    search: 'aeromonas+bacterial+ulcer+red+sores+fish'
+  },
+  trichodina: {
+    name: 'Trichodina (Protozoan Parasite)',
+    symptom_tag: 'Flashing, excess slime, grey haze on skin or gills',
+    symptoms: ['Fish rubbing or scratching against tank walls, substrate, or decorations (flashing)', 'Excess mucus — body looks cloudy or has a grey-white haze', 'Clamped fins, rapid gill movement', 'Loss of appetite and lethargy', 'Looks similar to velvet but without the gold-dust shimmer'],
+    causes: 'Trichodina — a circular protozoan parasite that lives on the skin and gills. Very common in fish from Indian fish shops and farms due to overcrowding during transport.',
+    treatment: ['Salt treatment is the first line — raise salinity to 2-3 tsp per 10 L for 5-7 days (check fish tolerance first)', 'Formalin-based treatments or malachite green are effective for persistent cases', 'Increase temperature slightly to 28-30°C (if fish tolerate it) to speed up parasite life cycle', 'Do a 30% water change before starting treatment', 'Treat for at least 7-10 days to catch all life cycle stages'],
+    prevention: 'Quarantine new fish for 2-4 weeks. A prophylactic salt bath before adding new fish helps.',
+    search: 'trichodina+fish+parasite+flashing+slime'
+  },
+  fish_tb: {
+    name: 'Fish Tuberculosis (Wasting Disease)',
+    symptom_tag: 'Gradual wasting, curved spine, hollow belly — no response to treatment',
+    symptoms: ['Progressive weight loss despite eating normally', 'Hollow or sunken belly', 'Curved or kinked spine (lordosis/scoliosis)', 'Pale colour, fin erosion, raised scales', 'Fish declines slowly over weeks or months — does not respond to standard treatments'],
+    causes: 'Mycobacterium marinum — a chronic bacterial infection. More common than hobbyists realise. Fish often arrive already infected from farms. There is no reliable cure.',
+    treatment: ['There is no effective treatment — infected fish should be humanely euthanised to prevent spread', 'Remove and euthanise affected fish promptly', 'Do a full tank disinfection: drain, clean all surfaces with a dilute bleach solution (1:10), rinse thoroughly, and re-cycle before restocking', 'Note: Mycobacterium marinum can cause skin granulomas in humans — wear gloves when handling tank water if you have cuts'],
+    prevention: 'Buy fish from reputable sources. Quarantine all new fish. Avoid buying visibly thin or lethargic fish.',
+    search: 'fish+tuberculosis+mycobacterium+wasting+disease+aquarium'
   }
 };
 
@@ -5179,7 +5215,21 @@ function diag_dis_list() {
 }
 function diag_dis_detail(id) {
   var dd = DISEASE_DATA[id]; if (!dd) return;
+  var d = ld(), tid = at();
+  var lr = d.water.filter(function(w){ return w.tank_id === tid; }).sort(function(a,b){ return b.date.localeCompare(a.date); })[0];
   var h = '<a href="https://www.google.com/search?tbm=isch&q=' + dd.search + '" target="_blank" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mid);font-weight:600;margin-bottom:14px;text-decoration:none">&#x1F50D; Search Google Images: ' + esc(dd.name) + ' &#x2192;</a>';
+  if (lr) {
+    var warns = [];
+    if (parseFloat(lr.ammonia) > 0) warns.push('Ammonia ' + lr.ammonia + ' ppm — toxic, suppresses immune system and worsens any infection');
+    if (parseFloat(lr.nitrite) > 0) warns.push('Nitrite ' + lr.nitrite + ' ppm — toxic, stresses fish and makes treatment harder');
+    if (parseFloat(lr.nitrate) > 40) warns.push('Nitrate ' + lr.nitrate + ' ppm — elevated, do a water change before or during treatment');
+    if (warns.length) {
+      h += '<div style="background:#fff3e0;border-left:3px solid var(--warn);border-radius:0 8px 8px 0;padding:10px 12px;margin-bottom:14px">';
+      h += '<div style="font-size:11px;font-weight:700;color:#7a4500;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px">&#x26A0; Water quality caution (last log)</div>';
+      warns.forEach(function(w){ h += '<div style="font-size:12px;color:#5a3000;margin-bottom:3px">&#x2022; ' + w + '</div>'; });
+      h += '<div style="font-size:11px;color:var(--muted);margin-top:5px">Fix water quality first — most treatments work better in clean water.</div></div>';
+    }
+  }
   h += '<div style="font-size:13px;font-weight:700;color:var(--deep);margin-bottom:2px">' + esc(dd.name) + '</div>';
   h += '<div style="font-size:11px;color:var(--muted);font-style:italic;margin-bottom:10px">' + esc(dd.symptom_tag) + '</div>';
   h += '<div style="font-size:12px;font-weight:700;color:var(--mid);margin-bottom:4px">Symptoms to confirm</div>';
