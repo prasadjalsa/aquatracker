@@ -2882,8 +2882,6 @@ function sub_task(e) {
   r_maint();
 }
 
-}
-
 // ===== DIAGNOSE DATA =====
 var ALGAE_DATA = {
   brown_diatom: {
