@@ -5230,6 +5230,24 @@ function diag_dis_detail(id) {
       h += '<div style="font-size:11px;color:var(--muted);margin-top:5px">Fix water quality first — most treatments work better in clean water.</div></div>';
     }
   }
+  var sp_all = get_sp(d);
+  var inv_stock = d.stock.filter(function(s){
+    if (s.tank_id !== tid) return false;
+    var sp = sp_all[s.species_id];
+    return sp && (sp.type === 'Shrimp' || sp.type === 'Snail');
+  });
+  if (inv_stock.length) {
+    var inv_names = inv_stock.map(function(s){ return s.display_name; });
+    var unique_names = inv_names.filter(function(n, i){ return inv_names.indexOf(n) === i; });
+    h += '<div style="background:#fff0f0;border-left:3px solid var(--danger);border-radius:0 8px 8px 0;padding:10px 12px;margin-bottom:14px">';
+    h += '<div style="font-size:11px;font-weight:700;color:#8a0000;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px">&#x1F6A8; Invertebrates in this tank</div>';
+    h += '<div style="font-size:12px;color:#5a0000;margin-bottom:5px">' + esc(unique_names.join(', ')) + '</div>';
+    h += '<div style="font-size:12px;color:var(--deep);margin-bottom:3px">&#x2022; Copper-based medications are lethal to all shrimp and snails — never use in a tank with inverts</div>';
+    h += '<div style="font-size:12px;color:var(--deep);margin-bottom:3px">&#x2022; Malachite green and potassium permanganate are harmful to invertebrates</div>';
+    h += '<div style="font-size:12px;color:var(--deep);margin-bottom:3px">&#x2022; Salt is stressful for most freshwater shrimp — use with caution or avoid</div>';
+    h += '<div style="font-size:12px;font-weight:600;color:#8a0000;margin-top:6px">Move shrimp and snails to a separate container before adding any medication to the main tank.</div>';
+    h += '</div>';
+  }
   h += '<div style="font-size:13px;font-weight:700;color:var(--deep);margin-bottom:2px">' + esc(dd.name) + '</div>';
   h += '<div style="font-size:11px;color:var(--muted);font-style:italic;margin-bottom:10px">' + esc(dd.symptom_tag) + '</div>';
   h += '<div style="font-size:12px;font-weight:700;color:var(--mid);margin-bottom:4px">Symptoms to confirm</div>';
