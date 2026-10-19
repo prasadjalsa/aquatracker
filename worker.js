@@ -4083,7 +4083,7 @@ function do_edit_task(id) {
     return opts.join('');
   };
   om('<div class="ctitle" style="margin-bottom:12px">Edit Task</div>' +
-    '<form id="ef" onsubmit="sub_edit_task(event,\'' + id + '\')">' +
+    '<form id="ef" data-tid="' + id + '" onsubmit="sub_edit_task(event,this.dataset.tid)">' +
     '<div class="frow">' +
     fg('Task Type', '<select name="type">' + sel_type(t.type) + '</select>') +
     fg('Task Name', '<input type="text" name="name" value="' + esc(t.name) + '" required>') +
