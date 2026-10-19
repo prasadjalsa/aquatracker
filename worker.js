@@ -14,6 +14,7 @@ export default {
     if (url.pathname === '/api/hint')                                   return handle_hint(request, env);
     if (url.pathname === '/api/data'     && request.method === 'GET')  return handle_get_data(request, env);
     if (url.pathname === '/api/data'     && request.method === 'PUT')  return handle_put_data(request, env);
+    if (url.pathname === '/api/ref/all')                             return handle_ref_all(request, env);
     return new Response(APP_HTML, { headers: {'Content-Type':'text/html; charset=utf-8', 'Cache-Control':'no-cache'} });
   }
 };
@@ -186,166 +187,6 @@ self.addEventListener('fetch', e => {
 });
 `;
 
-const APP_HTML = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#0a2342">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="AquaTracker">
-<link rel="manifest" href="/manifest.json">
-<link rel="apple-touch-icon" href="/icon.svg">
-<title>AquaTracker</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"><\/script>
-<style>
-:root {
-  --deep:#0a2342; --mid:#1a6b8a; --surf:#4db8d4; --accent:#7fffd4;
-  --bg:#f0f8ff; --card:#fff; --text:#1a2333; --muted:#6b7a8d;
-  --ok:#3ab87a; --warn:#e8a838; --danger:#e05252;
-  --r:8px; --sh:0 2px 8px rgba(0,0,0,.10);
-}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-.nav{background:var(--deep);color:#fff;display:flex;align-items:center;gap:12px;padding:0 16px;height:54px;position:sticky;top:0;z-index:100}
-.logo{font-size:17px;font-weight:700;white-space:nowrap}
-.nav-r{display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap;padding:4px 0}
-.nav select{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:5px 8px;font-size:13px;max-width:200px}
-.nav select option{background:var(--deep)}
-.prof-wrap{position:relative}
-.prof-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:6px;color:#fff;padding:5px 10px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px}
-.prof-btn:hover{background:rgba(255,255,255,.25)}
-.prof-menu{display:none;position:absolute;right:0;top:calc(100% + 6px);background:#fff;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.18);min-width:170px;z-index:200;overflow:hidden}
-.prof-menu.open{display:block}
-.prof-menu button{display:block;width:100%;text-align:left;padding:10px 14px;border:none;background:none;cursor:pointer;font-size:13px;color:#1a2a3a}
-.prof-menu button:hover{background:#f0f4f8}
-.prof-menu hr{margin:2px 0;border:none;border-top:1px solid #e8edf2}
-.db-status{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:rgba(255,255,255,.8);white-space:nowrap}
-.db-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.db-dot.live{background:#4caf50;box-shadow:0 0 6px #4caf50}
-.db-dot.offline{background:#f44336}
-.db-dot.connecting{background:#ff9800;animation:db-blink 1s infinite}
-@keyframes db-blink{0%,100%{opacity:1}50%{opacity:.3}}
-.tabs{display:flex;background:var(--mid);overflow-x:auto;padding:0 8px}
-.prev-bar{background:#fef3d5;border-bottom:2px solid #e8a838;padding:8px 16px;font-size:13px;color:#7a4f00;display:flex;align-items:center;gap:10px}
-.prev-bar strong{font-weight:700}
-.prev-bar .btn-del-prev{background:none;border:1px solid #c8870a;color:#7a4f00;border-radius:4px;padding:3px 10px;font-size:12px;cursor:pointer}
-.tab{background:none;border:none;color:rgba(255,255,255,.7);padding:11px 14px;font-size:13px;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;transition:.15s;font-family:inherit}
-.tab:hover{color:#fff}
-.tab.on{color:#fff;border-bottom-color:var(--accent)}
-.panel{display:none;padding:18px;max-width:980px;margin:0 auto}
-.panel.on{display:block}
-.card{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);padding:18px;margin-bottom:14px}
-.ctitle{font-size:15px;font-weight:700;color:var(--deep);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
-.frow{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:10px}
-.fg{display:flex;flex-direction:column;gap:3px}
-label{font-size:12px;color:var(--muted);font-weight:600}
-input,select,textarea{border:1px solid #d0dae4;border-radius:6px;padding:7px 9px;font-size:13px;font-family:inherit;background:#fff;transition:border-color .15s;width:100%}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--surf)}
-textarea{resize:vertical;min-height:60px}
-.btn{border:none;border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s;display:inline-flex;align-items:center;gap:5px;font-family:inherit}
-.btn:hover{opacity:.85}
-.bp{background:var(--surf);color:#fff}
-.bd{background:var(--danger);color:#fff}
-.bg{background:#eef2f6;color:var(--text)}
-.bs{padding:4px 10px;font-size:12px}
-.tw{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{background:#f5f8fb;color:var(--muted);font-weight:600;text-align:left;padding:7px 9px;white-space:nowrap}
-td{padding:7px 9px;border-top:1px solid #eef0f3;vertical-align:middle}
-tr:hover td{background:#f9fbfc}
-.pill{display:inline-block;border-radius:20px;padding:2px 9px;font-size:11px;font-weight:700}
-.pok{background:#d4f5e5;color:#1a7a4a}
-.pwarn{background:#fef3d5;color:#8a5a00}
-.pdanger{background:#fde0e0;color:#a01818}
-.pmuted{background:#eef0f3;color:var(--muted)}
-.trow{border-left:4px solid transparent}
-.tover{border-left-color:var(--danger)}
-.tsoon{border-left-color:var(--warn)}
-.tok{border-left-color:var(--ok)}
-.chart-wrap{position:relative;height:260px;margin-top:12px}
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:14px}
-.overlay.on{display:flex}
-.mbox{background:#fff;border-radius:var(--r);padding:22px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto}
-.mtitle{font-size:16px;font-weight:700;color:var(--deep);margin-bottom:14px}
-.mact{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
-.empty-s{text-align:center;padding:40px 16px;color:var(--muted)}
-.empty-s h2{color:var(--deep);margin-bottom:8px;font-size:20px}
-.empty-s p{margin-bottom:18px;font-size:14px}
-.dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:14px}
-.scard{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);padding:14px 18px}
-.slbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
-.sval{font-size:24px;font-weight:700;color:var(--deep);margin-top:2px}
-.ssub{font-size:11px;color:var(--muted);margin-top:1px}
-.cok{background:#d4f5e5;border-radius:var(--r);padding:10px 14px;color:#1a7a4a;font-weight:600;margin-bottom:12px;font-size:14px}
-.cwarn{background:#fde0e0;border-radius:var(--r);padding:10px 14px;color:#a01818;font-weight:600;margin-bottom:12px;font-size:14px}
-.cinfo{background:#e8f4fb;border-radius:var(--r);padding:10px 14px;color:#1a5a7a;font-weight:600;margin-bottom:12px;font-size:14px}
-.emsg{color:var(--muted);font-size:13px;padding:4px 0}
-.bl-bar{background:#eef0f3;border-radius:20px;height:10px;overflow:hidden;margin:6px 0 4px}
-.bl-fill{height:100%;border-radius:20px;transition:width .3s}
-.cfg-box{background:#f5f8fb;border-radius:6px;padding:8px 12px;font-size:12px;color:var(--muted);margin-top:6px}
-.cfg-sep{height:1px;background:#eef0f3;margin:8px 0}
-@media(max-width:600px){
-  .logo{font-size:14px}
-  .panel{padding:10px}
-  .tab{padding:9px 10px;font-size:12px}
-  .frow{grid-template-columns:1fr}
-}
-</style>
-</head>
-<body>
-
-<nav class="nav">
-  <span class="logo">&#x1F420; AquaTracker</span>
-  <div class="nav-r">
-    <select id="t_sel" title="Switch active tank"></select>
-    <button class="btn bg bs" onclick="do_add_tank()">+ Tank</button>
-    <button class="btn bg bs" onclick="do_add_preview()">&#x1F9EA; Preview</button>
-    <span id="sync_ind" style="font-size:11px;color:rgba(255,255,255,.6);white-space:nowrap"></span>
-    <span class="db-status" id="db_status"><span class="db-dot connecting" id="db_dot"></span><span id="db_lbl">Connecting</span></span>
-    <div class="prof-wrap" id="prof_wrap">
-      <button class="prof-btn" onclick="toggle_prof_menu()">
-        <span>&#x1F464;</span><span id="nav_uname">Account</span><span>&#x25BE;</span>
-      </button>
-      <div class="prof-menu" id="prof_menu">
-        <button onclick="do_settings();toggle_prof_menu()">&#x2699;&#xFE0F; Units</button>
-        <hr>
-        <button onclick="do_logout()">&#x1F510; Log out</button>
-      </div>
-    </div>
-  </div>
-</nav>
-
-<div class="tabs">
-  <button class="tab on" data-t="dash">Dashboard</button>
-  <button class="tab" data-t="life">My Tank</button>
-  <button class="tab" data-t="wlog">Logs</button>
-  <button class="tab" data-t="maint">Maintenance</button>
-  <button class="tab" data-t="recs">Recommendations</button>
-  <button class="tab" data-t="tools">Toolkit</button>
-  <button class="tab" data-t="howto">How To</button>
-</div>
-
-<div id="prev_bar" class="prev-bar" style="display:none">
-  &#x1F9EA; <strong>Preview Tank</strong> &mdash; This tank is for testing only and is excluded from exports.
-  <button class="btn-del-prev" onclick="do_del_preview()">Delete Preview</button>
-</div>
-
-<div id="p-dash"  class="panel on"></div>
-<div id="p-life"  class="panel"></div>
-<div id="p-wlog"  class="panel"></div>
-<div id="p-maint" class="panel"></div>
-<div id="p-recs"  class="panel"></div>
-<div id="p-tools" class="panel"></div>
-<div id="p-howto" class="panel"></div>
-
-<div id="ov" class="overlay" onclick="if(event.target===this)cm()">
-  <div class="mbox" id="mb"></div>
-</div>
-
-<script>
 // ===== SPECIES DATABASE (63 species) =====
 // bioload: 1=very low, 2=low, 3=medium, 4=high, 5=very high
 // level: Beginner / Intermediate / Advanced
@@ -798,7 +639,6 @@ var GROUP_POS = {
   'Anubias':'Midground', 'Cryptocoryne':'Midground', 'Java Fern':'Midground', 'Lily & Bulb':'Midground',
   'Swords & Rosettes':'Background', 'Aponogeton':'Background', 'Stem Plants':'Background'
 };
-function get_plant_pos(pid) { var p = PL[pid]; return p ? (GROUP_POS[p.group] || 'Midground') : ''; }
 
 // ===== FERTILIZER PRESETS =====
 var FERT = {
@@ -810,6 +650,573 @@ var FERT = {
   thrive_plus:   {name:'NilocG Thrive+',           ml_per_gal:0.05,  freq:3, note:'High-light tank all-in-one'},
   custom:        {name:'Custom Fertilizer',        ml_per_gal:null,  freq:7, note:'Enter your own dose and schedule'},
 };
+
+var ALGAE_DATA = {
+  brown_diatom: {
+    name: 'Brown Diatom Algae',
+    appearance: 'Brown or rust-coloured dusty coating on glass, substrate, decorations and leaves.',
+    causes: ['New tank (most common in first 3 months)', 'Low light — diatoms thrive where green algae cannot', 'High silicate from tap water or new substrate', 'Too few plants to compete for nutrients'],
+    fix: ['Add nerite snails or otocinclus — they eat diatoms very effectively', 'Wipe glass and decorations during water changes', 'Rinse or replace new substrate to reduce silicate release', 'Slightly increase light duration (aim 7-8 h/day)', 'Be patient — diatoms nearly always disappear on their own within 2-3 months as the tank matures'],
+    prevention: 'Diatoms are a normal part of tank maturation. A cycled tank with healthy plant growth naturally outcompetes them.',
+    search: 'brown+diatom+algae+aquarium'
+  },
+  green_spot: {
+    name: 'Green Spot Algae (GSA)',
+    appearance: 'Hard, dark green circular spots on slow-growing plant leaves and glass. Very difficult to scrape off.',
+    causes: ['Low phosphate (PO4 below 1 ppm) — counterintuitively, GSA thrives when phosphate is too low', 'Bright light without enough nutrients', 'CO2 fluctuation or too little CO2 for the light level'],
+    fix: ['Dose phosphate fertiliser to raise PO4 to 1-2 ppm', 'Scrape spots off glass with a razor blade or credit card', 'Reduce light by 1-2 hours if not running CO2', 'Ensure CO2 is stable if running injected CO2 — fluctuations cause GSA'],
+    prevention: 'Keep phosphate above 1 ppm and light duration matched to your fertilisation and CO2 level.',
+    search: 'green+spot+algae+aquarium+glass'
+  },
+  bba: {
+    name: 'Black Beard Algae (BBA)',
+    appearance: 'Dark grey or black tufts of short hair on plant edges, hardscape, and equipment. Feels rough to the touch.',
+    causes: ['CO2 fluctuation — the most common cause. Levels that rise and fall trigger BBA', 'Low or inconsistent CO2 in a well-lit tank', 'Uneven flow creating dead spots', 'Ammonium spike'],
+    fix: ['Stabilise CO2 — keep injection constant, never turn CO2 off between lights-on periods', 'Spot-treat with liquid carbon (e.g. Excel/Easycarbo) directly on the algae using a syringe with flow off — it turns pink then dies', 'Siamese algae eaters and amano shrimp graze on soft BBA', 'Improve flow to eliminate dead spots', 'Manual removal: remove affected leaves, scrub hardscape outside the tank'],
+    prevention: 'Consistent CO2 is the single best prevention. If no CO2, reduce light to match nutrient level.',
+    search: 'black+beard+algae+BBA+aquarium'
+  },
+  hair_algae: {
+    name: 'Hair / Thread Algae',
+    appearance: 'Long, bright or dark green filaments. Looks like wet hair or cotton wool on plants, substrate and decor.',
+    causes: ['Excess light duration (over 8 h without CO2)', 'High nutrients — especially nitrate above 20 ppm', 'Insufficient plant mass to consume nutrients', 'Poor or inconsistent CO2'],
+    fix: ['Reduce light to 6-7 h/day immediately', 'Manually remove as much as possible by twisting a toothbrush through it', 'Add fast-growing floating plants (duckweed, frogbit) to consume excess nutrients', 'Amano shrimp eat hair algae — a group of 5-10 makes a visible difference', 'Consider a liquid carbon dose during outbreak'],
+    prevention: 'Balance light, nutrients and plant mass. A heavily planted tank rarely suffers hair algae.',
+    search: 'hair+algae+thread+algae+aquarium'
+  },
+  cyanobacteria: {
+    name: 'Blue-Green Algae (Cyanobacteria)',
+    appearance: 'Slimy blue-green, dark green, or reddish-black sheets that smother substrate, plants and decor. Smells musty.',
+    causes: ['High organic waste — overfeeding or infrequent water changes', 'Poor circulation and dead spots', 'Very low nitrate (below 5 ppm) — cyanobacteria can fix nitrogen from the air', 'New tank with unstable nutrient balance'],
+    fix: ['Manual removal: syphon it out during water changes. Wear gloves — some strains produce toxins', 'Improve circulation — add a small powerhead or relocate filter output', 'Do 3 consecutive daily 30% water changes', 'A 3-day blackout (cover the tank completely) weakens it significantly', 'Erythromycin (antibiotic) is a last resort — effective but disrupts beneficial bacteria. Consult an aquarium store.'],
+    prevention: 'Regular water changes, good flow, and avoiding overfeeding. Keep nitrate above 5 ppm.',
+    search: 'cyanobacteria+blue+green+algae+aquarium'
+  },
+  green_dust: {
+    name: 'Green Dust Algae (GDA)',
+    appearance: 'Thin, hazy green film on glass that looks like green dust or a dirty smear. Wipes off easily but returns quickly.',
+    causes: ['Excess light duration', 'New tank with unstable water chemistry', 'Low silicate (different mechanism from GSA)'],
+    fix: ['Do NOT wipe it off for 3-4 weeks — let it complete its life cycle and die off naturally', 'After 3-4 weeks the cells will release and you can wipe the glass clean', 'Reduce light by 1-2 hours', 'Nerite snails keep on top of it once the initial bloom passes'],
+    prevention: 'GDA outbreaks are common in new tanks and usually self-resolve. Nerite snails are the best long-term control.',
+    search: 'green+dust+algae+aquarium+glass'
+  },
+  staghorn: {
+    name: 'Staghorn Algae',
+    appearance: 'Grey or blue-grey branching tufts, like tiny antlers. Appears on plant edges, equipment, and hardscape. Feels rough.',
+    causes: ['Very similar to BBA — CO2 fluctuation is the primary cause', 'Low CO2 with moderate to high light', 'Ammonium spikes from overfeeding or decomposing plant matter'],
+    fix: ['Same approach as BBA — stabilise CO2 above all else', 'Spot-dose with liquid carbon (Excel/Easycarbo) directly on affected areas with flow off', 'Manual removal of badly affected leaves', 'Amano shrimp will graze on it', 'Reduce light if not running CO2'],
+    prevention: 'Consistent CO2 and good tank hygiene. Remove decomposing plant matter promptly.',
+    search: 'staghorn+algae+aquarium'
+  },
+  fuzz_algae: {
+    name: 'Fuzz Algae',
+    appearance: 'Short, soft green fuzz covering plant leaves, hardscape, and substrate. Looks like a fine green beard. Usually 2-10 mm long.',
+    causes: ['Moderate excess of nutrients — common in young planted tanks finding their balance', 'Inconsistent fertilisation', 'Moderate light with low plant mass'],
+    fix: ['Manual removal by wiping leaves gently', 'Otocinclus and amano shrimp eat fuzz algae very effectively', 'Increase plant mass so plants can outcompete the algae for nutrients', 'Add floating plants for rapid nutrient uptake'],
+    prevention: 'Fuzz algae is a sign of a tank finding its balance. A thriving plant mass and a few shrimp or otocinclus will keep it in check.',
+    search: 'fuzz+algae+aquarium+plants'
+  }
+};
+var DISEASE_DATA = {
+  ich: {
+    name: 'Ich (White Spot)',
+    symptom_tag: 'Tiny white salt-like spots on body and fins',
+    symptoms: ['White spots resembling grains of salt on fins and body', 'Fish flashing or scratching against surfaces', 'Clamped fins, lethargy, loss of appetite', 'Spots may disappear and reappear as the parasite cycles'],
+    causes: 'Ichthyophthirius multifiliis — a parasitic protozoan. Triggered by temperature stress, new fish, or contaminated equipment.',
+    treatment: ['Raise temperature gradually to 28-30°C (82-86°F) — speeds up the parasite life cycle making treatment more effective', 'Mild cases: heat treatment alone can work — hold at 30°C for 5-7 days with daily 25% water changes (free, no medication needed)', 'Medication: malachite green or methylene blue are widely available in Indian fish shops at low cost and very effective', 'Continue treatment for at least 2 days after all spots disappear — you are treating the free-swimming stage, not the visible spots', 'Remove carbon from filter during treatment'],
+    prevention: 'Quarantine all new fish for 2-4 weeks. Maintain stable water temperature. Avoid sudden temperature drops.',
+    search: 'ich+white+spot+disease+fish'
+  },
+  velvet: {
+    name: 'Velvet (Gold Dust Disease)',
+    symptom_tag: 'Fine gold or rust-coloured dust on body, clamped fins',
+    symptoms: ['Fine gold, yellow or rust-coloured dust visible on skin — use a torch in a dark room', 'Clamped fins, rapid gill movement, scratching', 'Fish may appear to shimmer or glitter', 'Lethargy and loss of appetite'],
+    causes: 'Oodinium (Piscinoodinium pillulare) — a dinoflagellate parasite. Very contagious and can kill within days if untreated.',
+    treatment: ['Dim or cover the tank — the parasite requires light to survive; darkness slows its spread', 'Raise temperature to 28°C (82°F)', 'Treat with copper-based medication (e.g. Seachem Cupramine) or velvet-specific treatment. India alternative: malachite green is more accessible and effective against velvet', 'Remove carbon from filter. Continue treatment for the full recommended course', 'Daily water changes during treatment'],
+    prevention: 'Quarantine all new fish. Keep water quality high. Velvet spreads extremely fast — treat the whole tank at first sign.',
+    search: 'velvet+disease+oodinium+fish'
+  },
+  fin_rot: {
+    name: 'Fin Rot',
+    symptom_tag: 'Frayed, ragged, or dissolving fins',
+    symptoms: ['Fins look tattered, frayed or have white edges', 'Fins may appear shorter over time as they dissolve', 'Red or inflamed base of fins in severe cases', 'Tail or fins may look semi-transparent'],
+    causes: 'Bacterial infection (Aeromonas, Pseudomonas, Flavobacterium). Usually secondary to poor water quality, injury from fin nipping, or stress.',
+    treatment: ['Improve water quality immediately — test and do a 30% water change; fin rot will not heal in poor water', 'Identify and remove any fin-nipping tankmates', 'Medication: antibacterial such as API Fin and Body Cure or Waterlife Myxazin. India alternatives: potassium permanganate (PP) dip (5 mg/L for 15-30 min) or methylene blue — both widely available at fish shops or pharmacies', 'Add non-iodised aquarium salt (1 tsp per 10 L) to aid recovery — skip for scaleless fish like loaches', 'Fins will regrow once infection clears — may take several weeks'],
+    prevention: 'Maintain excellent water quality. Keep nitrates below 20 ppm. Remove fin-nipping fish.',
+    search: 'fin+rot+bacterial+infection+fish'
+  },
+  dropsy: {
+    name: 'Dropsy',
+    symptom_tag: 'Severe bloating, raised pinecone-like scales',
+    symptoms: ['Severely bloated abdomen', 'Scales sticking out like a pinecone when viewed from above', 'Lethargic, hiding, loss of appetite', 'Possible ulcers or sores'],
+    causes: 'Bacterial infection causing kidney failure and fluid accumulation. Usually a sign of serious internal damage — poor water quality, stress, or other underlying illness.',
+    treatment: ['Isolate the fish immediately in a hospital tank', 'Add Epsom salt (1 tsp per 40 L) to help reduce fluid retention', 'Antibacterial medication is needed: kanamycin or maracyn if available. India alternatives: oxytetracycline (aquarium or vet grade) or metronidazole (Flagyl from pharmacies) for suspected internal bacterial/parasitic cause', 'Note: dropsy has a poor prognosis — many fish do not survive even with treatment. Early detection improves the odds.', 'Keep water pristine and reduce stress as much as possible'],
+    prevention: 'Maintain excellent water quality and avoid chronic stress. Quarantine new fish. Feed a varied high-quality diet.',
+    search: 'dropsy+pinecone+disease+fish'
+  },
+  columnaris: {
+    name: 'Columnaris (Mouth Fungus / Saddleback)',
+    symptom_tag: 'White/grey patches near mouth or body — often mistaken for fungus',
+    symptoms: ['White or grey-yellow lesions around the mouth, gills, or along the body', 'May look like fungus but is actually bacterial', 'Gills may look pale or brown, fish gasping at surface', '"Saddleback" lesion across the back is common in severe cases', 'Rapid progression — fish can die within 24-48 hours'],
+    causes: 'Flexibacter columnaris — a highly contagious bacterial infection. Triggered by poor water quality, high temperature, or stress.',
+    treatment: ['Act fast — columnaris progresses very rapidly and can kill within 24-48 hours', 'Antibacterial medication: kanamycin + furanace is most effective but hard to find in India. India alternatives: oxytetracycline or enrofloxacin (from a vet) — both work well', 'Lower temperature slightly if fish tolerate it — columnaris thrives above 28°C', 'Improve oxygenation — add an air stone', 'Remove carbon from filter. Do daily 25% water changes'],
+    prevention: 'Maintain water quality and keep temperature stable. Quarantine new fish. Avoid overcrowding.',
+    search: 'columnaris+mouth+fungus+fish+disease'
+  },
+  swim_bladder: {
+    name: 'Swim Bladder Disorder',
+    symptom_tag: 'Swimming sideways, upside down, or unable to rise/sink',
+    symptoms: ['Fish floats to the surface involuntarily', 'Fish sinks to the bottom and cannot swim up', 'Fish swims at a tilted or sideways angle', 'Distended abdomen in some cases'],
+    causes: 'Can be physical (constipation, cyst, injury) or bacterial. Overfeeding is the most common cause. Gulping air at the surface is also a factor in some fish.',
+    treatment: ['Fast the fish for 2-3 days — this resolves most constipation-related cases', 'Feed a skinned, blanched pea after the fast — a natural laxative', 'If no improvement, treat with antibacterial medication in case of internal infection', 'Adjust water level if fish cannot reach the surface to breathe', 'Some cases are permanent if caused by physical injury or cyst'],
+    prevention: 'Avoid overfeeding. Feed small amounts twice daily rather than one large meal. Avoid feeding dried food exclusively — soak pellets before feeding.',
+    search: 'swim+bladder+disorder+fish+treatment'
+  },
+  popeye: {
+    name: 'Pop-eye (Exophthalmia)',
+    symptom_tag: 'One or both eyes bulging outward',
+    symptoms: ['One eye (unilateral) or both eyes (bilateral) visibly protruding', 'Cloudy or damaged eye surface in severe cases', 'Fish may still eat and swim normally in mild cases', 'Bilateral pop-eye is usually more serious than one eye alone'],
+    causes: 'Fluid build-up behind the eye caused by bacterial infection or injury. Unilateral usually indicates injury. Bilateral usually indicates systemic bacterial infection.',
+    treatment: ['Isolate in a hospital tank', 'Treat with broad-spectrum antibacterial. India: oxytetracycline is widely available and effective — follow dosage on packaging. Kanamycin works well if available.', 'Add Epsom salt (1 tsp per 40 L) to reduce swelling', 'Keep water pristine — daily 25% water changes in hospital tank', 'Recovery takes time — the eye may not fully return to normal even after infection clears'],
+    prevention: 'Maintain water quality. Avoid sharp decorations that can injure fish. Quarantine new arrivals.',
+    search: 'pop+eye+exophthalmia+fish+treatment'
+  },
+  hith: {
+    name: 'Hole in the Head (HITH)',
+    symptom_tag: 'Pits or eroded holes on head and lateral line',
+    symptoms: ['Small pits or cavities on the head and along the lateral line', 'Pits may release white, stringy mucus', 'Most common in cichlids (oscars, discus, severums) and large catfish', 'Fish may still eat and behave normally in early stages'],
+    causes: 'Hexamita parasite combined with nutritional deficiencies (vitamin C, D, minerals) and poor water quality. Activated carbon is also suspected as a contributing factor.',
+    treatment: ['Improve water quality immediately — large water changes and reduce nitrates below 10 ppm', 'Remove activated carbon from filter', 'Treat with metronidazole (Flagyl) — the most accessible option in India. Flagyl 400mg tablets are available at pharmacies without prescription. Crush 1 tablet, dissolve in a small cup of tank water, add to food or directly to the hospital tank (1 tablet per 40 L). Repeat every 48 hours for 3 doses.', 'Supplement diet with vitamin C — crush vitamin C tablets and mix with food', 'Improve diet — reduce dry pellets, add frozen bloodworms, prawns, or varied fresh foods'],
+    prevention: 'Excellent water quality with low nitrates. Varied high-quality diet. Avoid long-term use of activated carbon in filter.',
+    search: 'hole+in+the+head+HITH+cichlid+disease'
+  },
+  flukes: {
+    name: 'Flukes (Gill & Skin Flukes)',
+    symptom_tag: 'Flashing and scratching, excess mucus, rapid gilling',
+    symptoms: ['Fish scratching or flashing (rubbing) against surfaces repeatedly', 'Rapid gill movement or gasping at surface', 'Excess mucus on body — cloudy or slimy appearance', 'Redness or inflammation around gills', 'Clamped fins'],
+    causes: 'Microscopic flatworm parasites — Dactylogyrus (gill flukes) and Gyrodactylus (skin flukes). Introduced via new fish, plants, or water.',
+    treatment: ['Treat with praziquantel-based medication (e.g. Hikari PraziPro, Sera Tremazol). India alternatives: fenbendazole (Panacur dog dewormer — 1g per 100 L) is accessible and effective. Potassium permanganate (PP) dips (10 mg/L for 30 min) also work for skin flukes.', 'Skin flukes reproduce live young; gill flukes lay eggs — both require repeat treatments 5-7 days apart to catch all life stages', 'Raise temperature slightly to 28-30°C during treatment to speed up the parasite life cycle', 'Do a 30% water change before each treatment round'],
+    prevention: 'Quarantine all new fish. Dip new plants in a potassium permanganate solution before adding to tank.',
+    search: 'gill+flukes+skin+flukes+fish+treatment'
+  },
+  anchor_worm: {
+    name: 'Anchor Worm (Lernaea)',
+    symptom_tag: 'Visible worm-like parasites attached to body or fins',
+    symptoms: ['Thin, white or green thread-like worms visibly attached to the skin, fins, or gill cover', 'Red, inflamed attachment sites', 'Fish may flash or rub against surfaces', 'Ulcers or sores at attachment points'],
+    causes: 'Lernaea cyprinacea — a crustacean parasite, not actually a worm. Introduced via new fish, live plants, or water from an infected source.',
+    treatment: ['Remove worms individually with tweezers or forceps — grasp as close to skin as possible and pull gently', 'Medication: diflubenzuron (Dimilin) if available. India alternative: potassium permanganate (PP) dips are the most accessible option — 10 mg/L for 30 minutes, repeat once a week for 3-4 weeks to catch all larval stages', 'Apply povidone-iodine (Betadine) to attachment wounds after removal to prevent secondary infection', 'Do water changes between treatment rounds'],
+    prevention: 'Quarantine all new fish for 4 weeks. Avoid adding pond fish to aquariums.',
+    search: 'anchor+worm+lernaea+fish+treatment'
+  },
+  saprolegnia: {
+    name: 'Fungal Infection (Saprolegnia)',
+    symptom_tag: 'White cotton-wool tufts on body, fins, or wounds',
+    symptoms: ['Fluffy white or grey cotton-like growth on skin, fins, mouth, or eyes', 'Usually appears on an existing wound, ulcer, or site of injury', 'Affected area may appear red or raw underneath the growth', 'Fish may become lethargic and stop eating'],
+    causes: 'Saprolegnia fungus — opportunistic, attacks stressed or injured fish. Triggered by poor water quality, physical injury, or a secondary infection following ich or fin rot.',
+    treatment: ['Isolate the fish if possible', 'Treat with antifungal medication — methylene blue, malachite green, or aquarium salt baths (1 tsp per litre for 15-30 min)', 'Salt baths are widely available in India and very effective for mild cases', 'Address the underlying wound or bacterial infection causing it', 'Improve water quality — do a 30% water change and clean the filter'],
+    prevention: 'Prevent injury during handling and transport. Treat wounds promptly. Maintain good water quality.',
+    search: 'saprolegnia+fungal+infection+fish+cotton+wool'
+  },
+  aeromonas: {
+    name: 'Bacterial Ulcer (Aeromonas / Red Sores)',
+    symptom_tag: 'Red open sores, ulcers, or bleeding patches on body',
+    symptoms: ['Red, open sores or ulcers on the body or fins', 'Reddening around the base of fins, vent, or belly', 'Haemorrhaging (bleeding) under the skin', 'Fish may appear bloated or lethargic', 'Scale loss around the ulcer site'],
+    causes: 'Aeromonas or Pseudomonas bacteria — opportunistic pathogens that strike when fish are stressed or water quality is poor. Very common in Indian aquariums with fluctuating water parameters.',
+    treatment: ['Perform a 30-40% water change immediately', 'Treat with broad-spectrum antibacterial medication — enrofloxacin or oxytetracycline if available', 'Salt the tank lightly (1-2 tsp per 10 L) to reduce osmotic stress', 'For surface ulcers: gently apply povidone-iodine (Betadine) to the wound with a cotton swab during a brief net transfer', 'Continue treatment for 5-7 days even if the fish looks better'],
+    prevention: 'Consistent water changes, avoid overcrowding, and quarantine new fish for 2-4 weeks.',
+    search: 'aeromonas+bacterial+ulcer+red+sores+fish'
+  },
+  trichodina: {
+    name: 'Trichodina (Protozoan Parasite)',
+    symptom_tag: 'Flashing, excess slime, grey haze on skin or gills',
+    symptoms: ['Fish rubbing or scratching against tank walls, substrate, or decorations (flashing)', 'Excess mucus — body looks cloudy or has a grey-white haze', 'Clamped fins, rapid gill movement', 'Loss of appetite and lethargy', 'Looks similar to velvet but without the gold-dust shimmer'],
+    causes: 'Trichodina — a circular protozoan parasite that lives on the skin and gills. Very common in fish from Indian fish shops and farms due to overcrowding during transport.',
+    treatment: ['Salt treatment is the first line — raise salinity to 2-3 tsp per 10 L for 5-7 days (check fish tolerance first)', 'Formalin-based treatments or malachite green are effective for persistent cases', 'Increase temperature slightly to 28-30°C (if fish tolerate it) to speed up parasite life cycle', 'Do a 30% water change before starting treatment', 'Treat for at least 7-10 days to catch all life cycle stages'],
+    prevention: 'Quarantine new fish for 2-4 weeks. A prophylactic salt bath before adding new fish helps.',
+    search: 'trichodina+fish+parasite+flashing+slime'
+  },
+  fish_tb: {
+    name: 'Fish Tuberculosis (Wasting Disease)',
+    symptom_tag: 'Gradual wasting, curved spine, hollow belly — no response to treatment',
+    symptoms: ['Progressive weight loss despite eating normally', 'Hollow or sunken belly', 'Curved or kinked spine (lordosis/scoliosis)', 'Pale colour, fin erosion, raised scales', 'Fish declines slowly over weeks or months — does not respond to standard treatments'],
+    causes: 'Mycobacterium marinum — a chronic bacterial infection. More common than hobbyists realise. Fish often arrive already infected from farms. There is no reliable cure.',
+    treatment: ['There is no effective treatment — infected fish should be humanely euthanised to prevent spread', 'Remove and euthanise affected fish promptly', 'Do a full tank disinfection: drain, clean all surfaces with a dilute bleach solution (1:10), rinse thoroughly, and re-cycle before restocking', 'Note: Mycobacterium marinum can cause skin granulomas in humans — wear gloves when handling tank water if you have cuts'],
+    prevention: 'Buy fish from reputable sources. Quarantine all new fish. Avoid buying visibly thin or lethargic fish.',
+    search: 'fish+tuberculosis+mycobacterium+wasting+disease+aquarium'
+  }
+};
+
+var PLANT_DISEASE_DATA = {
+  yellowing_leaves: {
+    name: 'Yellowing Leaves (Chlorosis)',
+    symptom_tag: 'leaves turning yellow, especially older or lower leaves',
+    causes: [
+      'Nitrogen deficiency — the most common cause. Nitrate below 10 ppm limits plant growth.',
+      'Iron or micronutrient deficiency — new leaves turn yellow between the veins (interveinal chlorosis).',
+      'CO2 deficiency in high-light tanks — plants cannot photosynthesise efficiently without carbon.',
+      'Natural die-off — old leaves turning yellow at the base is normal; trim and do not worry.',
+      'Root-bound or exhausted substrate — cannot deliver nutrients to plant roots.'
+    ],
+    fix: [
+      'Test nitrate — if below 10 ppm, dose a nitrogen-rich fertiliser or increase feeding slightly.',
+      'Dose a comprehensive liquid fertiliser with iron and micronutrients (e.g. Easy Green, ThriveC).',
+      'If running high light without CO2, lower the light period to 6 hours or add CO2.',
+      'Trim yellowing leaves — they will not recover and decaying matter raises ammonia.',
+      'Add root tabs around heavy root feeders (Amazon sword, cryptocoryne, water lilies).'
+    ],
+    prevention: 'Maintain nitrate at 10-30 ppm with regular fertilisation. Match light level to CO2 and nutrient dosing.',
+    risk_factors: ['low_nitrate', 'no_co2']
+  },
+  pale_new_growth: {
+    name: 'Pale or Stunted New Growth',
+    symptom_tag: 'new leaves coming in pale, small, or deformed',
+    causes: [
+      'Iron or micronutrient deficiency — iron is the first nutrient to run low in fast-growing tanks.',
+      'CO2 deficiency — insufficient carbon limits cell growth even when other nutrients are present.',
+      'Insufficient light — the plant cannot photosynthesise enough to fuel new growth.',
+      'Potassium deficiency — pale, pin-hole damage appearing on newer leaves.'
+    ],
+    fix: [
+      'Dose a chelated iron supplement or a comprehensive liquid fertiliser.',
+      'Increase CO2 supply, or add pressurised CO2 if running medium-to-high light plants.',
+      'Check light duration — aim for 7-9 hours per day for most planted tanks.',
+      'Add a potassium supplement if other deficiencies have been ruled out.'
+    ],
+    prevention: 'Regular balanced fertilisation and CO2 supply matched to your light intensity.',
+    risk_factors: ['no_co2']
+  },
+  holes_in_leaves: {
+    name: 'Holes in Leaves',
+    symptom_tag: 'small pinholes or large holes appearing in the middle of leaves',
+    causes: [
+      'Potassium deficiency — small holes or pinholes forming on older leaves.',
+      'Calcium or magnesium deficiency — GH below 4 leads to cell wall breakdown.',
+      'Snail damage — ramshorn or bladder snails nibble holes in soft-leaved plants.',
+      'Fish nibbling — some cichlids, goldfish, or barbs tear leaf tissue.'
+    ],
+    fix: [
+      'Dose a potassium supplement or a K-heavy fertiliser.',
+      'Raise GH to at least 4-6 dGH using calcium and magnesium (crushed coral or a remineraliser).',
+      'Check for snails at night with a torch — reduce population if excessive.',
+      'Trim damaged leaves to prevent rot and improve water quality.'
+    ],
+    prevention: 'Keep GH above 4. Include potassium in your regular fertiliser regime.',
+    risk_factors: ['low_gh']
+  },
+  brown_leaf_edges: {
+    name: 'Brown or Crispy Leaf Edges',
+    symptom_tag: 'leaf margins turning brown, black, or crispy',
+    causes: [
+      'Potassium deficiency — browning and crisping edges on older leaves.',
+      'Very hard water or high TDS — excess dissolved minerals can cause edge burn in sensitive plants.',
+      'Natural end of leaf lifespan — older leaves die back from the tips first.',
+      'Physical damage from strong flow, decorations, or tank mates.'
+    ],
+    fix: [
+      'Dose potassium (K2SO4 or a combined fertiliser with potassium).',
+      'If TDS is above 400 ppm, do a larger water change to dilute minerals.',
+      'Trim brown edges or the whole leaf — they will not recover.',
+      'Reposition the plant away from direct high-flow outlets if physical damage is the cause.'
+    ],
+    prevention: 'Regular potassium dosing as part of a balanced fertiliser programme.',
+    risk_factors: ['high_tds', 'high_gh']
+  },
+  plant_melting: {
+    name: 'Plant Melting',
+    symptom_tag: 'leaves rapidly dissolving, turning transparent, or falling apart',
+    causes: [
+      'Transplant shock — very common with cryptocoryne, which melt when moved or when water parameters change.',
+      'Emersed to submersed transition — plants grown above water in nurseries need to regrow aquatic-form leaves.',
+      'Sudden parameter shift — a change in pH, hardness, or temperature can trigger melting.',
+      'Root damage during planting — bruised roots cannot absorb nutrients temporarily.'
+    ],
+    fix: [
+      'Do not remove the plant — the roots are usually fine. New leaves will regrow within 2-4 weeks.',
+      'Trim all melted leaves cleanly to prevent ammonia spikes from decaying matter.',
+      'Keep parameters stable — avoid large water changes or sudden shifts during recovery.',
+      'Let the plant acclimatise; do not dose aggressively while it is stressed.'
+    ],
+    prevention: 'Acclimate new plants slowly. Once crypts are established, avoid moving them as they hate disturbance.',
+    risk_factors: []
+  },
+  algae_on_leaves: {
+    name: 'Algae Coating Leaves',
+    symptom_tag: 'green, brown, or black coating covering plant leaf surfaces',
+    causes: [
+      'Slow-growing plants unable to compete with algae for nutrients.',
+      'Excess light combined with high nitrate or phosphate — algae thrives in this imbalance.',
+      'Too few plants — not enough plant mass to absorb available nutrients before algae does.',
+      'Low CO2 — plants grow slowly and algae takes the opportunity.'
+    ],
+    fix: [
+      'Add fast-growing stem plants to absorb excess nutrients (hornwort, hygrophila, water sprite).',
+      'Reduce light period by 1-2 hours and observe for 2 weeks.',
+      'Add algae-grazing livestock: nerite snails, amano shrimp, otocinclus.',
+      'Wipe affected leaves gently with a soft cloth during water changes.',
+      'Improve CO2 supply to help plants outcompete algae for nutrients.'
+    ],
+    prevention: 'Balance light, CO2, and nutrients. A dense plant load absorbs nutrients before algae can use them.',
+    risk_factors: ['high_nitrate']
+  },
+  black_spots_fuzz: {
+    name: 'Black Spots or Fuzz on Leaves',
+    symptom_tag: 'dark tufts or spots growing on leaf edges or surfaces',
+    causes: [
+      'Black Beard Algae (BBA) on plant surfaces — triggered by CO2 fluctuation or low CO2.',
+      'Staghorn algae — grey-green branching fuzz on slow-growing leaves, same cause as BBA.',
+      'Potassium deficiency — small dark necrotic spots on leaf tissue (not fuzzy — smooth and dead).'
+    ],
+    fix: [
+      'Spot-dose affected leaves with liquid carbon (Flourish Excel, Easy Carbon) directly on BBA.',
+      'Stabilise CO2 — BBA thrives on CO2 fluctuation; inconsistent injection is a very common cause.',
+      'Raise CO2 levels if they are too low for your light level.',
+      'Trim heavily affected leaves and remove from the tank immediately to prevent spread.',
+      'Dose potassium if the spots are smooth and necrotic (not fuzzy algae).'
+    ],
+    prevention: 'Stable and sufficient CO2, consistent light schedule. Avoid turning CO2 on and off mid-day.',
+    risk_factors: ['co2_fluctuation']
+  },
+  root_rot: {
+    name: 'Root Rot / Stem Base Rot',
+    symptom_tag: 'brown mushy roots, stem base collapsing at the substrate line',
+    causes: [
+      'Anaerobic substrate — compacted or very fine substrate with no flow creates a toxic, low-oxygen zone.',
+      'High ammonia — ammonia stress weakens root tissue and encourages bacterial rot.',
+      'Crown buried too deep — burying the growing tip of rosette plants (crypts, swords) smothers them.',
+      'Overfeeding — excess organic matter accumulates in the substrate and fuels bacterial rot.'
+    ],
+    fix: [
+      'Gently stir the top layer of substrate (not too deep) to release trapped gases.',
+      'Trim rotted roots and replant the healthy crown slightly higher in the substrate.',
+      'Siphon uneaten food from the substrate during water changes and reduce feeding.',
+      'Add Malaysian trumpet snails — they burrow naturally and aerate the substrate.',
+      'Do water changes to bring ammonia back to zero.'
+    ],
+    prevention: 'Keep substrate loose. Do not plant crowns below the substrate surface. Keep ammonia at 0 ppm.',
+    risk_factors: ['high_ammonia']
+  }
+};
+
+// ===== RECOMMENDATIONS =====
+// ===== FOOD RECOMMENDATIONS =====
+var DIET_MAP = {
+  // Bottom feeders
+  corydoras:'bottom', panda_corydoras:'bottom', pygmy_corydoras:'nano_bottom',
+  sterbai_corydoras:'bottom', peppered_corydoras:'bottom',
+  kuhli_loach:'bottom', clown_loach:'bottom',
+  // Algae eaters
+  otocinclus:'algae', hillstream_loach:'algae',
+  bristlenose_pleco:'algae', rubber_pleco:'algae', sailfin_pleco:'algae',
+  // Carnivores
+  betta:'carnivore', discus:'carnivore', oscar:'carnivore',
+  flowerhorn:'carnivore', convict_cichlid:'carnivore',
+  firemouth_cichlid:'carnivore', african_cichlid:'carnivore',
+  peacock_cichlid:'carnivore', ram_cichlid:'carnivore',
+  dwarf_puffer:'carnivore',
+  // Livebearers — benefit from spirulina
+  guppy:'livebearer', molly:'livebearer', platy:'livebearer',
+  swordtail:'livebearer', endlers_livebearer:'livebearer',
+  // Nano fish — need micro-sized food
+  ember_tetra:'nano', chili_rasbora:'nano', celestial_pearl_danio:'nano',
+  sparkling_gourami:'nano', scarlet_badis:'nano',
+  // Cold-water / goldfish
+  goldfish:'goldfish', white_cloud_minnow:'coldwater',
+  // Filter feeders
+  bamboo_shrimp:'filter_feed',
+  // Frogs
+  african_dwarf_frog:'frog'
+};
+var FOOD_INFO = {
+  flake:       {name:'Quality flake food',                  desc:'Daily staple for surface and mid-water community fish.',                  cat:'daily'},
+  nano_pellet: {name:'Micro/nano pellets',                  desc:'Tiny pellets for small-mouthed fish — regular flakes are too large.',    cat:'daily'},
+  sinking:     {name:'Sinking catfish pellets or wafers',   desc:'Sink to the bottom for corydoras, loaches, and other bottom feeders.',   cat:'daily'},
+  algae_wafer: {name:'Algae wafers',                        desc:'Pressed algae discs for otocinclus, plecos, snails, and algae grazers.', cat:'daily'},
+  carnivore_p: {name:'Carnivore / betta pellets',           desc:'High-protein pellets for bettas, cichlids, and predatory fish.',         cat:'daily'},
+  spirulina:   {name:'Spirulina flakes',                    desc:'Plant-based supplement for livebearers, herbivores, and snails.',        cat:'supplement'},
+  shrimp_food: {name:'Shrimp-specific pellets',             desc:'Micro pellets formulated for shrimp (e.g. Hikari Shrimp Cuisine).',     cat:'daily'},
+  calcium:     {name:'Calcium supplement or cuttlebone',    desc:'Essential for shell and exoskeleton health in snails, shrimp, and crayfish.', cat:'supplement'},
+  blanched_veg:{name:'Blanched vegetables',                 desc:'Zucchini, spinach, or cucumber — vital dietary variety for shrimp, snails, and crayfish.', cat:'supplement'},
+  bloodworm:   {name:'Frozen/freeze-dried bloodworms',      desc:'Protein-rich treat for most fish, crayfish, and frogs. Alternate with brine shrimp for variety.', cat:'treat'},
+  brine_shrimp:{name:'Frozen/freeze-dried brine shrimp',    desc:'Variety treat when bloodworms are not available.',                      cat:'treat'},
+  powder_food: {name:'Powdered food or phytoplankton',      desc:'Fine enough to stay suspended — essential for filter-feeding bamboo shrimp.', cat:'daily'},
+  goldfish_f:  {name:'Goldfish flakes or pellets',          desc:'Low-protein, high-carb formulation specific to goldfish. Add blanched peas weekly.', cat:'daily'},
+  frog_pellet: {name:'Sinking bloodworm pellets',           desc:'Small sinking pellets sized for African dwarf frogs — they cannot reach surface food.', cat:'daily'}
+};
+
+async function handle_ref_all(request, env) {
+  return json_r({sp:SP, pl:PL, group_pos:GROUP_POS, fert:FERT,
+    algae:ALGAE_DATA, dis:DISEASE_DATA, pldis:PLANT_DISEASE_DATA,
+    diet:DIET_MAP, food:FOOD_INFO});
+}
+const APP_HTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a2342">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AquaTracker">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon.svg">
+<title>AquaTracker</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"><\/script>
+<style>
+:root {
+  --deep:#0a2342; --mid:#1a6b8a; --surf:#4db8d4; --accent:#7fffd4;
+  --bg:#f0f8ff; --card:#fff; --text:#1a2333; --muted:#6b7a8d;
+  --ok:#3ab87a; --warn:#e8a838; --danger:#e05252;
+  --r:8px; --sh:0 2px 8px rgba(0,0,0,.10);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.nav{background:var(--deep);color:#fff;display:flex;align-items:center;gap:12px;padding:0 16px;height:54px;position:sticky;top:0;z-index:100}
+.logo{font-size:17px;font-weight:700;white-space:nowrap}
+.nav-r{display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap;padding:4px 0}
+.nav select{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:5px 8px;font-size:13px;max-width:200px}
+.nav select option{background:var(--deep)}
+.prof-wrap{position:relative}
+.prof-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:6px;color:#fff;padding:5px 10px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px}
+.prof-btn:hover{background:rgba(255,255,255,.25)}
+.prof-menu{display:none;position:absolute;right:0;top:calc(100% + 6px);background:#fff;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.18);min-width:170px;z-index:200;overflow:hidden}
+.prof-menu.open{display:block}
+.prof-menu button{display:block;width:100%;text-align:left;padding:10px 14px;border:none;background:none;cursor:pointer;font-size:13px;color:#1a2a3a}
+.prof-menu button:hover{background:#f0f4f8}
+.prof-menu hr{margin:2px 0;border:none;border-top:1px solid #e8edf2}
+.db-status{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:rgba(255,255,255,.8);white-space:nowrap}
+.db-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.db-dot.live{background:#4caf50;box-shadow:0 0 6px #4caf50}
+.db-dot.offline{background:#f44336}
+.db-dot.connecting{background:#ff9800;animation:db-blink 1s infinite}
+@keyframes db-blink{0%,100%{opacity:1}50%{opacity:.3}}
+.tabs{display:flex;background:var(--mid);overflow-x:auto;padding:0 8px}
+.prev-bar{background:#fef3d5;border-bottom:2px solid #e8a838;padding:8px 16px;font-size:13px;color:#7a4f00;display:flex;align-items:center;gap:10px}
+.prev-bar strong{font-weight:700}
+.prev-bar .btn-del-prev{background:none;border:1px solid #c8870a;color:#7a4f00;border-radius:4px;padding:3px 10px;font-size:12px;cursor:pointer}
+.tab{background:none;border:none;color:rgba(255,255,255,.7);padding:11px 14px;font-size:13px;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;transition:.15s;font-family:inherit}
+.tab:hover{color:#fff}
+.tab.on{color:#fff;border-bottom-color:var(--accent)}
+.panel{display:none;padding:18px;max-width:980px;margin:0 auto}
+.panel.on{display:block}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);padding:18px;margin-bottom:14px}
+.ctitle{font-size:15px;font-weight:700;color:var(--deep);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.frow{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:10px}
+.fg{display:flex;flex-direction:column;gap:3px}
+label{font-size:12px;color:var(--muted);font-weight:600}
+input,select,textarea{border:1px solid #d0dae4;border-radius:6px;padding:7px 9px;font-size:13px;font-family:inherit;background:#fff;transition:border-color .15s;width:100%}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--surf)}
+textarea{resize:vertical;min-height:60px}
+.btn{border:none;border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s;display:inline-flex;align-items:center;gap:5px;font-family:inherit}
+.btn:hover{opacity:.85}
+.bp{background:var(--surf);color:#fff}
+.bd{background:var(--danger);color:#fff}
+.bg{background:#eef2f6;color:var(--text)}
+.bs{padding:4px 10px;font-size:12px}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f5f8fb;color:var(--muted);font-weight:600;text-align:left;padding:7px 9px;white-space:nowrap}
+td{padding:7px 9px;border-top:1px solid #eef0f3;vertical-align:middle}
+tr:hover td{background:#f9fbfc}
+.pill{display:inline-block;border-radius:20px;padding:2px 9px;font-size:11px;font-weight:700}
+.pok{background:#d4f5e5;color:#1a7a4a}
+.pwarn{background:#fef3d5;color:#8a5a00}
+.pdanger{background:#fde0e0;color:#a01818}
+.pmuted{background:#eef0f3;color:var(--muted)}
+.trow{border-left:4px solid transparent}
+.tover{border-left-color:var(--danger)}
+.tsoon{border-left-color:var(--warn)}
+.tok{border-left-color:var(--ok)}
+.chart-wrap{position:relative;height:260px;margin-top:12px}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:14px}
+.overlay.on{display:flex}
+.mbox{background:#fff;border-radius:var(--r);padding:22px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto}
+.mtitle{font-size:16px;font-weight:700;color:var(--deep);margin-bottom:14px}
+.mact{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.empty-s{text-align:center;padding:40px 16px;color:var(--muted)}
+.empty-s h2{color:var(--deep);margin-bottom:8px;font-size:20px}
+.empty-s p{margin-bottom:18px;font-size:14px}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:14px}
+.scard{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);padding:14px 18px}
+.slbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.sval{font-size:24px;font-weight:700;color:var(--deep);margin-top:2px}
+.ssub{font-size:11px;color:var(--muted);margin-top:1px}
+.cok{background:#d4f5e5;border-radius:var(--r);padding:10px 14px;color:#1a7a4a;font-weight:600;margin-bottom:12px;font-size:14px}
+.cwarn{background:#fde0e0;border-radius:var(--r);padding:10px 14px;color:#a01818;font-weight:600;margin-bottom:12px;font-size:14px}
+.cinfo{background:#e8f4fb;border-radius:var(--r);padding:10px 14px;color:#1a5a7a;font-weight:600;margin-bottom:12px;font-size:14px}
+.emsg{color:var(--muted);font-size:13px;padding:4px 0}
+.bl-bar{background:#eef0f3;border-radius:20px;height:10px;overflow:hidden;margin:6px 0 4px}
+.bl-fill{height:100%;border-radius:20px;transition:width .3s}
+.cfg-box{background:#f5f8fb;border-radius:6px;padding:8px 12px;font-size:12px;color:var(--muted);margin-top:6px}
+.cfg-sep{height:1px;background:#eef0f3;margin:8px 0}
+@media(max-width:600px){
+  .logo{font-size:14px}
+  .panel{padding:10px}
+  .tab{padding:9px 10px;font-size:12px}
+  .frow{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <span class="logo">&#x1F420; AquaTracker</span>
+  <div class="nav-r">
+    <select id="t_sel" title="Switch active tank"></select>
+    <button class="btn bg bs" onclick="do_add_tank()">+ Tank</button>
+    <button class="btn bg bs" onclick="do_add_preview()">&#x1F9EA; Preview</button>
+    <span id="sync_ind" style="font-size:11px;color:rgba(255,255,255,.6);white-space:nowrap"></span>
+    <span class="db-status" id="db_status"><span class="db-dot connecting" id="db_dot"></span><span id="db_lbl">Connecting</span></span>
+    <div class="prof-wrap" id="prof_wrap">
+      <button class="prof-btn" onclick="toggle_prof_menu()">
+        <span>&#x1F464;</span><span id="nav_uname">Account</span><span>&#x25BE;</span>
+      </button>
+      <div class="prof-menu" id="prof_menu">
+        <button onclick="do_settings();toggle_prof_menu()">&#x2699;&#xFE0F; Units</button>
+        <hr>
+        <button onclick="do_logout()">&#x1F510; Log out</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="tabs">
+  <button class="tab on" data-t="dash">Dashboard</button>
+  <button class="tab" data-t="life">My Tank</button>
+  <button class="tab" data-t="wlog">Logs</button>
+  <button class="tab" data-t="maint">Maintenance</button>
+  <button class="tab" data-t="recs">Recommendations</button>
+  <button class="tab" data-t="tools">Toolkit</button>
+  <button class="tab" data-t="howto">How To</button>
+</div>
+
+<div id="prev_bar" class="prev-bar" style="display:none">
+  &#x1F9EA; <strong>Preview Tank</strong> &mdash; This tank is for testing only and is excluded from exports.
+  <button class="btn-del-prev" onclick="do_del_preview()">Delete Preview</button>
+</div>
+
+<div id="p-dash"  class="panel on"></div>
+<div id="p-life"  class="panel"></div>
+<div id="p-wlog"  class="panel"></div>
+<div id="p-maint" class="panel"></div>
+<div id="p-recs"  class="panel"></div>
+<div id="p-tools" class="panel"></div>
+<div id="p-howto" class="panel"></div>
+
+<div id="ov" class="overlay" onclick="if(event.target===this)cm()">
+  <div class="mbox" id="mb"></div>
+</div>
+
+<script>
+var _sp = {}, _pl = {}, _group_pos = {}, _fert = {}, _algae = {}, _dis = {}, _pldis = {}, _diet = {}, _food = {};
+async function load_ref_data() {
+  var r = await fetch('/api/ref/all');
+  var d = await r.json();
+  _sp = d.sp; _pl = d.pl; _group_pos = d.group_pos;
+  _fert = d.fert; _algae = d.algae; _dis = d.dis;
+  _pldis = d.pldis; _diet = d.diet; _food = d.food;
+}
+function get_plant_pos(pid) { var p = _pl[pid]; return p ? (_group_pos[p.group] || 'Midground') : ''; }
 
 // ===== STORAGE =====
 // In-memory data cache — populated on login, stays for the session
@@ -835,7 +1242,7 @@ function sv(d) {
 }
 function mt() { return {tanks:[], equip:[], plants:[], stock:[], tasks:[], water:[], feeding:[], ferts:[], custom_sp:{}, maint_log:[], treatment_log:[]}; }
 // Merged species lookup: built-in SP + user custom_sp
-function get_sp(d) { return Object.assign({}, SP, d ? d.custom_sp : {}); }
+function get_sp(d) { return Object.assign({}, _sp, d ? d.custom_sp : {}); }
 function add_custom_sp(sp_id, name, type, tmin, tmax, pmin, pmax, gmin, gmax, size_in, min_gal, bioload, level, note) {
   var d = ld();
   d.custom_sp[sp_id] = {name:name, type:type||'Fish', tmin:parseFloat(tmin)||72, tmax:parseFloat(tmax)||82,
@@ -955,7 +1362,7 @@ function del_treatment_log(id) {
 }
 function open_treat_modal(tid, disease_name) {
   var td = today_str();
-  var disease_opts = Object.keys(DISEASE_DATA).map(function(k){ return DISEASE_DATA[k].name; }).sort();
+  var disease_opts = Object.keys(_dis).map(function(k){ return _dis[k].name; }).sort();
   var pre = disease_name || '';
   om('<div class="mtitle">Log Treatment</div>' +
     '<form class="mform" onsubmit="sub_save_treatment(event)">' +
@@ -1261,7 +1668,7 @@ function sub_edit_fert(e) {
 }
 function calc_fert_dose(sel) {
   var f = document.getElementById('fert_frm');
-  var fp = FERT[sel.value];
+  var fp = _fert[sel.value];
   if (!fp) return;
   f.fert_name.value = fp.name;
   f.fert_freq.value = fp.freq;
@@ -1279,15 +1686,15 @@ function do_add_fert() {
   var sub_gal = sub_l / 3.78541;
   _fert_gal = Math.max((tank.gallons || 0) - sub_gal, 0);
   var vol_note = sub_l > 0 ? Math.round(_fert_gal * 10) / 10 + ' gal effective (after ' + sub_l + ' L substrate)' : Math.round(_fert_gal) + ' gal tank';
-  var opts = Object.keys(FERT).map(function(k) {
-    return '<option value="' + k + '">' + FERT[k].name + '</option>';
+  var opts = Object.keys(_fert).map(function(k) {
+    return '<option value="' + k + '">' + _fert[k].name + '</option>';
   }).join('');
   om('<div class="mtitle">Add Fertilizer</div>' +
     '<form id="fert_frm" onsubmit="event.preventDefault();sub_fert()">' +
     fg('Preset', '<select name="fert_preset" onchange="calc_fert_dose(this)">' + opts + '</select>') +
-    fg('Name', '<input type="text" name="fert_name" value="' + esc(FERT[Object.keys(FERT)[0]].name) + '" required>') +
-    fg('Dose per application (ml)', '<input type="number" name="fert_dose" step="0.1" min="0" value="' + (Math.round(FERT[Object.keys(FERT)[0]].ml_per_gal * _fert_gal * 10) / 10) + '" required placeholder="e.g. 2.5"><small style="color:var(--muted);font-size:11px">Calculated from ' + vol_note + ' — edit if needed</small>') +
-    fg('Dose every (days)', '<input type="number" name="fert_freq" min="1" value="' + FERT[Object.keys(FERT)[0]].freq + '" required>') +
+    fg('Name', '<input type="text" name="fert_name" value="' + esc(_fert[Object.keys(_fert)[0]].name) + '" required>') +
+    fg('Dose per application (ml)', '<input type="number" name="fert_dose" step="0.1" min="0" value="' + (Math.round(_fert[Object.keys(_fert)[0]].ml_per_gal * _fert_gal * 10) / 10) + '" required placeholder="e.g. 2.5"><small style="color:var(--muted);font-size:11px">Calculated from ' + vol_note + ' — edit if needed</small>') +
+    fg('Dose every (days)', '<input type="number" name="fert_freq" min="1" value="' + _fert[Object.keys(_fert)[0]].freq + '" required>') +
     fg('Notes', '<input type="text" name="fert_notes" placeholder="Optional">') +
     '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Add Fertilizer</button></div>' +
     '</form>');
@@ -1569,7 +1976,7 @@ function overlap(tid) {
   });
   // Include plant temperature requirements in the overlap
   d.plants.filter(function(x){return x.tank_id===tid;}).forEach(function(p) {
-    var pl = PL[p.plant_id]; if (!pl || pl.tmin == null) return;
+    var pl = _pl[p.plant_id]; if (!pl || pl.tmin == null) return;
     tmi=Math.max(tmi,pl.tmin); tma=Math.min(tma,pl.tmax);
     pl_names.push(pl.name);
   });
@@ -2293,7 +2700,7 @@ function r_setup_card(tid) {
     : 'Heater installed and set to target temperature';
   // CO2 only needed when the tank contains plants that require it.
   var plants_in_tank = d.plants.filter(function(p){ return p.tank_id === tid; });
-  var needs_co2 = plants_in_tank.some(function(p){ return PL[p.plant_id] && PL[p.plant_id].co2; });
+  var needs_co2 = plants_in_tank.some(function(p){ return _pl[p.plant_id] && _pl[p.plant_id].co2; });
   var method = tank.startup_method || 'standard';
   var items;
 
@@ -2615,10 +3022,10 @@ function r_life() {
       '</select></div>';
     h += '<div class="tw"><table id="pl_list_tbl"><tr><th>Plant</th><th>Qty</th><th>Position</th><th>Light</th><th>CO2</th><th>Added</th><th>Notes</th><th></th></tr>';
     pl.forEach(function(p) {
-      var pd = PL[p.plant_id];
+      var pd = _pl[p.plant_id];
       var light_txt = pd ? pd.light : '-';
       var co2_txt = pd ? (pd.co2 ? '<span style="color:var(--warn);font-weight:700">Yes</span>' : 'No') : '-';
-      var pos_txt = pd ? (GROUP_POS[pd.group] || '') : '';
+      var pos_txt = pd ? (_group_pos[pd.group] || '') : '';
       var pos_color = pos_txt === 'Foreground' ? 'var(--ok)' : pos_txt === 'Background' ? 'var(--deep)' : pos_txt === 'Floating' ? '#4db8d4' : pos_txt === 'Emersed' ? 'var(--muted)' : 'var(--mid)';
       h += '<tr data-pname="' + esc((p.name||'').toLowerCase()) + '" data-ppos="' + esc(pos_txt) + '">' +
            '<td><strong>' + esc(p.name) + '</strong>' + (pd ? '<br><small style="color:var(--muted)">' + pd.diff + '</small>' : '') + '</td>' +
@@ -3112,397 +3519,6 @@ function sub_task(e) {
 }
 
 // ===== DIAGNOSE DATA =====
-var ALGAE_DATA = {
-  brown_diatom: {
-    name: 'Brown Diatom Algae',
-    appearance: 'Brown or rust-coloured dusty coating on glass, substrate, decorations and leaves.',
-    causes: ['New tank (most common in first 3 months)', 'Low light — diatoms thrive where green algae cannot', 'High silicate from tap water or new substrate', 'Too few plants to compete for nutrients'],
-    fix: ['Add nerite snails or otocinclus — they eat diatoms very effectively', 'Wipe glass and decorations during water changes', 'Rinse or replace new substrate to reduce silicate release', 'Slightly increase light duration (aim 7-8 h/day)', 'Be patient — diatoms nearly always disappear on their own within 2-3 months as the tank matures'],
-    prevention: 'Diatoms are a normal part of tank maturation. A cycled tank with healthy plant growth naturally outcompetes them.',
-    search: 'brown+diatom+algae+aquarium'
-  },
-  green_spot: {
-    name: 'Green Spot Algae (GSA)',
-    appearance: 'Hard, dark green circular spots on slow-growing plant leaves and glass. Very difficult to scrape off.',
-    causes: ['Low phosphate (PO4 below 1 ppm) — counterintuitively, GSA thrives when phosphate is too low', 'Bright light without enough nutrients', 'CO2 fluctuation or too little CO2 for the light level'],
-    fix: ['Dose phosphate fertiliser to raise PO4 to 1-2 ppm', 'Scrape spots off glass with a razor blade or credit card', 'Reduce light by 1-2 hours if not running CO2', 'Ensure CO2 is stable if running injected CO2 — fluctuations cause GSA'],
-    prevention: 'Keep phosphate above 1 ppm and light duration matched to your fertilisation and CO2 level.',
-    search: 'green+spot+algae+aquarium+glass'
-  },
-  bba: {
-    name: 'Black Beard Algae (BBA)',
-    appearance: 'Dark grey or black tufts of short hair on plant edges, hardscape, and equipment. Feels rough to the touch.',
-    causes: ['CO2 fluctuation — the most common cause. Levels that rise and fall trigger BBA', 'Low or inconsistent CO2 in a well-lit tank', 'Uneven flow creating dead spots', 'Ammonium spike'],
-    fix: ['Stabilise CO2 — keep injection constant, never turn CO2 off between lights-on periods', 'Spot-treat with liquid carbon (e.g. Excel/Easycarbo) directly on the algae using a syringe with flow off — it turns pink then dies', 'Siamese algae eaters and amano shrimp graze on soft BBA', 'Improve flow to eliminate dead spots', 'Manual removal: remove affected leaves, scrub hardscape outside the tank'],
-    prevention: 'Consistent CO2 is the single best prevention. If no CO2, reduce light to match nutrient level.',
-    search: 'black+beard+algae+BBA+aquarium'
-  },
-  hair_algae: {
-    name: 'Hair / Thread Algae',
-    appearance: 'Long, bright or dark green filaments. Looks like wet hair or cotton wool on plants, substrate and decor.',
-    causes: ['Excess light duration (over 8 h without CO2)', 'High nutrients — especially nitrate above 20 ppm', 'Insufficient plant mass to consume nutrients', 'Poor or inconsistent CO2'],
-    fix: ['Reduce light to 6-7 h/day immediately', 'Manually remove as much as possible by twisting a toothbrush through it', 'Add fast-growing floating plants (duckweed, frogbit) to consume excess nutrients', 'Amano shrimp eat hair algae — a group of 5-10 makes a visible difference', 'Consider a liquid carbon dose during outbreak'],
-    prevention: 'Balance light, nutrients and plant mass. A heavily planted tank rarely suffers hair algae.',
-    search: 'hair+algae+thread+algae+aquarium'
-  },
-  cyanobacteria: {
-    name: 'Blue-Green Algae (Cyanobacteria)',
-    appearance: 'Slimy blue-green, dark green, or reddish-black sheets that smother substrate, plants and decor. Smells musty.',
-    causes: ['High organic waste — overfeeding or infrequent water changes', 'Poor circulation and dead spots', 'Very low nitrate (below 5 ppm) — cyanobacteria can fix nitrogen from the air', 'New tank with unstable nutrient balance'],
-    fix: ['Manual removal: syphon it out during water changes. Wear gloves — some strains produce toxins', 'Improve circulation — add a small powerhead or relocate filter output', 'Do 3 consecutive daily 30% water changes', 'A 3-day blackout (cover the tank completely) weakens it significantly', 'Erythromycin (antibiotic) is a last resort — effective but disrupts beneficial bacteria. Consult an aquarium store.'],
-    prevention: 'Regular water changes, good flow, and avoiding overfeeding. Keep nitrate above 5 ppm.',
-    search: 'cyanobacteria+blue+green+algae+aquarium'
-  },
-  green_dust: {
-    name: 'Green Dust Algae (GDA)',
-    appearance: 'Thin, hazy green film on glass that looks like green dust or a dirty smear. Wipes off easily but returns quickly.',
-    causes: ['Excess light duration', 'New tank with unstable water chemistry', 'Low silicate (different mechanism from GSA)'],
-    fix: ['Do NOT wipe it off for 3-4 weeks — let it complete its life cycle and die off naturally', 'After 3-4 weeks the cells will release and you can wipe the glass clean', 'Reduce light by 1-2 hours', 'Nerite snails keep on top of it once the initial bloom passes'],
-    prevention: 'GDA outbreaks are common in new tanks and usually self-resolve. Nerite snails are the best long-term control.',
-    search: 'green+dust+algae+aquarium+glass'
-  },
-  staghorn: {
-    name: 'Staghorn Algae',
-    appearance: 'Grey or blue-grey branching tufts, like tiny antlers. Appears on plant edges, equipment, and hardscape. Feels rough.',
-    causes: ['Very similar to BBA — CO2 fluctuation is the primary cause', 'Low CO2 with moderate to high light', 'Ammonium spikes from overfeeding or decomposing plant matter'],
-    fix: ['Same approach as BBA — stabilise CO2 above all else', 'Spot-dose with liquid carbon (Excel/Easycarbo) directly on affected areas with flow off', 'Manual removal of badly affected leaves', 'Amano shrimp will graze on it', 'Reduce light if not running CO2'],
-    prevention: 'Consistent CO2 and good tank hygiene. Remove decomposing plant matter promptly.',
-    search: 'staghorn+algae+aquarium'
-  },
-  fuzz_algae: {
-    name: 'Fuzz Algae',
-    appearance: 'Short, soft green fuzz covering plant leaves, hardscape, and substrate. Looks like a fine green beard. Usually 2-10 mm long.',
-    causes: ['Moderate excess of nutrients — common in young planted tanks finding their balance', 'Inconsistent fertilisation', 'Moderate light with low plant mass'],
-    fix: ['Manual removal by wiping leaves gently', 'Otocinclus and amano shrimp eat fuzz algae very effectively', 'Increase plant mass so plants can outcompete the algae for nutrients', 'Add floating plants for rapid nutrient uptake'],
-    prevention: 'Fuzz algae is a sign of a tank finding its balance. A thriving plant mass and a few shrimp or otocinclus will keep it in check.',
-    search: 'fuzz+algae+aquarium+plants'
-  }
-};
-var DISEASE_DATA = {
-  ich: {
-    name: 'Ich (White Spot)',
-    symptom_tag: 'Tiny white salt-like spots on body and fins',
-    symptoms: ['White spots resembling grains of salt on fins and body', 'Fish flashing or scratching against surfaces', 'Clamped fins, lethargy, loss of appetite', 'Spots may disappear and reappear as the parasite cycles'],
-    causes: 'Ichthyophthirius multifiliis — a parasitic protozoan. Triggered by temperature stress, new fish, or contaminated equipment.',
-    treatment: ['Raise temperature gradually to 28-30°C (82-86°F) — speeds up the parasite life cycle making treatment more effective', 'Mild cases: heat treatment alone can work — hold at 30°C for 5-7 days with daily 25% water changes (free, no medication needed)', 'Medication: malachite green or methylene blue are widely available in Indian fish shops at low cost and very effective', 'Continue treatment for at least 2 days after all spots disappear — you are treating the free-swimming stage, not the visible spots', 'Remove carbon from filter during treatment'],
-    prevention: 'Quarantine all new fish for 2-4 weeks. Maintain stable water temperature. Avoid sudden temperature drops.',
-    search: 'ich+white+spot+disease+fish'
-  },
-  velvet: {
-    name: 'Velvet (Gold Dust Disease)',
-    symptom_tag: 'Fine gold or rust-coloured dust on body, clamped fins',
-    symptoms: ['Fine gold, yellow or rust-coloured dust visible on skin — use a torch in a dark room', 'Clamped fins, rapid gill movement, scratching', 'Fish may appear to shimmer or glitter', 'Lethargy and loss of appetite'],
-    causes: 'Oodinium (Piscinoodinium pillulare) — a dinoflagellate parasite. Very contagious and can kill within days if untreated.',
-    treatment: ['Dim or cover the tank — the parasite requires light to survive; darkness slows its spread', 'Raise temperature to 28°C (82°F)', 'Treat with copper-based medication (e.g. Seachem Cupramine) or velvet-specific treatment. India alternative: malachite green is more accessible and effective against velvet', 'Remove carbon from filter. Continue treatment for the full recommended course', 'Daily water changes during treatment'],
-    prevention: 'Quarantine all new fish. Keep water quality high. Velvet spreads extremely fast — treat the whole tank at first sign.',
-    search: 'velvet+disease+oodinium+fish'
-  },
-  fin_rot: {
-    name: 'Fin Rot',
-    symptom_tag: 'Frayed, ragged, or dissolving fins',
-    symptoms: ['Fins look tattered, frayed or have white edges', 'Fins may appear shorter over time as they dissolve', 'Red or inflamed base of fins in severe cases', 'Tail or fins may look semi-transparent'],
-    causes: 'Bacterial infection (Aeromonas, Pseudomonas, Flavobacterium). Usually secondary to poor water quality, injury from fin nipping, or stress.',
-    treatment: ['Improve water quality immediately — test and do a 30% water change; fin rot will not heal in poor water', 'Identify and remove any fin-nipping tankmates', 'Medication: antibacterial such as API Fin and Body Cure or Waterlife Myxazin. India alternatives: potassium permanganate (PP) dip (5 mg/L for 15-30 min) or methylene blue — both widely available at fish shops or pharmacies', 'Add non-iodised aquarium salt (1 tsp per 10 L) to aid recovery — skip for scaleless fish like loaches', 'Fins will regrow once infection clears — may take several weeks'],
-    prevention: 'Maintain excellent water quality. Keep nitrates below 20 ppm. Remove fin-nipping fish.',
-    search: 'fin+rot+bacterial+infection+fish'
-  },
-  dropsy: {
-    name: 'Dropsy',
-    symptom_tag: 'Severe bloating, raised pinecone-like scales',
-    symptoms: ['Severely bloated abdomen', 'Scales sticking out like a pinecone when viewed from above', 'Lethargic, hiding, loss of appetite', 'Possible ulcers or sores'],
-    causes: 'Bacterial infection causing kidney failure and fluid accumulation. Usually a sign of serious internal damage — poor water quality, stress, or other underlying illness.',
-    treatment: ['Isolate the fish immediately in a hospital tank', 'Add Epsom salt (1 tsp per 40 L) to help reduce fluid retention', 'Antibacterial medication is needed: kanamycin or maracyn if available. India alternatives: oxytetracycline (aquarium or vet grade) or metronidazole (Flagyl from pharmacies) for suspected internal bacterial/parasitic cause', 'Note: dropsy has a poor prognosis — many fish do not survive even with treatment. Early detection improves the odds.', 'Keep water pristine and reduce stress as much as possible'],
-    prevention: 'Maintain excellent water quality and avoid chronic stress. Quarantine new fish. Feed a varied high-quality diet.',
-    search: 'dropsy+pinecone+disease+fish'
-  },
-  columnaris: {
-    name: 'Columnaris (Mouth Fungus / Saddleback)',
-    symptom_tag: 'White/grey patches near mouth or body — often mistaken for fungus',
-    symptoms: ['White or grey-yellow lesions around the mouth, gills, or along the body', 'May look like fungus but is actually bacterial', 'Gills may look pale or brown, fish gasping at surface', '"Saddleback" lesion across the back is common in severe cases', 'Rapid progression — fish can die within 24-48 hours'],
-    causes: 'Flexibacter columnaris — a highly contagious bacterial infection. Triggered by poor water quality, high temperature, or stress.',
-    treatment: ['Act fast — columnaris progresses very rapidly and can kill within 24-48 hours', 'Antibacterial medication: kanamycin + furanace is most effective but hard to find in India. India alternatives: oxytetracycline or enrofloxacin (from a vet) — both work well', 'Lower temperature slightly if fish tolerate it — columnaris thrives above 28°C', 'Improve oxygenation — add an air stone', 'Remove carbon from filter. Do daily 25% water changes'],
-    prevention: 'Maintain water quality and keep temperature stable. Quarantine new fish. Avoid overcrowding.',
-    search: 'columnaris+mouth+fungus+fish+disease'
-  },
-  swim_bladder: {
-    name: 'Swim Bladder Disorder',
-    symptom_tag: 'Swimming sideways, upside down, or unable to rise/sink',
-    symptoms: ['Fish floats to the surface involuntarily', 'Fish sinks to the bottom and cannot swim up', 'Fish swims at a tilted or sideways angle', 'Distended abdomen in some cases'],
-    causes: 'Can be physical (constipation, cyst, injury) or bacterial. Overfeeding is the most common cause. Gulping air at the surface is also a factor in some fish.',
-    treatment: ['Fast the fish for 2-3 days — this resolves most constipation-related cases', 'Feed a skinned, blanched pea after the fast — a natural laxative', 'If no improvement, treat with antibacterial medication in case of internal infection', 'Adjust water level if fish cannot reach the surface to breathe', 'Some cases are permanent if caused by physical injury or cyst'],
-    prevention: 'Avoid overfeeding. Feed small amounts twice daily rather than one large meal. Avoid feeding dried food exclusively — soak pellets before feeding.',
-    search: 'swim+bladder+disorder+fish+treatment'
-  },
-  popeye: {
-    name: 'Pop-eye (Exophthalmia)',
-    symptom_tag: 'One or both eyes bulging outward',
-    symptoms: ['One eye (unilateral) or both eyes (bilateral) visibly protruding', 'Cloudy or damaged eye surface in severe cases', 'Fish may still eat and swim normally in mild cases', 'Bilateral pop-eye is usually more serious than one eye alone'],
-    causes: 'Fluid build-up behind the eye caused by bacterial infection or injury. Unilateral usually indicates injury. Bilateral usually indicates systemic bacterial infection.',
-    treatment: ['Isolate in a hospital tank', 'Treat with broad-spectrum antibacterial. India: oxytetracycline is widely available and effective — follow dosage on packaging. Kanamycin works well if available.', 'Add Epsom salt (1 tsp per 40 L) to reduce swelling', 'Keep water pristine — daily 25% water changes in hospital tank', 'Recovery takes time — the eye may not fully return to normal even after infection clears'],
-    prevention: 'Maintain water quality. Avoid sharp decorations that can injure fish. Quarantine new arrivals.',
-    search: 'pop+eye+exophthalmia+fish+treatment'
-  },
-  hith: {
-    name: 'Hole in the Head (HITH)',
-    symptom_tag: 'Pits or eroded holes on head and lateral line',
-    symptoms: ['Small pits or cavities on the head and along the lateral line', 'Pits may release white, stringy mucus', 'Most common in cichlids (oscars, discus, severums) and large catfish', 'Fish may still eat and behave normally in early stages'],
-    causes: 'Hexamita parasite combined with nutritional deficiencies (vitamin C, D, minerals) and poor water quality. Activated carbon is also suspected as a contributing factor.',
-    treatment: ['Improve water quality immediately — large water changes and reduce nitrates below 10 ppm', 'Remove activated carbon from filter', 'Treat with metronidazole (Flagyl) — the most accessible option in India. Flagyl 400mg tablets are available at pharmacies without prescription. Crush 1 tablet, dissolve in a small cup of tank water, add to food or directly to the hospital tank (1 tablet per 40 L). Repeat every 48 hours for 3 doses.', 'Supplement diet with vitamin C — crush vitamin C tablets and mix with food', 'Improve diet — reduce dry pellets, add frozen bloodworms, prawns, or varied fresh foods'],
-    prevention: 'Excellent water quality with low nitrates. Varied high-quality diet. Avoid long-term use of activated carbon in filter.',
-    search: 'hole+in+the+head+HITH+cichlid+disease'
-  },
-  flukes: {
-    name: 'Flukes (Gill & Skin Flukes)',
-    symptom_tag: 'Flashing and scratching, excess mucus, rapid gilling',
-    symptoms: ['Fish scratching or flashing (rubbing) against surfaces repeatedly', 'Rapid gill movement or gasping at surface', 'Excess mucus on body — cloudy or slimy appearance', 'Redness or inflammation around gills', 'Clamped fins'],
-    causes: 'Microscopic flatworm parasites — Dactylogyrus (gill flukes) and Gyrodactylus (skin flukes). Introduced via new fish, plants, or water.',
-    treatment: ['Treat with praziquantel-based medication (e.g. Hikari PraziPro, Sera Tremazol). India alternatives: fenbendazole (Panacur dog dewormer — 1g per 100 L) is accessible and effective. Potassium permanganate (PP) dips (10 mg/L for 30 min) also work for skin flukes.', 'Skin flukes reproduce live young; gill flukes lay eggs — both require repeat treatments 5-7 days apart to catch all life stages', 'Raise temperature slightly to 28-30°C during treatment to speed up the parasite life cycle', 'Do a 30% water change before each treatment round'],
-    prevention: 'Quarantine all new fish. Dip new plants in a potassium permanganate solution before adding to tank.',
-    search: 'gill+flukes+skin+flukes+fish+treatment'
-  },
-  anchor_worm: {
-    name: 'Anchor Worm (Lernaea)',
-    symptom_tag: 'Visible worm-like parasites attached to body or fins',
-    symptoms: ['Thin, white or green thread-like worms visibly attached to the skin, fins, or gill cover', 'Red, inflamed attachment sites', 'Fish may flash or rub against surfaces', 'Ulcers or sores at attachment points'],
-    causes: 'Lernaea cyprinacea — a crustacean parasite, not actually a worm. Introduced via new fish, live plants, or water from an infected source.',
-    treatment: ['Remove worms individually with tweezers or forceps — grasp as close to skin as possible and pull gently', 'Medication: diflubenzuron (Dimilin) if available. India alternative: potassium permanganate (PP) dips are the most accessible option — 10 mg/L for 30 minutes, repeat once a week for 3-4 weeks to catch all larval stages', 'Apply povidone-iodine (Betadine) to attachment wounds after removal to prevent secondary infection', 'Do water changes between treatment rounds'],
-    prevention: 'Quarantine all new fish for 4 weeks. Avoid adding pond fish to aquariums.',
-    search: 'anchor+worm+lernaea+fish+treatment'
-  },
-  saprolegnia: {
-    name: 'Fungal Infection (Saprolegnia)',
-    symptom_tag: 'White cotton-wool tufts on body, fins, or wounds',
-    symptoms: ['Fluffy white or grey cotton-like growth on skin, fins, mouth, or eyes', 'Usually appears on an existing wound, ulcer, or site of injury', 'Affected area may appear red or raw underneath the growth', 'Fish may become lethargic and stop eating'],
-    causes: 'Saprolegnia fungus — opportunistic, attacks stressed or injured fish. Triggered by poor water quality, physical injury, or a secondary infection following ich or fin rot.',
-    treatment: ['Isolate the fish if possible', 'Treat with antifungal medication — methylene blue, malachite green, or aquarium salt baths (1 tsp per litre for 15-30 min)', 'Salt baths are widely available in India and very effective for mild cases', 'Address the underlying wound or bacterial infection causing it', 'Improve water quality — do a 30% water change and clean the filter'],
-    prevention: 'Prevent injury during handling and transport. Treat wounds promptly. Maintain good water quality.',
-    search: 'saprolegnia+fungal+infection+fish+cotton+wool'
-  },
-  aeromonas: {
-    name: 'Bacterial Ulcer (Aeromonas / Red Sores)',
-    symptom_tag: 'Red open sores, ulcers, or bleeding patches on body',
-    symptoms: ['Red, open sores or ulcers on the body or fins', 'Reddening around the base of fins, vent, or belly', 'Haemorrhaging (bleeding) under the skin', 'Fish may appear bloated or lethargic', 'Scale loss around the ulcer site'],
-    causes: 'Aeromonas or Pseudomonas bacteria — opportunistic pathogens that strike when fish are stressed or water quality is poor. Very common in Indian aquariums with fluctuating water parameters.',
-    treatment: ['Perform a 30-40% water change immediately', 'Treat with broad-spectrum antibacterial medication — enrofloxacin or oxytetracycline if available', 'Salt the tank lightly (1-2 tsp per 10 L) to reduce osmotic stress', 'For surface ulcers: gently apply povidone-iodine (Betadine) to the wound with a cotton swab during a brief net transfer', 'Continue treatment for 5-7 days even if the fish looks better'],
-    prevention: 'Consistent water changes, avoid overcrowding, and quarantine new fish for 2-4 weeks.',
-    search: 'aeromonas+bacterial+ulcer+red+sores+fish'
-  },
-  trichodina: {
-    name: 'Trichodina (Protozoan Parasite)',
-    symptom_tag: 'Flashing, excess slime, grey haze on skin or gills',
-    symptoms: ['Fish rubbing or scratching against tank walls, substrate, or decorations (flashing)', 'Excess mucus — body looks cloudy or has a grey-white haze', 'Clamped fins, rapid gill movement', 'Loss of appetite and lethargy', 'Looks similar to velvet but without the gold-dust shimmer'],
-    causes: 'Trichodina — a circular protozoan parasite that lives on the skin and gills. Very common in fish from Indian fish shops and farms due to overcrowding during transport.',
-    treatment: ['Salt treatment is the first line — raise salinity to 2-3 tsp per 10 L for 5-7 days (check fish tolerance first)', 'Formalin-based treatments or malachite green are effective for persistent cases', 'Increase temperature slightly to 28-30°C (if fish tolerate it) to speed up parasite life cycle', 'Do a 30% water change before starting treatment', 'Treat for at least 7-10 days to catch all life cycle stages'],
-    prevention: 'Quarantine new fish for 2-4 weeks. A prophylactic salt bath before adding new fish helps.',
-    search: 'trichodina+fish+parasite+flashing+slime'
-  },
-  fish_tb: {
-    name: 'Fish Tuberculosis (Wasting Disease)',
-    symptom_tag: 'Gradual wasting, curved spine, hollow belly — no response to treatment',
-    symptoms: ['Progressive weight loss despite eating normally', 'Hollow or sunken belly', 'Curved or kinked spine (lordosis/scoliosis)', 'Pale colour, fin erosion, raised scales', 'Fish declines slowly over weeks or months — does not respond to standard treatments'],
-    causes: 'Mycobacterium marinum — a chronic bacterial infection. More common than hobbyists realise. Fish often arrive already infected from farms. There is no reliable cure.',
-    treatment: ['There is no effective treatment — infected fish should be humanely euthanised to prevent spread', 'Remove and euthanise affected fish promptly', 'Do a full tank disinfection: drain, clean all surfaces with a dilute bleach solution (1:10), rinse thoroughly, and re-cycle before restocking', 'Note: Mycobacterium marinum can cause skin granulomas in humans — wear gloves when handling tank water if you have cuts'],
-    prevention: 'Buy fish from reputable sources. Quarantine all new fish. Avoid buying visibly thin or lethargic fish.',
-    search: 'fish+tuberculosis+mycobacterium+wasting+disease+aquarium'
-  }
-};
-
-var PLANT_DISEASE_DATA = {
-  yellowing_leaves: {
-    name: 'Yellowing Leaves (Chlorosis)',
-    symptom_tag: 'leaves turning yellow, especially older or lower leaves',
-    causes: [
-      'Nitrogen deficiency — the most common cause. Nitrate below 10 ppm limits plant growth.',
-      'Iron or micronutrient deficiency — new leaves turn yellow between the veins (interveinal chlorosis).',
-      'CO2 deficiency in high-light tanks — plants cannot photosynthesise efficiently without carbon.',
-      'Natural die-off — old leaves turning yellow at the base is normal; trim and do not worry.',
-      'Root-bound or exhausted substrate — cannot deliver nutrients to plant roots.'
-    ],
-    fix: [
-      'Test nitrate — if below 10 ppm, dose a nitrogen-rich fertiliser or increase feeding slightly.',
-      'Dose a comprehensive liquid fertiliser with iron and micronutrients (e.g. Easy Green, ThriveC).',
-      'If running high light without CO2, lower the light period to 6 hours or add CO2.',
-      'Trim yellowing leaves — they will not recover and decaying matter raises ammonia.',
-      'Add root tabs around heavy root feeders (Amazon sword, cryptocoryne, water lilies).'
-    ],
-    prevention: 'Maintain nitrate at 10-30 ppm with regular fertilisation. Match light level to CO2 and nutrient dosing.',
-    risk_factors: ['low_nitrate', 'no_co2']
-  },
-  pale_new_growth: {
-    name: 'Pale or Stunted New Growth',
-    symptom_tag: 'new leaves coming in pale, small, or deformed',
-    causes: [
-      'Iron or micronutrient deficiency — iron is the first nutrient to run low in fast-growing tanks.',
-      'CO2 deficiency — insufficient carbon limits cell growth even when other nutrients are present.',
-      'Insufficient light — the plant cannot photosynthesise enough to fuel new growth.',
-      'Potassium deficiency — pale, pin-hole damage appearing on newer leaves.'
-    ],
-    fix: [
-      'Dose a chelated iron supplement or a comprehensive liquid fertiliser.',
-      'Increase CO2 supply, or add pressurised CO2 if running medium-to-high light plants.',
-      'Check light duration — aim for 7-9 hours per day for most planted tanks.',
-      'Add a potassium supplement if other deficiencies have been ruled out.'
-    ],
-    prevention: 'Regular balanced fertilisation and CO2 supply matched to your light intensity.',
-    risk_factors: ['no_co2']
-  },
-  holes_in_leaves: {
-    name: 'Holes in Leaves',
-    symptom_tag: 'small pinholes or large holes appearing in the middle of leaves',
-    causes: [
-      'Potassium deficiency — small holes or pinholes forming on older leaves.',
-      'Calcium or magnesium deficiency — GH below 4 leads to cell wall breakdown.',
-      'Snail damage — ramshorn or bladder snails nibble holes in soft-leaved plants.',
-      'Fish nibbling — some cichlids, goldfish, or barbs tear leaf tissue.'
-    ],
-    fix: [
-      'Dose a potassium supplement or a K-heavy fertiliser.',
-      'Raise GH to at least 4-6 dGH using calcium and magnesium (crushed coral or a remineraliser).',
-      'Check for snails at night with a torch — reduce population if excessive.',
-      'Trim damaged leaves to prevent rot and improve water quality.'
-    ],
-    prevention: 'Keep GH above 4. Include potassium in your regular fertiliser regime.',
-    risk_factors: ['low_gh']
-  },
-  brown_leaf_edges: {
-    name: 'Brown or Crispy Leaf Edges',
-    symptom_tag: 'leaf margins turning brown, black, or crispy',
-    causes: [
-      'Potassium deficiency — browning and crisping edges on older leaves.',
-      'Very hard water or high TDS — excess dissolved minerals can cause edge burn in sensitive plants.',
-      'Natural end of leaf lifespan — older leaves die back from the tips first.',
-      'Physical damage from strong flow, decorations, or tank mates.'
-    ],
-    fix: [
-      'Dose potassium (K2SO4 or a combined fertiliser with potassium).',
-      'If TDS is above 400 ppm, do a larger water change to dilute minerals.',
-      'Trim brown edges or the whole leaf — they will not recover.',
-      'Reposition the plant away from direct high-flow outlets if physical damage is the cause.'
-    ],
-    prevention: 'Regular potassium dosing as part of a balanced fertiliser programme.',
-    risk_factors: ['high_tds', 'high_gh']
-  },
-  plant_melting: {
-    name: 'Plant Melting',
-    symptom_tag: 'leaves rapidly dissolving, turning transparent, or falling apart',
-    causes: [
-      'Transplant shock — very common with cryptocoryne, which melt when moved or when water parameters change.',
-      'Emersed to submersed transition — plants grown above water in nurseries need to regrow aquatic-form leaves.',
-      'Sudden parameter shift — a change in pH, hardness, or temperature can trigger melting.',
-      'Root damage during planting — bruised roots cannot absorb nutrients temporarily.'
-    ],
-    fix: [
-      'Do not remove the plant — the roots are usually fine. New leaves will regrow within 2-4 weeks.',
-      'Trim all melted leaves cleanly to prevent ammonia spikes from decaying matter.',
-      'Keep parameters stable — avoid large water changes or sudden shifts during recovery.',
-      'Let the plant acclimatise; do not dose aggressively while it is stressed.'
-    ],
-    prevention: 'Acclimate new plants slowly. Once crypts are established, avoid moving them as they hate disturbance.',
-    risk_factors: []
-  },
-  algae_on_leaves: {
-    name: 'Algae Coating Leaves',
-    symptom_tag: 'green, brown, or black coating covering plant leaf surfaces',
-    causes: [
-      'Slow-growing plants unable to compete with algae for nutrients.',
-      'Excess light combined with high nitrate or phosphate — algae thrives in this imbalance.',
-      'Too few plants — not enough plant mass to absorb available nutrients before algae does.',
-      'Low CO2 — plants grow slowly and algae takes the opportunity.'
-    ],
-    fix: [
-      'Add fast-growing stem plants to absorb excess nutrients (hornwort, hygrophila, water sprite).',
-      'Reduce light period by 1-2 hours and observe for 2 weeks.',
-      'Add algae-grazing livestock: nerite snails, amano shrimp, otocinclus.',
-      'Wipe affected leaves gently with a soft cloth during water changes.',
-      'Improve CO2 supply to help plants outcompete algae for nutrients.'
-    ],
-    prevention: 'Balance light, CO2, and nutrients. A dense plant load absorbs nutrients before algae can use them.',
-    risk_factors: ['high_nitrate']
-  },
-  black_spots_fuzz: {
-    name: 'Black Spots or Fuzz on Leaves',
-    symptom_tag: 'dark tufts or spots growing on leaf edges or surfaces',
-    causes: [
-      'Black Beard Algae (BBA) on plant surfaces — triggered by CO2 fluctuation or low CO2.',
-      'Staghorn algae — grey-green branching fuzz on slow-growing leaves, same cause as BBA.',
-      'Potassium deficiency — small dark necrotic spots on leaf tissue (not fuzzy — smooth and dead).'
-    ],
-    fix: [
-      'Spot-dose affected leaves with liquid carbon (Flourish Excel, Easy Carbon) directly on BBA.',
-      'Stabilise CO2 — BBA thrives on CO2 fluctuation; inconsistent injection is a very common cause.',
-      'Raise CO2 levels if they are too low for your light level.',
-      'Trim heavily affected leaves and remove from the tank immediately to prevent spread.',
-      'Dose potassium if the spots are smooth and necrotic (not fuzzy algae).'
-    ],
-    prevention: 'Stable and sufficient CO2, consistent light schedule. Avoid turning CO2 on and off mid-day.',
-    risk_factors: ['co2_fluctuation']
-  },
-  root_rot: {
-    name: 'Root Rot / Stem Base Rot',
-    symptom_tag: 'brown mushy roots, stem base collapsing at the substrate line',
-    causes: [
-      'Anaerobic substrate — compacted or very fine substrate with no flow creates a toxic, low-oxygen zone.',
-      'High ammonia — ammonia stress weakens root tissue and encourages bacterial rot.',
-      'Crown buried too deep — burying the growing tip of rosette plants (crypts, swords) smothers them.',
-      'Overfeeding — excess organic matter accumulates in the substrate and fuels bacterial rot.'
-    ],
-    fix: [
-      'Gently stir the top layer of substrate (not too deep) to release trapped gases.',
-      'Trim rotted roots and replant the healthy crown slightly higher in the substrate.',
-      'Siphon uneaten food from the substrate during water changes and reduce feeding.',
-      'Add Malaysian trumpet snails — they burrow naturally and aerate the substrate.',
-      'Do water changes to bring ammonia back to zero.'
-    ],
-    prevention: 'Keep substrate loose. Do not plant crowns below the substrate surface. Keep ammonia at 0 ppm.',
-    risk_factors: ['high_ammonia']
-  }
-};
-
-// ===== RECOMMENDATIONS =====
-// ===== FOOD RECOMMENDATIONS =====
-var DIET_MAP = {
-  // Bottom feeders
-  corydoras:'bottom', panda_corydoras:'bottom', pygmy_corydoras:'nano_bottom',
-  sterbai_corydoras:'bottom', peppered_corydoras:'bottom',
-  kuhli_loach:'bottom', clown_loach:'bottom',
-  // Algae eaters
-  otocinclus:'algae', hillstream_loach:'algae',
-  bristlenose_pleco:'algae', rubber_pleco:'algae', sailfin_pleco:'algae',
-  // Carnivores
-  betta:'carnivore', discus:'carnivore', oscar:'carnivore',
-  flowerhorn:'carnivore', convict_cichlid:'carnivore',
-  firemouth_cichlid:'carnivore', african_cichlid:'carnivore',
-  peacock_cichlid:'carnivore', ram_cichlid:'carnivore',
-  dwarf_puffer:'carnivore',
-  // Livebearers — benefit from spirulina
-  guppy:'livebearer', molly:'livebearer', platy:'livebearer',
-  swordtail:'livebearer', endlers_livebearer:'livebearer',
-  // Nano fish — need micro-sized food
-  ember_tetra:'nano', chili_rasbora:'nano', celestial_pearl_danio:'nano',
-  sparkling_gourami:'nano', scarlet_badis:'nano',
-  // Cold-water / goldfish
-  goldfish:'goldfish', white_cloud_minnow:'coldwater',
-  // Filter feeders
-  bamboo_shrimp:'filter_feed',
-  // Frogs
-  african_dwarf_frog:'frog'
-};
-var FOOD_INFO = {
-  flake:       {name:'Quality flake food',                  desc:'Daily staple for surface and mid-water community fish.',                  cat:'daily'},
-  nano_pellet: {name:'Micro/nano pellets',                  desc:'Tiny pellets for small-mouthed fish — regular flakes are too large.',    cat:'daily'},
-  sinking:     {name:'Sinking catfish pellets or wafers',   desc:'Sink to the bottom for corydoras, loaches, and other bottom feeders.',   cat:'daily'},
-  algae_wafer: {name:'Algae wafers',                        desc:'Pressed algae discs for otocinclus, plecos, snails, and algae grazers.', cat:'daily'},
-  carnivore_p: {name:'Carnivore / betta pellets',           desc:'High-protein pellets for bettas, cichlids, and predatory fish.',         cat:'daily'},
-  spirulina:   {name:'Spirulina flakes',                    desc:'Plant-based supplement for livebearers, herbivores, and snails.',        cat:'supplement'},
-  shrimp_food: {name:'Shrimp-specific pellets',             desc:'Micro pellets formulated for shrimp (e.g. Hikari Shrimp Cuisine).',     cat:'daily'},
-  calcium:     {name:'Calcium supplement or cuttlebone',    desc:'Essential for shell and exoskeleton health in snails, shrimp, and crayfish.', cat:'supplement'},
-  blanched_veg:{name:'Blanched vegetables',                 desc:'Zucchini, spinach, or cucumber — vital dietary variety for shrimp, snails, and crayfish.', cat:'supplement'},
-  bloodworm:   {name:'Frozen/freeze-dried bloodworms',      desc:'Protein-rich treat for most fish, crayfish, and frogs. Alternate with brine shrimp for variety.', cat:'treat'},
-  brine_shrimp:{name:'Frozen/freeze-dried brine shrimp',    desc:'Variety treat when bloodworms are not available.',                      cat:'treat'},
-  powder_food: {name:'Powdered food or phytoplankton',      desc:'Fine enough to stay suspended — essential for filter-feeding bamboo shrimp.', cat:'daily'},
-  goldfish_f:  {name:'Goldfish flakes or pellets',          desc:'Low-protein, high-carb formulation specific to goldfish. Add blanched peas weekly.', cat:'daily'},
-  frog_pellet: {name:'Sinking bloodworm pellets',           desc:'Small sinking pellets sized for African dwarf frogs — they cannot reach surface food.', cat:'daily'}
-};
 function get_food_recs(tid) {
   var d = ld();
   var sk = d.stock.filter(function(s){ return s.tank_id === tid && !s.preview; });
@@ -3514,7 +3530,7 @@ function get_food_recs(tid) {
   }
   sk.forEach(function(s) {
     var sp = get_sp(d)[s.species_id]; if (!sp) return;
-    var nm = sp.name, type = sp.type, diet = DIET_MAP[s.species_id];
+    var nm = sp.name, type = sp.type, diet = _diet[s.species_id];
     if (type === 'Shrimp') {
       need('shrimp_food', nm); need('blanched_veg', nm);
       if (s.species_id === 'bamboo_shrimp') need('powder_food', nm);
@@ -3629,9 +3645,9 @@ function r_recs() {
   var total_gph = 0;
   filters_eq.forEach(function(f){ if (f.config && f.config.flow_gph) total_gph += f.config.flow_gph; });
   var turnover = tank && tank.gallons && total_gph > 0 ? Math.round(total_gph / tank.gallons * 10) / 10 : 0;
-  var needs_co2_plant = pl_in_tank.some(function(p){ return PL[p.plant_id] && PL[p.plant_id].co2; });
-  var needs_high_light = pl_in_tank.some(function(p){ return PL[p.plant_id] && PL[p.plant_id].light === 'High'; });
-  var needs_med_light  = !needs_high_light && pl_in_tank.some(function(p){ return PL[p.plant_id] && PL[p.plant_id].light === 'Medium'; });
+  var needs_co2_plant = pl_in_tank.some(function(p){ return _pl[p.plant_id] && _pl[p.plant_id].co2; });
+  var needs_high_light = pl_in_tank.some(function(p){ return _pl[p.plant_id] && _pl[p.plant_id].light === 'High'; });
+  var needs_med_light  = !needs_high_light && pl_in_tank.some(function(p){ return _pl[p.plant_id] && _pl[p.plant_id].light === 'Medium'; });
   var heater_needed;
   var sp_all_recs = get_sp(d);
   if (tank && tank.room_tmin != null) {
@@ -3960,7 +3976,7 @@ function r_recs() {
     }
     h += '<div class="tw"><table><tr><th>Plant</th><th>Temp (' + t_lbl() + ')</th><th>Light Needed</th><th>CO2</th><th>Difficulty</th><th>Care Note</th></tr>';
     pl_in_tank.forEach(function(p) {
-      var pd = PL[p.plant_id];
+      var pd = _pl[p.plant_id];
       if (pd) {
         var temp_ok = true;
         if (fish_tmin !== null && fish_tmax !== null) {
@@ -3985,7 +4001,7 @@ function r_recs() {
   if (food_needs && Object.keys(food_needs).length) {
     var daily = [], supplement = [], treat = [];
     Object.keys(food_needs).forEach(function(fid) {
-      var info = FOOD_INFO[fid]; if (!info) return;
+      var info = _food[fid]; if (!info) return;
       var for_names = food_needs[fid].join(', ');
       var row = '<tr><td style="font-weight:600;font-size:13px">' + esc(info.name) + '</td>' +
                 '<td style="font-size:12px;color:var(--muted)">' + esc(info.desc) + '</td>' +
@@ -4306,7 +4322,7 @@ function calc_plant_score(tid) {
   if (!plants.length) return 0;
   var score = 0;
   plants.forEach(function(p) {
-    var sp = PL[p.plant_id];
+    var sp = _pl[p.plant_id];
     var abs = sp ? (sp.nitrate_abs || 'medium') : 'medium';
     score += abs === 'very_high' ? 3 : abs === 'high' ? 2 : abs === 'low' ? 0.5 : 1;
   });
@@ -4372,7 +4388,7 @@ function upd_plant_form(sel) {
   } else {
     if (cname_row) cname_row.style.display = 'none';
     if (cname_inp) cname_inp.required = false;
-    var p = PL[pid];
+    var p = _pl[pid];
     if (p && req_el) {
       var co2_str = p.co2 ? 'Required' : 'Not needed';
       var pos_str = get_plant_pos(pid);
@@ -4388,8 +4404,8 @@ function build_plant_opts(co2_f, light_f, search, pos_f) {
   var q = search ? search.toLowerCase() : '';
   var h = '';
   groups.forEach(function(g) {
-    var items = Object.keys(PL).filter(function(k) {
-      var p = PL[k];
+    var items = Object.keys(_pl).filter(function(k) {
+      var p = _pl[k];
       if (p.group !== g) return false;
       if (co2_f === 'Yes' && !p.co2) return false;
       if (co2_f === 'No'  &&  p.co2) return false;
@@ -4401,7 +4417,7 @@ function build_plant_opts(co2_f, light_f, search, pos_f) {
     if (!items.length) return;
     h += '<optgroup label="' + g + '">';
     items.forEach(function(k) {
-      var p = PL[k];
+      var p = _pl[k];
       h += '<option value="' + k + '">' + p.name + ' (' + p.light + ' light' + (p.co2 ? ', CO2' : '') + ')</option>';
     });
     h += '</optgroup>';
@@ -4474,7 +4490,7 @@ function sub_add_plant(e) {
     if (!pname) { alert('Please enter a plant name.'); return; }
     add_plant(at(), '', pname, f.qty.value, f.added.value, f.notes.value);
   } else {
-    add_plant(at(), pid, PL[pid] ? PL[pid].name : pid, f.qty.value, f.added.value, f.notes.value);
+    add_plant(at(), pid, _pl[pid] ? _pl[pid].name : pid, f.qty.value, f.added.value, f.notes.value);
   }
   cm(); r_life();
 }
@@ -5656,7 +5672,7 @@ function diag_alg_list() {
     h += '<div style="background:#fef8e7;border-left:3px solid var(--warn);border-radius:0 8px 8px 0;padding:10px 12px;margin-bottom:14px">';
     h += '<div style="font-size:11px;font-weight:700;color:#8a5a00;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">&#x26A0; Likely for your tank</div>';
     risks.forEach(function(r){
-      var ad = ALGAE_DATA[r.id]; if (!ad) return;
+      var ad = _algae[r.id]; if (!ad) return;
       h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
            '<button class="btn bg bs" data-aid="' + r.id + '" onclick="diag_alg_detail(this.dataset.aid)" style="font-size:12px;font-weight:600;flex-shrink:0">' + esc(ad.name) + '</button>' +
            '<span style="font-size:11px;color:var(--muted)">' + esc(r.reason) + '</span></div>';
@@ -5664,8 +5680,8 @@ function diag_alg_list() {
     h += '</div>';
   }
   h += '<div style="font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">All algae types</div>';
-  Object.keys(ALGAE_DATA).forEach(function(id){
-    var ad = ALGAE_DATA[id];
+  Object.keys(_algae).forEach(function(id){
+    var ad = _algae[id];
     h += '<div data-aid="' + id + '" onclick="diag_alg_detail(this.dataset.aid)" style="padding:10px 12px;border:1px solid #e8ecf0;border-radius:8px;margin-bottom:6px;cursor:pointer">' +
          '<div style="font-size:13px;font-weight:600;color:var(--deep)">' + esc(ad.name) + '</div>' +
          '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + esc(ad.appearance) + '</div></div>';
@@ -5676,7 +5692,7 @@ function diag_alg_list() {
   diag_wiz_set(h, '<button class="btn bg bs" style="flex:1" onclick="diag_step1()">&#x25C4; Back</button>');
 }
 function diag_alg_detail(id) {
-  var ad = ALGAE_DATA[id]; if (!ad) return;
+  var ad = _algae[id]; if (!ad) return;
   var h = '<a href="https://www.google.com/search?tbm=isch&q=' + ad.search + '" target="_blank" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mid);font-weight:600;margin-bottom:14px;text-decoration:none">&#x1F50D; Search Google Images: ' + esc(ad.name) + ' &#x2192;</a>';
   h += '<div style="font-size:13px;font-weight:700;color:var(--deep);margin-bottom:4px">' + esc(ad.name) + '</div>';
   h += '<div style="font-size:12px;color:var(--muted);margin-bottom:12px;font-style:italic">' + esc(ad.appearance) + '</div>';
@@ -5701,7 +5717,7 @@ function diag_dis_list() {
     h += '<div style="background:#fff0f0;border-left:3px solid var(--danger);border-radius:0 8px 8px 0;padding:10px 12px;margin-bottom:14px">';
     h += '<div style="font-size:11px;font-weight:700;color:#8a0000;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">&#x26A0; Likely for your tank</div>';
     risks.forEach(function(r){
-      var dd = DISEASE_DATA[r.id]; if (!dd) return;
+      var dd = _dis[r.id]; if (!dd) return;
       h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
            '<button class="btn bd bs" data-did="' + r.id + '" onclick="diag_dis_detail(this.dataset.did)" style="font-size:12px;font-weight:600;flex-shrink:0">' + esc(dd.name) + '</button>' +
            '<span style="font-size:11px;color:var(--muted)">' + esc(r.reason) + '</span></div>';
@@ -5709,8 +5725,8 @@ function diag_dis_list() {
     h += '</div>';
   }
   h += '<div style="font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">All diseases</div>';
-  Object.keys(DISEASE_DATA).forEach(function(id){
-    var dd = DISEASE_DATA[id];
+  Object.keys(_dis).forEach(function(id){
+    var dd = _dis[id];
     h += '<div data-did="' + id + '" onclick="diag_dis_detail(this.dataset.did)" style="padding:10px 12px;border:1px solid #e8ecf0;border-radius:8px;margin-bottom:6px;cursor:pointer">' +
          '<div style="font-size:13px;font-weight:600;color:var(--deep)">' + esc(dd.name) + '</div>' +
          '<div style="font-size:11px;color:var(--muted);margin-top:2px;font-style:italic">' + esc(dd.symptom_tag) + '</div></div>';
@@ -5721,7 +5737,7 @@ function diag_dis_list() {
   diag_wiz_set(h, '<button class="btn bg bs" style="flex:1" onclick="diag_step1()">&#x25C4; Back</button>');
 }
 function diag_dis_detail(id) {
-  var dd = DISEASE_DATA[id]; if (!dd) return;
+  var dd = _dis[id]; if (!dd) return;
   var d = ld(), tid = at();
   var lr = d.water.filter(function(w){ return w.tank_id === tid; }).sort(function(a,b){ return b.date.localeCompare(a.date); })[0];
   var h = '<a href="https://www.google.com/search?tbm=isch&q=' + dd.search + '" target="_blank" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mid);font-weight:600;margin-bottom:14px;text-decoration:none">&#x1F50D; Search Google Images: ' + esc(dd.name) + ' &#x2192;</a>';
@@ -5772,7 +5788,7 @@ function diag_dis_detail(id) {
   h += '<div style="margin-top:10px;padding:8px 10px;background:#f4f6fa;border-radius:6px">';
   h += '<div style="font-size:11px;font-weight:700;color:var(--mid);margin-bottom:2px">Prevention</div>';
   h += '<div style="font-size:12px;color:var(--muted)">' + esc(dd.prevention) + '</div></div>';
-  diag_wiz_set(h, '<button class="btn bg bs" style="flex:1" onclick="diag_dis_list()">&#x25C4; Back to list</button><button class="btn bp bs" style="flex:1" data-did="' + id + '" onclick="open_treat_modal(at(),DISEASE_DATA[this.dataset.did].name)">&#x1F4CB; Log Treatment</button>');
+  diag_wiz_set(h, '<button class="btn bg bs" style="flex:1" onclick="diag_dis_list()">&#x25C4; Back to list</button><button class="btn bp bs" style="flex:1" data-did="' + id + '" onclick="open_treat_modal(at(),_dis[this.dataset.did].name)">&#x1F4CB; Log Treatment</button>');
 }
 function diag_plant_list() {
   var tid = at(), risks = get_plant_risks(tid), h = '';
@@ -5780,7 +5796,7 @@ function diag_plant_list() {
     h += '<div style="background:#f0f7f0;border-left:3px solid #5aab6a;border-radius:0 8px 8px 0;padding:10px 12px;margin-bottom:14px">';
     h += '<div style="font-size:11px;font-weight:700;color:#2a6a3a;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">&#x26A0; Likely for your tank</div>';
     risks.forEach(function(r){
-      var pd = PLANT_DISEASE_DATA[r.id]; if (!pd) return;
+      var pd = _pldis[r.id]; if (!pd) return;
       h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
            '<button class="btn bs" data-pid="' + r.id + '" onclick="diag_plant_detail(this.dataset.pid)" style="font-size:12px;font-weight:600;flex-shrink:0;background:#5aab6a;color:#fff">' + esc(pd.name) + '</button>' +
            '<span style="font-size:11px;color:var(--muted)">' + esc(r.reason) + '</span></div>';
@@ -5788,8 +5804,8 @@ function diag_plant_list() {
     h += '</div>';
   }
   h += '<div style="font-size:12px;font-weight:700;color:var(--deep);margin-bottom:8px">All plant issues</div>';
-  Object.keys(PLANT_DISEASE_DATA).forEach(function(id){
-    var pd = PLANT_DISEASE_DATA[id];
+  Object.keys(_pldis).forEach(function(id){
+    var pd = _pldis[id];
     h += '<div data-pid="' + id + '" onclick="diag_plant_detail(this.dataset.pid)" style="padding:10px 12px;border:1px solid #d4e8d4;border-radius:8px;margin-bottom:6px;cursor:pointer">' +
          '<div style="font-size:13px;font-weight:700;color:var(--deep)">' + esc(pd.name) + '</div>' +
          '<div style="font-size:11px;color:var(--muted);font-style:italic;margin-top:2px">' + esc(pd.symptom_tag) + '</div></div>';
@@ -5798,7 +5814,7 @@ function diag_plant_list() {
   diag_wiz_set(h, '<button class="btn bg bs" style="flex:1" onclick="diag_step1()">&#x25C4; Back</button>');
 }
 function diag_plant_detail(id) {
-  var pd = PLANT_DISEASE_DATA[id]; if (!pd) return;
+  var pd = _pldis[id]; if (!pd) return;
   var tid = at(), d = ld();
   var lr = d.water.filter(function(w){ return w.tank_id === tid; }).sort(function(a,b){ return b.date.localeCompare(a.date); })[0];
   var h = '';
@@ -5971,7 +5987,7 @@ function rec_find_matches() {
     return {name:sp.name, note:sp.note||'', level:sp.level||'', cau:cau, inc:inc};
   }
   function chk_pl(key) {
-    var pl = PL[key];
+    var pl = _pl[key];
     if (!pl || cur_pl.indexOf(key) !== -1) return null;
     var cau = [], inc = [];
     if (pl.co2 && !has_co2) inc.push('Needs CO2 injection');
@@ -6012,7 +6028,7 @@ function rec_find_matches() {
   };
   checked_pl.forEach(function(cat) {
     var groups = PL_CAT_MAP[cat] || [cat];
-    h += r_sec(cat, '&#x1F33F;', Object.keys(PL).filter(function(k){ return groups.indexOf(PL[k].group) !== -1; }).map(chk_pl).filter(Boolean).filter(function(r){ return r.inc.length === 0; }));
+    h += r_sec(cat, '&#x1F33F;', Object.keys(_pl).filter(function(k){ return groups.indexOf(_pl[k].group) !== -1; }).map(chk_pl).filter(Boolean).filter(function(r){ return r.inc.length === 0; }));
   });
   if (!h) h = '<p style="font-size:13px;color:var(--muted);text-align:center;padding:24px 0">No options found for these categories.</p>';
   rec_wiz_set(h, '<button class="btn bg bs" style="flex:1" onclick="rec_step2()">&#x25C4; Back</button><button class="btn bp" style="flex:1" onclick="close_rec_wizard()">Done &#x2713;</button>');
@@ -6095,6 +6111,7 @@ async function load_user_data() {
 }
 
 async function startup() {
+  await load_ref_data();
   var token = localStorage.getItem('aq_token');
   if (!token) { show_auth_screen(); return; }
   var ok = await load_user_data();
