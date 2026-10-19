@@ -90,9 +90,26 @@ body.dark tr:hover td{background:rgba(255,255,255,.04)}
 body.dark .cfg-sep{background:#2a4a6a}
 body.dark .bl-bar{background:#2a4a6a}
 body.dark .trow{border-bottom-color:#2a4a6a!important}
+body.dark .bg{background:#2a3f55;color:var(--text)}
 body.dark .pok{background:#0d3a22;color:#4dd48a}
 body.dark .pwarn{background:#3a2800;color:#f0c060}
 body.dark .pdanger{background:#3a0f0f;color:#f08080}
+body.dark .cwarn{background:#3a0f0f;color:#f08080}
+/* inline-styled light boxes: warn/danger */
+body.dark [style*="background:#fef3d5"]{background:#3a2800!important;color:#f0c060!important}
+body.dark [style*="background:#fdecea"]{background:#3a0f0f!important;color:#f08080!important}
+body.dark [style*="background:#fde0e0"]{background:#3a0f0f!important;color:#f08080!important}
+body.dark [style*="background:#fff3cd"]{background:#3a2800!important;color:#f0c060!important}
+/* inline-styled light info boxes */
+body.dark [style*="background:#e8f4fd"]{background:#0d2438!important;color:var(--text)!important}
+body.dark [style*="background:#e8f4fb"]{background:#0d2438!important;color:var(--text)!important}
+body.dark [style*="background:#f0f8ff"]{background:#0d2438!important;color:var(--text)!important}
+body.dark [style*="background:#f0f6ff"]{background:#0d2438!important;color:var(--text)!important}
+body.dark [style*="background:#f8fbff"]{background:#0d2438!important;color:var(--text)!important}
+body.dark [style*="background:#f5f0ff"]{background:#1a1030!important;color:var(--text)!important}
+body.dark [style*="background:#f4f6fa"]{background:var(--card)!important;color:var(--text)!important}
+body.dark [style*="background:#f5f8fb"]{background:var(--card)!important;color:var(--text)!important}
+body.dark [style*="background:#f0f7f0"]{background:#0d2818!important;color:var(--text)!important}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 .nav{background:var(--deep);color:#fff;display:flex;align-items:center;gap:12px;padding:0 16px;height:54px;position:sticky;top:0;z-index:100}
