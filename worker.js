@@ -6043,6 +6043,14 @@ async function load_user_data() {
     var res = await fetch('/api/data', {headers: {'Authorization': 'Bearer ' + token}});
     if (res.status === 401) { show_auth_screen(); return false; }
     var json = await res.json();
+    if (json.error) {
+      alert('Failed to load your data from server: ' + json.error);
+      return false;
+    }
+    if (!json.data) {
+      alert('Server returned empty data. Please contact support or try again.');
+      return false;
+    }
     _aq = json.data;
     if (json.pref && json.pref.temp) localStorage.setItem('aq_pref', JSON.stringify(json.pref));
     return true;
