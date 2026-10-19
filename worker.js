@@ -6045,6 +6045,10 @@ async function do_sync() {
     var body = await res.json();
     console.log('[AquaTracker] do_sync result:', res.status, JSON.stringify(body), 'tanks_sent:', _aq ? (_aq.tanks||[]).length : 'null');
     if (res.status === 401) { do_logout(); return; }
+    if (res.ok) {
+      // keep a local backup so a slow D1 replica never shows empty data on next load
+      localStorage.setItem('aq_local_backup', JSON.stringify(_aq));
+    }
     set_sync_ind(res.ok ? 'saved' : 'error');
   } catch(e) { set_sync_ind('error'); console.log('[AquaTracker] do_sync error:', e); }
 }
@@ -6066,6 +6070,18 @@ async function load_user_data() {
       return false;
     }
     _aq = json.data;
+    // D1 replicas can lag behind writes; if the server returned empty tanks
+    // but we have a recent local backup with data, use the backup and re-sync
+    var local_str = localStorage.getItem('aq_local_backup');
+    if (local_str && (!_aq.tanks || _aq.tanks.length === 0)) {
+      try {
+        var local = JSON.parse(local_str);
+        if (local && Array.isArray(local.tanks) && local.tanks.length > 0) {
+          _aq = local;
+          setTimeout(do_sync, 300);
+        }
+      } catch(e) {}
+    }
     if (json.pref && json.pref.temp) localStorage.setItem('aq_pref', JSON.stringify(json.pref));
     return true;
   } catch(e) { show_auth_screen(); return false; }
