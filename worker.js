@@ -6024,16 +6024,18 @@ function set_sync_ind(state) {
 
 async function do_sync() {
   var token = localStorage.getItem('aq_token');
-  if (!token || !_aq) { set_sync_ind(''); return; }
+  if (!token || !_aq) { set_sync_ind(''); console.log('[AquaTracker] do_sync skipped: token=', !!token, '_aq=', !!_aq); return; }
   try {
     var res = await fetch('/api/data', {
       method: 'PUT',
       headers: {'Content-Type':'application/json', 'Authorization':'Bearer ' + token},
       body: JSON.stringify({data: _aq, pref: get_pref()})
     });
+    var body = await res.json();
+    console.log('[AquaTracker] do_sync result:', res.status, JSON.stringify(body));
     if (res.status === 401) { do_logout(); return; }
     set_sync_ind(res.ok ? 'saved' : 'error');
-  } catch(e) { set_sync_ind('error'); }
+  } catch(e) { set_sync_ind('error'); console.log('[AquaTracker] do_sync error:', e); }
 }
 
 async function load_user_data() {
