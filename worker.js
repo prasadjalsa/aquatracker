@@ -70,7 +70,7 @@ const APP_HTML = `<!DOCTYPE html>
   --r:8px; --sh:0 2px 8px rgba(0,0,0,.10);
 }
 body.dark{
-  --deep:#08111c; --mid:#0f3d5c; --surf:#3298b0; --accent:#5dd4b8;
+  --deep:#bcd9f5; --mid:#6ab8d8; --surf:#3298b0; --accent:#5dd4b8;
   --bg:#0f1923; --card:#1a2b3d; --text:#d4e8f7; --muted:#8aa4bc;
   --ok:#2ea866; --warn:#d09030; --danger:#c84040;
   --sh:0 2px 8px rgba(0,0,0,.4);
@@ -78,9 +78,21 @@ body.dark{
 }
 body.dark .mbox{background:var(--card)}
 body.dark #diag_wiz,body.dark #rec_wiz{background:var(--card)!important}
+/* nav/tabs/wizard headers must stay dark even though --deep/--mid are now light text colours */
+body.dark .nav{background:#08111c}
+body.dark .tabs{background:#0f3d5c}
+body.dark #rec_wiz>div:first-child{background:#08111c!important}
 body.dark input,body.dark select,body.dark textarea{background:#162233;color:var(--text);border-color:#2a4a6a}
 body.dark .nav select option{background:#08111c}
 body.dark .prev-bar{background:#3a2800;border-color:#7a5000;color:#f0d078}
+body.dark td,body.dark th{border-color:#2a4a6a}
+body.dark tr:hover td{background:rgba(255,255,255,.04)}
+body.dark .cfg-sep{background:#2a4a6a}
+body.dark .bl-bar{background:#2a4a6a}
+body.dark .trow{border-bottom-color:#2a4a6a!important}
+body.dark .pok{background:#0d3a22;color:#4dd48a}
+body.dark .pwarn{background:#3a2800;color:#f0c060}
+body.dark .pdanger{background:#3a0f0f;color:#f08080}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 .nav{background:var(--deep);color:#fff;display:flex;align-items:center;gap:12px;padding:0 16px;height:54px;position:sticky;top:0;z-index:100}
