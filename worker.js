@@ -222,6 +222,12 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min
 .prof-menu button{display:block;width:100%;text-align:left;padding:10px 14px;border:none;background:none;cursor:pointer;font-size:13px;color:#1a2a3a}
 .prof-menu button:hover{background:#f0f4f8}
 .prof-menu hr{margin:2px 0;border:none;border-top:1px solid #e8edf2}
+.db-status{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:rgba(255,255,255,.8);white-space:nowrap}
+.db-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.db-dot.live{background:#4caf50;box-shadow:0 0 6px #4caf50}
+.db-dot.offline{background:#f44336}
+.db-dot.connecting{background:#ff9800;animation:db-blink 1s infinite}
+@keyframes db-blink{0%,100%{opacity:1}50%{opacity:.3}}
 .tabs{display:flex;background:var(--mid);overflow-x:auto;padding:0 8px}
 .prev-bar{background:#fef3d5;border-bottom:2px solid #e8a838;padding:8px 16px;font-size:13px;color:#7a4f00;display:flex;align-items:center;gap:10px}
 .prev-bar strong{font-weight:700}
@@ -298,6 +304,7 @@ tr:hover td{background:#f9fbfc}
     <button class="btn bg bs" onclick="do_add_tank()">+ Tank</button>
     <button class="btn bg bs" onclick="do_add_preview()">&#x1F9EA; Preview</button>
     <span id="sync_ind" style="font-size:11px;color:rgba(255,255,255,.6);white-space:nowrap"></span>
+    <span class="db-status" id="db_status"><span class="db-dot connecting" id="db_dot"></span><span id="db_lbl">Connecting</span></span>
     <div class="prof-wrap" id="prof_wrap">
       <button class="prof-btn" onclick="toggle_prof_menu()">
         <span>&#x1F464;</span><span id="nav_uname">Account</span><span>&#x25BE;</span>
@@ -6013,6 +6020,16 @@ function rec_find_matches() {
 
 // ===== AUTH & SYNC =====
 
+function set_db_status(state) {
+  var dot = document.getElementById('db_dot');
+  var lbl = document.getElementById('db_lbl');
+  if (!dot || !lbl) return;
+  dot.className = 'db-dot ' + state;
+  if      (state === 'live')       { lbl.textContent = 'Live'; }
+  else if (state === 'offline')    { lbl.textContent = 'Offline'; }
+  else                             { lbl.textContent = 'Connecting'; }
+}
+
 function set_sync_ind(state) {
   var el = document.getElementById('sync_ind');
   if (!el) return;
@@ -6035,9 +6052,12 @@ async function do_sync() {
     if (res.status === 401) { do_logout(); return; }
     if (res.ok) {
       localStorage.setItem('aq_local_backup', JSON.stringify(_aq));
+      set_db_status('live');
+    } else {
+      set_db_status('offline');
     }
     set_sync_ind(res.ok ? 'saved' : 'error');
-  } catch(e) { set_sync_ind('error'); }
+  } catch(e) { set_sync_ind('error'); set_db_status('offline'); }
 }
 
 async function load_user_data() {
@@ -6068,9 +6088,10 @@ async function load_user_data() {
         }
       } catch(e) {}
     }
+    set_db_status('live');
     if (json.pref && json.pref.temp) localStorage.setItem('aq_pref', JSON.stringify(json.pref));
     return true;
-  } catch(e) { show_auth_screen(); return false; }
+  } catch(e) { set_db_status('offline'); show_auth_screen(); return false; }
 }
 
 async function startup() {
