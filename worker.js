@@ -14,6 +14,7 @@ export default {
     if (url.pathname === '/api/hint')                                   return handle_hint(request, env);
     if (url.pathname === '/api/data'     && request.method === 'GET')  return handle_get_data(request, env);
     if (url.pathname === '/api/data'     && request.method === 'PUT')  return handle_put_data(request, env);
+    if (url.pathname === '/api/dbcheck')                                return handle_dbcheck(request, env);
     return new Response(APP_HTML, { headers: {'Content-Type':'text/html; charset=utf-8', 'Cache-Control':'no-cache'} });
   }
 };
@@ -146,6 +147,16 @@ async function handle_put_data(request, env) {
     await env.DB.prepare('INSERT OR REPLACE INTO user_data (user_id,data,pref,updated_at) VALUES (?,?,?,?)')
       .bind(p.sub, JSON.stringify(body.data||{}), JSON.stringify(body.pref||{}), new Date().toISOString()).run();
     return json_r({ok:true});
+  } catch(e) { return json_r({error:'Server error: '+e.message}, 500); }
+}
+
+async function handle_dbcheck(request, env) {
+  var p = await auth_check(request, env);
+  if (!p) return json_r({error:'Unauthorized'}, 401);
+  try {
+    var all_rows = await env.DB.prepare('SELECT user_id, length(data) as data_len, updated_at FROM user_data').all();
+    var my_row   = await env.DB.prepare('SELECT user_id, updated_at, substr(data,1,300) as data_preview FROM user_data WHERE user_id=?').bind(p.sub).first();
+    return json_r({jwt_sub: p.sub, my_row: my_row, all_rows: all_rows.results});
   } catch(e) { return json_r({error:'Server error: '+e.message}, 500); }
 }
 
@@ -6032,7 +6043,7 @@ async function do_sync() {
       body: JSON.stringify({data: _aq, pref: get_pref()})
     });
     var body = await res.json();
-    console.log('[AquaTracker] do_sync result:', res.status, JSON.stringify(body));
+    console.log('[AquaTracker] do_sync result:', res.status, JSON.stringify(body), 'tanks_sent:', _aq ? (_aq.tanks||[]).length : 'null');
     if (res.status === 401) { do_logout(); return; }
     set_sync_ind(res.ok ? 'saved' : 'error');
   } catch(e) { set_sync_ind('error'); console.log('[AquaTracker] do_sync error:', e); }
