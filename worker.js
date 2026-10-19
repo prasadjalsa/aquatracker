@@ -15,6 +15,10 @@ export default {
     if (url.pathname === '/api/data'     && request.method === 'GET')  return handle_get_data(request, env);
     if (url.pathname === '/api/data'     && request.method === 'PUT')  return handle_put_data(request, env);
     if (url.pathname === '/api/ref/all')                             return handle_ref_all(request, env);
+    if (url.pathname === '/api/calc/dash')  return handle_calc_dash(request, env);
+    if (url.pathname === '/api/calc/maint') return handle_calc_maint(request, env);
+    if (url.pathname === '/api/calc/recs')  return handle_calc_recs(request, env);
+    if (url.pathname === '/api/calc/risks') return handle_calc_risks(request, env);
     return new Response(APP_HTML, { headers: {'Content-Type':'text/html; charset=utf-8', 'Cache-Control':'no-cache'} });
   }
 };
@@ -1048,6 +1052,346 @@ async function handle_ref_all(request, env) {
     algae:ALGAE_DATA, dis:DISEASE_DATA, pldis:PLANT_DISEASE_DATA,
     diet:DIET_MAP, food:FOOD_INFO});
 }
+
+// ===== SERVER-SIDE BUSINESS LOGIC =====
+function get_water_s(tid, ud) {
+  return (ud.water||[]).filter(function(x){return x.tank_id===tid;}).sort(function(a,b){return a.date<b.date?-1:1;});
+}
+function last_r_s(tid, ud) { var w=get_water_s(tid,ud); return w.length?w[w.length-1]:null; }
+function get_sp_s(ud) { return Object.assign({},SP,(ud&&ud.custom_sp)?ud.custom_sp:{}); }
+function calc_substrate_liters_s(tid, ud) {
+  return (ud.equip||[]).filter(function(e){return e.tank_id===tid&&e.type==='Substrate';})
+    .reduce(function(sum,e){return sum+((e.config&&e.config.substrate_liters)||0);},0);
+}
+function calc_plant_score_s(tid, ud) {
+  var score=0;
+  (ud.plants||[]).filter(function(p){return p.tank_id===tid;}).forEach(function(p){
+    var pl=PL[p.plant_id]; var abs=pl?(pl.nitrate_abs||'medium'):'medium';
+    score+=abs==='very_high'?3:abs==='high'?2:abs==='low'?0.5:1;
+  });
+  return score;
+}
+function calc_bioload_s(tid, ud) {
+  var sp_all=get_sp_s(ud), total=0;
+  (ud.stock||[]).filter(function(x){return x.tank_id===tid;}).forEach(function(s){
+    var sp=sp_all[s.species_id]; if(sp) total+=(sp.bioload||2)*s.qty*(sp.inv?0.3:1);
+  });
+  return Math.round(total);
+}
+function get_filter_mult_s(tid, ud) {
+  var tank=(ud.tanks||[]).find(function(t){return t.id===tid;}); if(!tank||!tank.gallons) return 1.0;
+  var filters=(ud.equip||[]).filter(function(x){return x.tank_id===tid&&x.type==='Filter'&&x.config&&x.config.flow_gph>0;});
+  if(!filters.length) return 1.0;
+  var gph=0; filters.forEach(function(f){gph+=(f.config.flow_gph||0);});
+  var turn=gph/tank.gallons; return turn<4?0.85:turn>6?1.1:1.0;
+}
+function get_light_hours_s(tid, ud) {
+  var h=0;
+  (ud.equip||[]).filter(function(x){return x.tank_id===tid&&x.type==='Light';})
+    .forEach(function(l){if(l.config&&l.config.hours>h)h=l.config.hours;});
+  return h;
+}
+function get_co2_info_s(tid, ud) {
+  var co2=(ud.equip||[]).filter(function(x){return x.tank_id===tid&&x.type==='CO2 System';});
+  if(!co2.length) return null;
+  var cfg=co2[0].config||{}; return {type:cfg.co2_type||'CO2',hours:cfg.hours||0,bps:cfg.bps||0};
+}
+function max_bioload_s(gallons, plant_score, substrate_liters) {
+  var sub_gal=(substrate_liters||0)/3.78541;
+  var eff_gal=Math.max(1,gallons-sub_gal);
+  var mult=plant_score>=10?1.4:plant_score>=6?1.3:plant_score>=3?1.2:plant_score>=1?1.1:1.0;
+  return Math.max(1,Math.round(eff_gal*1.5*mult));
+}
+function calc_uia_s(tan, ph, temp_f) {
+  if(tan===null||ph===null) return null;
+  var temp_c=temp_f!==null?(temp_f-32)*5/9:25;
+  var pka=0.09018+2729.92/(temp_c+273.15);
+  var frac=1/(1+Math.pow(10,pka-ph));
+  return Math.round(tan*frac*1000)/1000;
+}
+function cycle_status_s(tid, ud) {
+  var entries=get_water_s(tid,ud);
+  var tank=(ud.tanks||[]).find(function(t){return t.id===tid;})||{};
+  var chk=tank.setup_chk||{};
+  var has_fish=(ud.stock||[]).filter(function(s){return s.tank_id===tid;}).length>0;
+  var is_soil_start=tank.startup_method==='dark'||tank.startup_method==='dry';
+  var has_source=has_fish||chk.cycle_src||is_soil_start;
+  if(!entries.length){
+    if(!has_source) return {phase:0,pct:5,label:'Not started',color:'#9ca3af',test_freq:null,desc:'Add an ammonia source (pure ammonia, fish food, or a few hardy starter fish) and log your first water test to begin tracking.'};
+    return {phase:0,pct:15,label:'Cycling',color:'#4db8d4',test_freq:2,desc:'Ammonia source detected (fish or manual). Log your first water test to start tracking cycle progress.'};
+  }
+  var last=entries[entries.length-1];
+  var nh3=last.ammonia,no2=last.nitrite,no3=last.nitrate;
+  if(nh3===null&&no2===null) return {phase:0,pct:10,label:'Monitoring',color:'#9ca3af',test_freq:3,desc:'Log ammonia and nitrite readings to track cycle progress.'};
+  if(nh3!==null&&nh3<=0.25&&no2!==null&&no2<=0.25&&no3!==null&&no3>0) return {phase:4,pct:100,label:'Cycle complete!',color:'#3ab87a',test_freq:null,desc:'NH3 and NO2 are at 0 ppm, nitrate detected. Your tank is ready. Add fish slowly — 2-3 at a time, wait 1-2 weeks between additions.'};
+  var prior=entries.slice(0,entries.length-1);
+  var had_no2_spike=prior.some(function(e){return e.nitrite!==null&&e.nitrite>0;});
+  var had_nh3_spike=entries.some(function(e){return e.ammonia!==null&&e.ammonia>0;});
+  var no2_clear=no2!==null&&no2<=0.25;
+  var nh3_clear=had_nh3_spike?(nh3!==null&&nh3<=0.25):true;
+  if(had_no2_spike&&no2_clear&&nh3_clear) return {phase:4,pct:100,label:'Cycle complete!',color:'#3ab87a',test_freq:null,desc:'Nitrite spike detected in your history and now resolved — this is the classic cycle pattern. Test and log nitrate to confirm it is building up. Do a 30-50% water change before adding your first fish.'};
+  if(nh3!==null&&nh3<=0.5&&no2!==null&&no2>0) return {phase:3,pct:75,label:'Almost there',color:'#e8a838',test_freq:2,desc:'Ammonia is falling and nitrite-eating bacteria are multiplying. Keep testing every 2-3 days. 1-2 more weeks typically.'};
+  if(no2!==null&&no2>0) return {phase:2,pct:50,label:'Nitrite spike',color:'#e05252',test_freq:2,desc:'Ammonia-eating bacteria are established. Nitrite-eating bacteria are growing now. Both are still toxic — do not add fish. Avoid large water changes.'};
+  if(nh3!==null&&nh3>0) return {phase:1,pct:25,label:'Ammonia spike',color:'#e8a838',test_freq:2,desc:'Beneficial bacteria are starting to colonise the filter. This is normal. Do NOT do water changes yet. Test every 2-3 days and wait.'};
+  return {phase:0,pct:10,label:'Monitoring',color:'#9ca3af',test_freq:3,desc:'Keep logging water tests to track cycle progress.'};
+}
+function get_param_alerts_s(tid, ud) {
+  var entries=get_water_s(tid,ud);
+  if(entries.length<2) return [];
+  var alerts=[];
+  var last3=entries.slice(-3), last=last3[last3.length-1], prev=last3[last3.length-2];
+  var tank=(ud.tanks||[]).find(function(t){return t.id===tid;});
+  var cyc=tank?cycle_status_s(tid,ud):null;
+  var cycling_active=tank&&!tank.cycled&&cyc&&cyc.phase>=1&&cyc.phase<4;
+  var has_fish=(ud.stock||[]).filter(function(s){return s.tank_id===tid&&!s.preview;}).length>0;
+  if(last.ammonia!==null&&last.ammonia>0&&prev.ammonia!==null&&prev.ammonia>0){
+    if(!cycling_active) alerts.push({level:'danger',msg:'Ammonia TAN has been elevated across multiple tests ('+prev.ammonia+' ppm → '+last.ammonia+' ppm). Do a 25-50% water change immediately and recheck in 24h.'});
+    else if(has_fish&&last.ammonia>2) alerts.push({level:'warn',msg:'Ammonia TAN is '+last.ammonia+' ppm during a fish-in cycle. Do a 20-30% partial water change to bring it below 2 ppm — leave some for bacteria. Avoid full water changes during cycling.'});
+  }
+  var last_uia=calc_uia_s(last.ammonia,last.ph,last.temp_f);
+  var uia_note=(last.temp_f===null||last.temp_f===undefined)?' (temperature not logged — assumed 25°C)':'';
+  if(last_uia!==null&&last_uia>=0.05&&(!cycling_active||has_fish)) alerts.push({level:'danger',msg:'Un-ionized ammonia (UIA) is '+last_uia+' ppm — above the toxic threshold of 0.05 ppm'+uia_note+'. Even if TAN looks moderate, UIA at this pH and temperature is lethal. Do an immediate water change and lower pH slightly.'});
+  else if(last_uia!==null&&last_uia>=0.02&&!cycling_active) alerts.push({level:'warn',msg:'Un-ionized ammonia (UIA) is '+last_uia+' ppm — approaching the danger threshold of 0.05 ppm'+uia_note+'. Monitor closely and be ready for a water change.'});
+  if(last.nitrite!==null&&last.nitrite>0&&prev.nitrite!==null&&prev.nitrite>0){
+    if(cycling_active) alerts.push({level:'warn',msg:'Nitrite spike is ongoing — cycling is in progress. Do not add fish yet. Avoid large water changes.'});
+    else alerts.push({level:'danger',msg:'Nitrite remains elevated across multiple tests ('+prev.nitrite+' ppm → '+last.nitrite+' ppm). Tank may not be fully cycled. Hold off adding fish.'});
+  }
+  if(last.nitrate!==null&&last.nitrate>40) alerts.push({level:'warn',msg:'Nitrate is high ('+last.nitrate+' ppm). Do a 25-30% water change to reduce it. Target is below 20 ppm.'});
+  if(last.nitrate!==null&&prev.nitrate!==null&&last.nitrate>prev.nitrate+15) alerts.push({level:'warn',msg:'Nitrate rising fast ('+prev.nitrate+' → '+last.nitrate+' ppm). Consider increasing water change frequency.'});
+  if(last.ph!==null&&prev.ph!==null&&prev.ph-last.ph>=0.3) alerts.push({level:'warn',msg:'pH dropped '+((prev.ph-last.ph).toFixed(2))+' units between tests ('+prev.ph+' → '+last.ph+'). Sudden pH swings stress fish. Check buffering capacity (KH).'});
+  if(last.temp_f!==null&&prev.temp_f!==null&&Math.abs(last.temp_f-prev.temp_f)>=4){
+    var dt=function(f){return Math.round((f-32)*5/9*10)/10;};
+    alerts.push({level:'warn',msg:'Temperature changed '+Math.abs(dt(last.temp_f)-dt(prev.temp_f)).toFixed(1)+'°C between tests ('+dt(prev.temp_f)+' → '+dt(last.temp_f)+'°C). Rapid swings cause stress and disease.'});
+  }
+  return alerts;
+}
+function get_water_recs_s(lr, tid, ud) {
+  if(!lr) return [];
+  var recs=[];
+  var uia=calc_uia_s(lr.ammonia,lr.ph,lr.temp_f);
+  var uia_assumed=lr.temp_f===null||lr.temp_f===undefined;
+  var tank=(ud.tanks||[]).find(function(t){return t.id===tid;});
+  var cyc=tank?cycle_status_s(tid,ud):null;
+  var cycling_active=tank&&!tank.cycled&&cyc&&cyc.phase>=1&&cyc.phase<4;
+  var has_fish=(ud.stock||[]).filter(function(s){return s.tank_id===tid&&!s.preview;}).length>0;
+  if(lr.ammonia!==null&&lr.ammonia>0){
+    if(cycling_active){if(has_fish&&lr.ammonia>2) recs.push({level:'warn',param:'Ammonia TAN',msg:'Ammonia is high for a fish-in cycle. Do a <strong>20&ndash;30% partial water change</strong> to bring it below 2 ppm &mdash; but no lower, as bacteria still need ammonia to eat. Avoid full water changes during cycling.'});}
+    else recs.push({level:'danger',param:'Ammonia TAN',msg:'Do a 25&ndash;50% water change immediately. Check for dead fish, uneaten food, or overcrowding. Increase surface aeration. Recheck in 24 hours.'});
+  }
+  if(uia!==null&&uia>=0.05){
+    if(cycling_active&&!has_fish){}
+    else if(cycling_active&&has_fish) recs.push({level:'danger',param:'Ammonia UIA',msg:'UIA is above the toxic threshold'+(uia_assumed?' (calculated at 25&deg;C default)':'')+'. Do a <strong>20&ndash;30% partial water change</strong> to protect your fish. Do not reduce ammonia to 0 &mdash; leave some for the cycling bacteria.'});
+    else recs.push({level:'danger',param:'Ammonia UIA',msg:'Emergency water change now.'+(uia_assumed?' (Calculated at 25&deg;C default &mdash; actual toxicity may differ.)':'')+' At high pH and temperature, even moderate TAN becomes lethal. A partial water change lowers both TAN and pH slightly, reducing UIA immediately.'});
+  } else if(uia!==null&&uia>=0.02&&uia<0.05&&!cycling_active) recs.push({level:'warn',param:'Ammonia UIA',msg:'UIA is approaching the danger threshold of 0.05 ppm.'+(uia_assumed?' (Calculated at 25&deg;C default.)':'')+' Monitor closely. A water change now prevents it crossing into toxic territory.'});
+  if(lr.nitrite!==null&&lr.nitrite>0){
+    if(cycling_active){if(has_fish) recs.push({level:'warn',param:'Nitrite',msg:'Nitrite spike is expected during cycling. To protect fish short-term, add <strong>aquarium salt (1 tsp per gal)</strong> &mdash; it blocks nitrite uptake without disrupting the cycle. Avoid large water changes.'});}
+    else recs.push({level:'danger',param:'Nitrite',msg:'Do a 25&ndash;50% water change. Adding aquarium salt (1 tsp per gal) helps fish tolerate nitrite short-term by blocking uptake. Reduce feeding. Tank may still be cycling.'});
+  }
+  if(lr.nitrate!==null&&lr.nitrate>40) recs.push({level:'danger',param:'Nitrate',msg:'Do a 30&ndash;50% water change to pull nitrate below 20 ppm. Reduce feeding frequency. Adding fast-growing plants (hornwort, water wisteria) consumes nitrate continuously.'});
+  else if(lr.nitrate!==null&&lr.nitrate>20&&!cycling_active) recs.push({level:'warn',param:'Nitrate',msg:'Nitrate is elevated. A 25% water change will help. Consider increasing change frequency or adding plants to keep it under 20 ppm long-term.'});
+  if(lr.ph!==null&&lr.ph<6.0) recs.push({level:'danger',param:'pH',msg:'pH is critically low. Add crushed coral to the filter or substrate &mdash; it buffers slowly and safely. Avoid liquid pH-up; it causes dangerous swings. Max safe change: 0.2 units per day.'});
+  else if(lr.ph!==null&&lr.ph<6.5) recs.push({level:'warn',param:'pH',msg:'pH is slightly low. Add crushed coral or aragonite to buffer naturally. Check KH &mdash; if KH is near zero, pH will keep crashing. Driftwood in the tank also contributes to acidity.'});
+  else if(lr.ph!==null&&lr.ph>8.0) recs.push({level:'danger',param:'pH',msg:'pH is very high. Mix in RO or distilled water during water changes to dilute. Driftwood and Indian almond leaves lower pH gradually. Avoid chemical pH-down &mdash; it causes instability.'});
+  else if(lr.ph!==null&&lr.ph>7.5) recs.push({level:'warn',param:'pH',msg:'pH is slightly high. Driftwood or peat moss in the filter will lower it gradually. Indian almond leaves also help and are safe for all fish.'});
+  if(lr.gh!==null&&lr.gh<2) recs.push({level:'danger',param:'Hardness (GH)',msg:'Water is critically soft. Add Seachem Equilibrium, crushed coral, or a Wonder Shell to raise GH. Extremely soft water causes osmotic stress and interferes with fish osmoregulation.'});
+  else if(lr.gh!==null&&lr.gh<4) recs.push({level:'warn',param:'Hardness (GH)',msg:'GH is slightly low. Add Seachem Equilibrium or crushed coral gradually &mdash; raise by no more than 2 dGH per day to avoid stressing fish.'});
+  else if(lr.gh!==null&&lr.gh>15) recs.push({level:'danger',param:'Hardness (GH)',msg:'Water is very hard. Mix in RO or distilled water during water changes to reduce GH gradually. Peat moss in the filter also softens water over time.'});
+  else if(lr.gh!==null&&lr.gh>12) recs.push({level:'warn',param:'Hardness (GH)',msg:'GH is slightly high. Replace a portion of water change volume with RO or distilled water to bring it down slowly.'});
+  if(lr.temp_f!==null){
+    var tc=Math.round((lr.temp_f-32)*5/9);
+    if(tc>30) recs.push({level:'danger',param:'Temperature',msg:'Tank is too hot. Increase surface agitation to boost oxygenation (heat reduces O2). Float a bag of ice, remove the lid, or point a fan at the water surface. Check heater for malfunction.'});
+    else if(tc<18) recs.push({level:'danger',param:'Temperature',msg:'Tank is too cold for tropical fish. Check the heater is on and set correctly. Verify the heater wattage is sufficient (roughly 5W per gallon for unheated rooms).'});
+  }
+  return recs;
+}
+function get_rec_tasks_s(tid, ud) {
+  var tank=(ud.tanks||[]).find(function(t){return t.id===tid;});
+  if(!tank) return [];
+  var pl_count=(ud.plants||[]).filter(function(x){return x.tank_id===tid;}).length;
+  var filter_mult=get_filter_mult_s(tid,ud);
+  var cur_bl=calc_bioload_s(tid,ud);
+  var max_bl=Math.round(max_bioload_s(tank.gallons,calc_plant_score_s(tid,ud),calc_substrate_liters_s(tid,ud))*filter_mult);
+  var bl_ratio=max_bl>0?cur_bl/max_bl:0;
+  var recs=[];
+  var wc_freq=bl_ratio>=0.8?3:bl_ratio>=0.5?7:14;
+  var wc_why=bl_ratio>=0.8?'High bioload - frequent changes critical':bl_ratio>=0.5?'Weekly changes maintain water quality':'Light stocking - bi-weekly is fine';
+  recs.push({type:'Water Change',name:'25% Water Change',freq:wc_freq,why:wc_why});
+  var fc_freq=bl_ratio>=0.7?14:30;
+  recs.push({type:'Filter Clean',name:'Filter Media Rinse',freq:fc_freq,why:'Rinse in tank water (not tap) to preserve beneficial bacteria'});
+  var wt_freq=bl_ratio>=0.7?7:14;
+  var cyc_stat=cycle_status_s(tid,ud);
+  var is_cycling=!tank.cycled&&cyc_stat.phase<4&&cyc_stat.test_freq!==null;
+  if(is_cycling) recs.push({type:'Water Test',name:'Cycle Monitoring Test',freq:cyc_stat.test_freq,why:'Tank is cycling — test NH3, NO2, NO3 every '+cyc_stat.test_freq+' days until both read 0 ppm with detectable nitrate'});
+  else recs.push({type:'Water Test',name:'Water Parameter Test',freq:wt_freq,why:'Test NH3, NO2, NO3 and pH to catch issues early'});
+  recs.push({type:'Glass Wipe',name:'Glass and Algae Clean',freq:7,why:'Weekly wipe prevents algae from taking hold'});
+  recs.push({type:'Gravel Vac',name:'Gravel Vacuum',freq:14,why:'Removes waste and detritus from substrate'});
+  if(pl_count>0) recs.push({type:'Pruning',name:'Plant Trim and Maintenance',freq:14,why:'Trim overgrowth and remove dead or yellowing leaves'});
+  var co2_pres=(ud.equip||[]).filter(function(x){return x.tank_id===tid&&x.type==='CO2 System'&&x.config&&x.config.co2_type&&x.config.co2_type.indexOf('Pressurized')!==-1;});
+  if(co2_pres.length) recs.push({type:'Other',name:'CO2 Bottle Level Check',freq:30,why:'Monthly check prevents unexpected CO2 loss mid-day'});
+  var co2_inj=(ud.equip||[]).filter(function(x){return x.tank_id===tid&&x.type==='CO2 System'&&x.config&&x.config.co2_type&&x.config.co2_type.indexOf('Liquid')===-1;});
+  if(co2_inj.length){
+    recs.push({type:'Other',name:'Drop Checker Fluid Change',freq:14,why:'Reference solution loses accuracy after 1-2 weeks. Replace with fresh 4 dKH water and indicator drops.'});
+    recs.push({type:'Other',name:'CO2 Diffuser Clean',freq:30,why:'Calcium deposits block the ceramic membrane and reduce bubble output. Soak in diluted white vinegar for 30 minutes.'});
+  }
+  (ud.ferts||[]).filter(function(x){return x.tank_id===tid;}).forEach(function(f){
+    var dose_str=f.dose_ml?f.dose_ml+' ml per dose':'see bottle for dose';
+    recs.push({type:'Fertilizer',name:f.name,freq:f.freq_days,why:dose_str+' — based on '+Math.round(tank.gallons)+' gal tank'});
+  });
+  return recs;
+}
+function get_disease_risks_s(tid, ud) {
+  var lr=last_r_s(tid,ud);
+  var ammonia=lr?lr.ammonia:null, nitrite=lr?lr.nitrite:null, temp_f=lr?lr.temp_f:null;
+  var risks=[];
+  if((ammonia!==null&&parseFloat(ammonia)>0)||(nitrite!==null&&parseFloat(nitrite)>0)){
+    risks.push({id:'fin_rot',reason:'Elevated ammonia/nitrite stresses fish — bacteria exploit weakened immunity'});
+    risks.push({id:'columnaris',reason:'High ammonia/nitrite — columnaris thrives in stressed fish'});
+    risks.push({id:'aeromonas',reason:'Poor water quality is the #1 trigger for bacterial ulcers'});
+  }
+  if(temp_f!==null&&parseFloat(temp_f)>82){
+    var tc=Math.round((parseFloat(temp_f)-32)*5/9);
+    risks.push({id:'columnaris',reason:'Temperature '+tc+'°C — columnaris is most aggressive above 28°C'});
+    risks.push({id:'velvet',reason:'Warm water speeds up velvet parasite life cycle'});
+  }
+  var cutoff_ms=new Date().getTime()-14*86400000;
+  var cutoff_str=new Date(cutoff_ms).toISOString().slice(0,10);
+  var new_stock=(ud.stock||[]).filter(function(s){return s.tank_id===tid&&s.added_date&&s.added_date>=cutoff_str;});
+  if(new_stock.length){
+    risks.push({id:'ich',reason:'New fish added in the last 14 days — ich is the most common introduction'});
+    risks.push({id:'flukes',reason:'New fish may carry gill or skin flukes from the shop'});
+    risks.push({id:'trichodina',reason:'Trichodina is very common in fish from Indian shops and farms'});
+    risks.push({id:'velvet',reason:'Velvet can be introduced via new fish; spreads very fast'});
+  }
+  var seen={},unique=[];
+  risks.forEach(function(r){if(!seen[r.id]){seen[r.id]=true;unique.push(r);}});
+  return unique;
+}
+function get_plant_risks_s(tid, ud) {
+  var lr=last_r_s(tid,ud);
+  var no3=lr?lr.nitrate:null, nh3=lr?lr.ammonia:null, gh=lr?lr.gh:null, tds=lr?lr.tds:null;
+  var risks=[];
+  if(no3!==null&&parseFloat(no3)<10) risks.push({id:'yellowing_leaves',reason:'Nitrate is '+no3+' ppm — below 10 ppm suggests nitrogen deficiency'});
+  if(no3!==null&&parseFloat(no3)>20) risks.push({id:'algae_on_leaves',reason:'Nitrate is '+no3+' ppm — high nutrients feed algae on leaves'});
+  if(gh!==null&&parseFloat(gh)<4) risks.push({id:'holes_in_leaves',reason:'GH is '+gh+' — below 4 indicates calcium/magnesium deficiency'});
+  if(gh!==null&&parseFloat(gh)>20) risks.push({id:'brown_leaf_edges',reason:'GH is '+gh+' — very hard water can stress sensitive plants'});
+  if(nh3!==null&&parseFloat(nh3)>0) risks.push({id:'root_rot',reason:'Ammonia is '+nh3+' ppm — elevated ammonia stresses plant roots'});
+  if(tds!==null&&parseFloat(tds)>400) risks.push({id:'brown_leaf_edges',reason:'TDS is '+tds+' ppm — high mineral load can cause leaf edge burn'});
+  var co2=get_co2_info_s(tid,ud);
+  if(!co2) risks.push({id:'pale_new_growth',reason:'No CO2 equipment — plants in medium/high light need CO2 for strong growth'});
+  var seen={},unique=[];
+  risks.forEach(function(r){if(!seen[r.id]){seen[r.id]=true;unique.push(r);}});
+  return unique;
+}
+function get_algae_risks_s(tid, ud) {
+  var tank=(ud.tanks||[]).find(function(t){return t.id===tid;});
+  var light_h=get_light_hours_s(tid,ud), co2=get_co2_info_s(tid,ud);
+  var lr=last_r_s(tid,ud);
+  var nitrate=lr?lr.nitrate:null, ammonia=lr?lr.ammonia:null, nitrite=lr?lr.nitrite:null;
+  var temp_f=lr?lr.temp_f:null, phosphate=lr?lr.phosphate:null;
+  var has_plants=(ud.plants||[]).filter(function(p){return p.tank_id===tid;}).length>0;
+  var filters=(ud.equip||[]).filter(function(x){return x.tank_id===tid&&x.type==='Filter'&&x.config&&x.config.flow_gph>0;});
+  var total_gph=0; filters.forEach(function(f){total_gph+=(f.config.flow_gph||0);});
+  var turnover=(tank&&tank.gallons&&total_gph)?total_gph/tank.gallons:null;
+  var risks=[];
+  if(tank&&tank.setup_date){
+    var age_days=Math.floor((new Date().getTime()-new Date(tank.setup_date+'T00:00:00').getTime())/86400000);
+    if(age_days<90) risks.push({id:'brown_diatom',reason:'Tank under 3 months old (age: '+age_days+' days)'});
+  }
+  if((ammonia!==null&&ammonia>0)||(nitrite!==null&&nitrite>0)) risks.push({id:'brown_diatom',reason:'Ammonia/nitrite detected — tank may still be cycling'});
+  if(light_h>=8&&!co2){risks.push({id:'hair_algae',reason:'High light ('+light_h+' h/day) without CO2'});risks.push({id:'green_spot',reason:'High light ('+light_h+' h/day) without CO2'});}
+  if(phosphate!==null&&phosphate<0.2) risks.push({id:'green_spot',reason:'Very low phosphate ('+phosphate+' ppm) — main trigger for GSA'});
+  if(light_h>0&&light_h<6) risks.push({id:'bba',reason:'Low light ('+light_h+' h/day) encourages BBA'});
+  if(co2&&light_h>=8){risks.push({id:'bba',reason:'CO2 fluctuation risk with high-light setup'});risks.push({id:'staghorn',reason:'CO2 fluctuation risk with high-light setup'});}
+  if(nitrate!==null&&nitrate>20){risks.push({id:'hair_algae',reason:'Elevated nitrate ('+nitrate+' ppm)'});risks.push({id:'cyanobacteria',reason:'High nutrients — nitrate '+nitrate+' ppm'});}
+  if(temp_f!==null&&temp_f>82){var tc=Math.round((temp_f-32)*5/9);risks.push({id:'cyanobacteria',reason:'High temperature ('+tc+'°C) — cyanobacteria thrives in warm water'});}
+  if(turnover!==null&&turnover<4) risks.push({id:'cyanobacteria',reason:'Low filter turnover ('+turnover.toFixed(1)+'x/hr) — poor flow favours cyanobacteria'});
+  if(!has_plants) risks.push({id:'cyanobacteria',reason:'No plants to compete for nutrients'});
+  var seen={},unique=[];
+  risks.forEach(function(r){if(!seen[r.id]){seen[r.id]=true;unique.push(r);}});
+  return unique;
+}
+function get_food_recs_s(tid, ud) {
+  var sk=(ud.stock||[]).filter(function(s){return s.tank_id===tid&&!s.preview;});
+  if(!sk.length) return null;
+  var needs={};
+  function need(fid,nm){if(!needs[fid])needs[fid]=[];if(needs[fid].indexOf(nm)===-1)needs[fid].push(nm);}
+  sk.forEach(function(s){
+    var sp=get_sp_s(ud)[s.species_id]; if(!sp) return;
+    var nm=sp.name, type=sp.type, diet=DIET_MAP[s.species_id];
+    if(type==='Shrimp'){need('shrimp_food',nm);need('blanched_veg',nm);if(s.species_id==='bamboo_shrimp')need('powder_food',nm);else need('brine_shrimp',nm);}
+    else if(type==='Snail'){need('algae_wafer',nm);need('calcium',nm);need('blanched_veg',nm);}
+    else if(type==='Crayfish'){need('sinking',nm);need('blanched_veg',nm);need('bloodworm',nm);need('calcium',nm);}
+    else if(type==='Amphibian'){need('frog_pellet',nm);need('bloodworm',nm);}
+    else if(type==='Turtle'){need('carnivore_p',nm);need('bloodworm',nm);}
+    else{
+      if(diet==='bottom'){need('sinking',nm);need('bloodworm',nm);}
+      else if(diet==='nano_bottom'){need('nano_pellet',nm);need('sinking',nm);}
+      else if(diet==='algae'){need('algae_wafer',nm);need('spirulina',nm);}
+      else if(diet==='carnivore'){need('carnivore_p',nm);need('bloodworm',nm);need('brine_shrimp',nm);}
+      else if(diet==='livebearer'){need('flake',nm);need('spirulina',nm);need('bloodworm',nm);}
+      else if(diet==='nano'){need('nano_pellet',nm);need('brine_shrimp',nm);need('bloodworm',nm);}
+      else if(diet==='goldfish'){need('goldfish_f',nm);need('bloodworm',nm);}
+      else if(diet==='coldwater'){need('flake',nm);need('bloodworm',nm);}
+      else if(diet==='filter_feed'){need('powder_food',nm);}
+      else if(diet==='frog'){need('frog_pellet',nm);need('bloodworm',nm);}
+      else{need('flake',nm);need('bloodworm',nm);need('brine_shrimp',nm);}
+    }
+  });
+  if(needs.bloodworm&&needs.brine_shrimp) delete needs.brine_shrimp;
+  return needs;
+}
+
+// ===== CALC API HANDLERS =====
+async function handle_calc_dash(request, env) {
+  var auth = await verify_jwt(request, env);
+  if (!auth) return new Response('Unauthorized', {status:401});
+  var row = await env.DB.prepare('SELECT data FROM user_data WHERE user_id=?').bind(auth.uid).first();
+  if (!row) return json_r({alerts:[], water_recs:[]});
+  var ud = JSON.parse(row.data);
+  var url = new URL(request.url);
+  var tid = url.searchParams.get('tid');
+  if (!tid) return json_r({error:'missing tid'}, 400);
+  var lr = last_r_s(tid, ud);
+  return json_r({alerts: get_param_alerts_s(tid, ud), water_recs: get_water_recs_s(lr, tid, ud)});
+}
+async function handle_calc_maint(request, env) {
+  var auth = await verify_jwt(request, env);
+  if (!auth) return new Response('Unauthorized', {status:401});
+  var row = await env.DB.prepare('SELECT data FROM user_data WHERE user_id=?').bind(auth.uid).first();
+  if (!row) return json_r({rec_tasks:[]});
+  var ud = JSON.parse(row.data);
+  var url = new URL(request.url);
+  var tid = url.searchParams.get('tid');
+  if (!tid) return json_r({error:'missing tid'}, 400);
+  return json_r({rec_tasks: get_rec_tasks_s(tid, ud)});
+}
+async function handle_calc_recs(request, env) {
+  var auth = await verify_jwt(request, env);
+  if (!auth) return new Response('Unauthorized', {status:401});
+  var row = await env.DB.prepare('SELECT data FROM user_data WHERE user_id=?').bind(auth.uid).first();
+  if (!row) return json_r({food_recs:null});
+  var ud = JSON.parse(row.data);
+  var url = new URL(request.url);
+  var tid = url.searchParams.get('tid');
+  if (!tid) return json_r({error:'missing tid'}, 400);
+  return json_r({food_recs: get_food_recs_s(tid, ud)});
+}
+async function handle_calc_risks(request, env) {
+  var auth = await verify_jwt(request, env);
+  if (!auth) return new Response('Unauthorized', {status:401});
+  var row = await env.DB.prepare('SELECT data FROM user_data WHERE user_id=?').bind(auth.uid).first();
+  if (!row) return json_r({disease_risks:[], algae_risks:[], plant_risks:[]});
+  var ud = JSON.parse(row.data);
+  var url = new URL(request.url);
+  var tid = url.searchParams.get('tid');
+  if (!tid) return json_r({error:'missing tid'}, 400);
+  return json_r({
+    disease_risks: get_disease_risks_s(tid, ud),
+    algae_risks:   get_algae_risks_s(tid, ud),
+    plant_risks:   get_plant_risks_s(tid, ud)
+  });
+}
+
 const APP_HTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1216,6 +1560,13 @@ async function load_ref_data() {
   _fert = d.fert; _algae = d.algae; _dis = d.dis;
   _pldis = d.pldis; _diet = d.diet; _food = d.food;
 }
+async function api_get(path) {
+  var tok = localStorage.getItem('aq_token');
+  var r = await fetch(path, {headers:{'Authorization':'Bearer '+tok}, cache:'no-store'});
+  if (r.status === 401) { do_logout(); return null; }
+  return r.json();
+}
+
 function get_plant_pos(pid) { var p = _pl[pid]; return p ? (_group_pos[p.group] || 'Midground') : ''; }
 
 // ===== STORAGE =====
@@ -1885,78 +2236,6 @@ function get_co2_info(tid) {
   return {type: cfg.co2_type || 'CO2', hours: cfg.hours || 0, bps: cfg.bps || 0};
 }
 
-// ===== RECOMMENDED MAINTENANCE TASKS =====
-function get_rec_tasks(tid) {
-  var d = ld();
-  var tank = d.tanks.find(function(t){ return t.id === tid; });
-  if (!tank) return [];
-  var pl_count = d.plants.filter(function(x){ return x.tank_id === tid; }).length;
-  var filter_mult = get_filter_mult(tid);
-  var cur_bl = calc_bioload(tid);
-  var max_bl = Math.round(max_bioload(tank.gallons, calc_plant_score(tid), calc_substrate_liters(tid)) * filter_mult);
-  var bl_ratio = max_bl > 0 ? cur_bl / max_bl : 0;
-  var recs = [];
-
-  var wc_freq = bl_ratio >= 0.8 ? 3 : bl_ratio >= 0.5 ? 7 : 14;
-  var wc_why = bl_ratio >= 0.8 ? 'High bioload - frequent changes critical' :
-               bl_ratio >= 0.5 ? 'Weekly changes maintain water quality' : 'Light stocking - bi-weekly is fine';
-  recs.push({type:'Water Change', name:'25% Water Change', freq:wc_freq, why:wc_why});
-
-  var fc_freq = bl_ratio >= 0.7 ? 14 : 30;
-  recs.push({type:'Filter Clean', name:'Filter Media Rinse', freq:fc_freq,
-    why:'Rinse in tank water (not tap) to preserve beneficial bacteria'});
-
-  var wt_freq = bl_ratio >= 0.7 ? 7 : 14;
-  var cyc_stat = cycle_status(tid);
-  var is_cycling = !tank.cycled && cyc_stat.phase < 4 && cyc_stat.test_freq !== null;
-  if (is_cycling) {
-    recs.push({type:'Water Test', name:'Cycle Monitoring Test', freq:cyc_stat.test_freq,
-      why:'Tank is cycling — test NH3, NO2, NO3 every ' + cyc_stat.test_freq + ' days until both read 0 ppm with detectable nitrate'});
-  } else {
-    recs.push({type:'Water Test', name:'Water Parameter Test', freq:wt_freq,
-      why:'Test NH3, NO2, NO3 and pH to catch issues early'});
-  }
-
-  recs.push({type:'Glass Wipe', name:'Glass and Algae Clean', freq:7,
-    why:'Weekly wipe prevents algae from taking hold'});
-
-  recs.push({type:'Gravel Vac', name:'Gravel Vacuum', freq:14,
-    why:'Removes waste and detritus from substrate'});
-
-  if (pl_count > 0) {
-    recs.push({type:'Pruning', name:'Plant Trim and Maintenance', freq:14,
-      why:'Trim overgrowth and remove dead or yellowing leaves'});
-  }
-
-  var co2_equip = d.equip.filter(function(x){
-    return x.tank_id === tid && x.type === 'CO2 System' && x.config &&
-           x.config.co2_type && x.config.co2_type.indexOf('Pressurized') !== -1;
-  });
-  if (co2_equip.length) {
-    recs.push({type:'Other', name:'CO2 Bottle Level Check', freq:30,
-      why:'Monthly check prevents unexpected CO2 loss mid-day'});
-  }
-
-  var co2_injected = d.equip.filter(function(x){
-    return x.tank_id === tid && x.type === 'CO2 System' && x.config &&
-           x.config.co2_type && x.config.co2_type.indexOf('Liquid') === -1;
-  });
-  if (co2_injected.length) {
-    recs.push({type:'Other', name:'Drop Checker Fluid Change', freq:14,
-      why:'Reference solution loses accuracy after 1-2 weeks. Replace with fresh 4 dKH water and indicator drops.'});
-    recs.push({type:'Other', name:'CO2 Diffuser Clean', freq:30,
-      why:'Calcium deposits block the ceramic membrane and reduce bubble output. Soak in diluted white vinegar for 30 minutes.'});
-  }
-
-  d.ferts.filter(function(x){ return x.tank_id === tid; }).forEach(function(f) {
-    var dose_str = f.dose_ml ? f.dose_ml + ' ml per dose' : 'see bottle for dose';
-    recs.push({type:'Fertilizer', name:f.name, freq:f.freq_days,
-      why:dose_str + ' — based on ' + Math.round(d_v(tank.gallons)) + ' ' + v_lbl() + ' tank'});
-  });
-
-  return recs;
-}
-
 function add_rec_task(type, name, freq) {
   add_task(at(), type, name, parseInt(freq), today_str(), 'Recommended task');
   r_maint();
@@ -2146,146 +2425,6 @@ function scard(l, v, s) {
 function fgh(lbl, inp_html, hint) {
   return '<div class="fg"><label>' + lbl + '</label>' + inp_html +
     (hint ? '<small style="font-size:11px;color:var(--muted);margin-top:2px">' + hint + '</small>' : '') + '</div>';
-}
-
-// ===== PARAMETER TREND ALERTS =====
-function get_water_recs(lr, tid) {
-  if (!lr) return [];
-  var recs = [];
-  var uia = calc_uia(lr.ammonia, lr.ph, lr.temp_f);
-  var uia_assumed = uia_temp_defaulted(lr.temp_f);
-
-  // Determine if tank is actively cycling so we can tailor advice
-  var d = ld();
-  var tank = d.tanks.find(function(t){ return t.id === tid; });
-  var cyc = tank ? cycle_status(tid) : null;
-  var cycling_active = tank && !tank.cycled && cyc && cyc.phase >= 1 && cyc.phase < 4;
-  var has_fish = d.stock.filter(function(s){ return s.tank_id === tid && !s.preview; }).length > 0;
-
-  if (lr.ammonia !== null && lr.ammonia > 0) {
-    if (cycling_active) {
-      if (has_fish && lr.ammonia > 2) {
-        recs.push({level:'warn', param:'Ammonia TAN', msg:'Ammonia is high for a fish-in cycle. Do a <strong>20&ndash;30% partial water change</strong> to bring it below 2 ppm — but no lower, as bacteria still need ammonia to eat. Avoid full water changes during cycling.'});
-      }
-      // else: ammonia spike during cycling is normal — no recommendation needed
-    } else {
-      recs.push({level:'danger', param:'Ammonia TAN', msg:'Do a 25&ndash;50% water change immediately. Check for dead fish, uneaten food, or overcrowding. Increase surface aeration. Recheck in 24 hours.'});
-    }
-  }
-
-  if (uia !== null && uia >= 0.05) {
-    if (cycling_active && !has_fish) {
-      // Fishless cycling — UIA has no fish to harm, skip warning
-    } else if (cycling_active && has_fish) {
-      recs.push({level:'danger', param:'Ammonia UIA', msg:'UIA is above the toxic threshold' + (uia_assumed ? ' (calculated at 25&deg;C default)' : '') + '. Do a <strong>20&ndash;30% partial water change</strong> to protect your fish. Do not reduce ammonia to 0 — leave some for the cycling bacteria.'});
-    } else {
-      recs.push({level:'danger', param:'Ammonia UIA', msg:'Emergency water change now.' + (uia_assumed ? ' (Calculated at 25&deg;C default — actual toxicity may differ.)' : '') + ' At high pH and temperature, even moderate TAN becomes lethal. A partial water change lowers both TAN and pH slightly, reducing UIA immediately.'});
-    }
-  } else if (uia !== null && uia >= 0.02 && uia < 0.05 && !cycling_active) {
-    recs.push({level:'warn', param:'Ammonia UIA', msg:'UIA is approaching the danger threshold of 0.05 ppm.' + (uia_assumed ? ' (Calculated at 25&deg;C default.)' : '') + ' Monitor closely. A water change now prevents it crossing into toxic territory.'});
-  }
-
-  if (lr.nitrite !== null && lr.nitrite > 0) {
-    if (cycling_active) {
-      if (has_fish) {
-        recs.push({level:'warn', param:'Nitrite', msg:'Nitrite spike is expected during cycling. To protect fish short-term, add <strong>aquarium salt (1 tsp per gal)</strong> — it blocks nitrite uptake without disrupting the cycle. Avoid large water changes.'});
-      }
-      // else: nitrite spike during fishless cycling is normal — no recommendation
-    } else {
-      recs.push({level:'danger', param:'Nitrite', msg:'Do a 25&ndash;50% water change. Adding aquarium salt (1 tsp per gal) helps fish tolerate nitrite short-term by blocking uptake. Reduce feeding. Tank may still be cycling.'});
-    }
-  }
-
-  if (lr.nitrate !== null && lr.nitrate > 40) {
-    recs.push({level:'danger', param:'Nitrate', msg:'Do a 30&ndash;50% water change to pull nitrate below 20 ppm. Reduce feeding frequency. Adding fast-growing plants (hornwort, water wisteria) consumes nitrate continuously.'});
-  } else if (lr.nitrate !== null && lr.nitrate > 20 && !cycling_active) {
-    recs.push({level:'warn', param:'Nitrate', msg:'Nitrate is elevated. A 25% water change will help. Consider increasing change frequency or adding plants to keep it under 20 ppm long-term.'});
-  }
-
-  if (lr.ph !== null && lr.ph < 6.0) {
-    recs.push({level:'danger', param:'pH', msg:'pH is critically low. Add crushed coral to the filter or substrate — it buffers slowly and safely. Avoid liquid pH-up; it causes dangerous swings. Max safe change: 0.2 units per day.'});
-  } else if (lr.ph !== null && lr.ph < 6.5) {
-    recs.push({level:'warn', param:'pH', msg:'pH is slightly low. Add crushed coral or aragonite to buffer naturally. Check KH — if KH is near zero, pH will keep crashing. Driftwood in the tank also contributes to acidity.'});
-  } else if (lr.ph !== null && lr.ph > 8.0) {
-    recs.push({level:'danger', param:'pH', msg:'pH is very high. Mix in RO or distilled water during water changes to dilute. Driftwood and Indian almond leaves lower pH gradually. Avoid chemical pH-down — it causes instability.'});
-  } else if (lr.ph !== null && lr.ph > 7.5) {
-    recs.push({level:'warn', param:'pH', msg:'pH is slightly high. Driftwood or peat moss in the filter will lower it gradually. Indian almond leaves also help and are safe for all fish.'});
-  }
-  if (lr.gh !== null && lr.gh < 2) {
-    recs.push({level:'danger', param:'Hardness (GH)', msg:'Water is critically soft. Add Seachem Equilibrium, crushed coral, or a Wonder Shell to raise GH. Extremely soft water causes osmotic stress and interferes with fish osmoregulation.'});
-  } else if (lr.gh !== null && lr.gh < 4) {
-    recs.push({level:'warn', param:'Hardness (GH)', msg:'GH is slightly low. Add Seachem Equilibrium or crushed coral gradually — raise by no more than 2 dGH per day to avoid stressing fish.'});
-  } else if (lr.gh !== null && lr.gh > 15) {
-    recs.push({level:'danger', param:'Hardness (GH)', msg:'Water is very hard. Mix in RO or distilled water during water changes to reduce GH gradually. Peat moss in the filter also softens water over time.'});
-  } else if (lr.gh !== null && lr.gh > 12) {
-    recs.push({level:'warn', param:'Hardness (GH)', msg:'GH is slightly high. Replace a portion of water change volume with RO or distilled water to bring it down slowly.'});
-  }
-  if (lr.temp_f !== null) {
-    var tc = Math.round((lr.temp_f - 32) * 5 / 9);
-    if (tc > 30) {
-      recs.push({level:'danger', param:'Temperature', msg:'Tank is too hot. Increase surface agitation to boost oxygenation (heat reduces O2). Float a bag of ice, remove the lid, or point a fan at the water surface. Check heater for malfunction.'});
-    } else if (tc < 18) {
-      recs.push({level:'danger', param:'Temperature', msg:'Tank is too cold for tropical fish. Check the heater is on and set correctly. Verify the heater wattage is sufficient (roughly 5W per gallon for unheated rooms).'});
-    }
-  }
-  return recs;
-}
-
-function get_param_alerts(tid) {
-  var entries = get_water(tid);
-  if (entries.length < 2) return [];
-  var alerts = [];
-  var last3 = entries.slice(-3);
-  var last = last3[last3.length - 1];
-  var prev = last3[last3.length - 2];
-
-  var d = ld();
-  var tank = d.tanks.find(function(t){ return t.id === tid; });
-  var cyc = tank ? cycle_status(tid) : null;
-  var cycling_active = tank && !tank.cycled && cyc && cyc.phase >= 1 && cyc.phase < 4;
-  var has_fish = d.stock.filter(function(s){ return s.tank_id === tid && !s.preview; }).length > 0;
-
-  // Persistent ammonia — suppress during cycling (expected), unless fish-in and very high
-  if (last.ammonia !== null && last.ammonia > 0 && prev.ammonia !== null && prev.ammonia > 0) {
-    if (!cycling_active) {
-      alerts.push({level:'danger', msg:'Ammonia TAN has been elevated across multiple tests (' + prev.ammonia + ' ppm → ' + last.ammonia + ' ppm). Do a 25-50% water change immediately and recheck in 24h.'});
-    } else if (has_fish && last.ammonia > 2) {
-      alerts.push({level:'warn', msg:'Ammonia TAN is ' + last.ammonia + ' ppm during a fish-in cycle. Do a 20-30% partial water change to bring it below 2 ppm — leave some for bacteria. Avoid full water changes during cycling.'});
-    }
-  }
-  // UIA — always warn if dangerous and there are fish; suppress for fishless cycling
-  var last_uia = calc_uia(last.ammonia, last.ph, last.temp_f);
-  var uia_temp_note_alert = uia_temp_defaulted(last.temp_f) ? ' (temperature not logged — assumed 25°C)' : '';
-  if (last_uia !== null && last_uia >= 0.05 && (!cycling_active || has_fish)) {
-    alerts.push({level:'danger', msg:'Un-ionized ammonia (UIA) is ' + last_uia + ' ppm — above the toxic threshold of 0.05 ppm' + uia_temp_note_alert + '. Even if TAN looks moderate, UIA at this pH and temperature is lethal. Do an immediate water change and lower pH slightly.'});
-  } else if (last_uia !== null && last_uia >= 0.02 && !cycling_active) {
-    alerts.push({level:'warn', msg:'Un-ionized ammonia (UIA) is ' + last_uia + ' ppm — approaching the danger threshold of 0.05 ppm' + uia_temp_note_alert + '. Monitor closely and be ready for a water change.'});
-  }
-  // Persistent nitrite — during cycling it is expected; just remind not to add fish
-  if (last.nitrite !== null && last.nitrite > 0 && prev.nitrite !== null && prev.nitrite > 0) {
-    if (cycling_active) {
-      alerts.push({level:'warn', msg:'Nitrite spike is ongoing — cycling is in progress. Do not add fish yet. Avoid large water changes.'});
-    } else {
-      alerts.push({level:'danger', msg:'Nitrite remains elevated across multiple tests (' + prev.nitrite + ' ppm → ' + last.nitrite + ' ppm). Tank may not be fully cycled. Hold off adding fish.'});
-    }
-  }
-  // High nitrate
-  if (last.nitrate !== null && last.nitrate > 40) {
-    alerts.push({level:'warn', msg:'Nitrate is high (' + last.nitrate + ' ppm). Do a 25-30% water change to reduce it. Target is below 20 ppm.'});
-  }
-  // Rising nitrate trend
-  if (last.nitrate !== null && prev.nitrate !== null && last.nitrate > prev.nitrate + 15) {
-    alerts.push({level:'warn', msg:'Nitrate rising fast (' + prev.nitrate + ' → ' + last.nitrate + ' ppm). Consider increasing water change frequency.'});
-  }
-  // pH drop
-  if (last.ph !== null && prev.ph !== null && prev.ph - last.ph >= 0.3) {
-    alerts.push({level:'warn', msg:'pH dropped ' + (prev.ph - last.ph).toFixed(2) + ' units between tests (' + prev.ph + ' → ' + last.ph + '). Sudden pH swings stress fish. Check buffering capacity (KH).'});
-  }
-  // Temperature drop
-  if (last.temp_f !== null && prev.temp_f !== null && Math.abs(last.temp_f - prev.temp_f) >= 4) {
-    alerts.push({level:'warn', msg:'Temperature changed ' + Math.abs(d_t(last.temp_f) - d_t(prev.temp_f)).toFixed(1) + t_lbl() + ' between tests (' + d_t(prev.temp_f) + ' → ' + d_t(last.temp_f) + t_lbl() + '). Rapid swings cause stress and disease.'});
-  }
-  return alerts;
 }
 
 // ===== CYCLE CARD =====
@@ -2807,7 +2946,7 @@ function switch_tab(t) {
 }
 
 // ===== DASHBOARD =====
-function r_dash() {
+async function r_dash() {
   var tid = at(), d = ld(), el = document.getElementById('p-dash');
   var tank = d.tanks.find(function(t){ return t.id === tid; });
   if (!tank) { el.innerHTML = no_tank(); return; }
@@ -2815,6 +2954,7 @@ function r_dash() {
   var has_fish = d.stock.filter(function(s){ return s.tank_id === tid && !s.preview; }).length > 0;
   var cyc_dash = cycle_status(tid);
   var cycling_active = !tank.cycled && cyc_dash && cyc_dash.phase >= 1 && cyc_dash.phase < 4;
+  var _dcomp = await api_get('/api/calc/dash?tid=' + tid);
 
   var tasks = d.tasks.filter(function(x){ return x.tank_id === tid; })
     .sort(function(a,b){ return days_til(a.next_due) - days_til(b.next_due); });
@@ -2866,7 +3006,7 @@ function r_dash() {
   h += r_cycle_card(tid);
 
   // Parameter trend alerts
-  var p_alerts = get_param_alerts(tid);
+  var p_alerts = _dcomp ? _dcomp.alerts : [];
   if (p_alerts.length) {
     p_alerts.forEach(function(a) {
       h += '<div class="' + (a.level === 'danger' ? 'cwarn' : 'cinfo') + '" style="margin-bottom:10px;font-weight:400;font-size:13px">' +
@@ -2945,7 +3085,7 @@ function r_dash() {
       }
     }
     // Per-parameter recommendations when values are out of range
-    var w_recs = get_water_recs(lr, tid);
+    var w_recs = _dcomp ? _dcomp.water_recs : [];
     if (w_recs.length) {
       h += '<div style="margin-top:10px"><div style="font-size:12px;font-weight:600;margin-bottom:6px">&#x1F527; What to do</div>';
       w_recs.forEach(function(r) {
@@ -3362,12 +3502,13 @@ function sub_edit_water(e, id) {
 }
 
 // ===== MAINTENANCE =====
-function r_maint() {
+async function r_maint() {
   var tid = at(), d = ld(), el = document.getElementById('p-maint');
   if (!d.tanks.find(function(t){return t.id===tid;})) { el.innerHTML = no_tank(); return; }
   var td = today_str();
   var existing_types = d.tasks.filter(function(x){ return x.tank_id === tid; }).map(function(t){ return t.type; });
-  var rec_tasks = get_rec_tasks(tid);
+  var _mcomp = await api_get('/api/calc/maint?tid=' + tid);
+  var rec_tasks = _mcomp ? _mcomp.rec_tasks : [];
   var tank = d.tanks.find(function(t){ return t.id === tid; });
   var wc_sub_l = calc_substrate_liters(tid);
   var wc_sub_gal = wc_sub_l / 3.78541;
@@ -3518,52 +3659,7 @@ function sub_task(e) {
   r_maint();
 }
 
-// ===== DIAGNOSE DATA =====
-function get_food_recs(tid) {
-  var d = ld();
-  var sk = d.stock.filter(function(s){ return s.tank_id === tid && !s.preview; });
-  if (!sk.length) return null;
-  var needs = {}; // food_id -> [species names]
-  function need(fid, name) {
-    if (!needs[fid]) needs[fid] = [];
-    if (needs[fid].indexOf(name) === -1) needs[fid].push(name);
-  }
-  sk.forEach(function(s) {
-    var sp = get_sp(d)[s.species_id]; if (!sp) return;
-    var nm = sp.name, type = sp.type, diet = _diet[s.species_id];
-    if (type === 'Shrimp') {
-      need('shrimp_food', nm); need('blanched_veg', nm);
-      if (s.species_id === 'bamboo_shrimp') need('powder_food', nm);
-      else need('brine_shrimp', nm);
-    } else if (type === 'Snail') {
-      need('algae_wafer', nm); need('calcium', nm); need('blanched_veg', nm);
-    } else if (type === 'Crayfish') {
-      need('sinking', nm); need('blanched_veg', nm); need('bloodworm', nm); need('calcium', nm);
-    } else if (type === 'Amphibian') {
-      need('frog_pellet', nm); need('bloodworm', nm);
-    } else if (type === 'Turtle') {
-      need('carnivore_p', nm); need('bloodworm', nm);
-    } else {
-      // Fish
-      if (diet === 'bottom')       { need('sinking', nm); need('bloodworm', nm); }
-      else if (diet === 'nano_bottom') { need('nano_pellet', nm); need('sinking', nm); }
-      else if (diet === 'algae')   { need('algae_wafer', nm); need('spirulina', nm); }
-      else if (diet === 'carnivore') { need('carnivore_p', nm); need('bloodworm', nm); need('brine_shrimp', nm); }
-      else if (diet === 'livebearer') { need('flake', nm); need('spirulina', nm); need('bloodworm', nm); }
-      else if (diet === 'nano')    { need('nano_pellet', nm); need('brine_shrimp', nm); need('bloodworm', nm); }
-      else if (diet === 'goldfish') { need('goldfish_f', nm); need('bloodworm', nm); }
-      else if (diet === 'coldwater') { need('flake', nm); need('bloodworm', nm); }
-      else if (diet === 'filter_feed') { need('powder_food', nm); }
-      else if (diet === 'frog')    { need('frog_pellet', nm); need('bloodworm', nm); }
-      else { need('flake', nm); need('bloodworm', nm); need('brine_shrimp', nm); } // default omnivore
-    }
-  });
-  // Suppress brine shrimp when bloodworms already cover the same role
-  if (needs.bloodworm && needs.brine_shrimp) delete needs.brine_shrimp;
-  return needs;
-}
-
-function r_recs() {
+async function r_recs() {
   var tid = at(), d = ld(), el = document.getElementById('p-recs');
   if (!d.tanks.find(function(t){return t.id===tid;})) { el.innerHTML = no_tank(); return; }
   var tank = d.tanks.find(function(t){ return t.id === tid; });
@@ -3572,6 +3668,7 @@ function r_recs() {
   var light_hours = get_light_hours(tid);
   var co2_info = get_co2_info(tid);
   var filter_mult = get_filter_mult(tid);
+  var _rcomp = await api_get('/api/calc/recs?tid=' + tid);
   var cur_bl = calc_bioload(tid);
   var pl_score = calc_plant_score(tid);
   var max_bl = Math.round(max_bioload(tank ? tank.gallons : 0, pl_score, calc_substrate_liters(tid)) * filter_mult);
@@ -3997,7 +4094,7 @@ function r_recs() {
   }
 
   // Food Guide card
-  var food_needs = get_food_recs(tid);
+  var food_needs = _rcomp ? _rcomp.food_recs : null;
   if (food_needs && Object.keys(food_needs).length) {
     var daily = [], supplement = [], treat = [];
     Object.keys(food_needs).forEach(function(fid) {
@@ -5533,110 +5630,6 @@ document.querySelectorAll('.tab').forEach(function(btn) {
 });
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
 
-// ===== DIAGNOSE WIZARD =====
-function get_disease_risks(tid) {
-  var d = ld(), tid_ = tid;
-  var lr = d.water.filter(function(w){ return w.tank_id === tid_; }).sort(function(a,b){ return b.date.localeCompare(a.date); })[0];
-  var ammonia = lr ? lr.ammonia : null;
-  var nitrite  = lr ? lr.nitrite  : null;
-  var temp_f   = lr ? lr.temp_f   : null;
-  var risks = [];
-  if ((ammonia !== null && parseFloat(ammonia) > 0) || (nitrite !== null && parseFloat(nitrite) > 0)) {
-    risks.push({id:'fin_rot',    reason:'Elevated ammonia/nitrite stresses fish — bacteria exploit weakened immunity'});
-    risks.push({id:'columnaris', reason:'High ammonia/nitrite — columnaris thrives in stressed fish'});
-    risks.push({id:'aeromonas',  reason:'Poor water quality is the #1 trigger for bacterial ulcers'});
-  }
-  if (temp_f !== null && parseFloat(temp_f) > 82) {
-    var tc = Math.round((parseFloat(temp_f) - 32) * 5 / 9);
-    risks.push({id:'columnaris', reason:'Temperature ' + tc + '\xB0C — columnaris is most aggressive above 28\xB0C'});
-    risks.push({id:'velvet',     reason:'Warm water speeds up velvet parasite life cycle'});
-  }
-  var cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 14);
-  var cutoff_str = cutoff.toISOString().slice(0,10);
-  var new_stock = d.stock.filter(function(s){ return s.tank_id === tid_ && s.added_date && s.added_date >= cutoff_str; });
-  if (new_stock.length) {
-    risks.push({id:'ich',        reason:'New fish added in the last 14 days — ich is the most common introduction'});
-    risks.push({id:'flukes',     reason:'New fish may carry gill or skin flukes from the shop'});
-    risks.push({id:'trichodina', reason:'Trichodina is very common in fish from Indian shops and farms'});
-    risks.push({id:'velvet',     reason:'Velvet can be introduced via new fish; spreads very fast'});
-  }
-  var seen = {}, unique = [];
-  risks.forEach(function(r){ if (!seen[r.id]){ seen[r.id]=true; unique.push(r); } });
-  return unique;
-}
-function get_plant_risks(tid) {
-  var d = ld();
-  var lr = d.water.filter(function(w){ return w.tank_id === tid; }).sort(function(a,b){ return b.date.localeCompare(a.date); })[0];
-  var no3 = lr ? lr.nitrate  : null;
-  var nh3 = lr ? lr.ammonia  : null;
-  var gh  = lr ? lr.gh       : null;
-  var tds = lr ? lr.tds      : null;
-  var risks = [];
-  if (no3 !== null && parseFloat(no3) < 10) risks.push({id:'yellowing_leaves', reason:'Nitrate is ' + no3 + ' ppm — below 10 ppm suggests nitrogen deficiency'});
-  if (no3 !== null && parseFloat(no3) > 20) risks.push({id:'algae_on_leaves',  reason:'Nitrate is ' + no3 + ' ppm — high nutrients feed algae on leaves'});
-  if (gh  !== null && parseFloat(gh)  < 4)  risks.push({id:'holes_in_leaves',  reason:'GH is ' + gh + ' — below 4 indicates calcium/magnesium deficiency'});
-  if (gh  !== null && parseFloat(gh)  > 20) risks.push({id:'brown_leaf_edges', reason:'GH is ' + gh + ' — very hard water can stress sensitive plants'});
-  if (nh3 !== null && parseFloat(nh3) > 0)  risks.push({id:'root_rot',         reason:'Ammonia is ' + nh3 + ' ppm — elevated ammonia stresses plant roots'});
-  if (tds !== null && parseFloat(tds) > 400) risks.push({id:'brown_leaf_edges', reason:'TDS is ' + tds + ' ppm — high mineral load can cause leaf edge burn'});
-  var co2 = get_co2_info(tid);
-  if (!co2) risks.push({id:'pale_new_growth', reason:'No CO2 equipment — plants in medium/high light need CO2 for strong growth'});
-  var seen = {}, unique = [];
-  risks.forEach(function(r){ if (!seen[r.id]){ seen[r.id]=true; unique.push(r); } });
-  return unique;
-}
-function get_algae_risks(tid) {
-  var d = ld(), tank = d.tanks.find(function(t){ return t.id === tid; });
-  var light_h = get_light_hours(tid), co2 = get_co2_info(tid);
-  var lr = d.water.filter(function(w){ return w.tank_id === tid; }).sort(function(a,b){ return b.date.localeCompare(a.date); })[0];
-  var nitrate = lr ? lr.nitrate : null;
-  var ammonia = lr ? lr.ammonia : null;
-  var nitrite = lr ? lr.nitrite : null;
-  var temp_f  = lr ? lr.temp_f  : null;
-  var phosphate = lr ? lr.phosphate : null;
-  var has_plants = d.plants.filter(function(p){ return p.tank_id === tid; }).length > 0;
-  var filters = d.equip.filter(function(x){ return x.tank_id === tid && x.type === 'Filter' && x.config && x.config.flow_gph > 0; });
-  var total_gph = 0; filters.forEach(function(f){ total_gph += (f.config.flow_gph || 0); });
-  var turnover = (tank && tank.gallons && total_gph) ? total_gph / tank.gallons : null;
-  var risks = [];
-  if (tank && tank.setup_date) {
-    var age_days = Math.floor((new Date() - new Date(tank.setup_date + 'T00:00:00')) / 86400000);
-    if (age_days < 90) risks.push({id:'brown_diatom', reason:'Tank under 3 months old (age: ' + age_days + ' days)'});
-  }
-  if ((ammonia !== null && ammonia > 0) || (nitrite !== null && nitrite > 0)) {
-    risks.push({id:'brown_diatom', reason:'Ammonia/nitrite detected — tank may still be cycling'});
-  }
-  if (light_h >= 8 && !co2) {
-    risks.push({id:'hair_algae',  reason:'High light (' + light_h + ' h/day) without CO2'});
-    risks.push({id:'green_spot',  reason:'High light (' + light_h + ' h/day) without CO2'});
-  }
-  if (phosphate !== null && phosphate < 0.2) {
-    risks.push({id:'green_spot', reason:'Very low phosphate (' + phosphate + ' ppm) — main trigger for GSA'});
-  }
-  if (light_h > 0 && light_h < 6) {
-    risks.push({id:'bba', reason:'Low light (' + light_h + ' h/day) encourages BBA'});
-  }
-  if (co2 && light_h >= 8) {
-    risks.push({id:'bba',      reason:'CO2 fluctuation risk with high-light setup'});
-    risks.push({id:'staghorn', reason:'CO2 fluctuation risk with high-light setup'});
-  }
-  if (nitrate !== null && nitrate > 20) {
-    risks.push({id:'hair_algae',   reason:'Elevated nitrate (' + nitrate + ' ppm)'});
-    risks.push({id:'cyanobacteria',reason:'High nutrients — nitrate ' + nitrate + ' ppm'});
-  }
-  if (temp_f !== null && temp_f > 82) {
-    var tc = Math.round((temp_f - 32) * 5 / 9);
-    risks.push({id:'cyanobacteria', reason:'High temperature (' + tc + '\xB0C) — cyanobacteria thrives in warm water'});
-  }
-  if (turnover !== null && turnover < 4) {
-    risks.push({id:'cyanobacteria', reason:'Low filter turnover (' + turnover.toFixed(1) + 'x/hr) — poor flow favours cyanobacteria'});
-  }
-  if (!has_plants) {
-    risks.push({id:'cyanobacteria', reason:'No plants to compete for nutrients'});
-  }
-  var seen = {}, unique = [];
-  risks.forEach(function(r){ if (!seen[r.id]){ seen[r.id]=true; unique.push(r); } });
-  return unique;
-}
 function open_diag_wizard() {
   var el = document.getElementById('diag_wiz');
   el.style.display = 'flex'; diag_step1();
@@ -5666,8 +5659,12 @@ function diag_step1() {
   h += '</div>';
   diag_wiz_set(h, '');
 }
-function diag_alg_list() {
-  var tid = at(), risks = get_algae_risks(tid), h = '';
+async function diag_alg_list() {
+  var tid = at();
+  diag_wiz_set('<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px">Loading...</div>', '');
+  var _comp = await api_get('/api/calc/risks?tid=' + tid);
+  var risks = _comp ? _comp.algae_risks : [];
+  var h = '';
   if (risks.length) {
     h += '<div style="background:#fef8e7;border-left:3px solid var(--warn);border-radius:0 8px 8px 0;padding:10px 12px;margin-bottom:14px">';
     h += '<div style="font-size:11px;font-weight:700;color:#8a5a00;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">&#x26A0; Likely for your tank</div>';
@@ -5711,8 +5708,12 @@ function diag_alg_detail(id) {
   h += '<div style="font-size:12px;color:var(--muted)">' + esc(ad.prevention) + '</div></div>';
   diag_wiz_set(h, '<button class="btn bg bs" style="flex:1" onclick="diag_alg_list()">&#x25C4; Back to list</button>');
 }
-function diag_dis_list() {
-  var tid = at(), risks = get_disease_risks(tid), h = '';
+async function diag_dis_list() {
+  var tid = at();
+  diag_wiz_set('<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px">Loading...</div>', '');
+  var _comp = await api_get('/api/calc/risks?tid=' + tid);
+  var risks = _comp ? _comp.disease_risks : [];
+  var h = '';
   if (risks.length) {
     h += '<div style="background:#fff0f0;border-left:3px solid var(--danger);border-radius:0 8px 8px 0;padding:10px 12px;margin-bottom:14px">';
     h += '<div style="font-size:11px;font-weight:700;color:#8a0000;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">&#x26A0; Likely for your tank</div>';
@@ -5790,8 +5791,12 @@ function diag_dis_detail(id) {
   h += '<div style="font-size:12px;color:var(--muted)">' + esc(dd.prevention) + '</div></div>';
   diag_wiz_set(h, '<button class="btn bg bs" style="flex:1" onclick="diag_dis_list()">&#x25C4; Back to list</button><button class="btn bp bs" style="flex:1" data-did="' + id + '" onclick="open_treat_modal(at(),_dis[this.dataset.did].name)">&#x1F4CB; Log Treatment</button>');
 }
-function diag_plant_list() {
-  var tid = at(), risks = get_plant_risks(tid), h = '';
+async function diag_plant_list() {
+  var tid = at();
+  diag_wiz_set('<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px">Loading...</div>', '');
+  var _comp = await api_get('/api/calc/risks?tid=' + tid);
+  var risks = _comp ? _comp.plant_risks : [];
+  var h = '';
   if (risks.length) {
     h += '<div style="background:#f0f7f0;border-left:3px solid #5aab6a;border-radius:0 8px 8px 0;padding:10px 12px;margin-bottom:14px">';
     h += '<div style="font-size:11px;font-weight:700;color:#2a6a3a;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">&#x26A0; Likely for your tank</div>';
