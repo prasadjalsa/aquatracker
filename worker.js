@@ -143,8 +143,8 @@ async function handle_put_data(request, env) {
   if (!p) return json_r({error:'Unauthorized'}, 401);
   try {
     var body = await request.json();
-    await env.DB.prepare('UPDATE user_data SET data=?,pref=?,updated_at=? WHERE user_id=?')
-      .bind(JSON.stringify(body.data||{}), JSON.stringify(body.pref||{}), new Date().toISOString(), p.sub).run();
+    await env.DB.prepare('INSERT OR REPLACE INTO user_data (user_id,data,pref,updated_at) VALUES (?,?,?,?)')
+      .bind(p.sub, JSON.stringify(body.data||{}), JSON.stringify(body.pref||{}), new Date().toISOString()).run();
     return json_r({ok:true});
   } catch(e) { return json_r({error:'Server error: '+e.message}, 500); }
 }
