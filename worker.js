@@ -1,15 +1,150 @@
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
     const url = new URL(request.url);
+    if (request.method === 'OPTIONS') return new Response(null, {headers:{'Access-Control-Allow-Origin':'*','Access-Control-Allow-Methods':'GET,POST,PUT,OPTIONS','Access-Control-Allow-Headers':'Authorization,Content-Type'}});
     if (url.pathname === '/manifest.json')
       return new Response(MANIFEST, { headers: {'Content-Type':'application/manifest+json','Cache-Control':'public,max-age=86400'} });
     if (url.pathname === '/sw.js')
       return new Response(SW_JS, { headers: {'Content-Type':'application/javascript','Cache-Control':'no-cache'} });
     if (url.pathname === '/icon.svg')
       return new Response(ICON_SVG, { headers: {'Content-Type':'image/svg+xml','Cache-Control':'public,max-age=86400'} });
+    if (url.pathname === '/api/register' && request.method === 'POST') return handle_register(request, env);
+    if (url.pathname === '/api/login'    && request.method === 'POST') return handle_login(request, env);
+    if (url.pathname === '/api/hint')                                   return handle_hint(request, env);
+    if (url.pathname === '/api/data'     && request.method === 'GET')  return handle_get_data(request, env);
+    if (url.pathname === '/api/data'     && request.method === 'PUT')  return handle_put_data(request, env);
     return new Response(APP_HTML, { headers: {'Content-Type':'text/html; charset=utf-8', 'Cache-Control':'no-cache'} });
   }
 };
+
+// ===== WORKER API =====
+
+function json_r(data, status) {
+  return new Response(JSON.stringify(data), {
+    status: status || 200,
+    headers: {'Content-Type':'application/json', 'Access-Control-Allow-Origin':'*'}
+  });
+}
+
+async function hash_pw(password, salt) {
+  var enc = new TextEncoder();
+  var km = await crypto.subtle.importKey('raw', enc.encode(password), {name:'PBKDF2'}, false, ['deriveBits']);
+  var bits = await crypto.subtle.deriveBits({name:'PBKDF2', salt:enc.encode(salt), iterations:100000, hash:'SHA-256'}, km, 256);
+  return Array.from(new Uint8Array(bits)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+}
+
+function gen_salt() {
+  var b = new Uint8Array(16); crypto.getRandomValues(b);
+  return Array.from(b).map(function(x){ return x.toString(16).padStart(2,'0'); }).join('');
+}
+
+function gen_id() {
+  var b = new Uint8Array(16); crypto.getRandomValues(b);
+  return Array.from(b).map(function(x){ return x.toString(16).padStart(2,'0'); }).join('');
+}
+
+async function sign_jwt(payload, secret) {
+  var enc = new TextEncoder();
+  var b64u = function(s) { return btoa(s).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_'); };
+  var hdr  = b64u(JSON.stringify({alg:'HS256',typ:'JWT'}));
+  var body = b64u(JSON.stringify(payload));
+  var data = hdr + '.' + body;
+  var key  = await crypto.subtle.importKey('raw', enc.encode(secret), {name:'HMAC',hash:'SHA-256'}, false, ['sign']);
+  var sig  = await crypto.subtle.sign('HMAC', key, enc.encode(data));
+  return data + '.' + b64u(String.fromCharCode(...new Uint8Array(sig)));
+}
+
+async function verify_jwt(token, secret) {
+  if (!token) return null;
+  var parts = token.split('.');
+  if (parts.length !== 3) return null;
+  try {
+    var enc = new TextEncoder();
+    var key = await crypto.subtle.importKey('raw', enc.encode(secret), {name:'HMAC',hash:'SHA-256'}, false, ['verify']);
+    var sig = Uint8Array.from(atob(parts[2].replace(/-/g,'+').replace(/_/g,'/')), function(c){ return c.charCodeAt(0); });
+    var valid = await crypto.subtle.verify('HMAC', key, sig, enc.encode(parts[0]+'.'+parts[1]));
+    if (!valid) return null;
+    var p = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
+    if (p.exp && p.exp < Math.floor(Date.now()/1000)) return null;
+    return p;
+  } catch(e) { return null; }
+}
+
+async function auth_check(request, env) {
+  var hdr = request.headers.get('Authorization') || '';
+  return verify_jwt(hdr.startsWith('Bearer ') ? hdr.slice(7) : null, env.JWT_SECRET);
+}
+
+var EMPTY_DATA = JSON.stringify({tanks:[],equip:[],plants:[],stock:[],tasks:[],water:[],feeding:[],ferts:[],custom_sp:{},maint_log:[],treatment_log:[]});
+var DEFAULT_PREF = JSON.stringify({temp:'F',vol:'gal'});
+
+async function handle_register(request, env) {
+  try {
+    var body = await request.json();
+    var uname = (body.username || '').trim().toLowerCase();
+    var pass  = body.password || '';
+    var hint  = (body.hint || '').trim();
+    if (!uname || uname.length < 3)             return json_r({error:'Username must be at least 3 characters'}, 400);
+    if (!/^[a-z0-9_]+$/.test(uname))            return json_r({error:'Only letters, numbers and underscores allowed'}, 400);
+    if (!pass || pass.length < 6)               return json_r({error:'Password must be at least 6 characters'}, 400);
+    var existing = await env.DB.prepare('SELECT id FROM users WHERE username=?').bind(uname).first();
+    if (existing)                               return json_r({error:'Username already taken'}, 409);
+    var salt = gen_salt();
+    var hash = await hash_pw(pass, salt);
+    var id   = gen_id();
+    var now  = new Date().toISOString();
+    await env.DB.prepare('INSERT INTO users (id,username,password_hash,password_hint,created_at) VALUES (?,?,?,?,?)')
+      .bind(id, uname, salt+':'+hash, hint, now).run();
+    await env.DB.prepare('INSERT INTO user_data (user_id,data,pref,updated_at) VALUES (?,?,?,?)')
+      .bind(id, EMPTY_DATA, DEFAULT_PREF, now).run();
+    var jwt = await sign_jwt({sub:id, uname:uname, exp:Math.floor(Date.now()/1000)+60*60*24*30}, env.JWT_SECRET);
+    return json_r({token:jwt, username:uname});
+  } catch(e) { return json_r({error:'Server error: '+e.message}, 500); }
+}
+
+async function handle_login(request, env) {
+  try {
+    var body  = await request.json();
+    var uname = (body.username || '').trim().toLowerCase();
+    var pass  = body.password || '';
+    var row   = await env.DB.prepare('SELECT id,username,password_hash FROM users WHERE username=?').bind(uname).first();
+    if (!row) return json_r({error:'Incorrect username or password'}, 401);
+    var parts = row.password_hash.split(':');
+    var attempt = await hash_pw(pass, parts[0]);
+    if (attempt !== parts[1]) return json_r({error:'Incorrect username or password'}, 401);
+    var jwt = await sign_jwt({sub:row.id, uname:row.username, exp:Math.floor(Date.now()/1000)+60*60*24*30}, env.JWT_SECRET);
+    return json_r({token:jwt, username:row.username});
+  } catch(e) { return json_r({error:'Server error: '+e.message}, 500); }
+}
+
+async function handle_hint(request, env) {
+  try {
+    var uname = ((new URL(request.url)).searchParams.get('username') || '').trim().toLowerCase();
+    var row   = await env.DB.prepare('SELECT password_hint FROM users WHERE username=?').bind(uname).first();
+    return json_r({hint: row ? (row.password_hint || '') : ''});
+  } catch(e) { return json_r({hint:''}); }
+}
+
+async function handle_get_data(request, env) {
+  var p = await auth_check(request, env);
+  if (!p) return json_r({error:'Unauthorized'}, 401);
+  try {
+    var row = await env.DB.prepare('SELECT data,pref FROM user_data WHERE user_id=?').bind(p.sub).first();
+    if (!row) return json_r({data:JSON.parse(EMPTY_DATA), pref:JSON.parse(DEFAULT_PREF)});
+    return json_r({data:JSON.parse(row.data), pref:JSON.parse(row.pref)});
+  } catch(e) { return json_r({error:'Server error: '+e.message}, 500); }
+}
+
+async function handle_put_data(request, env) {
+  var p = await auth_check(request, env);
+  if (!p) return json_r({error:'Unauthorized'}, 401);
+  try {
+    var body = await request.json();
+    await env.DB.prepare('UPDATE user_data SET data=?,pref=?,updated_at=? WHERE user_id=?')
+      .bind(JSON.stringify(body.data||{}), JSON.stringify(body.pref||{}), new Date().toISOString(), p.sub).run();
+    return json_r({ok:true});
+  } catch(e) { return json_r({error:'Server error: '+e.message}, 500); }
+}
 
 const ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="100" fill="#0a2342"/><text x="256" y="365" font-size="310" text-anchor="middle" font-family="Apple Color Emoji,Segoe UI Emoji,Noto Color Emoji,sans-serif">&#x1F420;</text></svg>`;
 
@@ -151,9 +286,10 @@ tr:hover td{background:#f9fbfc}
     <select id="t_sel" title="Switch active tank"></select>
     <button class="btn bg bs" onclick="do_add_tank()">+ Tank</button>
     <button class="btn bg bs" onclick="do_add_preview()">&#x1F9EA; Preview</button>
-    <button class="btn bg bs" onclick="do_export()">Export</button>
-    <label class="btn bg bs" style="cursor:pointer">Import<input type="file" id="imp_file" accept=".json" style="display:none" onchange="do_import(this)"></label>
     <button class="btn bg bs" onclick="do_settings()">&#x2699; Units</button>
+    <span id="nav_uname" style="font-size:12px;color:rgba(255,255,255,.7);white-space:nowrap"></span>
+    <span id="sync_ind" style="font-size:11px;color:rgba(255,255,255,.6);white-space:nowrap"></span>
+    <button class="btn bg bs" onclick="do_logout()">&#x1F510; Log out</button>
   </div>
 </nav>
 
@@ -651,18 +787,27 @@ var FERT = {
 };
 
 // ===== STORAGE =====
+// In-memory data cache — populated on login, stays for the session
+var _aq = null;
+var _sync_timer = null;
+
 function ld() {
-  try {
-    var d = JSON.parse(localStorage.getItem('aq')) || mt();
-    if (!Array.isArray(d.feeding)) d.feeding = [];
-    if (!Array.isArray(d.ferts))   d.ferts   = [];
-    if (!Array.isArray(d.maint_log)) d.maint_log = [];
-    if (!Array.isArray(d.treatment_log)) d.treatment_log = [];
-    if (!d.custom_sp)              d.custom_sp = {};
-    return d;
-  } catch(e) { return mt(); }
+  var d = _aq || mt();
+  if (!Array.isArray(d.feeding))        d.feeding       = [];
+  if (!Array.isArray(d.ferts))          d.ferts         = [];
+  if (!Array.isArray(d.maint_log))      d.maint_log     = [];
+  if (!Array.isArray(d.treatment_log))  d.treatment_log = [];
+  if (!d.custom_sp)                     d.custom_sp     = {};
+  return d;
 }
-function sv(d) { localStorage.setItem('aq', JSON.stringify(d)); }
+
+function sv(d) {
+  _aq = d;
+  if (_sync_timer) clearTimeout(_sync_timer);
+  set_sync_ind('saving');
+  // Debounce: wait 1.5 s after the last change before sending to server
+  _sync_timer = setTimeout(do_sync, 1500);
+}
 function mt() { return {tanks:[], equip:[], plants:[], stock:[], tasks:[], water:[], feeding:[], ferts:[], custom_sp:{}, maint_log:[], treatment_log:[]}; }
 // Merged species lookup: built-in SP + user custom_sp
 function get_sp(d) { return Object.assign({}, SP, d ? d.custom_sp : {}); }
@@ -720,7 +865,7 @@ function get_pref() {
   try { var p = JSON.parse(localStorage.getItem('aq_pref')); return (p && p.temp) ? p : {temp:'F',vol:'gal'}; }
   catch(e) { return {temp:'F',vol:'gal'}; }
 }
-function sv_pref(p) { localStorage.setItem('aq_pref', JSON.stringify(p)); }
+function sv_pref(p) { localStorage.setItem('aq_pref', JSON.stringify(p)); sv(ld()); }
 function t_lbl() { return get_pref().temp === 'C' ? '\xB0C' : '\xB0F'; }
 function v_lbl() { return get_pref().vol === 'L' ? 'L' : 'gal'; }
 // stored \xB0F value → display value
@@ -1531,47 +1676,6 @@ function draw_chart(tid, param) {
 }
 
 // ===== EXPORT / IMPORT =====
-function do_export() {
-  var d = ld();
-  var prev_ids = d.tanks.filter(function(t){ return t.preview; }).map(function(t){ return t.id; });
-  var exp = {
-    tanks:   d.tanks.filter(function(t){ return !t.preview; }),
-    equip:   d.equip.filter(function(x){ return prev_ids.indexOf(x.tank_id) === -1; }),
-    plants:  d.plants.filter(function(x){ return prev_ids.indexOf(x.tank_id) === -1; }),
-    stock:   d.stock.filter(function(x){ return prev_ids.indexOf(x.tank_id) === -1; }),
-    tasks:   d.tasks.filter(function(x){ return prev_ids.indexOf(x.tank_id) === -1; }),
-    water:   d.water.filter(function(x){ return prev_ids.indexOf(x.tank_id) === -1; }),
-    feeding: d.feeding.filter(function(x){ return prev_ids.indexOf(x.tank_id) === -1; }),
-    ferts:   d.ferts.filter(function(x){ return prev_ids.indexOf(x.tank_id) === -1; }),
-    maint_log: (d.maint_log || []).filter(function(x){ return prev_ids.indexOf(x.tank_id) === -1; }),
-    custom_sp: d.custom_sp || {},
-    pref:    get_pref()
-  };
-  var blob = new Blob([JSON.stringify(exp, null, 2)], {type:'application/json'});
-  var url = URL.createObjectURL(blob), a = document.createElement('a');
-  a.href = url; a.download = 'aquatracker-' + new Date().toISOString().slice(0,10) + '.json';
-  a.click(); URL.revokeObjectURL(url);
-  localStorage.setItem('aq_last_export', Date.now().toString());
-  r_dash();
-}
-function do_import(inp) {
-  var file = inp.files[0]; if (!file) return;
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      var p = JSON.parse(e.target.result);
-      var ok = ['tanks','equip','plants','stock','tasks','water'].every(function(k){ return Array.isArray(p[k]); });
-      if (!ok) { alert('Invalid backup file format.'); return; }
-      if (!p.custom_sp || typeof p.custom_sp !== 'object' || Array.isArray(p.custom_sp)) p.custom_sp = {};
-      if (!Array.isArray(p.maint_log)) p.maint_log = [];
-      sv(p); inp.value = '';
-      if (p.pref) sv_pref(p.pref);
-      if (p.tanks.length) sat(p.tanks[0].id);
-      init();
-    } catch(err) { alert('Could not read file: ' + err.message); }
-  };
-  reader.readAsText(file);
-}
 function do_settings() {
   var p = get_pref();
   om('<div class="mtitle">Units &amp; Preferences</div>' +
@@ -2303,17 +2407,7 @@ function r_dash() {
          '<button class="btn bp bs" onclick="req_notif()" style="white-space:nowrap;font-size:12px">Enable Notifications</button></div>';
   }
 
-  // Export reminder: warn if no backup in 30+ days (or never)
-  var last_exp = parseInt(localStorage.getItem('aq_last_export') || '0', 10);
-  var days_since_exp = last_exp ? Math.floor((Date.now() - last_exp) / 86400000) : 999;
   var has_real_data = d.tanks.filter(function(t){return !t.preview;}).length > 0;
-  if (has_real_data && days_since_exp >= 30) {
-    var exp_msg = last_exp ? ('Last backup was ' + days_since_exp + ' days ago.') : 'You have never backed up your data.';
-    h += '<div style="display:flex;align-items:center;gap:10px;background:#fef3d5;border-left:4px solid var(--warn);padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:12px">' +
-         '<span style="font-size:16px">&#x1F4BE;</span>' +
-         '<span style="font-size:13px;flex:1">' + exp_msg + ' Your data is stored only in this browser — export a backup to keep it safe.</span>' +
-         '<button class="btn bg bs" onclick="do_export()" style="white-space:nowrap;font-size:12px">Export now</button></div>';
-  }
 
   // Maintenance banner
   var overdue = tasks.filter(function(x){ return days_til(x.next_due) < 0; });
@@ -5374,10 +5468,12 @@ function export_task_ics(id) {
 }
 
 function init() {
-  var p = get_pref();
   build_sel();
   var d = ld(), tid = at();
   if (d.tanks.length && !d.tanks.find(function(t){ return t.id === tid; })) sat(d.tanks[0].id);
+  var u = localStorage.getItem('aq_uname');
+  var nav_u = document.getElementById('nav_uname');
+  if (nav_u && u) nav_u.textContent = u;
   render_tab();
   check_notifs();
 }
@@ -5896,7 +5992,152 @@ function rec_find_matches() {
   rec_wiz_set(h, '<button class="btn bg bs" style="flex:1" onclick="rec_step2()">&#x25C4; Back</button><button class="btn bp" style="flex:1" onclick="close_rec_wizard()">Done &#x2713;</button>');
 }
 
-window.addEventListener('DOMContentLoaded', init);
+// ===== AUTH & SYNC =====
+
+function set_sync_ind(state) {
+  var el = document.getElementById('sync_ind');
+  if (!el) return;
+  if      (state === 'saving') { el.textContent = '○ Saving…'; }
+  else if (state === 'saved')  { el.textContent = '✓ Saved'; }
+  else if (state === 'error')  { el.textContent = '⚠ Sync failed'; }
+  else                         { el.textContent = ''; }
+}
+
+async function do_sync() {
+  var token = localStorage.getItem('aq_token');
+  if (!token || !_aq) { set_sync_ind(''); return; }
+  try {
+    var res = await fetch('/api/data', {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json', 'Authorization':'Bearer ' + token},
+      body: JSON.stringify({data: _aq, pref: get_pref()})
+    });
+    if (res.status === 401) { do_logout(); return; }
+    set_sync_ind(res.ok ? 'saved' : 'error');
+  } catch(e) { set_sync_ind('error'); }
+}
+
+async function load_user_data() {
+  var token = localStorage.getItem('aq_token');
+  if (!token) { show_auth_screen(); return false; }
+  try {
+    var res = await fetch('/api/data', {headers: {'Authorization': 'Bearer ' + token}});
+    if (res.status === 401) { show_auth_screen(); return false; }
+    var json = await res.json();
+    _aq = json.data;
+    if (json.pref && json.pref.temp) localStorage.setItem('aq_pref', JSON.stringify(json.pref));
+    return true;
+  } catch(e) { show_auth_screen(); return false; }
+}
+
+async function startup() {
+  var token = localStorage.getItem('aq_token');
+  if (!token) { show_auth_screen(); return; }
+  var ok = await load_user_data();
+  if (!ok) return;
+  hide_auth_screen();
+  init();
+}
+
+function show_auth_screen() {
+  var el = document.getElementById('auth_scr');
+  if (el) el.style.display = 'flex';
+}
+
+function hide_auth_screen() {
+  var el = document.getElementById('auth_scr');
+  if (el) el.style.display = 'none';
+}
+
+function show_register() {
+  document.getElementById('auth_login_form').style.display    = 'none';
+  document.getElementById('auth_forgot_form').style.display   = 'none';
+  document.getElementById('auth_register_form').style.display = '';
+  document.getElementById('auth_sub').textContent = 'Create your account';
+}
+
+function show_login_form() {
+  document.getElementById('auth_register_form').style.display = 'none';
+  document.getElementById('auth_forgot_form').style.display   = 'none';
+  document.getElementById('auth_login_form').style.display    = '';
+  document.getElementById('auth_sub').textContent = 'Sign in to your account';
+}
+
+function show_forgot() {
+  document.getElementById('auth_login_form').style.display    = 'none';
+  document.getElementById('auth_register_form').style.display = 'none';
+  document.getElementById('auth_forgot_form').style.display   = '';
+  document.getElementById('auth_fgt_result').innerHTML = '';
+  document.getElementById('auth_sub').textContent = 'Password hint';
+}
+
+async function do_login() {
+  var uname = document.getElementById('auth_uname').value.trim();
+  var pass  = document.getElementById('auth_pass').value;
+  var btn   = document.getElementById('auth_login_btn');
+  var err   = document.getElementById('auth_err');
+  err.style.display = 'none';
+  if (!uname || !pass) { err.textContent = 'Please enter username and password.'; err.style.display = 'block'; return; }
+  btn.textContent = 'Signing in…'; btn.disabled = true;
+  try {
+    var res  = await fetch('/api/login', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:uname, password:pass})});
+    var json = await res.json();
+    if (!res.ok) { err.textContent = json.error || 'Login failed.'; err.style.display = 'block'; btn.textContent = 'Sign In'; btn.disabled = false; return; }
+    localStorage.setItem('aq_token', json.token);
+    localStorage.setItem('aq_uname', json.username);
+    var ok = await load_user_data();
+    if (!ok) { btn.textContent = 'Sign In'; btn.disabled = false; return; }
+    hide_auth_screen();
+    init();
+  } catch(e) { err.textContent = 'Network error. Please try again.'; err.style.display = 'block'; btn.textContent = 'Sign In'; btn.disabled = false; }
+}
+
+async function do_register() {
+  var uname = document.getElementById('auth_reg_uname').value.trim();
+  var pass  = document.getElementById('auth_reg_pass').value;
+  var hint  = document.getElementById('auth_reg_hint').value.trim();
+  var btn   = document.getElementById('auth_reg_btn');
+  var err   = document.getElementById('auth_reg_err');
+  err.style.display = 'none';
+  if (!uname || !pass) { err.textContent = 'Please enter username and password.'; err.style.display = 'block'; return; }
+  btn.textContent = 'Creating account…'; btn.disabled = true;
+  try {
+    var res  = await fetch('/api/register', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:uname, password:pass, hint:hint})});
+    var json = await res.json();
+    if (!res.ok) { err.textContent = json.error || 'Registration failed.'; err.style.display = 'block'; btn.textContent = 'Create Account'; btn.disabled = false; return; }
+    localStorage.setItem('aq_token', json.token);
+    localStorage.setItem('aq_uname', json.username);
+    var ok = await load_user_data();
+    if (!ok) { btn.textContent = 'Create Account'; btn.disabled = false; return; }
+    hide_auth_screen();
+    init();
+  } catch(e) { err.textContent = 'Network error. Please try again.'; err.style.display = 'block'; btn.textContent = 'Create Account'; btn.disabled = false; }
+}
+
+async function do_forgot() {
+  var uname  = document.getElementById('auth_fgt_uname').value.trim();
+  var err_el = document.getElementById('auth_fgt_err');
+  var res_el = document.getElementById('auth_fgt_result');
+  err_el.style.display = 'none'; res_el.innerHTML = '';
+  if (!uname) { err_el.textContent = 'Please enter your username.'; err_el.style.display = 'block'; return; }
+  try {
+    var res  = await fetch('/api/hint?username=' + encodeURIComponent(uname));
+    var json = await res.json();
+    res_el.innerHTML = json.hint
+      ? '<div style="background:#e8f4fd;border-radius:6px;padding:10px 12px;font-size:13px">Hint: <strong>' + esc(json.hint) + '</strong></div>'
+      : '<div style="font-size:12px;color:#6b7a8d">No hint found for that username.</div>';
+  } catch(e) { err_el.textContent = 'Network error.'; err_el.style.display = 'block'; }
+}
+
+function do_logout() {
+  _aq = null;
+  localStorage.removeItem('aq_token');
+  localStorage.removeItem('aq_uname');
+  show_auth_screen();
+  show_login_form();
+}
+
+window.addEventListener('DOMContentLoaded', startup);
 <\/script>
 <button id="diag_fab" onclick="open_diag_wizard()" style="position:fixed;bottom:88px;right:20px;z-index:910;background:#e85d4a;color:#fff;border:none;border-radius:28px;padding:0 18px;height:52px;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,.25);cursor:pointer;display:flex;align-items:center;gap:8px;white-space:nowrap">&#x1F52C; Diagnose</button>
 <div id="diag_wiz" style="display:none;position:fixed;top:0;right:0;bottom:0;width:100%;max-width:400px;background:#fff;box-shadow:-4px 0 32px rgba(0,0,0,.18);z-index:920;flex-direction:column">
@@ -5915,6 +6156,69 @@ window.addEventListener('DOMContentLoaded', init);
   </div>
   <div id="rec_wiz_body" style="flex:1;overflow-y:auto;padding:16px"></div>
   <div id="rec_wiz_foot" style="padding:12px 16px;border-top:1px solid #eee;display:flex;gap:8px;flex-shrink:0"></div>
+</div>
+</body>
+
+<!-- ===== AUTH OVERLAY ===== -->
+<div id="auth_scr" style="display:flex;position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#0a2342 0%,#1a6898 100%);align-items:center;justify-content:center;padding:16px">
+  <div style="background:#fff;border-radius:16px;padding:32px 28px;width:100%;max-width:380px;box-shadow:0 16px 48px rgba(0,0,0,.3)">
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:48px">&#x1F420;</div>
+      <div style="font-size:22px;font-weight:700;color:#0a2342;margin-top:6px">AquaTracker</div>
+      <div id="auth_sub" style="font-size:13px;color:#6b7a8d;margin-top:4px">Sign in to your account</div>
+    </div>
+
+    <div id="auth_login_form">
+      <div style="margin-bottom:12px">
+        <label style="font-size:12px;font-weight:600;color:#0a2342;display:block;margin-bottom:4px">Username</label>
+        <input id="auth_uname" type="text" autocomplete="username" placeholder="Your username" style="width:100%;padding:10px 12px;border:1.5px solid #d0dae4;border-radius:8px;font-size:14px;box-sizing:border-box">
+      </div>
+      <div style="margin-bottom:16px">
+        <label style="font-size:12px;font-weight:600;color:#0a2342;display:block;margin-bottom:4px">Password</label>
+        <input id="auth_pass" type="password" autocomplete="current-password" placeholder="Your password" style="width:100%;padding:10px 12px;border:1.5px solid #d0dae4;border-radius:8px;font-size:14px;box-sizing:border-box" onkeydown="if(event.key==='Enter')do_login()">
+      </div>
+      <div id="auth_err" style="display:none;background:#fde0e0;color:#a01818;border-radius:6px;padding:8px 12px;font-size:12px;font-weight:600;margin-bottom:12px"></div>
+      <button id="auth_login_btn" onclick="do_login()" style="width:100%;padding:12px;background:#1a6898;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:12px">Sign In</button>
+      <div style="text-align:center;font-size:12px;color:#6b7a8d">
+        <a href="#" onclick="show_forgot();return false" style="color:#1a6898;text-decoration:none">Forgot password?</a>
+        &nbsp;&middot;&nbsp;
+        <a href="#" onclick="show_register();return false" style="color:#1a6898;text-decoration:none">Create account</a>
+      </div>
+    </div>
+
+    <div id="auth_register_form" style="display:none">
+      <div style="margin-bottom:12px">
+        <label style="font-size:12px;font-weight:600;color:#0a2342;display:block;margin-bottom:4px">Username</label>
+        <input id="auth_reg_uname" type="text" autocomplete="username" placeholder="Letters, numbers, underscores" style="width:100%;padding:10px 12px;border:1.5px solid #d0dae4;border-radius:8px;font-size:14px;box-sizing:border-box">
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:12px;font-weight:600;color:#0a2342;display:block;margin-bottom:4px">Password</label>
+        <input id="auth_reg_pass" type="password" autocomplete="new-password" placeholder="At least 6 characters" style="width:100%;padding:10px 12px;border:1.5px solid #d0dae4;border-radius:8px;font-size:14px;box-sizing:border-box">
+      </div>
+      <div style="margin-bottom:16px">
+        <label style="font-size:12px;font-weight:600;color:#0a2342;display:block;margin-bottom:4px">Password hint <span style="font-weight:400;color:#8a9ab0">(optional)</span></label>
+        <input id="auth_reg_hint" type="text" autocomplete="off" placeholder="A reminder hint — not the password itself" style="width:100%;padding:10px 12px;border:1.5px solid #d0dae4;border-radius:8px;font-size:14px;box-sizing:border-box">
+      </div>
+      <div id="auth_reg_err" style="display:none;background:#fde0e0;color:#a01818;border-radius:6px;padding:8px 12px;font-size:12px;font-weight:600;margin-bottom:12px"></div>
+      <button id="auth_reg_btn" onclick="do_register()" style="width:100%;padding:12px;background:#1a6898;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:12px">Create Account</button>
+      <div style="text-align:center;font-size:12px;color:#6b7a8d">
+        <a href="#" onclick="show_login_form();return false" style="color:#1a6898;text-decoration:none">&#x2190; Back to sign in</a>
+      </div>
+    </div>
+
+    <div id="auth_forgot_form" style="display:none">
+      <div style="margin-bottom:12px">
+        <label style="font-size:12px;font-weight:600;color:#0a2342;display:block;margin-bottom:4px">Username</label>
+        <input id="auth_fgt_uname" type="text" placeholder="Enter your username" style="width:100%;padding:10px 12px;border:1.5px solid #d0dae4;border-radius:8px;font-size:14px;box-sizing:border-box">
+      </div>
+      <div id="auth_fgt_err" style="display:none;background:#fde0e0;color:#a01818;border-radius:6px;padding:8px 12px;font-size:12px;font-weight:600;margin-bottom:12px"></div>
+      <div id="auth_fgt_result" style="margin-bottom:12px"></div>
+      <button onclick="do_forgot()" style="width:100%;padding:12px;background:#1a6898;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:12px">Show My Hint</button>
+      <div style="text-align:center;font-size:12px;color:#6b7a8d">
+        <a href="#" onclick="show_login_form();return false" style="color:#1a6898;text-decoration:none">&#x2190; Back to sign in</a>
+      </div>
+    </div>
+  </div>
 </div>
 </body>
 </html>`;
