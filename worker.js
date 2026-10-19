@@ -2872,6 +2872,7 @@ function r_wlog() {
     } else h += '<p class="emsg">No treatments logged yet.</p>';
     h += '</div>';
   }
+  el.innerHTML = h;
   if (entries.length >= 2) draw_chart(tid, 'temp_f');
 }
 var wlog_adv = false;
