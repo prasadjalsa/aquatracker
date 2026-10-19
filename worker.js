@@ -214,6 +214,14 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min
 .nav-r{display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap;padding:4px 0}
 .nav select{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:5px 8px;font-size:13px;max-width:200px}
 .nav select option{background:var(--deep)}
+.prof-wrap{position:relative}
+.prof-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:6px;color:#fff;padding:5px 10px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px}
+.prof-btn:hover{background:rgba(255,255,255,.25)}
+.prof-menu{display:none;position:absolute;right:0;top:calc(100% + 6px);background:#fff;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.18);min-width:170px;z-index:200;overflow:hidden}
+.prof-menu.open{display:block}
+.prof-menu button{display:block;width:100%;text-align:left;padding:10px 14px;border:none;background:none;cursor:pointer;font-size:13px;color:#1a2a3a}
+.prof-menu button:hover{background:#f0f4f8}
+.prof-menu hr{margin:2px 0;border:none;border-top:1px solid #e8edf2}
 .tabs{display:flex;background:var(--mid);overflow-x:auto;padding:0 8px}
 .prev-bar{background:#fef3d5;border-bottom:2px solid #e8a838;padding:8px 16px;font-size:13px;color:#7a4f00;display:flex;align-items:center;gap:10px}
 .prev-bar strong{font-weight:700}
@@ -289,12 +297,19 @@ tr:hover td{background:#f9fbfc}
     <select id="t_sel" title="Switch active tank"></select>
     <button class="btn bg bs" onclick="do_add_tank()">+ Tank</button>
     <button class="btn bg bs" onclick="do_add_preview()">&#x1F9EA; Preview</button>
-    <button class="btn bg bs" onclick="do_settings()">&#x2699; Units</button>
-    <span id="nav_uname" style="font-size:12px;color:rgba(255,255,255,.7);white-space:nowrap"></span>
     <span id="sync_ind" style="font-size:11px;color:rgba(255,255,255,.6);white-space:nowrap"></span>
     <input type="file" id="import_file" accept=".json" style="display:none" onchange="do_import(this)">
-    <button class="btn bg bs" onclick="document.getElementById(&#39;import_file&#39;).click()">&#x1F4E5; Import JSON</button>
-    <button class="btn bg bs" onclick="do_logout()">&#x1F510; Log out</button>
+    <div class="prof-wrap" id="prof_wrap">
+      <button class="prof-btn" onclick="toggle_prof_menu()">
+        <span>&#x1F464;</span><span id="nav_uname">Account</span><span>&#x25BE;</span>
+      </button>
+      <div class="prof-menu" id="prof_menu">
+        <button onclick="do_settings();toggle_prof_menu()">&#x2699;&#xFE0F; Units</button>
+        <button onclick="document.getElementById(&#39;import_file&#39;).click();toggle_prof_menu()">&#x1F4E5; Import JSON</button>
+        <hr>
+        <button onclick="do_logout()">&#x1F510; Log out</button>
+      </div>
+    </div>
   </div>
 </nav>
 
@@ -6133,6 +6148,19 @@ async function do_forgot() {
       : '<div style="font-size:12px;color:#6b7a8d">No hint found for that username.</div>';
   } catch(e) { err_el.textContent = 'Network error.'; err_el.style.display = 'block'; }
 }
+
+function toggle_prof_menu() {
+  document.getElementById('prof_menu').classList.toggle('open');
+}
+
+// close profile menu when clicking outside
+document.addEventListener('click', function(e) {
+  var wrap = document.getElementById('prof_wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    var menu = document.getElementById('prof_menu');
+    if (menu) menu.classList.remove('open');
+  }
+});
 
 function do_logout() {
   _aq = null;
