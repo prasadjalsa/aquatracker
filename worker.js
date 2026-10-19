@@ -82,7 +82,7 @@ async function auth_check(request, env) {
 }
 
 var EMPTY_DATA = JSON.stringify({tanks:[],equip:[],plants:[],stock:[],tasks:[],water:[],feeding:[],ferts:[],custom_sp:{},maint_log:[],treatment_log:[]});
-var DEFAULT_PREF = JSON.stringify({temp:'F',vol:'gal'});
+var DEFAULT_PREF = JSON.stringify({temp:'C',vol:'L'});
 
 async function handle_register(request, env) {
   if (!env || !env.JWT_SECRET) return json_r({error:'JWT_SECRET is not set in Worker environment — add it under Settings → Variables and Secrets'}, 500);
@@ -1645,8 +1645,8 @@ function g2l(g) { return Math.round(g * 3.78541 * 10) / 10; }
 
 // ===== UNIT PREFERENCES =====
 function get_pref() {
-  try { var p = JSON.parse(localStorage.getItem('aq_pref')); return (p && p.temp) ? p : {temp:'F',vol:'gal'}; }
-  catch(e) { return {temp:'F',vol:'gal'}; }
+  try { var p = JSON.parse(localStorage.getItem('aq_pref')); return (p && p.temp) ? p : {temp:'C',vol:'L'}; }
+  catch(e) { return {temp:'C',vol:'L'}; }
 }
 function sv_pref(p) { localStorage.setItem('aq_pref', JSON.stringify(p)); sv(ld()); }
 function t_lbl() { return get_pref().temp === 'C' ? '\xB0C' : '\xB0F'; }
