@@ -298,14 +298,12 @@ tr:hover td{background:#f9fbfc}
     <button class="btn bg bs" onclick="do_add_tank()">+ Tank</button>
     <button class="btn bg bs" onclick="do_add_preview()">&#x1F9EA; Preview</button>
     <span id="sync_ind" style="font-size:11px;color:rgba(255,255,255,.6);white-space:nowrap"></span>
-    <input type="file" id="import_file" accept=".json" style="display:none" onchange="do_import(this)">
     <div class="prof-wrap" id="prof_wrap">
       <button class="prof-btn" onclick="toggle_prof_menu()">
         <span>&#x1F464;</span><span id="nav_uname">Account</span><span>&#x25BE;</span>
       </button>
       <div class="prof-menu" id="prof_menu">
         <button onclick="do_settings();toggle_prof_menu()">&#x2699;&#xFE0F; Units</button>
-        <button onclick="document.getElementById(&#39;import_file&#39;).click();toggle_prof_menu()">&#x1F4E5; Import JSON</button>
         <hr>
         <button onclick="do_logout()">&#x1F510; Log out</button>
       </div>
@@ -6168,30 +6166,6 @@ function do_logout() {
   localStorage.removeItem('aq_uname');
   show_auth_screen();
   show_login_form();
-}
-
-function do_import(input) {
-  var file = input.files[0];
-  if (!file) return;
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      var parsed = JSON.parse(e.target.result);
-      // accept either a raw data object or a wrapped export
-      var data = (parsed && parsed.tanks !== undefined) ? parsed : parsed;
-      if (!data || typeof data !== 'object') { alert('Invalid JSON file.'); return; }
-      if (!confirm('This will replace all your current cloud data with the imported file. Continue?')) return;
-      _aq = data;
-      do_sync();
-      init();
-      alert('Data imported and saved to cloud.');
-    } catch(err) {
-      alert('Could not read file: ' + err.message);
-    }
-    // reset so the same file can be re-selected if needed
-    input.value = '';
-  };
-  reader.readAsText(file);
 }
 
 window.addEventListener('DOMContentLoaded', startup);
