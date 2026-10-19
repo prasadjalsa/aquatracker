@@ -1343,9 +1343,9 @@ function get_food_recs_s(tid, ud) {
 
 // ===== CALC API HANDLERS =====
 async function handle_calc_dash(request, env) {
-  var auth = await verify_jwt(request, env);
+  var auth = await auth_check(request, env);
   if (!auth) return new Response('Unauthorized', {status:401});
-  var row = await env.DB.prepare('SELECT data FROM user_data WHERE user_id=?').bind(auth.uid).first();
+  var row = await env.DB.prepare('SELECT data FROM user_data WHERE user_id=?').bind(auth.sub).first();
   if (!row) return json_r({alerts:[], water_recs:[]});
   var ud = JSON.parse(row.data);
   var url = new URL(request.url);
@@ -1355,9 +1355,9 @@ async function handle_calc_dash(request, env) {
   return json_r({alerts: get_param_alerts_s(tid, ud), water_recs: get_water_recs_s(lr, tid, ud)});
 }
 async function handle_calc_maint(request, env) {
-  var auth = await verify_jwt(request, env);
+  var auth = await auth_check(request, env);
   if (!auth) return new Response('Unauthorized', {status:401});
-  var row = await env.DB.prepare('SELECT data FROM user_data WHERE user_id=?').bind(auth.uid).first();
+  var row = await env.DB.prepare('SELECT data FROM user_data WHERE user_id=?').bind(auth.sub).first();
   if (!row) return json_r({rec_tasks:[]});
   var ud = JSON.parse(row.data);
   var url = new URL(request.url);
@@ -1366,9 +1366,9 @@ async function handle_calc_maint(request, env) {
   return json_r({rec_tasks: get_rec_tasks_s(tid, ud)});
 }
 async function handle_calc_recs(request, env) {
-  var auth = await verify_jwt(request, env);
+  var auth = await auth_check(request, env);
   if (!auth) return new Response('Unauthorized', {status:401});
-  var row = await env.DB.prepare('SELECT data FROM user_data WHERE user_id=?').bind(auth.uid).first();
+  var row = await env.DB.prepare('SELECT data FROM user_data WHERE user_id=?').bind(auth.sub).first();
   if (!row) return json_r({food_recs:null});
   var ud = JSON.parse(row.data);
   var url = new URL(request.url);
@@ -1377,9 +1377,9 @@ async function handle_calc_recs(request, env) {
   return json_r({food_recs: get_food_recs_s(tid, ud)});
 }
 async function handle_calc_risks(request, env) {
-  var auth = await verify_jwt(request, env);
+  var auth = await auth_check(request, env);
   if (!auth) return new Response('Unauthorized', {status:401});
-  var row = await env.DB.prepare('SELECT data FROM user_data WHERE user_id=?').bind(auth.uid).first();
+  var row = await env.DB.prepare('SELECT data FROM user_data WHERE user_id=?').bind(auth.sub).first();
   if (!row) return json_r({disease_risks:[], algae_risks:[], plant_risks:[]});
   var ud = JSON.parse(row.data);
   var url = new URL(request.url);
