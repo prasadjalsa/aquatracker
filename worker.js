@@ -23,7 +23,7 @@ export default {
 function json_r(data, status) {
   return new Response(JSON.stringify(data), {
     status: status || 200,
-    headers: {'Content-Type':'application/json', 'Access-Control-Allow-Origin':'*'}
+    headers: {'Content-Type':'application/json', 'Access-Control-Allow-Origin':'*', 'Cache-Control':'no-store'}
   });
 }
 
