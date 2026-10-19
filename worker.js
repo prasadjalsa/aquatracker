@@ -2766,7 +2766,7 @@ function r_wlog() {
   }
   var treat_hist = d.treatment_log.filter(function(x){ return x.tank_id === tid; }).sort(function(a,b){ return b.date.localeCompare(a.date); });
   if (treat_hist.length || true) {
-    h += '<div class="card"><div class="ctitle">Treatment Log <button class="btn bp bs" onclick="open_treat_modal(at(),\'\')">+ Log Treatment</button></div>';
+    h += '<div class="card"><div class="ctitle">Treatment Log <button class="btn bp bs" onclick="open_treat_modal(at(),&#39;&#39;)">+ Log Treatment</button></div>';
     if (treat_hist.length) {
       h += '<div class="tw"><table><tr><th>Date</th><th>Disease</th><th>Medication</th><th>Dosage</th><th>Days</th><th>Status</th><th>Notes</th><th></th></tr>';
       treat_hist.forEach(function(t) {
