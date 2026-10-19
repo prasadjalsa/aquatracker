@@ -3266,6 +3266,32 @@ async function r_dash() {
   var bl_pct = max_bl > 0 ? Math.min(100, Math.round(cur_bl / max_bl * 100)) : 0;
   var bl_cls = bioload_cls(cur_bl, max_bl);
   var bl_color = bl_cls === 'ok' ? 'var(--ok)' : bl_cls === 'warn' ? 'var(--warn)' : 'var(--danger)';
+  var p_alerts = _dcomp ? _dcomp.alerts : [];
+  var overdue = tasks.filter(function(x){ return days_til(x.next_due) < 0; });
+  var due_today = tasks.filter(function(x){ return days_til(x.next_due) === 0; });
+  // health score: 100 minus deductions
+  var hs = 100;
+  var hs_f = [];
+  if (!lr) {
+    hs -= 5; hs_f.push({l:'No water readings yet', c:'var(--muted)', p:-5});
+  } else {
+    var hs_dc = p_alerts.filter(function(a){ return a.level === 'danger'; }).length;
+    var hs_wc = p_alerts.filter(function(a){ return a.level !== 'danger'; }).length;
+    var hs_wp = Math.min(40, hs_dc * 15 + hs_wc * 8);
+    if (hs_wp > 0) { hs -= hs_wp; hs_f.push({l:'Water quality issues', c:hs_dc?'var(--danger)':'var(--warn)', p:-hs_wp}); }
+  }
+  if (max_bl > 0) {
+    var hs_br = cur_bl / max_bl;
+    var hs_bp = hs_br > 1 ? 20 : hs_br > 0.8 ? 10 : hs_br > 0.6 ? 5 : 0;
+    if (hs_bp > 0) { hs -= hs_bp; hs_f.push({l:'Bioload ' + bl_pct + '% full', c:hs_br>1?'var(--danger)':'var(--warn)', p:-hs_bp}); }
+  }
+  var hs_op = Math.min(20, overdue.length * 8);
+  if (hs_op > 0) { hs -= hs_op; hs_f.push({l:overdue.length+' overdue task'+(overdue.length>1?'s':''), c:'var(--danger)', p:-hs_op}); }
+  if (cycling_active) { hs -= 10; hs_f.push({l:'Tank cycling in progress', c:'var(--muted)', p:-10}); }
+  hs = Math.max(0, hs);
+  var hs_grade = hs >= 90 ? 'A' : hs >= 75 ? 'B' : hs >= 55 ? 'C' : hs >= 40 ? 'D' : 'F';
+  var hs_label = hs >= 90 ? 'Excellent' : hs >= 75 ? 'Good' : hs >= 55 ? 'Fair' : hs >= 40 ? 'Needs attention' : 'Poor';
+  var hs_col   = hs >= 90 ? 'var(--ok)' : hs >= 75 ? '#5cb85c' : hs >= 55 ? 'var(--warn)' : hs >= 40 ? '#e07832' : 'var(--danger)';
 
   var h = '';
 
@@ -3280,8 +3306,6 @@ async function r_dash() {
   var has_real_data = d.tanks.filter(function(t){return !t.preview;}).length > 0;
 
   // Maintenance banner
-  var overdue = tasks.filter(function(x){ return days_til(x.next_due) < 0; });
-  var due_today = tasks.filter(function(x){ return days_til(x.next_due) === 0; });
   if (overdue.length > 0 || due_today.length > 0) {
     var msg_parts = [];
     if (overdue.length) msg_parts.push(overdue.length + ' task' + (overdue.length > 1 ? 's' : '') + ' overdue');
@@ -3304,7 +3328,6 @@ async function r_dash() {
   h += r_cycle_card(tid);
 
   // Parameter trend alerts
-  var p_alerts = _dcomp ? _dcomp.alerts : [];
   if (p_alerts.length) {
     p_alerts.forEach(function(a) {
       h += '<div class="' + (a.level === 'danger' ? 'cwarn' : 'cinfo') + '" style="margin-bottom:10px;font-weight:400;font-size:13px">' +
@@ -3331,6 +3354,31 @@ async function r_dash() {
          '<div class="sval" style="font-size:16px;color:' + feed_color + '">' + fed_txt + '</div>' +
          '<div class="ssub">' + feed_sub + '</div>' +
          '<button class="btn bp bs" style="margin-top:8px;width:100%" onclick="open_feed_modal(at())">Log Feeding</button></div>';
+  }
+  h += '</div>';
+
+  // Tank health score
+  h += '<div class="card">' +
+       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
+       '<div class="ctitle" style="margin:0">Tank Health Score</div>' +
+       '<div style="display:flex;align-items:baseline;gap:4px">' +
+       '<span style="font-size:34px;font-weight:700;color:' + hs_col + ';line-height:1">' + hs + '</span>' +
+       '<span style="font-size:13px;color:var(--muted)">/100</span>' +
+       '<span style="font-size:22px;font-weight:700;color:' + hs_col + ';margin-left:6px">' + hs_grade + '</span>' +
+       '</div></div>' +
+       '<div style="height:10px;background:#e8edf2;border-radius:5px;overflow:hidden;margin-bottom:10px">' +
+       '<div style="height:100%;width:' + hs + '%;background:' + hs_col + ';border-radius:5px"></div>' +
+       '</div>' +
+       '<div style="font-size:13px;font-weight:600;color:' + hs_col + ';margin-bottom:8px">' + hs_label + '</div>';
+  if (hs_f.length === 0) {
+    h += '<div style="font-size:13px;color:var(--ok)">&#x2714; All systems nominal &mdash; great job!</div>';
+  } else {
+    h += '<div style="font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Points deducted</div>';
+    hs_f.forEach(function(f) {
+      h += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-top:1px solid #f0f4f8">' +
+           '<span style="color:var(--text)">' + f.l + '</span>' +
+           '<span style="color:' + f.c + ';font-weight:600">' + f.p + '</span></div>';
+    });
   }
   h += '</div>';
 
@@ -3824,6 +3872,25 @@ async function r_maint() {
        '<span>%</span>' +
        '</div><div id="wc_result" style="margin-top:8px;font-size:13px;color:var(--text)"></div></div>';
 
+  // Dosing calculator
+  var dose_default = Math.round(wc_eff_gal * (get_pref().vol === 'L' ? 3.78541 : 1) * 10) / 10;
+  h += '<div class="card"><div class="ctitle">Dosing Calculator</div>' +
+    '<div style="font-size:13px;color:var(--muted);margin-bottom:10px">How much product to add for the volume being treated.</div>' +
+    '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px">' +
+    '<div class="fg" style="margin:0;flex:2;min-width:160px"><label style="font-size:12px;color:var(--muted);font-weight:600;display:block;margin-bottom:4px">Product</label>' +
+    '<select id="dose_prod" style="width:100%" onchange="calc_dose()">' +
+    '<option value="prime">Seachem Prime (dechlorinator)</option>' +
+    '<option value="safe">Seachem Safe (powder dechlorinator)</option>' +
+    '<option value="aquasafe">Tetra AquaSafe / API StressCoat</option>' +
+    '<option value="generic">Generic dechlorinator (5 ml / 40 L)</option>' +
+    '<option value="aq_salt">Aquarium salt &mdash; tonic (1 tsp / 10 L)</option>' +
+    '<option value="epsom">Epsom salt &mdash; bloat / dropsy (1 tsp / 40 L)</option>' +
+    '</select></div>' +
+    '<div class="fg" style="margin:0;min-width:110px"><label style="font-size:12px;color:var(--muted);font-weight:600;display:block;margin-bottom:4px">Volume (' + v_lbl() + ')</label>' +
+    '<input type="number" id="dose_vol" value="' + dose_default + '" min="0.1" step="0.1" oninput="calc_dose()" style="width:100%">' +
+    '</div></div>' +
+    '<div id="dose_result" style="font-size:13px;color:var(--text)"></div></div>';
+
   // Equipment service reminders
   var svc_items = d.equip.filter(function(e) {
     return e.tank_id === tid && e.config && e.config.svc_interval > 0;
@@ -3938,6 +4005,7 @@ async function r_maint() {
 
   el.innerHTML = h;
   calc_wc();
+  calc_dose();
 }
 function calc_wc() {
   var pct_el = document.getElementById('wc_pct');
@@ -3955,6 +4023,38 @@ function calc_wc() {
   var secondary = get_pref().vol === 'L' ? gal + ' gal' : lit + ' L';
   var eff_note = '';
   res_el.innerHTML = 'Remove <strong>' + primary + '</strong> (' + secondary + ') &mdash; treat replacement water with dechlorinator before adding.' + eff_note;
+}
+function calc_dose() {
+  var prod_el = document.getElementById('dose_prod');
+  var vol_el  = document.getElementById('dose_vol');
+  var res_el  = document.getElementById('dose_result');
+  if (!prod_el || !vol_el || !res_el) return;
+  var vol = parseFloat(vol_el.value) || 0;
+  if (vol <= 0) { res_el.innerHTML = ''; return; }
+  var vol_l = get_pref().vol === 'L' ? vol : vol * 3.78541;
+  var prods = {
+    prime:   {name:'Seachem Prime',              ml_per_l:5/200,   unit:'ml',  note:'Also detoxifies ammonia and nitrite. For emergency ammonia spike, use 5x dose.'},
+    safe:    {name:'Seachem Safe',                mg_per_l:0.5,     unit:'mg',  note:'Dry powder — weigh carefully; 1 g treats 2 L.'},
+    aquasafe:{name:'Tetra AquaSafe / API StressCoat', ml_per_l:5/40, unit:'ml', note:'Also adds slime coat protection.'},
+    generic: {name:'Generic dechlorinator',       ml_per_l:5/40,   unit:'ml',  note:'Verify your product label — rates vary by brand.'},
+    aq_salt: {name:'Aquarium salt (tonic)',        tsp_per_l:1/10,  unit:'tsp', note:'Non-iodised salt only. Skip for scaleless fish (loaches, cories, plecos).'},
+    epsom:   {name:'Epsom salt',                  tsp_per_l:1/40,  unit:'tsp', note:'Reduces fluid retention. Useful for bloat and dropsy.'}
+  };
+  var p = prods[prod_el.value];
+  if (!p) { res_el.innerHTML = ''; return; }
+  var dose_str;
+  if (p.unit === 'ml') {
+    var ml = vol_l * p.ml_per_l;
+    dose_str = (Math.round(ml * 10) / 10) + ' ml' + (ml < 0.5 ? ' &mdash; use a syringe' : '');
+  } else if (p.unit === 'mg') {
+    var mg = vol_l * p.mg_per_l;
+    dose_str = Math.round(mg) + ' mg' + (mg >= 1000 ? ' (' + (Math.round(mg / 100) / 10) + ' g)' : '');
+  } else {
+    var tsp = vol_l * p.tsp_per_l;
+    dose_str = (Math.round(tsp * 100) / 100) + ' tsp' + (tsp < 0.25 ? ' (' + (Math.round(tsp * 4929) / 1000) + ' ml)' : '');
+  }
+  res_el.innerHTML = 'Add <strong>' + dose_str + '</strong> of ' + p.name + ' for ' + vol + ' ' + v_lbl() + '.' +
+    '<br><span style="color:var(--muted);font-size:12px">' + p.note + '</span>';
 }
 function sub_task(e) {
   e.preventDefault(); var f = e.target, tid = at();
