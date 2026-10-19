@@ -5,4 +5,4 @@ compatibility_date = "2026-09-16"
 [[d1_databases]]
 binding = "DB"
 database_name = "aquatracker"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "5be3b91c-dc92-4ca0-89bc-cff85454edf6"
