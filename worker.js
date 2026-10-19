@@ -1,7 +1,7 @@
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (request.method === 'OPTIONS') return new Response(null, {headers:{'Access-Control-Allow-Origin':'*','Access-Control-Allow-Methods':'GET,POST,PUT,OPTIONS','Access-Control-Allow-Headers':'Authorization,Content-Type'}});
+    if (request.method === 'OPTIONS') return new Response(null, {headers:{'Access-Control-Allow-Origin':'*','Access-Control-Allow-Methods':'GET,POST,PUT,DELETE,OPTIONS','Access-Control-Allow-Headers':'Authorization,Content-Type'}});
     if (url.pathname === '/manifest.json')
       return new Response(MANIFEST, { headers: {'Content-Type':'application/manifest+json','Cache-Control':'public,max-age=86400'} });
     if (url.pathname === '/sw.js')
@@ -14,12 +14,18 @@ export default {
     if (url.pathname === '/api/hint')                                   return handle_hint(request, env);
     if (url.pathname === '/api/data'     && request.method === 'GET')  return handle_get_data(request, env);
     if (url.pathname === '/api/data'     && request.method === 'PUT')  return handle_put_data(request, env);
-    if (url.pathname === '/api/ref/all')                             return handle_ref_all(request, env);
+    if (url.pathname === '/api/ref/all')                                return handle_ref_all(request, env);
     if (url.pathname === '/api/calc/dash')  return handle_calc_dash(request, env);
     if (url.pathname === '/api/calc/maint') return handle_calc_maint(request, env);
     if (url.pathname === '/api/calc/recs')  return handle_calc_recs(request, env);
     if (url.pathname === '/api/calc/risks') return handle_calc_risks(request, env);
+    if (url.pathname === '/api/push/pubkey')                                    return handle_push_pubkey(request, env);
+    if (url.pathname === '/api/push/subscribe'   && request.method === 'POST')  return handle_push_subscribe(request, env);
+    if (url.pathname === '/api/push/unsubscribe' && request.method === 'POST')  return handle_push_unsubscribe(request, env);
     return new Response(APP_HTML, { headers: {'Content-Type':'text/html; charset=utf-8', 'Cache-Control':'no-cache'} });
+  },
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(handle_scheduled(env));
   }
 };
 
@@ -188,6 +194,22 @@ self.addEventListener('fetch', e => {
     if (r.ok) { var rc = r.clone(); caches.open(CACHE).then(c => c.put(e.request, rc)); }
     return r;
   })));
+});
+self.addEventListener('push', function(e) {
+  e.waitUntil(self.registration.showNotification('AquaTracker', {
+    body: 'You have maintenance tasks due today.',
+    icon: '/icon.svg',
+    badge: '/icon.svg',
+    tag: 'aq-maint',
+    renotify: false
+  }));
+});
+self.addEventListener('notificationclick', function(e) {
+  e.notification.close();
+  e.waitUntil(clients.matchAll({type:'window'}).then(function(cs) {
+    for (var i = 0; i < cs.length; i++) { if ('focus' in cs[i]) return cs[i].focus(); }
+    if (clients.openWindow) return clients.openWindow('/');
+  }));
 });
 `;
 
@@ -1392,6 +1414,83 @@ async function handle_calc_risks(request, env) {
   });
 }
 
+
+// ===== WEB PUSH =====
+function b64u_enc(buf) {
+  return btoa(String.fromCharCode.apply(null, new Uint8Array(buf)))
+    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+}
+function b64u_dec(str) {
+  var s = str.replace(/-/g,'+').replace(/_/g,'/');
+  while (s.length % 4) s += '=';
+  return Uint8Array.from(atob(s), function(c){ return c.charCodeAt(0); }).buffer;
+}
+async function vapid_jwt(origin, env) {
+  var now = Math.floor(Date.now() / 1000);
+  var hdr = b64u_enc(new TextEncoder().encode(JSON.stringify({typ:'JWT',alg:'ES256'})));
+  var pld = b64u_enc(new TextEncoder().encode(JSON.stringify({aud:origin, exp:now+43200, sub:'mailto:admin@aquatracker.app'})));
+  var msg = hdr + '.' + pld;
+  var key = await crypto.subtle.importKey('pkcs8', b64u_dec(env.VAPID_PRIVATE_KEY), {name:'ECDSA',namedCurve:'P-256'}, false, ['sign']);
+  var sig = await crypto.subtle.sign({name:'ECDSA',hash:'SHA-256'}, key, new TextEncoder().encode(msg));
+  return msg + '.' + b64u_enc(sig);
+}
+async function send_push(sub, env) {
+  try {
+    var origin = new URL(sub.endpoint).origin;
+    var jwt = await vapid_jwt(origin, env);
+    var res = await fetch(sub.endpoint, {
+      method: 'POST',
+      headers: {'Authorization':'vapid t='+jwt+',k='+env.VAPID_PUBLIC_KEY, 'TTL':'86400', 'Content-Length':'0'}
+    });
+    return res.status;
+  } catch(e) { return 0; }
+}
+function get_due_tasks_s(today, ud) {
+  return (ud.tasks || []).filter(function(t){ return t.next_due && t.next_due <= today; });
+}
+async function handle_scheduled(env) {
+  var today = new Date().toISOString().slice(0,10);
+  var rows = await env.DB.prepare(
+    'SELECT ps.id, ps.endpoint, ud.data FROM push_subscriptions ps JOIN user_data ud ON ps.user_id = ud.user_id'
+  ).all();
+  var dead = [];
+  for (var row of (rows.results || [])) {
+    try {
+      var ud = JSON.parse(row.data);
+      if (get_due_tasks_s(today, ud).length === 0) continue;
+      var status = await send_push(row, env);
+      if (status === 410 || status === 404) dead.push(row.id);
+    } catch(e) {}
+  }
+  for (var did of dead) {
+    await env.DB.prepare('DELETE FROM push_subscriptions WHERE id=?').bind(did).run();
+  }
+}
+async function handle_push_pubkey(request, env) {
+  return json_r({key: env.VAPID_PUBLIC_KEY || ''});
+}
+async function handle_push_subscribe(request, env) {
+  var p = await auth_check(request, env);
+  if (!p) return json_r({error:'Unauthorized'}, 401);
+  try {
+    var body = await request.json();
+    if (!body.endpoint || !body.p256dh || !body.auth) return json_r({error:'Invalid subscription'}, 400);
+    var id = p.sub + '_' + body.endpoint.slice(-20);
+    await env.DB.prepare('INSERT OR REPLACE INTO push_subscriptions (id,user_id,endpoint,p256dh,auth,created_at) VALUES (?,?,?,?,?,?)')
+      .bind(id, p.sub, body.endpoint, body.p256dh, body.auth, new Date().toISOString()).run();
+    return json_r({ok:true});
+  } catch(e) { return json_r({error:e.message}, 500); }
+}
+async function handle_push_unsubscribe(request, env) {
+  var p = await auth_check(request, env);
+  if (!p) return json_r({error:'Unauthorized'}, 401);
+  try {
+    var body = await request.json();
+    await env.DB.prepare('DELETE FROM push_subscriptions WHERE user_id=? AND endpoint=?').bind(p.sub, body.endpoint).run();
+    return json_r({ok:true});
+  } catch(e) { return json_r({error:e.message}, 500); }
+}
+
 const APP_HTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2387,7 +2486,7 @@ function draw_chart(tid, param) {
 }
 
 // ===== EXPORT / IMPORT =====
-function do_settings() {
+async function do_settings() {
   var p = get_pref();
   om('<div class="mtitle">Units &amp; Preferences</div>' +
     fg('Temperature', '<select id="pref_temp">' +
@@ -2405,7 +2504,18 @@ function do_settings() {
       '<button class="btn bg" style="flex:1" onclick="export_data()">&#x2B07; Export JSON</button>' +
       '<button class="btn bg" style="flex:1" onclick="import_data()">&#x2B06; Import JSON</button>' +
     '</div>' +
-    '<small style="color:var(--muted);font-size:11px;margin-top:8px;display:block">Export saves all your tanks, equipment, and logs as a file on your device.</small>');
+    '<small style="color:var(--muted);font-size:11px;margin-top:8px;display:block">Export saves all your tanks, equipment, and logs as a file on your device.</small>' +
+    '<hr style="margin:18px 0 14px;border:none;border-top:1px solid var(--border)">' +
+    '<div style="font-weight:600;margin-bottom:10px">Notifications</div>' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
+      '<span style="font-size:13px">Daily maintenance reminders</span>' +
+      '<button id="push_tog" class="btn bg" data-on="0" onclick="toggle_push()" style="min-width:80px">...</button>' +
+    '</div>' +
+    '<small style="color:var(--muted);font-size:11px;margin-top:8px;display:block">Sends a push notification when tasks are due. On iPhone, install the app to home screen first.</small>');
+  push_status().then(function(on) {
+    var btn = document.getElementById('push_tog');
+    if (btn) { btn.dataset.on = on ? '1' : '0'; btn.textContent = on ? 'Disable' : 'Enable'; }
+  });
 }
 function sub_pref() {
   var p = get_pref();
@@ -2447,6 +2557,65 @@ function import_data() {
     reader.readAsText(file);
   };
   inp.click();
+}
+async function push_status() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+  try {
+    var reg = await navigator.serviceWorker.ready;
+    var sub = await reg.pushManager.getSubscription();
+    return !!sub && Notification.permission === 'granted';
+  } catch(e) { return false; }
+}
+async function enable_push() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    alert('Push notifications are not supported in this browser. On iPhone, install the app to your home screen first.');
+    return false;
+  }
+  var perm = await Notification.requestPermission();
+  if (perm !== 'granted') { alert('Notification permission denied.'); return false; }
+  try {
+    var reg = await navigator.serviceWorker.ready;
+    var existing = await reg.pushManager.getSubscription();
+    if (existing) await existing.unsubscribe();
+    var pub = await api_get('/api/push/pubkey');
+    if (!pub || !pub.key) { alert('Push notifications not configured on server yet.'); return false; }
+    var key_bytes = Uint8Array.from(atob(pub.key.replace(/-/g,'+').replace(/_/g,'/')), function(c){ return c.charCodeAt(0); });
+    var sub = await reg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: key_bytes});
+    var json = sub.toJSON();
+    var res = await fetch('/api/push/subscribe', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json', 'Authorization':'Bearer '+localStorage.getItem('aq_token')},
+      body: JSON.stringify({endpoint: json.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth})
+    });
+    return res.ok;
+  } catch(e) { alert('Could not enable notifications: ' + e.message); return false; }
+}
+async function disable_push() {
+  try {
+    var reg = await navigator.serviceWorker.ready;
+    var sub = await reg.pushManager.getSubscription();
+    if (sub) {
+      await fetch('/api/push/unsubscribe', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json', 'Authorization':'Bearer '+localStorage.getItem('aq_token')},
+        body: JSON.stringify({endpoint: sub.endpoint})
+      });
+      await sub.unsubscribe();
+    }
+  } catch(e) {}
+}
+async function toggle_push() {
+  var btn = document.getElementById('push_tog');
+  if (!btn) return;
+  btn.disabled = true;
+  if (btn.dataset.on === '1') {
+    await disable_push();
+    btn.dataset.on = '0'; btn.textContent = 'Enable';
+  } else {
+    var ok = await enable_push();
+    if (ok) { btn.dataset.on = '1'; btn.textContent = 'Disable'; }
+  }
+  btn.disabled = false;
 }
 
 // ===== HELPERS =====
