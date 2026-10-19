@@ -22,6 +22,7 @@ export default {
     if (url.pathname === '/api/push/pubkey')                                    return handle_push_pubkey(request, env);
     if (url.pathname === '/api/push/subscribe'   && request.method === 'POST')  return handle_push_subscribe(request, env);
     if (url.pathname === '/api/push/unsubscribe' && request.method === 'POST')  return handle_push_unsubscribe(request, env);
+    if (url.pathname === '/api/push/test'        && request.method === 'POST')  return handle_push_test(request, env);
     return new Response(APP_HTML, { headers: {'Content-Type':'text/html; charset=utf-8', 'Cache-Control':'no-cache'} });
   },
   async scheduled(event, env, ctx) {
@@ -1495,6 +1496,18 @@ async function handle_scheduled(env) {
   for (var did of dead) {
     await env.DB.prepare('DELETE FROM push_subscriptions WHERE id=?').bind(did).run();
   }
+}
+async function handle_push_test(request, env) {
+  var p = await auth_check(request, env);
+  if (!p) return json_r({error:'Unauthorized'}, 401);
+  var rows = await env.DB.prepare('SELECT * FROM push_subscriptions WHERE user_id=?').bind(p.sub).all();
+  if (!rows.results || rows.results.length === 0) return json_r({error:'No subscriptions found for this user'}, 404);
+  var results = [];
+  for (var sub of rows.results) {
+    var status = await send_push(sub, env);
+    results.push({endpoint: sub.endpoint.slice(-30), status: status});
+  }
+  return json_r({sent: results});
 }
 async function handle_push_pubkey(request, env) {
   return json_r({key: env.VAPID_PUBLIC_KEY || ''});
