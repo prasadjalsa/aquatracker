@@ -69,47 +69,6 @@ const APP_HTML = `<!DOCTYPE html>
   --ok:#3ab87a; --warn:#e8a838; --danger:#e05252;
   --r:8px; --sh:0 2px 8px rgba(0,0,0,.10);
 }
-body.dark{
-  --deep:#bcd9f5; --mid:#6ab8d8; --surf:#3298b0; --accent:#5dd4b8;
-  --bg:#0f1923; --card:#1a2b3d; --text:#d4e8f7; --muted:#8aa4bc;
-  --ok:#2ea866; --warn:#d09030; --danger:#c84040;
-  --sh:0 2px 8px rgba(0,0,0,.4);
-  color-scheme:dark;
-}
-body.dark .mbox{background:var(--card)}
-body.dark #diag_wiz,body.dark #rec_wiz{background:var(--card)!important}
-/* nav/tabs/wizard headers must stay dark even though --deep/--mid are now light text colours */
-body.dark .nav{background:#08111c}
-body.dark .tabs{background:#0f3d5c}
-body.dark #rec_wiz>div:first-child{background:#08111c!important}
-body.dark input,body.dark select,body.dark textarea{background:#162233;color:var(--text);border-color:#2a4a6a}
-body.dark .nav select option{background:#08111c}
-body.dark .prev-bar{background:#3a2800;border-color:#7a5000;color:#f0d078}
-body.dark td,body.dark th{border-color:#2a4a6a}
-body.dark tr:hover td{background:rgba(255,255,255,.04)}
-body.dark .cfg-sep{background:#2a4a6a}
-body.dark .bl-bar{background:#2a4a6a}
-body.dark .trow{border-bottom-color:#2a4a6a!important}
-body.dark .bg{background:#2a3f55;color:var(--text)}
-body.dark .pok{background:#0d3a22;color:#4dd48a}
-body.dark .pwarn{background:#3a2800;color:#f0c060}
-body.dark .pdanger{background:#3a0f0f;color:#f08080}
-body.dark .cwarn{background:#3a0f0f;color:#f08080}
-/* inline-styled light boxes: warn/danger */
-body.dark [style*="background:#fef3d5"]{background:#3a2800!important;color:#f0c060!important}
-body.dark [style*="background:#fdecea"]{background:#3a0f0f!important;color:#f08080!important}
-body.dark [style*="background:#fde0e0"]{background:#3a0f0f!important;color:#f08080!important}
-body.dark [style*="background:#fff3cd"]{background:#3a2800!important;color:#f0c060!important}
-/* inline-styled light info boxes */
-body.dark [style*="background:#e8f4fd"]{background:#0d2438!important;color:var(--text)!important}
-body.dark [style*="background:#e8f4fb"]{background:#0d2438!important;color:var(--text)!important}
-body.dark [style*="background:#f0f8ff"]{background:#0d2438!important;color:var(--text)!important}
-body.dark [style*="background:#f0f6ff"]{background:#0d2438!important;color:var(--text)!important}
-body.dark [style*="background:#f8fbff"]{background:#0d2438!important;color:var(--text)!important}
-body.dark [style*="background:#f5f0ff"]{background:#1a1030!important;color:var(--text)!important}
-body.dark [style*="background:#f4f6fa"]{background:var(--card)!important;color:var(--text)!important}
-body.dark [style*="background:#f5f8fb"]{background:var(--card)!important;color:var(--text)!important}
-body.dark [style*="background:#f0f7f0"]{background:#0d2818!important;color:var(--text)!important}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 .nav{background:var(--deep);color:#fff;display:flex;align-items:center;gap:12px;padding:0 16px;height:54px;position:sticky;top:0;z-index:100}
@@ -195,7 +154,6 @@ tr:hover td{background:#f9fbfc}
     <button class="btn bg bs" onclick="do_export()">Export</button>
     <label class="btn bg bs" style="cursor:pointer">Import<input type="file" id="imp_file" accept=".json" style="display:none" onchange="do_import(this)"></label>
     <button class="btn bg bs" onclick="do_settings()">&#x2699; Units</button>
-    <button class="btn bg bs" id="dark_btn" onclick="toggle_dark()" title="Toggle dark mode">&#x1F319;</button>
   </div>
 </nav>
 
@@ -763,14 +721,6 @@ function get_pref() {
   catch(e) { return {temp:'F',vol:'gal'}; }
 }
 function sv_pref(p) { localStorage.setItem('aq_pref', JSON.stringify(p)); }
-function toggle_dark() {
-  var p = get_pref();
-  p.dark = !p.dark;
-  sv_pref(p);
-  document.body.classList.toggle('dark', !!p.dark);
-  var btn = document.getElementById('dark_btn');
-  if (btn) btn.innerHTML = p.dark ? '&#x2600;&#xFE0F;' : '&#x1F319;';
-}
 function t_lbl() { return get_pref().temp === 'C' ? '\xB0C' : '\xB0F'; }
 function v_lbl() { return get_pref().vol === 'L' ? 'L' : 'gal'; }
 // stored \xB0F value → display value
@@ -5425,9 +5375,6 @@ function export_task_ics(id) {
 
 function init() {
   var p = get_pref();
-  if (p.dark) document.body.classList.add('dark');
-  var dark_btn = document.getElementById('dark_btn');
-  if (dark_btn) dark_btn.innerHTML = p.dark ? '&#x2600;&#xFE0F;' : '&#x1F319;';
   build_sel();
   var d = ld(), tid = at();
   if (d.tanks.length && !d.tanks.find(function(t){ return t.id === tid; })) sat(d.tanks[0].id);
