@@ -8,6 +8,7 @@ export default {
       return new Response(SW_JS, { headers: {'Content-Type':'application/javascript','Cache-Control':'no-cache'} });
     if (url.pathname === '/icon.svg')
       return new Response(ICON_SVG, { headers: {'Content-Type':'image/svg+xml','Cache-Control':'public,max-age=86400'} });
+    if (url.pathname === '/api/ping') return json_r({ok:true, secret_set: !!(env && env.JWT_SECRET), secret_len: (env && env.JWT_SECRET) ? env.JWT_SECRET.length : 0});
     if (url.pathname === '/api/register' && request.method === 'POST') return handle_register(request, env);
     if (url.pathname === '/api/login'    && request.method === 'POST') return handle_login(request, env);
     if (url.pathname === '/api/hint')                                   return handle_hint(request, env);
@@ -79,6 +80,7 @@ var EMPTY_DATA = JSON.stringify({tanks:[],equip:[],plants:[],stock:[],tasks:[],w
 var DEFAULT_PREF = JSON.stringify({temp:'F',vol:'gal'});
 
 async function handle_register(request, env) {
+  if (!env || !env.JWT_SECRET) return json_r({error:'JWT_SECRET is not set in Worker environment — add it under Settings → Variables and Secrets'}, 500);
   try {
     var body = await request.json();
     var uname = (body.username || '').trim().toLowerCase();
@@ -103,6 +105,7 @@ async function handle_register(request, env) {
 }
 
 async function handle_login(request, env) {
+  if (!env || !env.JWT_SECRET) return json_r({error:'JWT_SECRET is not set in Worker environment — add it under Settings → Variables and Secrets'}, 500);
   try {
     var body  = await request.json();
     var uname = (body.username || '').trim().toLowerCase();
