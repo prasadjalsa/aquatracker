@@ -469,6 +469,26 @@ var SP_BREEDS = {
   odessa_barb:       {breeds:'Moderate', fry_fate:'eaten',   breed_note:'Egg scatterer. Males display brilliant red blaze when ready to breed.'},
   black_ruby_barb:   {breeds:'Moderate', fry_fate:'eaten',   breed_note:'Egg scatterer. Males turn stunning ruby-black when breeding. Fry eaten in community tanks.'},
   congo_tetra:       {breeds:'Moderate', fry_fate:'eaten',   breed_note:'Egg scatterer over fine plants. Males display flowing fins during courtship. Separate tank needed to raise fry.', breed_cond:{pmax:7.0,gmax:12}},
+  // Additional species — M:F ratio guidance
+  scarlet_badis:     {breeds:'Moderate', fry_fate:'hidden',  breed_note:'Male guards eggs in a small cave. Males are extremely territorial — one male per small tank is safest.', breed_cond:{pair:true,ratio:'1M:3F'}},
+  badis:             {breeds:'Moderate', fry_fate:'hidden',  breed_note:'Male guards eggs in a hiding spot. Very territorial with other males — one male per tank unless the tank is very large.', breed_cond:{pair:true,ratio:'1M:3F'}},
+  thick_lipped_gourami:{breeds:'Moderate',fry_fate:'guarded',breed_note:'Bubble nest builder. Male guards nest. Remove female after spawning to prevent harassment.', breed_cond:{pair:true,ratio:'1M:2F'}},
+  banded_gourami:    {breeds:'Moderate', fry_fate:'guarded', breed_note:'Bubble nest builder. Male guards eggs. Remove female once nest is established.', breed_cond:{pair:true,ratio:'1M:2F'}},
+  moonlight_gourami: {breeds:'Moderate', fry_fate:'guarded', breed_note:'Bubble nest builder. Male becomes aggressive after spawning. Remove female.', breed_cond:{pair:true,ratio:'1M:2F'}},
+  kissing_gourami:   {breeds:'Moderate', fry_fate:'eaten',   breed_note:'Egg scatterer. The kissing behaviour is territorial fighting, not courtship. Eggs scattered and eaten.', breed_cond:{pair:true,ratio:'1M:2F'}},
+  giant_gourami:     {breeds:'Moderate', fry_fate:'guarded', breed_note:'Builds a large nest from plant material. Male guards eggs aggressively.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  boesemani_rainbow: {breeds:'Moderate', fry_fate:'hidden',  breed_note:'Egg scatterer in fine plants. Fry tiny and rarely survive in community tanks. Keep more females to reduce male competition.', breed_cond:{pair:true,ratio:'1M:2F'}},
+  neon_rainbowfish:  {breeds:'Easy',     fry_fate:'hidden',  breed_note:'Egg scatterer. Males display intensely for females. Keep more females to reduce male stress on any one female.', breed_cond:{pair:true,ratio:'1M:2F'}},
+  red_cherry_barb:   {breeds:'Moderate', fry_fate:'eaten',   breed_note:'Egg scatterer. Males turn brilliant red when in breeding condition. Fry eaten in community tanks.', breed_cond:{pair:true,ratio:'1M:2F'}},
+  striped_panchax:   {breeds:'Moderate', fry_fate:'hidden',  breed_note:'Egg depositor near the surface. Males fight over females — keep more females to reduce aggression.', breed_cond:{pair:true,ratio:'1M:2F'}},
+  orange_chromide:   {breeds:'Moderate', fry_fate:'guarded', breed_note:'Indian cichlid. Bonded pair spawns on a flat surface and guards fry together. Both parents very attentive.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  green_chromide:    {breeds:'Moderate', fry_fate:'guarded', breed_note:'Large Indian cichlid. Strong pair bond. Both parents guard eggs and fry. Very protective during breeding.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  dwarf_puffer:      {breeds:'Moderate', fry_fate:'hidden',  breed_note:'Male guards nest site and eggs. Difficult to breed in captivity. Needs live foods to trigger spawning.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  indian_puffer:     {breeds:'Moderate', fry_fate:'hidden',  breed_note:'Male guards eggs. Breeding rarely achieved in captivity.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  rainbow_snakehead: {breeds:'Moderate', fry_fate:'guarded', breed_note:'Pair spawns at the surface. Male guards egg mass. Remove female in small tanks after spawning.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  andrao_snakehead:  {breeds:'Moderate', fry_fate:'guarded', breed_note:'Pair spawns near the surface. Male guards eggs.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  bengal_danio:      {breeds:'Easy',     fry_fate:'eaten',   breed_note:'Prolific egg scatterer. Spawns readily. Fry eaten in community tanks — separate tank needed to raise them.'},
+  slender_rasbora:   {breeds:'Moderate', fry_fate:'eaten',   breed_note:'Egg scatterer in fine plants. Fry eaten in community tanks.'},
 };
 Object.keys(SP_BREEDS).forEach(function(k){ if(SP[k]) Object.assign(SP[k], SP_BREEDS[k]); });
 
@@ -3188,6 +3208,157 @@ var DISEASE_DATA = {
   }
 };
 
+var PLANT_DISEASE_DATA = {
+  yellowing_leaves: {
+    name: 'Yellowing Leaves (Chlorosis)',
+    symptom_tag: 'leaves turning yellow, especially older or lower leaves',
+    causes: [
+      'Nitrogen deficiency — the most common cause. Nitrate below 10 ppm limits plant growth.',
+      'Iron or micronutrient deficiency — new leaves turn yellow between the veins (interveinal chlorosis).',
+      'CO2 deficiency in high-light tanks — plants cannot photosynthesise efficiently without carbon.',
+      'Natural die-off — old leaves turning yellow at the base is normal; trim and do not worry.',
+      'Root-bound or exhausted substrate — cannot deliver nutrients to plant roots.'
+    ],
+    fix: [
+      'Test nitrate — if below 10 ppm, dose a nitrogen-rich fertiliser or increase feeding slightly.',
+      'Dose a comprehensive liquid fertiliser with iron and micronutrients (e.g. Easy Green, ThriveC).',
+      'If running high light without CO2, lower the light period to 6 hours or add CO2.',
+      'Trim yellowing leaves — they will not recover and decaying matter raises ammonia.',
+      'Add root tabs around heavy root feeders (Amazon sword, cryptocoryne, water lilies).'
+    ],
+    prevention: 'Maintain nitrate at 10-30 ppm with regular fertilisation. Match light level to CO2 and nutrient dosing.',
+    risk_factors: ['low_nitrate', 'no_co2']
+  },
+  pale_new_growth: {
+    name: 'Pale or Stunted New Growth',
+    symptom_tag: 'new leaves coming in pale, small, or deformed',
+    causes: [
+      'Iron or micronutrient deficiency — iron is the first nutrient to run low in fast-growing tanks.',
+      'CO2 deficiency — insufficient carbon limits cell growth even when other nutrients are present.',
+      'Insufficient light — the plant cannot photosynthesise enough to fuel new growth.',
+      'Potassium deficiency — pale, pin-hole damage appearing on newer leaves.'
+    ],
+    fix: [
+      'Dose a chelated iron supplement or a comprehensive liquid fertiliser.',
+      'Increase CO2 supply, or add pressurised CO2 if running medium-to-high light plants.',
+      'Check light duration — aim for 7-9 hours per day for most planted tanks.',
+      'Add a potassium supplement if other deficiencies have been ruled out.'
+    ],
+    prevention: 'Regular balanced fertilisation and CO2 supply matched to your light intensity.',
+    risk_factors: ['no_co2']
+  },
+  holes_in_leaves: {
+    name: 'Holes in Leaves',
+    symptom_tag: 'small pinholes or large holes appearing in the middle of leaves',
+    causes: [
+      'Potassium deficiency — small holes or pinholes forming on older leaves.',
+      'Calcium or magnesium deficiency — GH below 4 leads to cell wall breakdown.',
+      'Snail damage — ramshorn or bladder snails nibble holes in soft-leaved plants.',
+      'Fish nibbling — some cichlids, goldfish, or barbs tear leaf tissue.'
+    ],
+    fix: [
+      'Dose a potassium supplement or a K-heavy fertiliser.',
+      'Raise GH to at least 4-6 dGH using calcium and magnesium (crushed coral or a remineraliser).',
+      'Check for snails at night with a torch — reduce population if excessive.',
+      'Trim damaged leaves to prevent rot and improve water quality.'
+    ],
+    prevention: 'Keep GH above 4. Include potassium in your regular fertiliser regime.',
+    risk_factors: ['low_gh']
+  },
+  brown_leaf_edges: {
+    name: 'Brown or Crispy Leaf Edges',
+    symptom_tag: 'leaf margins turning brown, black, or crispy',
+    causes: [
+      'Potassium deficiency — browning and crisping edges on older leaves.',
+      'Very hard water or high TDS — excess dissolved minerals can cause edge burn in sensitive plants.',
+      'Natural end of leaf lifespan — older leaves die back from the tips first.',
+      'Physical damage from strong flow, decorations, or tank mates.'
+    ],
+    fix: [
+      'Dose potassium (K2SO4 or a combined fertiliser with potassium).',
+      'If TDS is above 400 ppm, do a larger water change to dilute minerals.',
+      'Trim brown edges or the whole leaf — they will not recover.',
+      'Reposition the plant away from direct high-flow outlets if physical damage is the cause.'
+    ],
+    prevention: 'Regular potassium dosing as part of a balanced fertiliser programme.',
+    risk_factors: ['high_tds', 'high_gh']
+  },
+  plant_melting: {
+    name: 'Plant Melting',
+    symptom_tag: 'leaves rapidly dissolving, turning transparent, or falling apart',
+    causes: [
+      'Transplant shock — very common with cryptocoryne, which melt when moved or when water parameters change.',
+      'Emersed to submersed transition — plants grown above water in nurseries need to regrow aquatic-form leaves.',
+      'Sudden parameter shift — a change in pH, hardness, or temperature can trigger melting.',
+      'Root damage during planting — bruised roots cannot absorb nutrients temporarily.'
+    ],
+    fix: [
+      'Do not remove the plant — the roots are usually fine. New leaves will regrow within 2-4 weeks.',
+      'Trim all melted leaves cleanly to prevent ammonia spikes from decaying matter.',
+      'Keep parameters stable — avoid large water changes or sudden shifts during recovery.',
+      'Let the plant acclimatise; do not dose aggressively while it is stressed.'
+    ],
+    prevention: 'Acclimate new plants slowly. Once crypts are established, avoid moving them as they hate disturbance.',
+    risk_factors: []
+  },
+  algae_on_leaves: {
+    name: 'Algae Coating Leaves',
+    symptom_tag: 'green, brown, or black coating covering plant leaf surfaces',
+    causes: [
+      'Slow-growing plants unable to compete with algae for nutrients.',
+      'Excess light combined with high nitrate or phosphate — algae thrives in this imbalance.',
+      'Too few plants — not enough plant mass to absorb available nutrients before algae does.',
+      'Low CO2 — plants grow slowly and algae takes the opportunity.'
+    ],
+    fix: [
+      'Add fast-growing stem plants to absorb excess nutrients (hornwort, hygrophila, water sprite).',
+      'Reduce light period by 1-2 hours and observe for 2 weeks.',
+      'Add algae-grazing livestock: nerite snails, amano shrimp, otocinclus.',
+      'Wipe affected leaves gently with a soft cloth during water changes.',
+      'Improve CO2 supply to help plants outcompete algae for nutrients.'
+    ],
+    prevention: 'Balance light, CO2, and nutrients. A dense plant load absorbs nutrients before algae can use them.',
+    risk_factors: ['high_nitrate']
+  },
+  black_spots_fuzz: {
+    name: 'Black Spots or Fuzz on Leaves',
+    symptom_tag: 'dark tufts or spots growing on leaf edges or surfaces',
+    causes: [
+      'Black Beard Algae (BBA) on plant surfaces — triggered by CO2 fluctuation or low CO2.',
+      'Staghorn algae — grey-green branching fuzz on slow-growing leaves, same cause as BBA.',
+      'Potassium deficiency — small dark necrotic spots on leaf tissue (not fuzzy — smooth and dead).'
+    ],
+    fix: [
+      'Spot-dose affected leaves with liquid carbon (Flourish Excel, Easy Carbon) directly on BBA.',
+      'Stabilise CO2 — BBA thrives on CO2 fluctuation; inconsistent injection is a very common cause.',
+      'Raise CO2 levels if they are too low for your light level.',
+      'Trim heavily affected leaves and remove from the tank immediately to prevent spread.',
+      'Dose potassium if the spots are smooth and necrotic (not fuzzy algae).'
+    ],
+    prevention: 'Stable and sufficient CO2, consistent light schedule. Avoid turning CO2 on and off mid-day.',
+    risk_factors: ['co2_fluctuation']
+  },
+  root_rot: {
+    name: 'Root Rot / Stem Base Rot',
+    symptom_tag: 'brown mushy roots, stem base collapsing at the substrate line',
+    causes: [
+      'Anaerobic substrate — compacted or very fine substrate with no flow creates a toxic, low-oxygen zone.',
+      'High ammonia — ammonia stress weakens root tissue and encourages bacterial rot.',
+      'Crown buried too deep — burying the growing tip of rosette plants (crypts, swords) smothers them.',
+      'Overfeeding — excess organic matter accumulates in the substrate and fuels bacterial rot.'
+    ],
+    fix: [
+      'Gently stir the top layer of substrate (not too deep) to release trapped gases.',
+      'Trim rotted roots and replant the healthy crown slightly higher in the substrate.',
+      'Siphon uneaten food from the substrate during water changes and reduce feeding.',
+      'Add Malaysian trumpet snails — they burrow naturally and aerate the substrate.',
+      'Do water changes to bring ammonia back to zero.'
+    ],
+    prevention: 'Keep substrate loose. Do not plant crowns below the substrate surface. Keep ammonia at 0 ppm.',
+    risk_factors: ['high_ammonia']
+  }
+};
+
 // ===== RECOMMENDATIONS =====
 // ===== FOOD RECOMMENDATIONS =====
 var DIET_MAP = {
@@ -4241,6 +4412,11 @@ function upd_stock_compat(sel) {
     }
   }
 
+  // M:F ratio guidance
+  if (new_sp.breed_cond && new_sp.breed_cond.ratio) {
+    parts.push('<div style="color:var(--mid);font-size:12px;margin-top:2px">&#x2642; Recommended M:F ratio: <strong>' + esc(new_sp.breed_cond.ratio) + '</strong></div>');
+  }
+
   // Minimum group size
   if (new_sp.min_fish && new_sp.min_fish > 1) {
     var qty_el = document.querySelector('#mb input[name=qty]');
@@ -5274,6 +5450,26 @@ function get_disease_risks(tid) {
   risks.forEach(function(r){ if (!seen[r.id]){ seen[r.id]=true; unique.push(r); } });
   return unique;
 }
+function get_plant_risks(tid) {
+  var d = ld();
+  var lr = d.water.filter(function(w){ return w.tank_id === tid; }).sort(function(a,b){ return b.date.localeCompare(a.date); })[0];
+  var no3 = lr ? lr.nitrate  : null;
+  var nh3 = lr ? lr.ammonia  : null;
+  var gh  = lr ? lr.gh       : null;
+  var tds = lr ? lr.tds      : null;
+  var risks = [];
+  if (no3 !== null && parseFloat(no3) < 10) risks.push({id:'yellowing_leaves', reason:'Nitrate is ' + no3 + ' ppm — below 10 ppm suggests nitrogen deficiency'});
+  if (no3 !== null && parseFloat(no3) > 20) risks.push({id:'algae_on_leaves',  reason:'Nitrate is ' + no3 + ' ppm — high nutrients feed algae on leaves'});
+  if (gh  !== null && parseFloat(gh)  < 4)  risks.push({id:'holes_in_leaves',  reason:'GH is ' + gh + ' — below 4 indicates calcium/magnesium deficiency'});
+  if (gh  !== null && parseFloat(gh)  > 20) risks.push({id:'brown_leaf_edges', reason:'GH is ' + gh + ' — very hard water can stress sensitive plants'});
+  if (nh3 !== null && parseFloat(nh3) > 0)  risks.push({id:'root_rot',         reason:'Ammonia is ' + nh3 + ' ppm — elevated ammonia stresses plant roots'});
+  if (tds !== null && parseFloat(tds) > 400) risks.push({id:'brown_leaf_edges', reason:'TDS is ' + tds + ' ppm — high mineral load can cause leaf edge burn'});
+  var co2 = get_co2_info(tid);
+  if (!co2) risks.push({id:'pale_new_growth', reason:'No CO2 equipment — plants in medium/high light need CO2 for strong growth'});
+  var seen = {}, unique = [];
+  risks.forEach(function(r){ if (!seen[r.id]){ seen[r.id]=true; unique.push(r); } });
+  return unique;
+}
 function get_algae_risks(tid) {
   var d = ld(), tank = d.tanks.find(function(t){ return t.id === tid; });
   var light_h = get_light_hours(tid), co2 = get_co2_info(tid);
@@ -5349,6 +5545,10 @@ function diag_step1() {
        '<div style="font-size:22px;margin-bottom:4px">&#x1F41F;</div>' +
        '<div style="font-size:15px;font-weight:700;color:var(--deep)">Fish Disease</div>' +
        '<div style="font-size:12px;color:var(--muted);margin-top:2px">Identify the disease and get treatment steps</div></button>';
+  h += '<button class="btn" onclick="diag_plant_list()" style="background:#f0f7f0;border:2px solid #5aab6a;border-radius:12px;padding:16px;text-align:left;cursor:pointer">' +
+       '<div style="font-size:22px;margin-bottom:4px">&#x1F331;</div>' +
+       '<div style="font-size:15px;font-weight:700;color:var(--deep)">Plant Issue</div>' +
+       '<div style="font-size:12px;color:var(--muted);margin-top:2px">Diagnose yellowing, holes, melting and other plant problems</div></button>';
   h += '</div>';
   diag_wiz_set(h, '');
 }
@@ -5475,6 +5675,67 @@ function diag_dis_detail(id) {
   h += '<div style="font-size:11px;font-weight:700;color:var(--mid);margin-bottom:2px">Prevention</div>';
   h += '<div style="font-size:12px;color:var(--muted)">' + esc(dd.prevention) + '</div></div>';
   diag_wiz_set(h, '<button class="btn bg bs" style="flex:1" onclick="diag_dis_list()">&#x25C4; Back to list</button><button class="btn bp bs" style="flex:1" data-did="' + id + '" onclick="open_treat_modal(at(),DISEASE_DATA[this.dataset.did].name)">&#x1F4CB; Log Treatment</button>');
+}
+function diag_plant_list() {
+  var tid = at(), risks = get_plant_risks(tid), h = '';
+  if (risks.length) {
+    h += '<div style="background:#f0f7f0;border-left:3px solid #5aab6a;border-radius:0 8px 8px 0;padding:10px 12px;margin-bottom:14px">';
+    h += '<div style="font-size:11px;font-weight:700;color:#2a6a3a;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">&#x26A0; Likely for your tank</div>';
+    risks.forEach(function(r){
+      var pd = PLANT_DISEASE_DATA[r.id]; if (!pd) return;
+      h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
+           '<button class="btn bs" data-pid="' + r.id + '" onclick="diag_plant_detail(this.dataset.pid)" style="font-size:12px;font-weight:600;flex-shrink:0;background:#5aab6a;color:#fff">' + esc(pd.name) + '</button>' +
+           '<span style="font-size:11px;color:var(--muted)">' + esc(r.reason) + '</span></div>';
+    });
+    h += '</div>';
+  }
+  h += '<div style="font-size:12px;font-weight:700;color:var(--deep);margin-bottom:8px">All plant issues</div>';
+  Object.keys(PLANT_DISEASE_DATA).forEach(function(id){
+    var pd = PLANT_DISEASE_DATA[id];
+    h += '<div data-pid="' + id + '" onclick="diag_plant_detail(this.dataset.pid)" style="padding:10px 12px;border:1px solid #d4e8d4;border-radius:8px;margin-bottom:6px;cursor:pointer">' +
+         '<div style="font-size:13px;font-weight:700;color:var(--deep)">' + esc(pd.name) + '</div>' +
+         '<div style="font-size:11px;color:var(--muted);font-style:italic;margin-top:2px">' + esc(pd.symptom_tag) + '</div></div>';
+  });
+  h += '<div style="margin-top:12px;text-align:center"><a href="https://www.google.com/search?tbm=isch&q=aquarium+plant+disease+symptoms" target="_blank" style="font-size:12px;color:var(--mid)">&#x1F50D; Browse plant issues on Google Images</a></div>';
+  diag_wiz_set(h, '<button class="btn bg bs" style="flex:1" onclick="diag_step1()">&#x25C4; Back</button>');
+}
+function diag_plant_detail(id) {
+  var pd = PLANT_DISEASE_DATA[id]; if (!pd) return;
+  var tid = at(), d = ld();
+  var lr = d.water.filter(function(w){ return w.tank_id === tid; }).sort(function(a,b){ return b.date.localeCompare(a.date); })[0];
+  var h = '';
+  if (lr) {
+    var no3 = lr.nitrate !== null ? parseFloat(lr.nitrate) : null;
+    var nh3 = lr.ammonia !== null ? parseFloat(lr.ammonia) : null;
+    var gh  = lr.gh !== null ? parseFloat(lr.gh) : null;
+    var warns = [];
+    if (no3 !== null && no3 < 10) warns.push('Nitrate ' + no3 + ' ppm (low — nitrogen deficiency risk)');
+    if (nh3 !== null && nh3 > 0)  warns.push('Ammonia ' + nh3 + ' ppm (elevated)');
+    if (gh  !== null && gh  < 4)  warns.push('GH ' + gh + ' dGH (low — Ca/Mg deficiency risk)');
+    if (warns.length) {
+      h += '<div style="background:#fff8e6;border-left:3px solid var(--warn);border-radius:0 8px 8px 0;padding:9px 12px;margin-bottom:12px">';
+      h += '<div style="font-size:11px;font-weight:700;color:#8a5a00;margin-bottom:4px">&#x26A0; Last water reading</div>';
+      warns.forEach(function(w){ h += '<div style="font-size:12px;color:#6a4000">' + esc(w) + '</div>'; });
+      h += '</div>';
+    }
+  }
+  h += '<div style="font-size:13px;font-weight:700;color:var(--deep);margin-bottom:2px">' + esc(pd.name) + '</div>';
+  h += '<div style="font-size:11px;color:var(--muted);font-style:italic;margin-bottom:10px">' + esc(pd.symptom_tag) + '</div>';
+  h += '<div style="font-size:12px;font-weight:700;color:var(--mid);margin-bottom:4px">Possible causes</div>';
+  h += '<ul style="margin:0 0 12px;padding-left:18px">';
+  pd.causes.forEach(function(c){ h += '<li style="font-size:12px;color:var(--muted);margin-bottom:3px">' + esc(c) + '</li>'; });
+  h += '</ul>';
+  h += '<div style="font-size:12px;font-weight:700;color:#2a6a3a;margin-bottom:6px">Fix steps</div>';
+  pd.fix.forEach(function(step, i){
+    h += '<div style="display:flex;gap:8px;margin-bottom:6px;padding:8px 10px;background:#f0f7f0;border-radius:6px">' +
+         '<span style="font-size:11px;font-weight:700;color:#2a6a3a;flex-shrink:0;padding-top:1px">' + (i+1) + '.</span>' +
+         '<span style="font-size:12px;color:var(--deep)">' + esc(step) + '</span></div>';
+  });
+  h += '<div style="margin-top:10px;padding:8px 10px;background:#f4f6fa;border-radius:6px">';
+  h += '<div style="font-size:11px;font-weight:700;color:var(--mid);margin-bottom:2px">Prevention</div>';
+  h += '<div style="font-size:12px;color:var(--muted)">' + esc(pd.prevention) + '</div></div>';
+  h += '<div style="margin-top:10px;text-align:center"><a href="https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(pd.name + ' aquarium plant') + '" target="_blank" style="font-size:12px;color:var(--mid)">&#x1F50D; Google Images: ' + esc(pd.name) + '</a></div>';
+  diag_wiz_set(h, '<button class="btn bg bs" style="flex:1" onclick="diag_plant_list()">&#x25C4; Back to list</button>');
 }
 
 // ===== REC WIZARD =====
