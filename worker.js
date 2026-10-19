@@ -85,7 +85,7 @@ async function handle_register(request, env) {
     var pass  = body.password || '';
     var hint  = (body.hint || '').trim();
     if (!uname || uname.length < 3)             return json_r({error:'Username must be at least 3 characters'}, 400);
-    if (!/^[a-z0-9_]+$/.test(uname))            return json_r({error:'Username can only contain letters, numbers and underscores — no spaces or special characters'}, 400);
+    if (!/^[a-z0-9._]+$/.test(uname))            return json_r({error:'Username can only contain letters, numbers, underscores and dots'}, 400);
     if (!pass || pass.length < 6)               return json_r({error:'Password must be at least 6 characters'}, 400);
     var existing = await env.DB.prepare('SELECT id FROM users WHERE username=?').bind(uname).first();
     if (existing)                               return json_r({error:'Username already taken'}, 409);
