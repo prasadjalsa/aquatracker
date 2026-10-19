@@ -1582,7 +1582,7 @@ const APP_HTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0a2342">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1601,7 +1601,7 @@ const APP_HTML = `<!DOCTYPE html>
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-.nav{background:var(--deep);color:#fff;display:flex;align-items:center;gap:12px;padding:0 16px;height:54px;position:sticky;top:0;z-index:100}
+.nav{background:var(--deep);color:#fff;display:flex;align-items:center;gap:12px;padding:0 16px;padding-top:env(safe-area-inset-top);height:calc(54px + env(safe-area-inset-top));position:sticky;top:0;z-index:100}
 .logo{font-size:17px;font-weight:700;white-space:nowrap}
 .nav-r{display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap;padding:4px 0}
 .nav select{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:5px 8px;font-size:13px;max-width:200px}
