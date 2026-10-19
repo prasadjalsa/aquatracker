@@ -1446,19 +1446,48 @@ async function send_push(sub, env) {
     return res.status;
   } catch(e) { return 0; }
 }
-function get_due_tasks_s(today, ud) {
-  return (ud.tasks || []).filter(function(t){ return t.next_due && t.next_due <= today; });
+function date_add(date_str, days) {
+  var d = new Date(date_str + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+function get_due_tasks_s(now_utc, ud) {
+  var tz_offset = (ud.pref && ud.pref.tz_offset != null) ? ud.pref.tz_offset : 0;
+  var local_min = now_utc.utc_hour * 60 + now_utc.utc_minute - tz_offset;
+  local_min = ((local_min % 1440) + 1440) % 1440;
+  var local_hour = Math.floor(local_min / 60);
+  var local_date = date_add(now_utc.utc_date, Math.floor((now_utc.utc_hour * 60 + now_utc.utc_minute - tz_offset) / 1440));
+  var tomorrow = date_add(local_date, 1);
+  var day_after = date_add(local_date, 2);
+  return (ud.tasks || []).filter(function(t) {
+    if (!t.next_due) return false;
+    var n = t.notify || 'on_day';
+    if (n === 'none') return false;
+    var h = (t.notify_hour != null) ? t.notify_hour : 8;
+    if (local_hour !== h) return false;
+    if (t.next_due < local_date) return true;
+    if (n === 'on_day')        return t.next_due === local_date;
+    if (n === '1_day_before')  return t.next_due === tomorrow;
+    if (n === '2_days_before') return t.next_due === day_after;
+    return false;
+  });
 }
 async function handle_scheduled(env) {
-  var today = new Date().toISOString().slice(0,10);
+  var now = new Date();
+  var now_utc = {
+    utc_date:   now.toISOString().slice(0,10),
+    utc_hour:   now.getUTCHours(),
+    utc_minute: now.getUTCMinutes()
+  };
   var rows = await env.DB.prepare(
-    'SELECT ps.id, ps.endpoint, ud.data FROM push_subscriptions ps JOIN user_data ud ON ps.user_id = ud.user_id'
+    'SELECT ps.id, ps.endpoint, ud.data, ud.pref FROM push_subscriptions ps JOIN user_data ud ON ps.user_id = ud.user_id'
   ).all();
   var dead = [];
   for (var row of (rows.results || [])) {
     try {
       var ud = JSON.parse(row.data);
-      if (get_due_tasks_s(today, ud).length === 0) continue;
+      ud.pref = row.pref ? JSON.parse(row.pref) : {};
+      if (get_due_tasks_s(now_utc, ud).length === 0) continue;
       var status = await send_push(row, env);
       if (status === 410 || status === 404) dead.push(row.id);
     } catch(e) {}
@@ -2166,9 +2195,9 @@ function days_til(due) {
   return Math.ceil((new Date(due + 'T00:00:00') - now) / 86400000);
 }
 function ucls(days) { return days < 0 ? 'tover' : days <= 3 ? 'tsoon' : 'tok'; }
-function add_task(tid, type, name, freq, last, notes) {
+function add_task(tid, type, name, freq, last, notes, notify, notify_hour) {
   var d = ld();
-  d.tasks.push({id:gid(), tank_id:tid, type:type, name:name, freq:parseInt(freq)||7, last_done:last, next_due:next_due(last,freq), notes:notes||''});
+  d.tasks.push({id:gid(), tank_id:tid, type:type, name:name, freq:parseInt(freq)||7, last_done:last, next_due:next_due(last,freq), notes:notes||'', notify:notify||'on_day', notify_hour:notify_hour!=null?parseInt(notify_hour):8});
   sv(d);
 }
 function del_task(id) {
@@ -2515,13 +2544,14 @@ async function do_settings() {
     '<small style="color:var(--muted);font-size:11px;margin-top:8px;display:block">Sends a push notification when tasks are due. On iPhone, install the app to home screen first.</small>');
   push_status().then(function(on) {
     var btn = document.getElementById('push_tog');
-    if (btn) { btn.dataset.on = on ? '1' : '0'; btn.textContent = on ? 'Disable' : 'Enable'; }
+    if (btn) { btn.dataset.on = on ? '1' : '0'; btn.textContent = on ? 'Disable' : 'Enable'; btn.className = on ? 'btn bd' : 'btn bp'; }
   });
 }
 function sub_pref() {
   var p = get_pref();
   p.temp = document.getElementById('pref_temp').value;
   p.vol  = document.getElementById('pref_vol').value;
+  p.tz_offset = new Date().getTimezoneOffset();
   sv_pref(p);
   cm(); init();
 }
@@ -2611,10 +2641,10 @@ async function toggle_push() {
   btn.disabled = true;
   if (btn.dataset.on === '1') {
     await disable_push();
-    btn.dataset.on = '0'; btn.textContent = 'Enable';
+    btn.dataset.on = '0'; btn.textContent = 'Enable'; btn.className = 'btn bp';
   } else {
     var ok = await enable_push();
-    if (ok) { btn.dataset.on = '1'; btn.textContent = 'Disable'; }
+    if (ok) { btn.dataset.on = '1'; btn.textContent = 'Disable'; btn.className = 'btn bd'; }
   }
   btn.disabled = false;
 }
@@ -3822,6 +3852,10 @@ async function r_maint() {
     fg('Last Done', '<input type="date" name="last" value="' + td + '" required>') +
     '</div>' +
     fg('Notes', '<input type="text" name="notes" placeholder="Optional">') +
+    '<div class="frow">' +
+    fg('Remind me', '<select name="notify"><option value="on_day">On due date</option><option value="1_day_before">1 day before</option><option value="2_days_before">2 days before</option><option value="none">No reminder</option></select>') +
+    fg('At time', '<select name="notify_hour"><option value="6">6:00 AM</option><option value="7">7:00 AM</option><option value="8" selected>8:00 AM</option><option value="9">9:00 AM</option><option value="10">10:00 AM</option><option value="11">11:00 AM</option><option value="12">12:00 PM</option><option value="13">1:00 PM</option><option value="14">2:00 PM</option><option value="15">3:00 PM</option><option value="16">4:00 PM</option><option value="17">5:00 PM</option><option value="18">6:00 PM</option><option value="19">7:00 PM</option><option value="20">8:00 PM</option><option value="21">9:00 PM</option></select>') +
+    '</div>' +
     '<button type="submit" class="btn bp" style="margin-top:8px">Add Task</button></form></div>';
 
   // Maintenance Logs
@@ -3866,7 +3900,7 @@ function calc_wc() {
 }
 function sub_task(e) {
   e.preventDefault(); var f = e.target, tid = at();
-  add_task(tid, f.type.value, f.name.value, f.freq.value, f.last.value, f.notes.value);
+  add_task(tid, f.type.value, f.name.value, f.freq.value, f.last.value, f.notes.value, f.notify.value, f.notify_hour.value);
   r_maint();
 }
 
@@ -6333,6 +6367,8 @@ async function startup() {
   var ok = await load_user_data();
   if (!ok) return;
   hide_auth_screen();
+  var p = get_pref();
+  if (p.tz_offset == null) { p.tz_offset = new Date().getTimezoneOffset(); sv_pref(p); }
   init();
 }
 
