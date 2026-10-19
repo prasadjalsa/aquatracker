@@ -6035,7 +6035,7 @@ function set_sync_ind(state) {
 
 async function do_sync() {
   var token = localStorage.getItem('aq_token');
-  if (!token || !_aq) { set_sync_ind(''); console.log('[AquaTracker] do_sync skipped: token=', !!token, '_aq=', !!_aq); return; }
+  if (!token || !_aq) { set_sync_ind(''); return; }
   try {
     var res = await fetch('/api/data', {
       method: 'PUT',
@@ -6043,14 +6043,12 @@ async function do_sync() {
       body: JSON.stringify({data: _aq, pref: get_pref()})
     });
     var body = await res.json();
-    console.log('[AquaTracker] do_sync result:', res.status, JSON.stringify(body), 'tanks_sent:', _aq ? (_aq.tanks||[]).length : 'null');
     if (res.status === 401) { do_logout(); return; }
     if (res.ok) {
-      // keep a local backup so a slow D1 replica never shows empty data on next load
       localStorage.setItem('aq_local_backup', JSON.stringify(_aq));
     }
     set_sync_ind(res.ok ? 'saved' : 'error');
-  } catch(e) { set_sync_ind('error'); console.log('[AquaTracker] do_sync error:', e); }
+  } catch(e) { set_sync_ind('error'); }
 }
 
 async function load_user_data() {
@@ -6060,7 +6058,6 @@ async function load_user_data() {
     var res = await fetch('/api/data', {headers: {'Authorization': 'Bearer ' + token}, cache: 'no-store'});
     if (res.status === 401) { show_auth_screen(); return false; }
     var json = await res.json();
-    console.log('[AquaTracker] /api/data response:', JSON.stringify(json).slice(0, 500));
     if (json.error) {
       alert('Failed to load your data from server: ' + json.error);
       return false;
