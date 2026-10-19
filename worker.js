@@ -6043,6 +6043,7 @@ async function load_user_data() {
     var res = await fetch('/api/data', {headers: {'Authorization': 'Bearer ' + token}});
     if (res.status === 401) { show_auth_screen(); return false; }
     var json = await res.json();
+    console.log('[AquaTracker] /api/data response:', JSON.stringify(json).slice(0, 500));
     if (json.error) {
       alert('Failed to load your data from server: ' + json.error);
       return false;
