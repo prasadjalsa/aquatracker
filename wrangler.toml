@@ -8,4 +8,4 @@ database_name = "aquatracker"
 database_id = "5be3b91c-dc92-4ca0-89bc-cff85454edf6"
 
 [triggers]
-crons = ["0 * * * *"]
+crons = ["*/30 * * * *"]

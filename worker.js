@@ -22,7 +22,6 @@ export default {
     if (url.pathname === '/api/push/pubkey')                                    return handle_push_pubkey(request, env);
     if (url.pathname === '/api/push/subscribe'   && request.method === 'POST')  return handle_push_subscribe(request, env);
     if (url.pathname === '/api/push/unsubscribe' && request.method === 'POST')  return handle_push_unsubscribe(request, env);
-    if (url.pathname === '/api/push/test'        && request.method === 'POST')  return handle_push_test(request, env);
     return new Response(APP_HTML, { headers: {'Content-Type':'text/html; charset=utf-8', 'Cache-Control':'no-cache'} });
   },
   async scheduled(event, env, ctx) {
@@ -198,19 +197,20 @@ self.addEventListener('fetch', e => {
   })));
 });
 self.addEventListener('push', function(e) {
+  var body = e.data ? e.data.text() : 'You have maintenance tasks due.';
   e.waitUntil(self.registration.showNotification('AquaTracker', {
-    body: 'You have maintenance tasks due today.',
+    body: body,
     icon: '/icon.svg',
     badge: '/icon.svg',
     tag: 'aq-maint',
-    renotify: false
+    renotify: true
   }));
 });
 self.addEventListener('notificationclick', function(e) {
   e.notification.close();
-  e.waitUntil(clients.matchAll({type:'window'}).then(function(cs) {
+  e.waitUntil(clients.matchAll({type:'window', includeUncontrolled:true}).then(function(cs) {
     for (var i = 0; i < cs.length; i++) { if ('focus' in cs[i]) return cs[i].focus(); }
-    if (clients.openWindow) return clients.openWindow('/');
+    if (clients.openWindow) return clients.openWindow('/?tab=maint');
   }));
 });
 `;
@@ -1427,6 +1427,39 @@ function b64u_dec(str) {
   while (s.length % 4) s += '=';
   return Uint8Array.from(atob(s), function(c){ return c.charCodeAt(0); }).buffer;
 }
+function concat_buf() {
+  var parts = Array.prototype.slice.call(arguments);
+  var total = parts.reduce(function(s,p){ return s+(p.byteLength||p.length); }, 0);
+  var out = new Uint8Array(total), off = 0;
+  parts.forEach(function(p){ out.set(new Uint8Array(p.buffer||p), off); off+=(p.byteLength||p.length); });
+  return out;
+}
+async function encrypt_push_payload(text, p256dh_b64u, auth_b64u) {
+  var enc = new TextEncoder();
+  var ua_pub  = new Uint8Array(b64u_dec(p256dh_b64u));
+  var auth_s  = new Uint8Array(b64u_dec(auth_b64u));
+  var as_pair = await crypto.subtle.generateKey({name:'ECDH',namedCurve:'P-256'}, true, ['deriveBits']);
+  var as_pub  = new Uint8Array(await crypto.subtle.exportKey('raw', as_pair.publicKey));
+  var ua_key  = await crypto.subtle.importKey('raw', ua_pub, {name:'ECDH',namedCurve:'P-256'}, false, []);
+  var ecdh    = new Uint8Array(await crypto.subtle.deriveBits({name:'ECDH',public:ua_key}, as_pair.privateKey, 256));
+  var key_info= concat_buf(enc.encode('WebPush: info\0'), ua_pub, as_pub);
+  var ecdh_k  = await crypto.subtle.importKey('raw', ecdh, {name:'HKDF'}, false, ['deriveBits']);
+  var ikm     = new Uint8Array(await crypto.subtle.deriveBits({name:'HKDF',hash:'SHA-256',salt:auth_s,info:key_info}, ecdh_k, 256));
+  var salt    = crypto.getRandomValues(new Uint8Array(16));
+  var ik1     = await crypto.subtle.importKey('raw', ikm, {name:'HKDF'}, false, ['deriveBits']);
+  var cek_b   = new Uint8Array(await crypto.subtle.deriveBits({name:'HKDF',hash:'SHA-256',salt:salt,info:enc.encode('Content-Encoding: aes128gcm\0')}, ik1, 128));
+  var ik2     = await crypto.subtle.importKey('raw', ikm, {name:'HKDF'}, false, ['deriveBits']);
+  var nonce_b = new Uint8Array(await crypto.subtle.deriveBits({name:'HKDF',hash:'SHA-256',salt:salt,info:enc.encode('Content-Encoding: nonce\0')}, ik2, 96));
+  var pt      = enc.encode(text);
+  var padded  = new Uint8Array(pt.length + 1); padded.set(pt); padded[pt.length] = 2;
+  var cek     = await crypto.subtle.importKey('raw', cek_b, {name:'AES-GCM'}, false, ['encrypt']);
+  var cipher  = new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv:nonce_b}, cek, padded));
+  var rs = 4096;
+  var hdr = new Uint8Array(16+4+1+as_pub.length);
+  hdr.set(salt,0); hdr[16]=(rs>>>24)&0xff; hdr[17]=(rs>>>16)&0xff; hdr[18]=(rs>>>8)&0xff; hdr[19]=rs&0xff;
+  hdr[20]=as_pub.length; hdr.set(as_pub,21);
+  return concat_buf(hdr, cipher);
+}
 async function vapid_jwt(origin, env) {
   var now = Math.floor(Date.now() / 1000);
   var hdr = b64u_enc(new TextEncoder().encode(JSON.stringify({typ:'JWT',alg:'ES256'})));
@@ -1436,14 +1469,24 @@ async function vapid_jwt(origin, env) {
   var sig = await crypto.subtle.sign({name:'ECDSA',hash:'SHA-256'}, key, new TextEncoder().encode(msg));
   return msg + '.' + b64u_enc(sig);
 }
-async function send_push(sub, env) {
+async function send_push(sub, env, msg) {
   try {
     var origin = new URL(sub.endpoint).origin;
     var jwt = await vapid_jwt(origin, env);
-    var res = await fetch(sub.endpoint, {
-      method: 'POST',
-      headers: {'Authorization':'vapid t='+jwt+',k='+env.VAPID_PUBLIC_KEY, 'TTL':'86400', 'Content-Length':'0'}
-    });
+    var headers = {'Authorization':'vapid t='+jwt+',k='+env.VAPID_PUBLIC_KEY, 'TTL':'86400'};
+    var body = null;
+    if (msg && sub.p256dh && sub.auth) {
+      try {
+        var enc_body = await encrypt_push_payload(msg, sub.p256dh, sub.auth);
+        headers['Content-Type'] = 'application/octet-stream';
+        headers['Content-Encoding'] = 'aes128gcm';
+        headers['Content-Length'] = String(enc_body.byteLength);
+        body = enc_body;
+      } catch(e) { headers['Content-Length'] = '0'; }
+    } else {
+      headers['Content-Length'] = '0';
+    }
+    var res = await fetch(sub.endpoint, {method:'POST', headers:headers, body:body});
     return res.status;
   } catch(e) { return 0; }
 }
@@ -1454,10 +1497,12 @@ function date_add(date_str, days) {
 }
 function get_due_tasks_s(now_utc, ud) {
   var tz_offset = (ud.pref && ud.pref.tz_offset != null) ? ud.pref.tz_offset : 0;
-  var local_min = now_utc.utc_hour * 60 + now_utc.utc_minute - tz_offset;
-  local_min = ((local_min % 1440) + 1440) % 1440;
-  var local_hour = Math.floor(local_min / 60);
-  var local_date = date_add(now_utc.utc_date, Math.floor((now_utc.utc_hour * 60 + now_utc.utc_minute - tz_offset) / 1440));
+  var raw_local_min = now_utc.utc_hour * 60 + now_utc.utc_minute - tz_offset;
+  var local_total_min = ((raw_local_min % 1440) + 1440) % 1440;
+  var local_hour = Math.floor(local_total_min / 60);
+  var local_minute = local_total_min % 60;
+  if (local_minute >= 30) return [];
+  var local_date = date_add(now_utc.utc_date, Math.floor(raw_local_min / 1440));
   var tomorrow = date_add(local_date, 1);
   var day_after = date_add(local_date, 2);
   return (ud.tasks || []).filter(function(t) {
@@ -1481,33 +1526,32 @@ async function handle_scheduled(env) {
     utc_minute: now.getUTCMinutes()
   };
   var rows = await env.DB.prepare(
-    'SELECT ps.id, ps.endpoint, ud.data, ud.pref FROM push_subscriptions ps JOIN user_data ud ON ps.user_id = ud.user_id'
+    'SELECT ps.id, ps.endpoint, ps.p256dh, ps.auth, ud.data, ud.pref FROM push_subscriptions ps JOIN user_data ud ON ps.user_id = ud.user_id'
   ).all();
   var dead = [];
   for (var row of (rows.results || [])) {
     try {
       var ud = JSON.parse(row.data);
       ud.pref = row.pref ? JSON.parse(row.pref) : {};
-      if (get_due_tasks_s(now_utc, ud).length === 0) continue;
-      var status = await send_push(row, env);
+      var due = get_due_tasks_s(now_utc, ud);
+      if (due.length === 0) continue;
+      var tank_map = {};
+      (ud.tanks || []).forEach(function(t){ tank_map[t.id] = t.name; });
+      var msg;
+      if (due.length === 1) {
+        msg = due[0].name + ' — ' + (tank_map[due[0].tank_id] || 'your tank');
+      } else {
+        var tnames = due.map(function(t){ return tank_map[t.tank_id]; })
+          .filter(function(v,i,a){ return a.indexOf(v) === i; }).join(', ');
+        msg = due.length + ' tasks due — ' + tnames;
+      }
+      var status = await send_push(row, env, msg);
       if (status === 410 || status === 404) dead.push(row.id);
     } catch(e) {}
   }
   for (var did of dead) {
     await env.DB.prepare('DELETE FROM push_subscriptions WHERE id=?').bind(did).run();
   }
-}
-async function handle_push_test(request, env) {
-  var p = await auth_check(request, env);
-  if (!p) return json_r({error:'Unauthorized'}, 401);
-  var rows = await env.DB.prepare('SELECT * FROM push_subscriptions WHERE user_id=?').bind(p.sub).all();
-  if (!rows.results || rows.results.length === 0) return json_r({error:'No subscriptions found for this user'}, 404);
-  var results = [];
-  for (var sub of rows.results) {
-    var status = await send_push(sub, env);
-    results.push({endpoint: sub.endpoint.slice(-30), status: status});
-  }
-  return json_r({sent: results});
 }
 async function handle_push_pubkey(request, env) {
   return json_r({key: env.VAPID_PUBLIC_KEY || ''});
@@ -3849,6 +3893,7 @@ async function r_maint() {
            '<td>' + t.last_done + '</td><td>' + t.freq + 'd</td>' +
            '<td style="white-space:nowrap">' +
            '<button class="btn bp bs" data-id="' + t.id + '" onclick="mark_done_prompt(this.dataset.id)">Done</button> ' +
+           '<button class="btn bg bs" title="Edit task" data-id="' + t.id + '" onclick="do_edit_task(this.dataset.id)">&#x270E;</button> ' +
            '<button class="btn bg bs" title="Export to calendar (.ics)" data-id="' + t.id + '" onclick="export_task_ics(this.dataset.id)">&#x1F4C5;</button> ' +
            '<button class="btn bd bs" data-id="' + t.id + '" onclick="del_task(this.dataset.id);r_maint()">&#x2715;</button></td></tr>';
     });
@@ -3915,6 +3960,59 @@ function sub_task(e) {
   e.preventDefault(); var f = e.target, tid = at();
   add_task(tid, f.type.value, f.name.value, f.freq.value, f.last.value, f.notes.value, f.notify.value, f.notify_hour.value);
   r_maint();
+}
+function do_edit_task(id) {
+  var d = ld(), t = d.tasks.find(function(x){ return x.id === id; });
+  if (!t) return;
+  var sel_type = function(v) {
+    return ['Water Change','Filter Clean','Gravel Vac','Glass Wipe','Fertilizer','Pruning','Water Test','Other'].map(function(opt) {
+      return '<option' + (opt === v ? ' selected' : '') + '>' + opt + '</option>';
+    }).join('');
+  };
+  var sel_notify = function(v) {
+    return [['on_day','On due date'],['1_day_before','1 day before'],['2_days_before','2 days before'],['none','No reminder']].map(function(o) {
+      return '<option value="' + o[0] + '"' + (o[0] === v ? ' selected' : '') + '>' + o[1] + '</option>';
+    }).join('');
+  };
+  var sel_hour = function(v) {
+    var opts = [];
+    for (var h = 6; h <= 21; h++) {
+      var lbl = h < 12 ? (h + ':00 AM') : h === 12 ? '12:00 PM' : ((h-12) + ':00 PM');
+      opts.push('<option value="' + h + '"' + (h === v ? ' selected' : '') + '>' + lbl + '</option>');
+    }
+    return opts.join('');
+  };
+  om('<div class="ctitle" style="margin-bottom:12px">Edit Task</div>' +
+    '<form id="ef" onsubmit="sub_edit_task(event,\'' + id + '\')">' +
+    '<div class="frow">' +
+    fg('Task Type', '<select name="type">' + sel_type(t.type) + '</select>') +
+    fg('Task Name', '<input type="text" name="name" value="' + esc(t.name) + '" required>') +
+    fg('Every (days)', '<input type="number" name="freq" value="' + t.freq + '" min="1" required>') +
+    fg('Last Done', '<input type="date" name="last" value="' + (t.last_done || '') + '" required>') +
+    '</div>' +
+    fg('Notes', '<input type="text" name="notes" value="' + esc(t.notes || '') + '">') +
+    '<div class="frow">' +
+    fg('Remind me', '<select name="notify">' + sel_notify(t.notify || 'on_day') + '</select>') +
+    fg('At time', '<select name="notify_hour">' + sel_hour(t.notify_hour != null ? t.notify_hour : 8) + '</select>') +
+    '</div>' +
+    '<div style="display:flex;gap:8px;margin-top:12px">' +
+    '<button type="submit" class="btn bp" style="flex:1">Save</button>' +
+    '<button type="button" class="btn bg" style="flex:1" onclick="cm()">Cancel</button>' +
+    '</div></form>');
+}
+function sub_edit_task(e, id) {
+  e.preventDefault();
+  var f = e.target, d = ld(), t = d.tasks.find(function(x){ return x.id === id; });
+  if (!t) return;
+  t.type = f.type.value;
+  t.name = f.name.value;
+  t.freq = parseInt(f.freq.value) || 7;
+  t.last_done = f.last.value;
+  t.next_due = next_due(f.last.value, f.freq.value);
+  t.notes = f.notes.value;
+  t.notify = f.notify.value;
+  t.notify_hour = parseInt(f.notify_hour.value);
+  sv(d); cm(); r_maint();
 }
 
 async function r_recs() {
@@ -6383,6 +6481,10 @@ async function startup() {
   var p = get_pref();
   if (p.tz_offset == null) { p.tz_offset = new Date().getTimezoneOffset(); sv_pref(p); }
   init();
+  if (new URLSearchParams(location.search).get('tab') === 'maint') {
+    switch_tab('maint');
+    history.replaceState(null, '', '/');
+  }
 }
 
 function show_auth_screen() {
