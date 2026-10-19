@@ -6053,7 +6053,7 @@ async function load_user_data() {
   var token = localStorage.getItem('aq_token');
   if (!token) { show_auth_screen(); return false; }
   try {
-    var res = await fetch('/api/data', {headers: {'Authorization': 'Bearer ' + token}});
+    var res = await fetch('/api/data', {headers: {'Authorization': 'Bearer ' + token}, cache: 'no-store'});
     if (res.status === 401) { show_auth_screen(); return false; }
     var json = await res.json();
     console.log('[AquaTracker] /api/data response:', JSON.stringify(json).slice(0, 500));
