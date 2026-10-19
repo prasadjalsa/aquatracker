@@ -69,6 +69,18 @@ const APP_HTML = `<!DOCTYPE html>
   --ok:#3ab87a; --warn:#e8a838; --danger:#e05252;
   --r:8px; --sh:0 2px 8px rgba(0,0,0,.10);
 }
+body.dark{
+  --deep:#08111c; --mid:#0f3d5c; --surf:#3298b0; --accent:#5dd4b8;
+  --bg:#0f1923; --card:#1a2b3d; --text:#d4e8f7; --muted:#8aa4bc;
+  --ok:#2ea866; --warn:#d09030; --danger:#c84040;
+  --sh:0 2px 8px rgba(0,0,0,.4);
+  color-scheme:dark;
+}
+body.dark .mbox{background:var(--card)}
+body.dark #diag_wiz,body.dark #rec_wiz{background:var(--card)!important}
+body.dark input,body.dark select,body.dark textarea{background:#162233;color:var(--text);border-color:#2a4a6a}
+body.dark .nav select option{background:#08111c}
+body.dark .prev-bar{background:#3a2800;border-color:#7a5000;color:#f0d078}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 .nav{background:var(--deep);color:#fff;display:flex;align-items:center;gap:12px;padding:0 16px;height:54px;position:sticky;top:0;z-index:100}
@@ -154,6 +166,7 @@ tr:hover td{background:#f9fbfc}
     <button class="btn bg bs" onclick="do_export()">Export</button>
     <label class="btn bg bs" style="cursor:pointer">Import<input type="file" id="imp_file" accept=".json" style="display:none" onchange="do_import(this)"></label>
     <button class="btn bg bs" onclick="do_settings()">&#x2699; Units</button>
+    <button class="btn bg bs" id="dark_btn" onclick="toggle_dark()" title="Toggle dark mode">&#x1F319;</button>
   </div>
 </nav>
 
@@ -314,6 +327,32 @@ var SP = {
   malabar_danio:        {min_fish:6, name:'Malabar Danio',              tmin:64,tmax:79,pmin:6.0,pmax:7.5,gmin:5, gmax:20,bioload:2,size_in:4,  min_gal:30, level:'Beginner',     note:'Active schooler from the Western Ghats. Blue and silver with yellow fins. Group of 6+.'},
   checker_barb:         {min_fish:6, name:'Checker Barb',               tmin:68,tmax:79,pmin:6.0,pmax:7.5,gmin:5, gmax:15,bioload:2,size_in:2,  min_gal:20, level:'Beginner',     note:'Small peaceful barb. Males develop orange-red coloring when in condition. School of 6+.'},
   black_ruby_barb:      {min_fish:6, name:'Black Ruby Barb',            tmin:68,tmax:79,pmin:6.0,pmax:7.5,gmin:5, gmax:15,bioload:2,size_in:2.5,min_gal:20, level:'Beginner',     note:'Males turn stunning ruby-black when breeding. School of 6+. Peaceful and beautiful.'},
+  // --- Additional Indian Freshwater Species ---
+  gelius_barb:          {min_fish:6, name:'Gelius Barb',               tmin:64,tmax:75,pmin:6.0,pmax:7.5,gmin:4, gmax:12,bioload:1,size_in:1.5,min_gal:10,  level:'Beginner',     note:'Tiny peaceful Indian barb. Males have golden shimmer. Groups of 6+. Good for nano tanks.'},
+  ticto_barb:           {min_fish:6, name:'Ticto Barb',                tmin:64,tmax:77,pmin:6.0,pmax:7.5,gmin:5, gmax:12,bioload:1,size_in:2.5,min_gal:20,  level:'Beginner',     note:'Common Indian barb with two black spots, one near the gill and one near the tail. Peaceful schooler.'},
+  spottedsail_barb:     {min_fish:6, name:'Spottedsail Barb',          tmin:64,tmax:77,pmin:6.0,pmax:7.5,gmin:5, gmax:12,bioload:1,size_in:1.5,min_gal:10,  level:'Beginner',     note:'Tiny Indian barb. Males have a spotted dorsal fin. Peaceful and good for nano community tanks.'},
+  pool_barb:            {min_fish:6, name:'Pool Barb',                 tmin:64,tmax:77,pmin:6.0,pmax:7.5,gmin:5, gmax:15,bioload:2,size_in:3.0,min_gal:20,  level:'Beginner',     note:'Widespread and adaptable Indian barb. Males develop red dorsal markings. Hardy community fish.'},
+  olive_barb:           {min_fish:5, name:'Olive Barb',                tmin:64,tmax:82,pmin:6.0,pmax:7.5,gmin:5, gmax:20,bioload:3,size_in:6.0,min_gal:40,  level:'Beginner',     note:'Hardy and adaptable Indian barb. Grows moderately large. Group of 5+ in a spacious tank.'},
+  swamp_barb:           {min_fish:6, name:'Swamp Barb',                tmin:64,tmax:77,pmin:6.0,pmax:7.5,gmin:4, gmax:12,bioload:1,size_in:2.5,min_gal:20,  level:'Beginner',     note:'Peaceful Indian barb tolerant of a wide range of conditions. Males have a small spot near the tail.'},
+  indian_flying_barb:   {min_fish:6, name:'Indian Flying Barb',        tmin:64,tmax:82,pmin:6.0,pmax:7.5,gmin:4, gmax:15,bioload:1,size_in:2.5,min_gal:20,  level:'Beginner',     note:'Active surface swimmer with long pectoral fins. Jumps very easily — tight lid is essential.'},
+  slender_rasbora:      {min_fish:6, name:'Slender Rasbora',           tmin:68,tmax:82,pmin:6.0,pmax:7.5,gmin:5, gmax:15,bioload:2,size_in:4.0,min_gal:20,  level:'Beginner',     note:'Silver Indian rasbora with an orange lateral stripe. Fast and peaceful schooler.'},
+  bengal_danio:         {min_fish:6, name:'Bengal Danio',              tmin:64,tmax:79,pmin:6.0,pmax:8.0,gmin:5, gmax:20,bioload:2,size_in:4.0,min_gal:30,  level:'Beginner',     note:'Active Indian danio with blue and yellow stripes. From the Ganges and Indus basins. Very hardy.'},
+  badis:                {name:'Badis (Chameleon Fish)',                  tmin:64,tmax:77,pmin:6.0,pmax:7.5,gmin:5, gmax:12,bioload:2,size_in:3.0,min_gal:15,  level:'Intermediate', hard_reason:'Prefers live or frozen food; often refuses dry food. Very shy — needs dense planting and hiding spots. Males are territorial with each other.', note:'Changes colour to blend with surroundings. Shy and slow — keep with peaceful non-competitive tank mates.'},
+  banded_gourami:       {name:'Banded Gourami',                         tmin:72,tmax:82,pmin:6.0,pmax:8.0,gmin:5, gmax:15,bioload:2,size_in:4.0,min_gal:20,  level:'Beginner',     note:'Beautiful Indian gourami. Males show vibrant red-orange and blue-green vertical bands. Hardy and peaceful.'},
+  orange_chromide:      {name:'Orange Chromide',                        tmin:72,tmax:82,pmin:7.0,pmax:8.5,gmin:10,gmax:25,bioload:3,size_in:3.0,min_gal:20,  level:'Beginner',     note:'Native Indian cichlid from Kerala and Sri Lanka. Tolerates slightly brackish water. Peaceful and personable.'},
+  green_chromide:       {name:'Green Chromide',                         tmin:72,tmax:86,pmin:7.5,pmax:8.5,gmin:10,gmax:25,bioload:4,size_in:12, min_gal:75,  level:'Intermediate', hard_reason:'Grows to 12 inches. Requires hard alkaline water (GH 10+, pH 7.5+). Can become aggressive when breeding.', note:'Large Indian cichlid from coastal lakes and estuaries. Tolerates brackish water. Needs hard alkaline conditions.'},
+  striped_panchax:      {name:'Striped Panchax',                        tmin:72,tmax:82,pmin:6.0,pmax:7.5,gmin:4, gmax:15,bioload:1,size_in:4.0,min_gal:15,  level:'Beginner',     note:'Common Indian surface killifish. Males are brilliantly striped in gold and blue. Jumper — lid required. Eats mosquito larvae.'},
+  gangetic_leaffish:    {name:'Gangetic Leaf Fish',                     tmin:72,tmax:82,pmin:6.5,pmax:7.5,gmin:5, gmax:15,bioload:3,size_in:4.0,min_gal:30,  level:'Advanced',     hard_reason:'Strict carnivore — usually refuses dry food entirely. Ambush predator that eats smaller fish. Slow-moving and easily outcompeted at feeding time.', eats_fish:true, note:'Mimics a dead leaf to ambush prey. From the Ganges basin. Needs live or meaty frozen food only.'},
+  banded_leaffish:      {name:'Banded Leaf Fish',                       tmin:72,tmax:82,pmin:6.5,pmax:7.5,gmin:5, gmax:15,bioload:3,size_in:6.0,min_gal:30,  level:'Intermediate', hard_reason:'Prefers live or frozen food; accepts some pellets. Will eat very small fish. Needs hiding spots.', eats_fish:true, note:'Cichlid-like fish from India and SE Asia with bold banding. Peaceful with similar-sized tank mates.'},
+  rainbow_snakehead:    {name:'Rainbow Snakehead',                      tmin:64,tmax:75,pmin:6.0,pmax:7.5,gmin:5, gmax:12,bioload:3,size_in:6.0,min_gal:30,  level:'Intermediate', hard_reason:'Predatory — will eat fish that fit in its mouth. Prefers cool water. Needs a very secure lid. Prefers live or meaty frozen food.', eats_fish:true, note:'Stunning colours from Northeast India. Cooler water species. Secure lid is essential.'},
+  andrao_snakehead:     {name:'Andrao Snakehead',                       tmin:68,tmax:79,pmin:6.5,pmax:7.5,gmin:5, gmax:12,bioload:2,size_in:4.0,min_gal:20,  level:'Intermediate', hard_reason:'Predatory — will eat small fish. Needs live or meaty frozen food. Tight lid required.', eats_fish:true, note:'Dwarf snakehead from Northeast India. Brilliant blue-orange colouration. Best as a species tank or with large robust fish.'},
+  gold_spot_snakehead:  {name:'Gold Spot Snakehead',                    tmin:64,tmax:75,pmin:6.5,pmax:7.5,gmin:4, gmax:12,bioload:4,size_in:12, min_gal:55,  level:'Advanced',     hard_reason:'Grows to 12 inches. Highly predatory — eats anything that fits in its mouth. Requires a large tank with a very secure lid. Cooler water species from Assam.', eats_fish:true, note:'Striking blue body with gold spots. From Assam, India. Needs a large tank with a very secure lid.'},
+  brown_snakehead:      {name:'Brown Snakehead',                        tmin:68,tmax:79,pmin:6.0,pmax:7.5,gmin:4, gmax:12,bioload:3,size_in:6.0,min_gal:30,  level:'Intermediate', hard_reason:'Predatory — will eat smaller fish. Prefers live or meaty frozen food. Tight lid required.', eats_fish:true, note:'Widespread South Asian snakehead. More heat-tolerant than rainbow snakehead. Tight lid required.'},
+  solar_catfish:        {name:'Solar Catfish',                          tmin:72,tmax:82,pmin:6.5,pmax:7.5,gmin:5, gmax:15,bioload:4,size_in:12, min_gal:55,  level:'Intermediate', hard_reason:'Grows to 12 inches. Nocturnal — rarely seen in the day. Will eat small fish that fit in its mouth.', eats_fish:true, note:'From the Western Ghats (Kerala/Karnataka). Olive body with a bold black shoulder spot. Hardy but grows large.'},
+  striped_dwarf_catfish:{name:'Striped Dwarf Catfish',                  tmin:72,tmax:82,pmin:6.0,pmax:7.5,gmin:5, gmax:15,bioload:3,size_in:6.0,min_gal:30,  level:'Beginner',     note:'Common Indian catfish with horizontal dark stripes. Nocturnal scavenger. Hardy and adaptable community fish.'},
+  tengara_catfish:      {name:'Tengara Catfish',                        tmin:72,tmax:82,pmin:6.0,pmax:7.5,gmin:5, gmax:15,bioload:2,size_in:4.0,min_gal:20,  level:'Beginner',     note:'Smaller Indian Mystus catfish with a row of dark spots along the body. Peaceful nocturnal scavenger.'},
+  garra:                {name:'Garra (Stone Lapper)',                   tmin:64,tmax:77,pmin:6.5,pmax:7.5,gmin:5, gmax:15,bioload:2,size_in:4.0,min_gal:30,  level:'Beginner',     note:'Indian stream fish that grazes algae and biofilm from rocks. Needs moderate flow and oxygenation. Can be mildly territorial with own kind.'},
+  indian_puffer:        {name:'Indian Puffer',                          tmin:68,tmax:82,pmin:7.0,pmax:8.0,gmin:8, gmax:20,bioload:2,size_in:3.0,min_gal:15,  level:'Intermediate', hard_reason:'Nippy — may bite fins of tank mates. Needs hard foods (snails, shellfish) to wear down continuously-growing teeth.', note:'Indian freshwater puffer. Less aggressive than many puffer species. Tolerates slightly brackish. Needs hard foods for dental health.'},
   giant_gourami:        {name:'Giant Gourami',              tmin:68,tmax:86,pmin:6.5,pmax:8.0,gmin:5, gmax:25,bioload:5,size_in:24, min_gal:200,level:'Intermediate', hard_reason:'Grows to 2 feet and lives 20+ years. Requires a pond or enormous tank. Most home aquariums cannot accommodate a full-grown specimen.',note:'Can reach 2 feet. Highly intelligent and recognises its owner. Needs pond-sized setup long term.'},
   common_pleco:         {name:'Common Pleco',               tmin:72,tmax:82,pmin:6.5,pmax:7.5,gmin:5, gmax:20,bioload:5,size_in:24, min_gal:100,level:'Intermediate', hard_reason:'Sold at 2-3 inches but grows to 24 inches with an enormous bioload. Most home aquariums cannot house a full-grown specimen long term.',note:'The "janitor fish." Grows enormous — most end up rehomed. Needs driftwood in diet.'},
   // --- Snails ---
@@ -611,12 +650,13 @@ function ld() {
     if (!Array.isArray(d.feeding)) d.feeding = [];
     if (!Array.isArray(d.ferts))   d.ferts   = [];
     if (!Array.isArray(d.maint_log)) d.maint_log = [];
+    if (!Array.isArray(d.treatment_log)) d.treatment_log = [];
     if (!d.custom_sp)              d.custom_sp = {};
     return d;
   } catch(e) { return mt(); }
 }
 function sv(d) { localStorage.setItem('aq', JSON.stringify(d)); }
-function mt() { return {tanks:[], equip:[], plants:[], stock:[], tasks:[], water:[], feeding:[], ferts:[], custom_sp:{}, maint_log:[]}; }
+function mt() { return {tanks:[], equip:[], plants:[], stock:[], tasks:[], water:[], feeding:[], ferts:[], custom_sp:{}, maint_log:[], treatment_log:[]}; }
 // Merged species lookup: built-in SP + user custom_sp
 function get_sp(d) { return Object.assign({}, SP, d ? d.custom_sp : {}); }
 function add_custom_sp(sp_id, name, type, tmin, tmax, pmin, pmax, gmin, gmax, size_in, min_gal, bioload, level, note) {
@@ -674,6 +714,14 @@ function get_pref() {
   catch(e) { return {temp:'F',vol:'gal'}; }
 }
 function sv_pref(p) { localStorage.setItem('aq_pref', JSON.stringify(p)); }
+function toggle_dark() {
+  var p = get_pref();
+  p.dark = !p.dark;
+  sv_pref(p);
+  document.body.classList.toggle('dark', !!p.dark);
+  var btn = document.getElementById('dark_btn');
+  if (btn) btn.innerHTML = p.dark ? '&#x2600;&#xFE0F;' : '&#x1F319;';
+}
 function t_lbl() { return get_pref().temp === 'C' ? '\xB0C' : '\xB0F'; }
 function v_lbl() { return get_pref().vol === 'L' ? 'L' : 'gal'; }
 // stored \xB0F value → display value
@@ -725,6 +773,39 @@ function del_tank(id) {
   });
   sv(d);
   sat(d.tanks.length ? d.tanks[0].id : '');
+}
+
+// ===== TREATMENT LOG =====
+function add_treatment_log(tid, date, disease, medication, dosage, duration_days, status, notes) {
+  var d = ld();
+  d.treatment_log.push({id:gid(), tank_id:tid, date:date, disease:disease||'', medication:medication||'', dosage:dosage||'', duration_days:parseInt(duration_days)||0, status:status||'Active', notes:notes||''});
+  sv(d);
+}
+function del_treatment_log(id) {
+  var d = ld(); d.treatment_log = d.treatment_log.filter(function(x){return x.id!==id;}); sv(d); r_wlog();
+}
+function open_treat_modal(tid, disease_name) {
+  var td = today_str();
+  var disease_opts = Object.keys(DISEASE_DATA).map(function(k){ return DISEASE_DATA[k].name; }).sort();
+  var pre = disease_name || '';
+  om('<div class="mtitle">Log Treatment</div>' +
+    '<form class="mform" onsubmit="sub_save_treatment(event)">' +
+    '<input type="hidden" name="tid" value="' + tid + '">' +
+    fg('Date started', '<input type="date" name="date" value="' + td + '" required>') +
+    fg('Disease / Condition', '<input type="text" name="disease" value="' + esc(pre) + '" list="disease_list_dl" placeholder="e.g. Ich, Fin Rot" required>' +
+       '<datalist id="disease_list_dl">' + disease_opts.map(function(n){ return '<option value="' + esc(n) + '">'; }).join('') + '</datalist>') +
+    fg('Medication used', '<input type="text" name="medication" placeholder="e.g. Malachite green, Oxytetracycline">') +
+    fg('Dosage', '<input type="text" name="dosage" placeholder="e.g. 1 tsp per 10 L, 1 tablet per 40 L">') +
+    fg('Duration (days)', '<input type="number" name="duration_days" min="1" placeholder="e.g. 7">') +
+    fg('Status', '<select name="status"><option>Active</option><option>Resolved</option><option>Ongoing</option><option>Worsened</option></select>') +
+    fg('Notes', '<input type="text" name="notes" placeholder="Optional — observations, outcome">') +
+    '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button>' +
+    '<button type="submit" class="btn bp">Save</button></div></form>');
+}
+function sub_save_treatment(e) {
+  e.preventDefault(); var f = e.target;
+  add_treatment_log(f.tid.value, f.date.value, f.disease.value, f.medication.value, f.dosage.value, f.duration_days.value, f.status.value, f.notes.value);
+  cm(); r_wlog();
 }
 
 // ===== FEEDING LOG =====
@@ -1159,9 +1240,9 @@ function sub_add_mlog(e) {
 }
 
 // ===== WATER LOG =====
-function add_water(tid, date, tf, nh3, no2, no3, ph, gh, notes, ca, mg) {
+function add_water(tid, date, tf, nh3, no2, no3, ph, gh, notes, ca, mg, phosphate, tds) {
   var d = ld();
-  d.water.push({id:gid(), tank_id:tid, date:date, temp_f:pn(tf), ammonia:pn(nh3), nitrite:pn(no2), nitrate:pn(no3), ph:pn(ph), gh:pn(gh), notes:notes||'', calcium:pn(ca), magnesium:pn(mg)});
+  d.water.push({id:gid(), tank_id:tid, date:date, temp_f:pn(tf), ammonia:pn(nh3), nitrite:pn(no2), nitrate:pn(no3), ph:pn(ph), gh:pn(gh), notes:notes||'', calcium:pn(ca), magnesium:pn(mg), phosphate:pn(phosphate), tds:pn(tds)});
   sv(d);
 }
 function del_water(id) {
@@ -1506,7 +1587,10 @@ function do_settings() {
     '<div class="mact"><button class="btn bg" onclick="cm()">Cancel</button><button class="btn bp" onclick="sub_pref()">Save</button></div>');
 }
 function sub_pref() {
-  sv_pref({temp: document.getElementById('pref_temp').value, vol: document.getElementById('pref_vol').value});
+  var p = get_pref();
+  p.temp = document.getElementById('pref_temp').value;
+  p.vol  = document.getElementById('pref_vol').value;
+  sv_pref(p);
   cm(); init();
 }
 
@@ -2564,12 +2648,16 @@ function r_wlog() {
     '</div>' +
     '<div style="margin:8px 0 10px">' +
     '<button id="wlog_adv_btn" type="button" class="btn bg bs" style="font-size:12px" onclick="tog_wlog_adv()">' +
-    (wlog_adv ? '&#x25BC;' : '&#x25B6;') + ' Calcium &amp; Magnesium (optional &mdash; for planted tanks &amp; shrimp)</button>' +
+    (wlog_adv ? '&#x25BC;' : '&#x25B6;') + ' Advanced Parameters (Ca, Mg, Phosphate, TDS &mdash; optional)</button>' +
     '</div>' +
     '<div id="wlog_ca_mg_wrap" style="display:' + (wlog_adv ? '' : 'none') + ';margin-bottom:10px">' +
     '<div class="frow">' +
     fgh('Calcium (ppm)', '<input type="number" name="ca" step="0.1" placeholder="e.g. 40">', 'Ideal: 20&ndash;60 ppm. Test with BIONIX or similar Ca/Mg kit.') +
     fgh('Magnesium (ppm)', '<input type="number" name="mg" step="0.1" placeholder="e.g. 10">', 'Ideal: 5&ndash;20 ppm. Ca:Mg ratio should be 3:1 to 5:1.') +
+    '</div>' +
+    '<div class="frow">' +
+    fgh('Phosphate PO4 (ppm)', '<input type="number" name="phosphate" step="0.01" placeholder="e.g. 0.5">', 'Ideal: 0.5&ndash;2 ppm for planted tanks. Very low (&lt;0.2 ppm) triggers green spot algae.') +
+    fgh('TDS (ppm)', '<input type="number" name="tds" step="1" placeholder="e.g. 150">', 'Crystal/caridina shrimp: 100&ndash;200 ppm. General community: 150&ndash;400 ppm.') +
     '</div></div>' +
     '<button type="submit" class="btn bp">Save Reading</button></form></div>';
   var entries = get_water(tid);
@@ -2586,10 +2674,14 @@ function r_wlog() {
   if (entries.length) {
     var sorted = entries.slice().reverse();
     var has_ca_mg = entries.some(function(e){ return e.calcium !== null && e.calcium !== undefined; });
+    var has_phosphate = entries.some(function(e){ return e.phosphate !== null && e.phosphate !== undefined; });
+    var has_tds = entries.some(function(e){ return e.tds !== null && e.tds !== undefined; });
     var has_uia = entries.some(function(e){ return calc_uia(e.ammonia, e.ph, e.temp_f) !== null; });
     h += '<div class="card"><div class="ctitle">History</div><div class="tw"><table>' +
       '<tr><th>Date</th>' + (has_therm ? '<th>Temp ' + t_lbl() + '</th>' : '') + '<th>NH3 TAN</th>' + (has_uia ? '<th>UIA</th>' : '') + '<th>NO2 (ppm)</th><th>NO3 (ppm)</th><th>pH</th><th>GH (dGH)</th>' +
       (has_ca_mg ? '<th>Ca (ppm)</th><th>Mg (ppm)</th>' : '') +
+      (has_phosphate ? '<th>PO4 (ppm)</th>' : '') +
+      (has_tds ? '<th>TDS (ppm)</th>' : '') +
       '<th>Notes</th><th></th></tr>';
     sorted.slice(0, 30).forEach(function(e, i) {
       var prev = sorted[i + 1];
@@ -2606,6 +2698,8 @@ function r_wlog() {
            wlog_cell('ph', e.ph, prev ? prev.ph : null) +
            wlog_cell('gh', e.gh, prev ? prev.gh : null) +
            (has_ca_mg ? wlog_cell('calcium', e.calcium, prev ? prev.calcium : null) + wlog_cell('magnesium', e.magnesium, prev ? prev.magnesium : null) : '') +
+           (has_phosphate ? '<td>' + (e.phosphate !== null && e.phosphate !== undefined ? e.phosphate : '&mdash;') + '</td>' : '') +
+           (has_tds ? '<td>' + (e.tds !== null && e.tds !== undefined ? e.tds : '&mdash;') + '</td>' : '') +
            '<td>' + esc(e.notes) + '</td>' +
            '<td style="white-space:nowrap">' +
            '<button class="btn bg bs" style="margin-right:4px" data-id="' + e.id + '" onclick="do_edit_water(this.dataset.id)">&#x270E;</button>' +
@@ -2650,7 +2744,23 @@ function r_wlog() {
     } else h += '<p class="emsg">No feedings logged yet.</p>';
     h += '</div>';
   }
-  el.innerHTML = h;
+  var treat_hist = d.treatment_log.filter(function(x){ return x.tank_id === tid; }).sort(function(a,b){ return b.date.localeCompare(a.date); });
+  if (treat_hist.length || true) {
+    h += '<div class="card"><div class="ctitle">Treatment Log <button class="btn bp bs" onclick="open_treat_modal(at(),\'\')">+ Log Treatment</button></div>';
+    if (treat_hist.length) {
+      h += '<div class="tw"><table><tr><th>Date</th><th>Disease</th><th>Medication</th><th>Dosage</th><th>Days</th><th>Status</th><th>Notes</th><th></th></tr>';
+      treat_hist.forEach(function(t) {
+        var status_color = t.status === 'Resolved' ? 'pok' : t.status === 'Active' ? 'pwarn' : t.status === 'Worsened' ? 'pdanger' : 'pmuted';
+        h += '<tr><td>' + t.date + '</td><td>' + esc(t.disease||'—') + '</td><td>' + esc(t.medication||'—') + '</td>' +
+             '<td>' + esc(t.dosage||'—') + '</td><td>' + (t.duration_days||'—') + '</td>' +
+             '<td><span class="pill ' + status_color + '">' + esc(t.status||'Active') + '</span></td>' +
+             '<td>' + esc(t.notes||'') + '</td>' +
+             '<td><button class="btn bd bs" data-id="' + t.id + '" onclick="del_treatment_log(this.dataset.id)">&#x2715;</button></td></tr>';
+      });
+      h += '</table></div>';
+    } else h += '<p class="emsg">No treatments logged yet.</p>';
+    h += '</div>';
+  }
   if (entries.length >= 2) draw_chart(tid, 'temp_f');
 }
 var wlog_adv = false;
@@ -2659,7 +2769,7 @@ function tog_wlog_adv() {
   var wrap = document.getElementById('wlog_ca_mg_wrap');
   if (wrap) wrap.style.display = wlog_adv ? '' : 'none';
   var btn = document.getElementById('wlog_adv_btn');
-  if (btn) btn.innerHTML = (wlog_adv ? '&#x25BC;' : '&#x25B6;') + ' Calcium &amp; Magnesium (optional &mdash; for planted tanks &amp; shrimp)';
+  if (btn) btn.innerHTML = (wlog_adv ? '&#x25BC;' : '&#x25B6;') + ' Advanced Parameters (Ca, Mg, Phosphate, TDS &mdash; optional)';
 }
 function sub_water(e) {
   e.preventDefault(); var f = e.target, tid = at();
@@ -2667,7 +2777,7 @@ function sub_water(e) {
   var mg = f.mg ? f.mg.value : '';
   var gh_ppm = f.gh ? pn(f.gh.value) : null;
   var gh_dgh = gh_ppm !== null ? Math.round(gh_ppm / 17.9 * 100) / 100 : '';
-  add_water(tid, f.date.value, f.tf ? inp_t(f.tf.value) : null, f.nh3.value, f.no2.value, f.no3.value, f.ph.value, gh_dgh, f.notes.value, ca, mg);
+  add_water(tid, f.date.value, f.tf ? inp_t(f.tf.value) : null, f.nh3.value, f.no2.value, f.no3.value, f.ph.value, gh_dgh, f.notes.value, ca, mg, f.phosphate ? f.phosphate.value : '', f.tds ? f.tds.value : '');
   r_wlog();
 }
 function do_edit_water(id) {
@@ -3341,6 +3451,30 @@ function r_recs() {
     if (is_liquid) {
       h += '<div style="font-size:12px;color:var(--muted);margin-top:3px">Liquid supplement &mdash; dose per label, not by BPS. Most effective in low-tech tanks with slow-growing plants.</div>';
     }
+    var co2_eq = d.equip.find(function(x){ return x.tank_id === tid && x.type === 'CO2 System'; });
+    var co2_cfg_eq = co2_eq ? (co2_eq.config || {}) : {};
+    if (co2_cfg_eq.co2_size_g && co2_cfg_eq.co2_refill_date && co2_info && co2_info.bps > 0 && co2_info.hours > 0) {
+      var days_since = Math.floor((new Date() - new Date(co2_cfg_eq.co2_refill_date + 'T00:00:00')) / 86400000);
+      var daily_g = co2_info.bps * co2_info.hours * 0.5;
+      var used_g = Math.min(days_since * daily_g, co2_cfg_eq.co2_size_g);
+      var remaining_g = Math.max(co2_cfg_eq.co2_size_g - used_g, 0);
+      var pct = Math.round(remaining_g / co2_cfg_eq.co2_size_g * 100);
+      var days_left = daily_g > 0 ? Math.round(remaining_g / daily_g) : null;
+      var bar_color = pct > 40 ? 'var(--ok)' : pct > 20 ? 'var(--warn)' : 'var(--danger)';
+      h += '<div style="margin-top:8px;padding:8px 10px;background:#f4f6fa;border-radius:6px">';
+      h += '<div style="font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">CO2 Canister</div>';
+      h += '<div class="bl-bar"><div class="bl-fill" style="width:' + pct + '%;background:' + bar_color + '"></div></div>';
+      h += '<div style="display:flex;justify-content:space-between;font-size:12px;margin-top:4px">';
+      h += '<span style="color:var(--muted)">~' + Math.round(remaining_g) + ' g remaining of ' + co2_cfg_eq.co2_size_g + ' g (' + pct + '%)</span>';
+      h += '<span style="color:' + bar_color + ';font-weight:600">' + (days_left !== null ? '~' + days_left + ' days left' : '') + '</span></div>';
+      if (pct <= 20) {
+        h += '<div style="font-size:12px;color:var(--danger);font-weight:600;margin-top:4px">&#x26A0; Canister likely low &mdash; plan a refill soon. Update the refill date after filling.</div>';
+      }
+      h += '<div style="font-size:11px;color:var(--muted);margin-top:3px">Estimate based on ' + co2_info.bps + ' BPS &times; ' + co2_info.hours + ' h/day. Actual usage varies by setup.</div>';
+      h += '</div>';
+    } else if (co2_info && co2_info.bps > 0) {
+      h += '<div style="font-size:12px;color:var(--muted);margin-top:6px">Add canister size and last refill date in Equipment to track CO2 remaining.</div>';
+    }
   }
   h += '</div>';
   // Drop Checker row
@@ -3819,6 +3953,13 @@ function build_equip_cfg_html(type, cfg) {
     '<div class="frow">' +
     fg('Bubble Rate (BPS)', '<input type="number" name="co2_bps" value="' + (c.bps||'') + '" placeholder="e.g. 2" min="0" step="0.5">') +
     '</div></div>' +
+    '<div class="cfg-sep"></div><div style="font-size:12px;font-weight:600;color:var(--mid);margin-bottom:6px">Canister Tracking (optional)</div>' +
+    '<div class="frow">' +
+    fg('Canister Size (g)', '<select name="co2_size_g"><option value="">— not set —</option>' +
+       ['95','425','500','800','1360'].map(function(v){ return '<option value="' + v + '"' + (String(c.co2_size_g)===v?' selected':'') + '>' + v + ' g</option>'; }).join('') +
+       '</select>') +
+    fg('Last Refill Date', '<input type="date" name="co2_refill_date" value="' + (c.co2_refill_date||'') + '">') +
+    '</div>' +
     '</div></div>' +
     '<div id="eq_heater_cfg" style="display:' + (type==='Heater'?'block':'none') + '">' +
     '<div class="cfg-sep"></div><div style="font-size:12px;font-weight:600;color:var(--mid);margin-bottom:6px">Heater Settings</div>' +
@@ -3866,6 +4007,8 @@ function read_equip_cfg(f) {
     cfg.co2_type = f.co2_type.value;
     cfg.hours = parseFloat(f.co2_hours.value) || 0;
     cfg.bps = parseFloat(f.co2_bps.value) || 0;
+    cfg.co2_size_g = f.co2_size_g.value ? parseInt(f.co2_size_g.value) : null;
+    cfg.co2_refill_date = f.co2_refill_date.value || null;
   } else if (t === 'Heater') {
     cfg.watts = parseFloat(f.heater_watts.value) || 0;
     cfg.heater_type = f.heater_type.value;
@@ -5076,6 +5219,10 @@ function export_task_ics(id) {
 }
 
 function init() {
+  var p = get_pref();
+  if (p.dark) document.body.classList.add('dark');
+  var dark_btn = document.getElementById('dark_btn');
+  if (dark_btn) dark_btn.innerHTML = p.dark ? '&#x2600;&#xFE0F;' : '&#x1F319;';
   build_sel();
   var d = ld(), tid = at();
   if (d.tanks.length && !d.tanks.find(function(t){ return t.id === tid; })) sat(d.tanks[0].id);
@@ -5097,6 +5244,36 @@ document.querySelectorAll('.tab').forEach(function(btn) {
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
 
 // ===== DIAGNOSE WIZARD =====
+function get_disease_risks(tid) {
+  var d = ld(), tid_ = tid;
+  var lr = d.water.filter(function(w){ return w.tank_id === tid_; }).sort(function(a,b){ return b.date.localeCompare(a.date); })[0];
+  var ammonia = lr ? lr.ammonia : null;
+  var nitrite  = lr ? lr.nitrite  : null;
+  var temp_f   = lr ? lr.temp_f   : null;
+  var risks = [];
+  if ((ammonia !== null && parseFloat(ammonia) > 0) || (nitrite !== null && parseFloat(nitrite) > 0)) {
+    risks.push({id:'fin_rot',    reason:'Elevated ammonia/nitrite stresses fish — bacteria exploit weakened immunity'});
+    risks.push({id:'columnaris', reason:'High ammonia/nitrite — columnaris thrives in stressed fish'});
+    risks.push({id:'aeromonas',  reason:'Poor water quality is the #1 trigger for bacterial ulcers'});
+  }
+  if (temp_f !== null && parseFloat(temp_f) > 82) {
+    var tc = Math.round((parseFloat(temp_f) - 32) * 5 / 9);
+    risks.push({id:'columnaris', reason:'Temperature ' + tc + '\xB0C — columnaris is most aggressive above 28\xB0C'});
+    risks.push({id:'velvet',     reason:'Warm water speeds up velvet parasite life cycle'});
+  }
+  var cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 14);
+  var cutoff_str = cutoff.toISOString().slice(0,10);
+  var new_stock = d.stock.filter(function(s){ return s.tank_id === tid_ && s.added_date && s.added_date >= cutoff_str; });
+  if (new_stock.length) {
+    risks.push({id:'ich',        reason:'New fish added in the last 14 days — ich is the most common introduction'});
+    risks.push({id:'flukes',     reason:'New fish may carry gill or skin flukes from the shop'});
+    risks.push({id:'trichodina', reason:'Trichodina is very common in fish from Indian shops and farms'});
+    risks.push({id:'velvet',     reason:'Velvet can be introduced via new fish; spreads very fast'});
+  }
+  var seen = {}, unique = [];
+  risks.forEach(function(r){ if (!seen[r.id]){ seen[r.id]=true; unique.push(r); } });
+  return unique;
+}
 function get_algae_risks(tid) {
   var d = ld(), tank = d.tanks.find(function(t){ return t.id === tid; });
   var light_h = get_light_hours(tid), co2 = get_co2_info(tid);
@@ -5105,6 +5282,7 @@ function get_algae_risks(tid) {
   var ammonia = lr ? lr.ammonia : null;
   var nitrite = lr ? lr.nitrite : null;
   var temp_f  = lr ? lr.temp_f  : null;
+  var phosphate = lr ? lr.phosphate : null;
   var has_plants = d.plants.filter(function(p){ return p.tank_id === tid; }).length > 0;
   var filters = d.equip.filter(function(x){ return x.tank_id === tid && x.type === 'Filter' && x.config && x.config.flow_gph > 0; });
   var total_gph = 0; filters.forEach(function(f){ total_gph += (f.config.flow_gph || 0); });
@@ -5120,6 +5298,9 @@ function get_algae_risks(tid) {
   if (light_h >= 8 && !co2) {
     risks.push({id:'hair_algae',  reason:'High light (' + light_h + ' h/day) without CO2'});
     risks.push({id:'green_spot',  reason:'High light (' + light_h + ' h/day) without CO2'});
+  }
+  if (phosphate !== null && phosphate < 0.2) {
+    risks.push({id:'green_spot', reason:'Very low phosphate (' + phosphate + ' ppm) — main trigger for GSA'});
   }
   if (light_h > 0 && light_h < 6) {
     risks.push({id:'bba', reason:'Low light (' + light_h + ' h/day) encourages BBA'});
@@ -5217,7 +5398,19 @@ function diag_alg_detail(id) {
   diag_wiz_set(h, '<button class="btn bg bs" style="flex:1" onclick="diag_alg_list()">&#x25C4; Back to list</button>');
 }
 function diag_dis_list() {
-  var h = '';
+  var tid = at(), risks = get_disease_risks(tid), h = '';
+  if (risks.length) {
+    h += '<div style="background:#fff0f0;border-left:3px solid var(--danger);border-radius:0 8px 8px 0;padding:10px 12px;margin-bottom:14px">';
+    h += '<div style="font-size:11px;font-weight:700;color:#8a0000;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">&#x26A0; Likely for your tank</div>';
+    risks.forEach(function(r){
+      var dd = DISEASE_DATA[r.id]; if (!dd) return;
+      h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
+           '<button class="btn bd bs" data-did="' + r.id + '" onclick="diag_dis_detail(this.dataset.did)" style="font-size:12px;font-weight:600;flex-shrink:0">' + esc(dd.name) + '</button>' +
+           '<span style="font-size:11px;color:var(--muted)">' + esc(r.reason) + '</span></div>';
+    });
+    h += '</div>';
+  }
+  h += '<div style="font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">All diseases</div>';
   Object.keys(DISEASE_DATA).forEach(function(id){
     var dd = DISEASE_DATA[id];
     h += '<div data-did="' + id + '" onclick="diag_dis_detail(this.dataset.did)" style="padding:10px 12px;border:1px solid #e8ecf0;border-radius:8px;margin-bottom:6px;cursor:pointer">' +
@@ -5281,7 +5474,7 @@ function diag_dis_detail(id) {
   h += '<div style="margin-top:10px;padding:8px 10px;background:#f4f6fa;border-radius:6px">';
   h += '<div style="font-size:11px;font-weight:700;color:var(--mid);margin-bottom:2px">Prevention</div>';
   h += '<div style="font-size:12px;color:var(--muted)">' + esc(dd.prevention) + '</div></div>';
-  diag_wiz_set(h, '<button class="btn bg bs" style="flex:1" onclick="diag_dis_list()">&#x25C4; Back to list</button>');
+  diag_wiz_set(h, '<button class="btn bg bs" style="flex:1" onclick="diag_dis_list()">&#x25C4; Back to list</button><button class="btn bp bs" style="flex:1" data-did="' + id + '" onclick="open_treat_modal(at(),DISEASE_DATA[this.dataset.did].name)">&#x1F4CB; Log Treatment</button>');
 }
 
 // ===== REC WIZARD =====
