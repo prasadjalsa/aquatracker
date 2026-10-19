@@ -292,6 +292,8 @@ tr:hover td{background:#f9fbfc}
     <button class="btn bg bs" onclick="do_settings()">&#x2699; Units</button>
     <span id="nav_uname" style="font-size:12px;color:rgba(255,255,255,.7);white-space:nowrap"></span>
     <span id="sync_ind" style="font-size:11px;color:rgba(255,255,255,.6);white-space:nowrap"></span>
+    <input type="file" id="import_file" accept=".json" style="display:none" onchange="do_import(this)">
+    <button class="btn bg bs" onclick="document.getElementById(&#39;import_file&#39;).click()">&#x1F4E5; Import JSON</button>
     <button class="btn bg bs" onclick="do_logout()">&#x1F510; Log out</button>
   </div>
 </nav>
@@ -6138,6 +6140,30 @@ function do_logout() {
   localStorage.removeItem('aq_uname');
   show_auth_screen();
   show_login_form();
+}
+
+function do_import(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var parsed = JSON.parse(e.target.result);
+      // accept either a raw data object or a wrapped export
+      var data = (parsed && parsed.tanks !== undefined) ? parsed : parsed;
+      if (!data || typeof data !== 'object') { alert('Invalid JSON file.'); return; }
+      if (!confirm('This will replace all your current cloud data with the imported file. Continue?')) return;
+      _aq = data;
+      do_sync();
+      init();
+      alert('Data imported and saved to cloud.');
+    } catch(err) {
+      alert('Could not read file: ' + err.message);
+    }
+    // reset so the same file can be re-selected if needed
+    input.value = '';
+  };
+  reader.readAsText(file);
 }
 
 window.addEventListener('DOMContentLoaded', startup);
