@@ -2398,7 +2398,14 @@ function do_settings() {
       '<option value="gal"' + (p.vol === 'gal' ? ' selected' : '') + '>Gallons (gal)</option>' +
       '<option value="L"' + (p.vol === 'L' ? ' selected' : '') + '>Litres (L)</option>' +
       '</select>') +
-    '<div class="mact"><button class="btn bg" onclick="cm()">Cancel</button><button class="btn bp" onclick="sub_pref()">Save</button></div>');
+    '<div class="mact"><button class="btn bg" onclick="cm()">Cancel</button><button class="btn bp" onclick="sub_pref()">Save</button></div>' +
+    '<hr style="margin:18px 0 14px;border:none;border-top:1px solid var(--border)">' +
+    '<div style="font-weight:600;margin-bottom:10px">Data Backup</div>' +
+    '<div style="display:flex;gap:8px">' +
+      '<button class="btn bg" style="flex:1" onclick="export_data()">&#x2B07; Export JSON</button>' +
+      '<button class="btn bg" style="flex:1" onclick="import_data()">&#x2B06; Import JSON</button>' +
+    '</div>' +
+    '<small style="color:var(--muted);font-size:11px;margin-top:8px;display:block">Export saves all your tanks, equipment, and logs as a file on your device.</small>');
 }
 function sub_pref() {
   var p = get_pref();
@@ -2406,6 +2413,40 @@ function sub_pref() {
   p.vol  = document.getElementById('pref_vol').value;
   sv_pref(p);
   cm(); init();
+}
+function export_data() {
+  var blob = new Blob([JSON.stringify({data: ld(), pref: get_pref()}, null, 2)], {type: 'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'aquatracker-backup-' + today_str() + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function import_data() {
+  var inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = '.json';
+  inp.onchange = function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      try {
+        var parsed = JSON.parse(ev.target.result);
+        var d = parsed.data || parsed;
+        if (!d.tanks) { alert('Invalid backup file.'); return; }
+        if (!confirm('This will replace all current data with the backup. Continue?')) return;
+        if (parsed.pref && parsed.pref.temp) localStorage.setItem('aq_pref', JSON.stringify(parsed.pref));
+        sv(d);
+        cm();
+        init();
+      } catch(err) {
+        alert('Could not read file: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  inp.click();
 }
 
 // ===== HELPERS =====
