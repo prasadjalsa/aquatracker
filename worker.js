@@ -722,7 +722,8 @@ var ALGAE_DATA = {
     causes: ['High organic waste — overfeeding or infrequent water changes', 'Poor circulation and dead spots', 'Very low nitrate (below 5 ppm) — cyanobacteria can fix nitrogen from the air', 'New tank with unstable nutrient balance'],
     fix: ['Manual removal: syphon it out during water changes. Wear gloves — some strains produce toxins', 'Improve circulation — add a small powerhead or relocate filter output', 'Do 3 consecutive daily 30% water changes', 'A 3-day blackout (cover the tank completely) weakens it significantly', 'Erythromycin (antibiotic) is a last resort — effective but disrupts beneficial bacteria. Consult an aquarium store.'],
     prevention: 'Regular water changes, good flow, and avoiding overfeeding. Keep nitrate above 5 ppm.',
-    search: 'cyanobacteria+blue+green+algae+aquarium'
+    search: 'cyanobacteria+blue+green+algae+aquarium',
+    img: 'https://aquascapinglove.com/wp-content/uploads/2019/10/blue-green-aquarium-algae-smear.jpg'
   },
   green_dust: {
     name: 'Green Dust Algae (GDA)',
@@ -730,7 +731,8 @@ var ALGAE_DATA = {
     causes: ['Excess light duration', 'New tank with unstable water chemistry', 'Low silicate (different mechanism from GSA)'],
     fix: ['Do NOT wipe it off for 3-4 weeks — let it complete its life cycle and die off naturally', 'After 3-4 weeks the cells will release and you can wipe the glass clean', 'Reduce light by 1-2 hours', 'Nerite snails keep on top of it once the initial bloom passes'],
     prevention: 'GDA outbreaks are common in new tanks and usually self-resolve. Nerite snails are the best long-term control.',
-    search: 'green+dust+algae+aquarium+glass'
+    search: 'green+dust+algae+aquarium+glass',
+    img: 'https://preview.redd.it/green-dust-algae-v0-s74bk5961oag1.jpg?width=640&crop=smart&auto=webp&s=bf8fed7d5d0e7dffeac64f322ac72973e2386142'
   },
   staghorn: {
     name: 'Staghorn Algae',
