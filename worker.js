@@ -686,7 +686,8 @@ var ALGAE_DATA = {
     causes: ['New tank (most common in first 3 months)', 'Low light — diatoms thrive where green algae cannot', 'High silicate from tap water or new substrate', 'Too few plants to compete for nutrients'],
     fix: ['Add nerite snails or otocinclus — they eat diatoms very effectively', 'Wipe glass and decorations during water changes', 'Rinse or replace new substrate to reduce silicate release', 'Slightly increase light duration (aim 7-8 h/day)', 'Be patient — diatoms nearly always disappear on their own within 2-3 months as the tank matures'],
     prevention: 'Diatoms are a normal part of tank maturation. A cycled tank with healthy plant growth naturally outcompetes them.',
-    search: 'brown+diatom+algae+aquarium'
+    search: 'brown+diatom+algae+aquarium',
+    img: 'https://cdn.shopify.com/s/files/1/0230/7266/9773/files/Diatoms_Nate_B.jpg?v=1751606902'
   },
   green_spot: {
     name: 'Green Spot Algae (GSA)',
@@ -694,7 +695,8 @@ var ALGAE_DATA = {
     causes: ['Low phosphate (PO4 below 1 ppm) — counterintuitively, GSA thrives when phosphate is too low', 'Bright light without enough nutrients', 'CO2 fluctuation or too little CO2 for the light level'],
     fix: ['Dose phosphate fertiliser to raise PO4 to 1-2 ppm', 'Scrape spots off glass with a razor blade or credit card', 'Reduce light by 1-2 hours if not running CO2', 'Ensure CO2 is stable if running injected CO2 — fluctuations cause GSA'],
     prevention: 'Keep phosphate above 1 ppm and light duration matched to your fertilisation and CO2 level.',
-    search: 'green+spot+algae+aquarium+glass'
+    search: 'green+spot+algae+aquarium+glass',
+    img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRZTtvrxsaS2GaIXBik1vrIb9QUM2sCopAwu99TzHMR7A&s=10'
   },
   bba: {
     name: 'Black Beard Algae (BBA)',
@@ -702,7 +704,8 @@ var ALGAE_DATA = {
     causes: ['CO2 fluctuation — the most common cause. Levels that rise and fall trigger BBA', 'Low or inconsistent CO2 in a well-lit tank', 'Uneven flow creating dead spots', 'Ammonium spike'],
     fix: ['Stabilise CO2 — keep injection constant, never turn CO2 off between lights-on periods', 'Spot-treat with liquid carbon (e.g. Excel/Easycarbo) directly on the algae using a syringe with flow off — it turns pink then dies', 'Siamese algae eaters and amano shrimp graze on soft BBA', 'Improve flow to eliminate dead spots', 'Manual removal: remove affected leaves, scrub hardscape outside the tank'],
     prevention: 'Consistent CO2 is the single best prevention. If no CO2, reduce light to match nutrient level.',
-    search: 'black+beard+algae+BBA+aquarium'
+    search: 'black+beard+algae+BBA+aquarium',
+    img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSMgpXYGfjH5boFV5Hq55r_CFpF2vdRjNSeTDUtSmT90g&s=10'
   },
   hair_algae: {
     name: 'Hair / Thread Algae',
@@ -710,7 +713,8 @@ var ALGAE_DATA = {
     causes: ['Excess light duration (over 8 h without CO2)', 'High nutrients — especially nitrate above 20 ppm', 'Insufficient plant mass to consume nutrients', 'Poor or inconsistent CO2'],
     fix: ['Reduce light to 6-7 h/day immediately', 'Manually remove as much as possible by twisting a toothbrush through it', 'Add fast-growing floating plants (duckweed, frogbit) to consume excess nutrients', 'Amano shrimp eat hair algae — a group of 5-10 makes a visible difference', 'Consider a liquid carbon dose during outbreak'],
     prevention: 'Balance light, nutrients and plant mass. A heavily planted tank rarely suffers hair algae.',
-    search: 'hair+algae+thread+algae+aquarium'
+    search: 'hair+algae+thread+algae+aquarium',
+    img: 'https://cdn.shopify.com/s/files/1/0561/9308/9617/files/hair-algae.png?v=1782749084'
   },
   cyanobacteria: {
     name: 'Blue-Green Algae (Cyanobacteria)',
@@ -734,7 +738,8 @@ var ALGAE_DATA = {
     causes: ['Very similar to BBA — CO2 fluctuation is the primary cause', 'Low CO2 with moderate to high light', 'Ammonium spikes from overfeeding or decomposing plant matter'],
     fix: ['Same approach as BBA — stabilise CO2 above all else', 'Spot-dose with liquid carbon (Excel/Easycarbo) directly on affected areas with flow off', 'Manual removal of badly affected leaves', 'Amano shrimp will graze on it', 'Reduce light if not running CO2'],
     prevention: 'Consistent CO2 and good tank hygiene. Remove decomposing plant matter promptly.',
-    search: 'staghorn+algae+aquarium'
+    search: 'staghorn+algae+aquarium',
+    img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSiaz9x9zTIJk53xoao6_O_0numyC1KvtFO7HBkF3ojzI-Fqzuu48v_dC4&s=10'
   },
   fuzz_algae: {
     name: 'Fuzz Algae',
@@ -742,7 +747,8 @@ var ALGAE_DATA = {
     causes: ['Moderate excess of nutrients — common in young planted tanks finding their balance', 'Inconsistent fertilisation', 'Moderate light with low plant mass'],
     fix: ['Manual removal by wiping leaves gently', 'Otocinclus and amano shrimp eat fuzz algae very effectively', 'Increase plant mass so plants can outcompete the algae for nutrients', 'Add floating plants for rapid nutrient uptake'],
     prevention: 'Fuzz algae is a sign of a tank finding its balance. A thriving plant mass and a few shrimp or otocinclus will keep it in check.',
-    search: 'fuzz+algae+aquarium+plants'
+    search: 'fuzz+algae+aquarium+plants',
+    img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSeu61mjWRvSr_wWgqnwygPxqvHtTM1DUaFvX-7msJ9w4GWEW0bAdUv73s&s=10'
   }
 };
 var DISEASE_DATA = {
@@ -1624,7 +1630,7 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min
 .prev-bar{background:#fef3d5;border-bottom:2px solid #e8a838;padding:8px 16px;font-size:13px;color:#7a4f00;display:flex;align-items:center;gap:10px}
 .prev-bar strong{font-weight:700}
 .prev-bar .btn-del-prev{background:none;border:1px solid #c8870a;color:#7a4f00;border-radius:4px;padding:3px 10px;font-size:12px;cursor:pointer}
-.tab{background:none;border:none;color:rgba(255,255,255,.7);padding:11px 14px;font-size:13px;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;transition:.15s;font-family:inherit}
+.tab{background:none;border:none;color:rgba(255,255,255,.7);padding:13px 16px;font-size:14px;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;transition:.15s;font-family:inherit}
 .tab:hover{color:#fff}
 .tab.on{color:#fff;border-bottom-color:var(--accent)}
 .panel{display:none;padding:18px;max-width:980px;margin:0 auto}
@@ -1682,7 +1688,7 @@ tr:hover td{background:#f9fbfc}
 @media(max-width:600px){
   .logo{font-size:14px}
   .panel{padding:10px}
-  .tab{padding:9px 10px;font-size:12px}
+  .tab{padding:20px 14px;font-size:14px}
   .frow{grid-template-columns:1fr}
 }
 </style>
@@ -6071,6 +6077,18 @@ function init() {
   if (nav_u && u) nav_u.textContent = u;
   render_tab();
   check_notifs();
+  // swipe right to close side panels
+  ['diag_wiz', 'rec_wiz'].forEach(function(el_id) {
+    var el = document.getElementById(el_id);
+    if (!el) return;
+    var sx = null;
+    el.addEventListener('touchstart', function(e) { sx = e.touches[0].clientX; }, {passive: true});
+    el.addEventListener('touchend', function(e) {
+      if (sx === null) return;
+      if (e.changedTouches[0].clientX - sx > 80) el.style.display = 'none';
+      sx = null;
+    }, {passive: true});
+  });
 }
 
 document.getElementById('t_sel').addEventListener('change', function() { sat(this.value); render_tab(); });
@@ -6146,7 +6164,11 @@ async function diag_alg_list() {
 }
 function diag_alg_detail(id) {
   var ad = _algae[id]; if (!ad) return;
-  var h = '<a href="https://www.google.com/search?tbm=isch&q=' + ad.search + '" target="_blank" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mid);font-weight:600;margin-bottom:14px;text-decoration:none">&#x1F50D; Search Google Images: ' + esc(ad.name) + ' &#x2192;</a>';
+  var h = '';
+  if (ad.img) {
+    h += '<img id="diag_alg_img" src="' + esc(ad.img) + '" alt="' + esc(ad.name) + '" style="width:100%;max-height:180px;object-fit:cover;border-radius:8px;margin-bottom:12px;display:block">';
+  }
+  h += '<a href="https://www.google.com/search?tbm=isch&q=' + ad.search + '" target="_blank" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mid);font-weight:600;margin-bottom:14px;text-decoration:none">&#x1F50D; Search Google Images: ' + esc(ad.name) + ' &#x2192;</a>';
   h += '<div style="font-size:13px;font-weight:700;color:var(--deep);margin-bottom:4px">' + esc(ad.name) + '</div>';
   h += '<div style="font-size:12px;color:var(--muted);margin-bottom:12px;font-style:italic">' + esc(ad.appearance) + '</div>';
   h += '<div style="font-size:12px;font-weight:700;color:var(--mid);margin-bottom:4px">Causes</div>';
@@ -6163,6 +6185,8 @@ function diag_alg_detail(id) {
   h += '<div style="font-size:11px;font-weight:700;color:var(--mid);margin-bottom:2px">Prevention</div>';
   h += '<div style="font-size:12px;color:var(--muted)">' + esc(ad.prevention) + '</div></div>';
   diag_wiz_set(h, '<button class="btn bg bs" style="flex:1" onclick="diag_alg_list()">&#x25C4; Back to list</button>');
+  var diag_img = document.getElementById('diag_alg_img');
+  if (diag_img) diag_img.onerror = function(){ this.style.display = 'none'; };
 }
 async function diag_dis_list() {
   var tid = at();
@@ -6702,18 +6726,18 @@ window.addEventListener('DOMContentLoaded', startup);
 <\/script>
 <button id="diag_fab" onclick="open_diag_wizard()" style="position:fixed;bottom:88px;right:20px;z-index:910;background:#e85d4a;color:#fff;border:none;border-radius:28px;padding:0 18px;height:52px;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,.25);cursor:pointer;display:flex;align-items:center;gap:8px;white-space:nowrap">&#x1F52C; Diagnose</button>
 <div id="diag_wiz" style="display:none;position:fixed;top:0;right:0;bottom:0;width:100%;max-width:400px;background:#fff;box-shadow:-4px 0 32px rgba(0,0,0,.18);z-index:920;flex-direction:column">
-  <div style="background:#c0392b;color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
-    <div style="font-size:14px;font-weight:700">&#x1F52C; Diagnose</div>
-    <button onclick="close_diag_wizard()" style="background:none;border:none;color:#fff;font-size:22px;line-height:1;cursor:pointer;padding:0 2px">&#x2715;</button>
+  <div style="background:#c0392b;color:#fff;padding:14px 16px;padding-top:calc(env(safe-area-inset-top) + 14px);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+    <div style="font-size:15px;font-weight:700">&#x1F52C; Diagnose</div>
+    <button onclick="close_diag_wizard()" style="background:rgba(255,255,255,.2);border:none;color:#fff;font-size:20px;line-height:1;cursor:pointer;padding:8px 12px;border-radius:6px;touch-action:manipulation">&#x2715;</button>
   </div>
   <div id="diag_wiz_body" style="flex:1;overflow-y:auto;padding:16px"></div>
   <div id="diag_wiz_foot" style="padding:12px 16px;border-top:1px solid #eee;display:flex;gap:8px;flex-shrink:0"></div>
 </div>
 <button id="rec_fab" onclick="open_rec_wizard()" style="position:fixed;bottom:24px;right:20px;z-index:910;background:#4db8d4;color:#fff;border:none;border-radius:28px;padding:0 18px;height:52px;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,.25);cursor:pointer;display:flex;align-items:center;gap:8px;white-space:nowrap">&#x1F4AC; What can I add?</button>
 <div id="rec_wiz" style="display:none;position:fixed;top:0;right:0;bottom:0;width:100%;max-width:400px;background:#fff;box-shadow:-4px 0 32px rgba(0,0,0,.18);z-index:920;flex-direction:column">
-  <div style="background:var(--deep);color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
-    <div style="font-size:14px;font-weight:700">&#x1F4AC; What can I add to my tank?</div>
-    <button onclick="close_rec_wizard()" style="background:none;border:none;color:#fff;font-size:22px;line-height:1;cursor:pointer;padding:0 2px">&#x2715;</button>
+  <div style="background:var(--deep);color:#fff;padding:14px 16px;padding-top:calc(env(safe-area-inset-top) + 14px);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+    <div style="font-size:15px;font-weight:700">&#x1F4AC; What can I add?</div>
+    <button onclick="close_rec_wizard()" style="background:rgba(255,255,255,.2);border:none;color:#fff;font-size:20px;line-height:1;cursor:pointer;padding:8px 12px;border-radius:6px;touch-action:manipulation">&#x2715;</button>
   </div>
   <div id="rec_wiz_body" style="flex:1;overflow-y:auto;padding:16px"></div>
   <div id="rec_wiz_foot" style="padding:12px 16px;border-top:1px solid #eee;display:flex;gap:8px;flex-shrink:0"></div>
