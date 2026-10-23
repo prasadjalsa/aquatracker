@@ -4301,10 +4301,11 @@ async function r_recs() {
     var co2_eq = d.equip.find(function(x){ return x.tank_id === tid && x.type === 'CO2 System'; });
     var co2_cfg_eq = co2_eq ? (co2_eq.config || {}) : {};
     if (co2_cfg_eq.co2_size_g && co2_cfg_eq.co2_refill_date && co2_info && co2_info.bps > 0 && co2_info.hours > 0) {
-      var days_since = Math.floor((new Date() - new Date(co2_cfg_eq.co2_refill_date + 'T00:00:00')) / 86400000);
+      var ref_date = co2_cfg_eq.co2_last_cfg_date || co2_cfg_eq.co2_refill_date;
+      var days_since_cfg = Math.max(0, Math.floor((new Date() - new Date(ref_date+'T00:00:00')) / 86400000));
       var daily_g = co2_info.bps * co2_info.hours * 0.5;
-      var used_g = Math.min(days_since * daily_g, co2_cfg_eq.co2_size_g);
-      var remaining_g = Math.max(co2_cfg_eq.co2_size_g - used_g, 0);
+      var total_used_g = Math.min((co2_cfg_eq.co2_used_g || 0) + days_since_cfg * daily_g, co2_cfg_eq.co2_size_g);
+      var remaining_g = Math.max(co2_cfg_eq.co2_size_g - total_used_g, 0);
       var pct = Math.round(remaining_g / co2_cfg_eq.co2_size_g * 100);
       var days_left = daily_g > 0 ? Math.round(remaining_g / daily_g) : null;
       var bar_color = pct > 40 ? 'var(--ok)' : pct > 20 ? 'var(--warn)' : 'var(--danger)';
@@ -4325,7 +4326,8 @@ async function r_recs() {
       }
       if (co2_cfg_eq.co2_working_bar != null) {
         var bar_cls = co2_cfg_eq.co2_working_bar < 1 ? 'var(--danger)' : co2_cfg_eq.co2_working_bar < 2 ? 'var(--warn)' : 'var(--ok)';
-        h += '<div style="font-size:12px;margin-top:4px">Working pressure: <strong style="color:' + bar_cls + '">' + co2_cfg_eq.co2_working_bar + ' bar</strong>' + (co2_cfg_eq.co2_working_bar < 1 ? ' &mdash; nearly empty, refill now' : co2_cfg_eq.co2_working_bar < 2 ? ' &mdash; getting low' : '') + '</div>';
+        var wp_disp = co2_cfg_eq.co2_wp_val != null ? (co2_cfg_eq.co2_wp_val + ' ' + (co2_cfg_eq.co2_wp_unit || 'bar')) : (co2_cfg_eq.co2_working_bar + ' bar');
+        h += '<div style="font-size:12px;margin-top:4px">Working pressure: <strong style="color:' + bar_cls + '">' + wp_disp + '</strong>' + (co2_cfg_eq.co2_working_bar < 1 ? ' &mdash; nearly empty, refill now' : co2_cfg_eq.co2_working_bar < 2 ? ' &mdash; getting low' : '') + '</div>';
       }
       h += '<div style="font-size:11px;color:var(--muted);margin-top:3px">Estimate based on ' + co2_info.bps + ' BPS &times; ' + co2_info.hours + ' h/day. Actual usage varies by setup.</div>';
       h += '</div>';
@@ -4818,7 +4820,7 @@ function build_equip_cfg_html(type, cfg) {
     fg('Last Refill Date', '<input type="date" name="co2_refill_date" value="' + (c.co2_refill_date||'') + '">') +
     '</div>' +
     '<div class="frow">' +
-    fg('Working Pressure (bar) <span style="font-weight:400;color:var(--muted)">optional</span>', '<input type="number" name="co2_working_bar" value="' + (c.co2_working_bar||'') + '" placeholder="e.g. 2" min="0" step="0.5"><div style="font-size:11px;color:var(--muted);margin-top:3px">Read from secondary gauge. Below 1 bar = nearly empty, plan refill.</div>') +
+    fg('Working Pressure <span style="font-weight:400;color:var(--muted)">optional</span>', '<div style="display:flex;gap:6px;align-items:center"><input type="number" name="co2_wp_val" value="' + (c.co2_wp_val||'') + '" placeholder="e.g. 50" min="0" step="0.5" style="flex:1"><select name="co2_wp_unit" style="width:70px">' + ['PSI','bar','MPa'].map(function(u){ return '<option value="' + u + '"' + (c.co2_wp_unit===u?' selected':'') + '>' + u + '</option>'; }).join('') + '</select></div><div style="font-size:11px;color:var(--muted);margin-top:3px">Read from secondary gauge. Nearly empty: &lt;15 PSI / &lt;1 bar / &lt;0.1 MPa.</div>') +
     '</div>' +
     '</div></div>' +
     '<div id="eq_heater_cfg" style="display:' + (type==='Heater'?'block':'none') + '">' +
@@ -4869,7 +4871,10 @@ function read_equip_cfg(f) {
     cfg.bps = parseFloat(f.co2_bps.value) || 0;
     cfg.co2_size_g = f.co2_size_g.value ? parseInt(f.co2_size_g.value) : null;
     cfg.co2_refill_date = f.co2_refill_date.value || null;
-    cfg.co2_working_bar = f.co2_working_bar.value ? parseFloat(f.co2_working_bar.value) : null;
+    cfg.co2_wp_val = f.co2_wp_val.value ? parseFloat(f.co2_wp_val.value) : null;
+    cfg.co2_wp_unit = f.co2_wp_unit.value || 'bar';
+    // store normalised bar value for threshold checks
+    cfg.co2_working_bar = cfg.co2_wp_val != null ? (cfg.co2_wp_unit === 'PSI' ? cfg.co2_wp_val / 14.504 : cfg.co2_wp_unit === 'MPa' ? cfg.co2_wp_val * 10 : cfg.co2_wp_val) : null;
   } else if (t === 'Heater') {
     cfg.watts = parseFloat(f.heater_watts.value) || 0;
     cfg.heater_type = f.heater_type.value;
@@ -4921,11 +4926,43 @@ function do_add_equip() {
 }
 function sub_add_equip(e) {
   e.preventDefault(); var f = e.target;
-  add_equip(at(), f.type.value, f.name.value, f.brand.value, f.notes.value, read_equip_cfg(f));
+  var cfg = read_equip_cfg(f);
+  if (f.type.value === 'CO2 System') {
+    cfg.co2_used_g = 0;
+    cfg.co2_last_cfg_date = cfg.co2_refill_date || new Date().toISOString().slice(0,10);
+  }
+  add_equip(at(), f.type.value, f.name.value, f.brand.value, f.notes.value, cfg);
   cm(); r_life();
 }
 
-function do_edit_equip(eid) {
+function sub_edit_equip(e) {
+  e.preventDefault(); var f = e.target;
+  var new_cfg = read_equip_cfg(f);
+  if (f.type.value === 'CO2 System') {
+    var d = ld();
+    var old_eq = d.equip.find(function(x){ return x.id === f.dataset.id; });
+    var old_cfg = old_eq ? (old_eq.config || {}) : {};
+    var today = new Date().toISOString().slice(0,10);
+    if (new_cfg.co2_refill_date !== old_cfg.co2_refill_date) {
+      // refill — reset accumulator from new refill date
+      new_cfg.co2_used_g = 0;
+      new_cfg.co2_last_cfg_date = new_cfg.co2_refill_date || today;
+    } else {
+      // BPS/hours may have changed — lock in usage at old rate up to now
+      var ref = old_cfg.co2_last_cfg_date || old_cfg.co2_refill_date;
+      if (ref && old_cfg.bps > 0 && old_cfg.hours > 0) {
+        var elapsed = Math.max(0, Math.floor((new Date(today+'T00:00:00') - new Date(ref+'T00:00:00')) / 86400000));
+        var added = elapsed * old_cfg.bps * old_cfg.hours * 0.5;
+        new_cfg.co2_used_g = Math.min((old_cfg.co2_used_g || 0) + added, old_cfg.co2_size_g || Infinity);
+      } else {
+        new_cfg.co2_used_g = old_cfg.co2_used_g || 0;
+      }
+      new_cfg.co2_last_cfg_date = today;
+    }
+  }
+  upd_equip(f.dataset.id, f.type.value, f.name.value, f.brand.value, f.notes.value, new_cfg);
+  cm(); r_life();
+}
   var eq = ld().equip.find(function(x){ return x.id === eid; }); if (!eq) return;
   var type_opts = ['Filter','Heater','Light','CO2 System','CO2 Drop Checker','Pump','Substrate','Thermometer','Other']
     .map(function(o){ return '<option' + (eq.type === o ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('');
