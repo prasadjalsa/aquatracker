@@ -4963,6 +4963,7 @@ function sub_edit_equip(e) {
   upd_equip(f.dataset.id, f.type.value, f.name.value, f.brand.value, f.notes.value, new_cfg);
   cm(); r_life();
 }
+function do_edit_equip(eid) {
   var eq = ld().equip.find(function(x){ return x.id === eid; }); if (!eq) return;
   var type_opts = ['Filter','Heater','Light','CO2 System','CO2 Drop Checker','Pump','Substrate','Thermometer','Other']
     .map(function(o){ return '<option' + (eq.type === o ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('');
@@ -4978,11 +4979,6 @@ function sub_edit_equip(e) {
     build_equip_cfg_html(eq.type, eq.config) +
     '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Save</button></div>' +
     '</form>');
-}
-function sub_edit_equip(e) {
-  e.preventDefault(); var f = e.target;
-  upd_equip(f.dataset.id, f.type.value, f.name.value, f.brand.value, f.notes.value, read_equip_cfg(f));
-  cm(); r_life();
 }
 
 // ===== PLANT MODAL =====
