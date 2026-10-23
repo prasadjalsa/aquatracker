@@ -4309,13 +4309,23 @@ async function r_recs() {
       var days_left = daily_g > 0 ? Math.round(remaining_g / daily_g) : null;
       var bar_color = pct > 40 ? 'var(--ok)' : pct > 20 ? 'var(--warn)' : 'var(--danger)';
       h += '<div style="margin-top:8px;padding:8px 10px;background:#f4f6fa;border-radius:6px">';
-      h += '<div style="font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">CO2 Canister</div>';
+      h += '<div style="font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">CO2 Cylinder</div>';
       h += '<div class="bl-bar"><div class="bl-fill" style="width:' + pct + '%;background:' + bar_color + '"></div></div>';
       h += '<div style="display:flex;justify-content:space-between;font-size:12px;margin-top:4px">';
-      h += '<span style="color:var(--muted)">~' + Math.round(remaining_g) + ' g remaining of ' + co2_cfg_eq.co2_size_g + ' g (' + pct + '%)</span>';
+      var co2_rem_lbl = remaining_g >= 1000 ? (Math.round(remaining_g / 100) / 10) + ' kg' : Math.round(remaining_g) + ' g';
+      var co2_tot_lbl = co2_cfg_eq.co2_size_g >= 1000 ? (co2_cfg_eq.co2_size_g / 1000) + ' kg' : co2_cfg_eq.co2_size_g + ' g';
+      h += '<span style="color:var(--muted)">~' + co2_rem_lbl + ' remaining of ' + co2_tot_lbl + ' (' + pct + '%)</span>';
       h += '<span style="color:' + bar_color + ';font-weight:600">' + (days_left !== null ? '~' + days_left + ' days left' : '') + '</span></div>';
+      if (days_left !== null) {
+        var empty_dt = new Date(new Date(co2_cfg_eq.co2_refill_date + 'T00:00:00').getTime() + days_left * 86400000);
+        h += '<div style="font-size:12px;color:var(--muted);margin-top:3px">Est. refill needed: <strong>' + empty_dt.toDateString().replace(/^\S+ /,'') + '</strong></div>';
+      }
       if (pct <= 20) {
-        h += '<div style="font-size:12px;color:var(--danger);font-weight:600;margin-top:4px">&#x26A0; Canister likely low &mdash; plan a refill soon. Update the refill date after filling.</div>';
+        h += '<div style="font-size:12px;color:var(--danger);font-weight:600;margin-top:4px">&#x26A0; Cylinder likely low &mdash; plan a refill soon. Update the refill date after filling.</div>';
+      }
+      if (co2_cfg_eq.co2_working_bar != null) {
+        var bar_cls = co2_cfg_eq.co2_working_bar < 1 ? 'var(--danger)' : co2_cfg_eq.co2_working_bar < 2 ? 'var(--warn)' : 'var(--ok)';
+        h += '<div style="font-size:12px;margin-top:4px">Working pressure: <strong style="color:' + bar_cls + '">' + co2_cfg_eq.co2_working_bar + ' bar</strong>' + (co2_cfg_eq.co2_working_bar < 1 ? ' &mdash; nearly empty, refill now' : co2_cfg_eq.co2_working_bar < 2 ? ' &mdash; getting low' : '') + '</div>';
       }
       h += '<div style="font-size:11px;color:var(--muted);margin-top:3px">Estimate based on ' + co2_info.bps + ' BPS &times; ' + co2_info.hours + ' h/day. Actual usage varies by setup.</div>';
       h += '</div>';
@@ -4800,12 +4810,15 @@ function build_equip_cfg_html(type, cfg) {
     '<div class="frow">' +
     fg('Bubble Rate (BPS)', '<input type="number" name="co2_bps" value="' + (c.bps||'') + '" placeholder="e.g. 2" min="0" step="0.5">') +
     '</div></div>' +
-    '<div class="cfg-sep"></div><div style="font-size:12px;font-weight:600;color:var(--mid);margin-bottom:6px">Canister Tracking (optional)</div>' +
+    '<div class="cfg-sep"></div><div style="font-size:12px;font-weight:600;color:var(--mid);margin-bottom:6px">Cylinder Tracking (optional)</div>' +
     '<div class="frow">' +
-    fg('Canister Size (g)', '<select name="co2_size_g"><option value="">— not set —</option>' +
-       ['95','425','500','800','1360'].map(function(v){ return '<option value="' + v + '"' + (String(c.co2_size_g)===v?' selected':'') + '>' + v + ' g</option>'; }).join('') +
+    fg('Cylinder Size', '<select name="co2_size_g"><option value="">— not set —</option>' +
+       [['500','0.5 kg'],['1000','1 kg'],['2000','2 kg'],['3000','3 kg'],['5000','5 kg']].map(function(v){ return '<option value="' + v[0] + '"' + (String(c.co2_size_g)===v[0]?' selected':'') + '>' + v[1] + '</option>'; }).join('') +
        '</select>') +
     fg('Last Refill Date', '<input type="date" name="co2_refill_date" value="' + (c.co2_refill_date||'') + '">') +
+    '</div>' +
+    '<div class="frow">' +
+    fg('Working Pressure (bar) <span style="font-weight:400;color:var(--muted)">optional</span>', '<input type="number" name="co2_working_bar" value="' + (c.co2_working_bar||'') + '" placeholder="e.g. 2" min="0" step="0.5"><div style="font-size:11px;color:var(--muted);margin-top:3px">Read from secondary gauge. Below 1 bar = nearly empty, plan refill.</div>') +
     '</div>' +
     '</div></div>' +
     '<div id="eq_heater_cfg" style="display:' + (type==='Heater'?'block':'none') + '">' +
@@ -4856,6 +4869,7 @@ function read_equip_cfg(f) {
     cfg.bps = parseFloat(f.co2_bps.value) || 0;
     cfg.co2_size_g = f.co2_size_g.value ? parseInt(f.co2_size_g.value) : null;
     cfg.co2_refill_date = f.co2_refill_date.value || null;
+    cfg.co2_working_bar = f.co2_working_bar.value ? parseFloat(f.co2_working_bar.value) : null;
   } else if (t === 'Heater') {
     cfg.watts = parseFloat(f.heater_watts.value) || 0;
     cfg.heater_type = f.heater_type.value;
