@@ -3601,7 +3601,7 @@ function wlog_cls(key, val) {
   if (key === 'ph')
     return val >= 6.5 && val <= 7.5 ? 'var(--ok)' : val >= 6.0 && val <= 8.0 ? 'var(--warn)' : 'var(--danger)';
   if (key === 'gh')
-    return val >= 4 && val <= 12 ? 'var(--ok)' : val >= 2 && val <= 15 ? 'var(--warn)' : 'var(--danger)';
+    return val >= 72 && val <= 215 ? 'var(--ok)' : val >= 36 && val <= 268 ? 'var(--warn)' : 'var(--danger)';
   if (key === 'calcium')
     return val >= 20 && val <= 60 ? 'var(--ok)' : val >= 10 && val <= 80 ? 'var(--warn)' : 'var(--danger)';
   if (key === 'magnesium')
@@ -3620,7 +3620,7 @@ function wlog_lbl(key, val) {
   if (key === 'ph')
     return val < 6.0 ? 'Too acidic' : val <= 6.5 ? 'Slightly low' : val <= 7.5 ? 'Ideal' : val <= 8.0 ? 'Slightly high' : 'Too high';
   if (key === 'gh')
-    return val < 2 ? 'Too soft' : val <= 4 ? 'Soft' : val <= 12 ? 'Good' : val <= 15 ? 'Hard' : 'Very hard';
+    return val < 36 ? 'Too soft' : val <= 72 ? 'Soft' : val <= 215 ? 'Good' : val <= 268 ? 'Hard' : 'Very hard';
   if (key === 'calcium')
     return val < 10 ? 'Low' : val <= 20 ? 'Slightly low' : val <= 60 ? 'Good' : val <= 80 ? 'Slightly high' : 'High';
   if (key === 'magnesium')
@@ -3697,7 +3697,7 @@ function r_wlog() {
     var has_tds = entries.some(function(e){ return e.tds !== null && e.tds !== undefined; });
     var has_uia = entries.some(function(e){ return calc_uia(e.ammonia, e.ph, e.temp_f) !== null; });
     h += '<div class="card"><div class="ctitle">History</div><div class="tw"><table>' +
-      '<tr><th>Date</th>' + (has_therm ? '<th>Temp ' + t_lbl() + '</th>' : '') + '<th>NH3 TAN</th>' + (has_uia ? '<th>UIA</th>' : '') + '<th>NO2 (ppm)</th><th>NO3 (ppm)</th><th>pH</th><th>GH (dGH)</th>' +
+      '<tr><th>Date</th>' + (has_therm ? '<th>Temp ' + t_lbl() + '</th>' : '') + '<th>NH3 TAN</th>' + (has_uia ? '<th>UIA</th>' : '') + '<th>NO2 (ppm)</th><th>NO3 (ppm)</th><th>pH</th><th>GH (ppm)</th>' +
       (has_ca_mg ? '<th>Ca (ppm)</th><th>Mg (ppm)</th>' : '') +
       (has_phosphate ? '<th>PO4 (ppm)</th>' : '') +
       (has_tds ? '<th>TDS (ppm)</th>' : '') +
@@ -3715,7 +3715,7 @@ function r_wlog() {
            wlog_cell('nitrite', e.nitrite, prev ? prev.nitrite : null) +
            wlog_cell('nitrate', e.nitrate, prev ? prev.nitrate : null) +
            wlog_cell('ph', e.ph, prev ? prev.ph : null) +
-           wlog_cell('gh', e.gh, prev ? prev.gh : null) +
+           wlog_cell('gh', e.gh != null ? Math.round(e.gh * 17.9) : null, prev && prev.gh != null ? Math.round(prev.gh * 17.9) : null) +
            (has_ca_mg ? wlog_cell('calcium', e.calcium, prev ? prev.calcium : null) + wlog_cell('magnesium', e.magnesium, prev ? prev.magnesium : null) : '') +
            (has_phosphate ? '<td>' + (e.phosphate !== null && e.phosphate !== undefined ? e.phosphate : '&mdash;') + '</td>' : '') +
            (has_tds ? '<td>' + (e.tds !== null && e.tds !== undefined ? e.tds : '&mdash;') + '</td>' : '') +
