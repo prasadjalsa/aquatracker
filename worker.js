@@ -3697,7 +3697,7 @@ function r_wlog() {
     var has_tds = entries.some(function(e){ return e.tds !== null && e.tds !== undefined; });
     var has_uia = entries.some(function(e){ return calc_uia(e.ammonia, e.ph, e.temp_f) !== null; });
     h += '<div class="card"><div class="ctitle">History</div><div class="tw"><table>' +
-      '<tr><th>Date</th>' + (has_therm ? '<th>Temp ' + t_lbl() + '</th>' : '') + '<th>NH3 TAN</th>' + (has_uia ? '<th>UIA</th>' : '') + '<th>NO2 (ppm)</th><th>NO3 (ppm)</th><th>pH</th><th>GH (ppm)</th>' +
+      '<tr><th>Date</th>' + (has_therm ? '<th>Temp ' + t_lbl() + '</th>' : '') + '<th>NH3 TAN</th>' + (has_uia ? '<th>UIA</th>' : '') + '<th>NO2 (ppm)</th><th>NO3 (ppm)</th><th>pH</th><th>GH (dGH)</th><th>GH (ppm)</th>' +
       (has_ca_mg ? '<th>Ca (ppm)</th><th>Mg (ppm)</th>' : '') +
       (has_phosphate ? '<th>PO4 (ppm)</th>' : '') +
       (has_tds ? '<th>TDS (ppm)</th>' : '') +
@@ -3715,6 +3715,7 @@ function r_wlog() {
            wlog_cell('nitrite', e.nitrite, prev ? prev.nitrite : null) +
            wlog_cell('nitrate', e.nitrate, prev ? prev.nitrate : null) +
            wlog_cell('ph', e.ph, prev ? prev.ph : null) +
+           wlog_cell('gh', e.gh, prev ? prev.gh : null) +
            wlog_cell('gh', e.gh != null ? Math.round(e.gh * 17.9) : null, prev && prev.gh != null ? Math.round(prev.gh * 17.9) : null) +
            (has_ca_mg ? wlog_cell('calcium', e.calcium, prev ? prev.calcium : null) + wlog_cell('magnesium', e.magnesium, prev ? prev.magnesium : null) : '') +
            (has_phosphate ? '<td>' + (e.phosphate !== null && e.phosphate !== undefined ? e.phosphate : '&mdash;') + '</td>' : '') +
