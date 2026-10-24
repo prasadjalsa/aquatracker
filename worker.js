@@ -3647,7 +3647,7 @@ function r_wlog() {
   var has_therm = d.equip.some(function(e){ return e.tank_id === tid && e.type === 'Thermometer'; });
   var prev_r = last_r(tid);
   var last_gh_val = prev_r ? prev_r.gh : null;
-  var last_gh_ppm = last_gh_val !== null ? Math.round(last_gh_val * 17.9 * 10) / 10 : null;
+  var last_gh_ppm = last_gh_val !== null ? Math.round(last_gh_val * 17.9) : null;
   var gh_hint = last_gh_ppm !== null
     ? 'Last reading: ' + last_gh_val + ' dGH (' + last_gh_ppm + ' ppm) &mdash; update only after a water change.'
     : 'Enter ppm from your test kit (BIONIX: drops &times; 25). Ideal: 71&ndash;215 ppm (4&ndash;12 dGH). Converted to dGH automatically.';
