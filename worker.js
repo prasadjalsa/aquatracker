@@ -1225,10 +1225,10 @@ function get_water_recs_s(lr, tid, ud) {
   else if(lr.ph!==null&&lr.ph<6.5) recs.push({level:'warn',param:'pH',msg:'pH is slightly low. Add crushed coral or aragonite to buffer naturally. Check KH &mdash; if KH is near zero, pH will keep crashing. Driftwood in the tank also contributes to acidity.'});
   else if(lr.ph!==null&&lr.ph>8.0) recs.push({level:'danger',param:'pH',msg:'pH is very high. Mix in RO or distilled water during water changes to dilute. Driftwood and Indian almond leaves lower pH gradually. Avoid chemical pH-down &mdash; it causes instability.'});
   else if(lr.ph!==null&&lr.ph>7.5) recs.push({level:'warn',param:'pH',msg:'pH is slightly high. Driftwood or peat moss in the filter will lower it gradually. Indian almond leaves also help and are safe for all fish.'});
-  if(lr.gh!==null&&lr.gh<2) recs.push({level:'danger',param:'Hardness (GH)',msg:'Water is critically soft. Add Seachem Equilibrium, crushed coral, or a Wonder Shell to raise GH. Extremely soft water causes osmotic stress and interferes with fish osmoregulation.'});
-  else if(lr.gh!==null&&lr.gh<4) recs.push({level:'warn',param:'Hardness (GH)',msg:'GH is slightly low. Add Seachem Equilibrium or crushed coral gradually &mdash; raise by no more than 2 dGH per day to avoid stressing fish.'});
-  else if(lr.gh!==null&&lr.gh>15) recs.push({level:'danger',param:'Hardness (GH)',msg:'Water is very hard. Mix in RO or distilled water during water changes to reduce GH gradually. Peat moss in the filter also softens water over time.'});
-  else if(lr.gh!==null&&lr.gh>12) recs.push({level:'warn',param:'Hardness (GH)',msg:'GH is slightly high. Replace a portion of water change volume with RO or distilled water to bring it down slowly.'});
+  if(lr.gh!==null&&lr.gh<36) recs.push({level:'danger',param:'Hardness (GH)',msg:'Water is critically soft. Add Seachem Equilibrium, crushed coral, or a Wonder Shell to raise GH. Extremely soft water causes osmotic stress and interferes with fish osmoregulation.'});
+  else if(lr.gh!==null&&lr.gh<72) recs.push({level:'warn',param:'Hardness (GH)',msg:'GH is slightly low. Add Seachem Equilibrium or crushed coral gradually &mdash; raise by no more than 36 ppm per day to avoid stressing fish.'});
+  else if(lr.gh!==null&&lr.gh>268) recs.push({level:'danger',param:'Hardness (GH)',msg:'Water is very hard. Mix in RO or distilled water during water changes to reduce GH gradually. Peat moss in the filter also softens water over time.'});
+  else if(lr.gh!==null&&lr.gh>215) recs.push({level:'warn',param:'Hardness (GH)',msg:'GH is slightly high. Replace a portion of water change volume with RO or distilled water to bring it down slowly.'});
   if(lr.temp_f!==null){
     var tc=Math.round((lr.temp_f-32)*5/9);
     if(tc>30) recs.push({level:'danger',param:'Temperature',msg:'Tank is too hot. Increase surface agitation to boost oxygenation (heat reduces O2). Float a bag of ice, remove the lid, or point a fan at the water surface. Check heater for malfunction.'});
@@ -2466,7 +2466,7 @@ function find_affected(sl, k, raw) {
     var lo, hi;
     if (k === 'temp_f') { lo = sp.tmin; hi = sp.tmax; }
     else if (k === 'ph')  { lo = sp.pmin; hi = sp.pmax; }
-    else if (k === 'gh')  { lo = sp.gmin; hi = sp.gmax; }
+    else if (k === 'gh')  { lo = Math.round(sp.gmin * 17.9); hi = Math.round(sp.gmax * 17.9); }
     else return;
     if (raw > hi)       { seen[sp.sid] = 1; out.push({name: sp.name, dir: 'max', val: k === 'temp_f' ? d_t(hi) : hi}); }
     else if (raw < lo)  { seen[sp.sid] = 1; out.push({name: sp.name, dir: 'min', val: k === 'temp_f' ? d_t(lo) : lo}); }
@@ -2533,7 +2533,7 @@ function draw_chart(tid, param) {
     nitrite: [{v:0.25, color:'#e8a838', label:'Caution (0.25 ppm)'}, {v:0.5, color:'#e05252', label:'Danger (0.5 ppm)'}],
     nitrate: [{v:20,   color:'#3ab87a', label:'Ideal max (20 ppm)'}, {v:40, color:'#e8a838', label:'Caution max (40 ppm)'}],
     ph:      [{v:6.5,  color:'#3ab87a', label:'Ideal min (6.5)'}, {v:7.5, color:'#3ab87a', label:'Ideal max (7.5)'}, {v:6.0, color:'#e8a838', label:'Caution min (6.0)'}, {v:8.0, color:'#e8a838', label:'Caution max (8.0)'}],
-    gh:      [{v:4,    color:'#3ab87a', label:'Ideal min (4 dGH)'}, {v:12, color:'#3ab87a', label:'Ideal max (12 dGH)'}, {v:2, color:'#e8a838', label:'Caution min (2 dGH)'}, {v:15, color:'#e8a838', label:'Caution max (15 dGH)'}],
+    gh:      [{v:72,  color:'#3ab87a', label:'Ideal min (72 ppm)'}, {v:215, color:'#3ab87a', label:'Ideal max (215 ppm)'}, {v:36, color:'#e8a838', label:'Caution min (36 ppm)'}, {v:268, color:'#e8a838', label:'Caution max (268 ppm)'}],
     temp_f:  temp_refs,
     uia:     [{v:0.02, color:'#e8a838', label:'Caution (0.02 ppm)'}, {v:0.05, color:'#e05252', label:'Danger (0.05 ppm)'}]
   };
@@ -3401,7 +3401,7 @@ async function r_dash() {
       {k:'nitrite',   l:'Nitrite',          u:'ppm', mn:0,  mx:0,  tox:true,  conv:null},
       {k:'nitrate',   l:'Nitrate',          u:'ppm', mn:0,  mx:40, tox:false, conv:null},
       {k:'ph',        l:'pH',               u:'',    mn:rng&&rng.ph.ok?rng.ph.min:null, mx:rng&&rng.ph.ok?rng.ph.max:null, tox:false, conv:null},
-      {k:'gh',        l:'Hardness (GH)',    u:'dGH', mn:rng&&rng.gh.ok?rng.gh.min:null, mx:rng&&rng.gh.ok?rng.gh.max:null, tox:false, conv:null}
+      {k:'gh',        l:'Hardness (GH)',    u:'ppm', mn:rng&&rng.gh.ok?Math.round(rng.gh.min*17.9):null, mx:rng&&rng.gh.ok?Math.round(rng.gh.max*17.9):null, tox:false, conv:null}
     );
     // Only show Ca/Mg rows if they were logged for this reading
     if (lr.calcium !== null && lr.calcium !== undefined) {
@@ -3601,7 +3601,7 @@ function wlog_cls(key, val) {
   if (key === 'ph')
     return val >= 6.5 && val <= 7.5 ? 'var(--ok)' : val >= 6.0 && val <= 8.0 ? 'var(--warn)' : 'var(--danger)';
   if (key === 'gh')
-    return val >= 4 && val <= 12 ? 'var(--ok)' : val >= 2 && val <= 15 ? 'var(--warn)' : 'var(--danger)';
+    return val >= 72 && val <= 215 ? 'var(--ok)' : val >= 36 && val <= 268 ? 'var(--warn)' : 'var(--danger)';
   if (key === 'calcium')
     return val >= 20 && val <= 60 ? 'var(--ok)' : val >= 10 && val <= 80 ? 'var(--warn)' : 'var(--danger)';
   if (key === 'magnesium')
@@ -3620,7 +3620,7 @@ function wlog_lbl(key, val) {
   if (key === 'ph')
     return val < 6.0 ? 'Too acidic' : val <= 6.5 ? 'Slightly low' : val <= 7.5 ? 'Ideal' : val <= 8.0 ? 'Slightly high' : 'Too high';
   if (key === 'gh')
-    return val < 2 ? 'Too soft' : val <= 4 ? 'Soft' : val <= 12 ? 'Good' : val <= 15 ? 'Hard' : 'Very hard';
+    return val < 36 ? 'Too soft' : val <= 72 ? 'Soft' : val <= 215 ? 'Good' : val <= 268 ? 'Hard' : 'Very hard';
   if (key === 'calcium')
     return val < 10 ? 'Low' : val <= 20 ? 'Slightly low' : val <= 60 ? 'Good' : val <= 80 ? 'Slightly high' : 'High';
   if (key === 'magnesium')
@@ -3647,9 +3647,9 @@ function r_wlog() {
   var has_therm = d.equip.some(function(e){ return e.tank_id === tid && e.type === 'Thermometer'; });
   var prev_r = last_r(tid);
   var last_gh_val = prev_r ? prev_r.gh : null;
-  var last_gh_ppm = last_gh_val !== null ? Math.round(last_gh_val * 17.9) : null;
+  var last_gh_ppm = last_gh_val !== null ? last_gh_val : null;
   var gh_hint = last_gh_ppm !== null
-    ? 'Last reading: ' + last_gh_val + ' dGH (' + last_gh_ppm + ' ppm) &mdash; update only after a water change.'
+    ? 'Last reading: ' + last_gh_ppm + ' ppm &mdash; update only after a water change.'
     : 'Enter ppm from your test kit (BIONIX: drops &times; 25). Ideal: 71&ndash;215 ppm (4&ndash;12 dGH). Converted to dGH automatically.';
   var td = today_str();
   var h = '<div class="card"><div class="ctitle">Add Water Reading</div>' +
@@ -3697,7 +3697,7 @@ function r_wlog() {
     var has_tds = entries.some(function(e){ return e.tds !== null && e.tds !== undefined; });
     var has_uia = entries.some(function(e){ return calc_uia(e.ammonia, e.ph, e.temp_f) !== null; });
     h += '<div class="card"><div class="ctitle">History</div><div class="tw"><table>' +
-      '<tr><th>Date</th>' + (has_therm ? '<th>Temp ' + t_lbl() + '</th>' : '') + '<th>NH3 TAN</th>' + (has_uia ? '<th>UIA</th>' : '') + '<th>NO2 (ppm)</th><th>NO3 (ppm)</th><th>pH</th><th>GH (dGH)</th>' +
+      '<tr><th>Date</th>' + (has_therm ? '<th>Temp ' + t_lbl() + '</th>' : '') + '<th>NH3 TAN</th>' + (has_uia ? '<th>UIA</th>' : '') + '<th>NO2 (ppm)</th><th>NO3 (ppm)</th><th>pH</th><th>GH (ppm)</th>' +
       (has_ca_mg ? '<th>Ca (ppm)</th><th>Mg (ppm)</th>' : '') +
       (has_phosphate ? '<th>PO4 (ppm)</th>' : '') +
       (has_tds ? '<th>TDS (ppm)</th>' : '') +
@@ -3738,7 +3738,7 @@ function r_wlog() {
       '<tr><td>Nitrite (NO2)</td><td>0 ppm</td><td>0.01&ndash;0.25 ppm</td><td>&gt; 0.25 ppm</td></tr>' +
       '<tr><td>Nitrate (NO3)</td><td>0&ndash;20 ppm</td><td>21&ndash;40 ppm</td><td>&gt; 40 ppm</td></tr>' +
       '<tr><td>pH</td><td>6.5&ndash;7.5</td><td>6.0&ndash;6.4 or 7.6&ndash;8.0</td><td>&lt; 6.0 or &gt; 8.0</td></tr>' +
-      '<tr><td>Hardness (GH)</td><td>71&ndash;215 ppm (4&ndash;12 dGH)</td><td>36&ndash;70 or 216&ndash;268 ppm</td><td>&lt; 36 or &gt; 268 ppm</td></tr>' +
+      '<tr><td>Hardness (GH)</td><td>72&ndash;215 ppm</td><td>36&ndash;71 or 216&ndash;268 ppm</td><td>&lt; 36 or &gt; 268 ppm</td></tr>' +
       '<tr><td>Calcium (Ca)</td><td>20&ndash;60 ppm</td><td>10&ndash;19 or 61&ndash;80 ppm</td><td>&lt; 10 or &gt; 80 ppm</td></tr>' +
       '<tr><td>Magnesium (Mg)</td><td>5&ndash;20 ppm</td><td>2&ndash;4 or 21&ndash;30 ppm</td><td>&lt; 2 or &gt; 30 ppm</td></tr>' +
       '<tr><td>Ca:Mg ratio</td><td>3:1 to 5:1</td><td>2:1 to 6:1</td><td>&lt; 2:1 or &gt; 6:1</td></tr>' +
@@ -3796,8 +3796,8 @@ function sub_water(e) {
   var ca = f.ca ? f.ca.value : '';
   var mg = f.mg ? f.mg.value : '';
   var gh_ppm = f.gh ? pn(f.gh.value) : null;
-  var gh_dgh = gh_ppm !== null ? Math.round(gh_ppm / 17.9 * 100) / 100 : '';
-  add_water(tid, f.date.value, f.tf ? inp_t(f.tf.value) : null, f.nh3.value, f.no2.value, f.no3.value, f.ph.value, gh_dgh, f.notes.value, ca, mg, f.phosphate ? f.phosphate.value : '', f.tds ? f.tds.value : '');
+  var gh_val = gh_ppm !== null ? gh_ppm : '';
+  add_water(tid, f.date.value, f.tf ? inp_t(f.tf.value) : null, f.nh3.value, f.no2.value, f.no3.value, f.ph.value, gh_val, f.notes.value, ca, mg, f.phosphate ? f.phosphate.value : '', f.tds ? f.tds.value : '');
   r_wlog();
 }
 function do_edit_water(id) {
@@ -3806,7 +3806,7 @@ function do_edit_water(id) {
   if (!e) return;
   var tid = e.tank_id;
   var has_therm = d.equip.some(function(eq){ return eq.tank_id === tid && eq.type === 'Thermometer'; });
-  var gh_ppm_val = e.gh != null ? Math.round(e.gh * 17.9) : '';
+  var gh_ppm_val = e.gh != null ? e.gh : '';
   var temp_disp  = e.temp_f != null ? d_t(e.temp_f) : '';
   var fv = function(v){ return v != null ? v : ''; };
   om('<div class="mtitle">Edit Water Reading</div>' +
@@ -3819,7 +3819,7 @@ function do_edit_water(id) {
     '</div><div class="frow">' +
     fgh('Nitrate (ppm)', '<input type="number" name="no3" step="0.1"  value="' + fv(e.nitrate) + '">', '') +
     fgh('pH',            '<input type="number" name="ph"  step="0.01" value="' + fv(e.ph) + '">', '') +
-    fgh('Hardness GH (ppm)', '<input type="number" name="gh" step="1" value="' + gh_ppm_val + '">', 'Value in ppm — converted to dGH on save') +
+    fgh('Hardness GH (ppm)', '<input type="number" name="gh" step="1" value="' + gh_ppm_val + '">', '') +
     fgh('Notes', '<input type="text" name="notes" value="' + esc(e.notes || '') + '">', '') +
     '</div><div class="frow">' +
     fgh('Calcium (ppm)',   '<input type="number" name="ca" step="0.1" value="' + fv(e.calcium) + '">', 'Optional') +
@@ -3838,7 +3838,6 @@ function sub_edit_water(e, id) {
   var tid = d.water[idx].tank_id;
   var has_therm = d.equip.some(function(eq){ return eq.tank_id === tid && eq.type === 'Thermometer'; });
   var gh_ppm = f.gh && f.gh.value !== '' ? pn(f.gh.value) : null;
-  var gh_dgh = gh_ppm !== null ? Math.round(gh_ppm / 17.9 * 100) / 100 : null;
   d.water[idx] = {
     id: id, tank_id: tid,
     date:      f.date.value,
@@ -3847,7 +3846,7 @@ function sub_edit_water(e, id) {
     nitrite:   pn(f.no2.value),
     nitrate:   pn(f.no3.value),
     ph:        pn(f.ph.value),
-    gh:        gh_dgh,
+    gh:        gh_ppm,
     notes:     f.notes.value || '',
     calcium:   f.ca && f.ca.value !== '' ? pn(f.ca.value) : null,
     magnesium: f.mg && f.mg.value !== '' ? pn(f.mg.value) : null
@@ -4419,7 +4418,7 @@ async function r_recs() {
     {l:'Nitrite',     u:'ppm', mn:0, mx:0, k:'nitrite', tox:true,  conv:null},
     {l:'Nitrate',     u:'ppm', mn:0, mx:20, k:'nitrate', tox:false, conv:null},
     {l:'pH',          u:'',    mn:rng.ph.ok?rng.ph.min:null, mx:rng.ph.ok?rng.ph.max:null, k:'ph', tox:false, conv:null},
-    {l:'Hardness (GH)',u:'dGH',mn:rng.gh.ok?rng.gh.min:null, mx:rng.gh.ok?rng.gh.max:null, k:'gh', tox:false, conv:null}
+    {l:'Hardness (GH)',u:'ppm',mn:rng.gh.ok?Math.round(rng.gh.min*17.9):null, mx:rng.gh.ok?Math.round(rng.gh.max*17.9):null, k:'gh', tox:false, conv:null}
   ];
   rp.forEach(function(p) {
     var raw = lr ? lr[p.k] : null, cur = (p.conv && raw !== null) ? p.conv(raw) : raw;
@@ -4508,7 +4507,7 @@ async function r_recs() {
         if (bc.tmin != null && lr.temp_f != null && d_t(lr.temp_f) < d_t(bc.tmin)) unmet.push('needs &ge;' + d_t(bc.tmin) + t_lbl());
         if (bc.tmax != null && lr.temp_f != null && d_t(lr.temp_f) > d_t(bc.tmax)) unmet.push('needs &le;' + d_t(bc.tmax) + t_lbl());
         if (bc.pmax != null && lr.ph != null && lr.ph > bc.pmax) unmet.push('needs pH &le;' + bc.pmax);
-        if (bc.gmax != null && lr.gh != null && lr.gh > bc.gmax) unmet.push('needs GH &le;' + bc.gmax);
+        if (bc.gmax != null && lr.gh != null && lr.gh > Math.round(bc.gmax * 17.9)) unmet.push('needs GH &le;' + Math.round(bc.gmax * 17.9) + ' ppm');
         breed_cell += unmet.length
           ? '<br><span style="color:var(--muted);font-size:11px">' + unmet.join(', ') + '</span>'
           : '<br><span style="color:var(--ok);font-size:11px">&#x1F95A; Conditions met</span>';
@@ -6424,7 +6423,7 @@ function rec_step1() {
     if (no3 != null) { var no3s = no3 > 40 ? 'danger' : no3 > 20 ? 'warn' : 'ok'; if (no3s === 'danger') has_danger = true; else if (no3s === 'warn') has_warn = true; rows += p_row('Nitrate', no3, 'ppm', no3s, no3 > 40 ? 'Very high &mdash; water change before adding stock' : 'Elevated &mdash; partial water change recommended'); }
     if (lw.ph     != null) rows += p_row('pH',          lw.ph,          '',      'ok', '');
     if (lw.temp_f != null) rows += p_row('Temperature', d_t(lw.temp_f), t_lbl(), 'ok', '');
-    if (lw.gh     != null) rows += p_row('GH',          lw.gh + ' dGH', '(' + Math.round(lw.gh * 17.9) + ' ppm)', 'ok', '');
+    if (lw.gh     != null) rows += p_row('GH', lw.gh + ' ppm', '', 'ok', '');
     if (rows) h += '<div style="margin-bottom:12px">' + rows + '</div>';
     if (has_danger)
       h += '<div style="background:#fde8e8;border-left:3px solid var(--danger);padding:10px 12px;border-radius:0 6px 6px 0;font-size:13px;color:#a01818;font-weight:600;margin-bottom:14px">&#x274C; Fix dangerous parameters before adding any stock.</div>';
@@ -6509,8 +6508,9 @@ function rec_find_matches() {
       else if (last_ph < sp.pmin || last_ph > sp.pmax) cau.push('pH ' + last_ph + ' borderline (ideal ' + sp.pmin + '&ndash;' + sp.pmax + ')');
     }
     if (last_gh !== null) {
-      if (last_gh < sp.gmin - G_CAU || last_gh > sp.gmax + G_CAU) inc.push('GH ' + last_gh + ' dGH outside range (' + sp.gmin + '&ndash;' + sp.gmax + ' dGH)');
-      else if (last_gh < sp.gmin || last_gh > sp.gmax) cau.push('GH ' + last_gh + ' dGH borderline (ideal ' + sp.gmin + '&ndash;' + sp.gmax + ' dGH)');
+      var sp_gmin_ppm = Math.round(sp.gmin * 17.9), sp_gmax_ppm = Math.round(sp.gmax * 17.9), g_cau_ppm = Math.round(G_CAU * 17.9);
+      if (last_gh < sp_gmin_ppm - g_cau_ppm || last_gh > sp_gmax_ppm + g_cau_ppm) inc.push('GH ' + last_gh + ' ppm outside range (' + sp_gmin_ppm + '&ndash;' + sp_gmax_ppm + ' ppm)');
+      else if (last_gh < sp_gmin_ppm || last_gh > sp_gmax_ppm) cau.push('GH ' + last_gh + ' ppm borderline (ideal ' + sp_gmin_ppm + '&ndash;' + sp_gmax_ppm + ' ppm)');
     }
     cur_sk.forEach(function(ek) {
       var es = sp_all[ek];
