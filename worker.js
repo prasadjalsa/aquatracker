@@ -2199,7 +2199,7 @@ function del_fert(id) {
 function do_edit_fert(id) {
   var d = ld(), f = d.ferts.find(function(x){return x.id===id;}); if (!f) return;
   var tank = d.tanks.find(function(t){ return t.id === at(); });
-  var gal_note = tank ? '<small style="color:var(--muted);font-size:11px">Tank is ' + Math.round(tank.gallons) + ' gal — adjust dose if needed</small>' : '';
+  var gal_note = tank ? '<small style="color:var(--muted);font-size:11px">Tank is ' + d_v(tank.gallons) + ' ' + v_lbl() + ' — adjust dose if needed</small>' : '';
   var is_dow_f = f.dow && f.dow.length > 0;
   var edit_dow_boxes = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(function(dn,i){
     return '<label style="display:flex;align-items:center;gap:4px;font-size:13px"><input type="checkbox" name="dow_' + i + '"' + (f.dow && f.dow.indexOf(i) !== -1 ? ' checked' : '') + '> ' + dn + '</label>';
@@ -2284,7 +2284,7 @@ function do_add_fert() {
   var sub_l = calc_substrate_liters(at());
   var sub_gal = sub_l / 3.78541;
   _fert_gal = Math.max((tank.gallons || 0) - sub_gal, 0);
-  var vol_note = sub_l > 0 ? Math.round(_fert_gal * 10) / 10 + ' gal effective (after ' + sub_l + ' L substrate)' : Math.round(_fert_gal) + ' gal tank';
+  var vol_note = sub_l > 0 ? d_v(_fert_gal) + ' ' + v_lbl() + ' effective (after ' + sub_l + ' L substrate)' : d_v(_fert_gal) + ' ' + v_lbl() + ' tank';
   var opts = Object.keys(_fert).map(function(k) {
     return '<option value="' + k + '">' + _fert[k].name + '</option>';
   }).join('');
@@ -4263,8 +4263,8 @@ async function r_recs() {
   h += '<div class="bl-bar"><div class="bl-fill" style="width:' + bl_pct + '%;background:' + bl_bar_color + '"></div></div>';
   var sub_total = calc_substrate_liters(tid);
   if (sub_total > 0 && tank) {
-    var eff_l = Math.round((tank.liters - sub_total) * 10) / 10;
-    h += '<div style="font-size:12px;color:var(--muted);margin-top:4px">Effective water volume: ' + eff_l + ' L (tank ' + Math.round(tank.liters) + ' L &minus; substrate ' + sub_total + ' L)</div>';
+    var eff_v = d_v((tank.liters - sub_total) / 3.78541);
+    h += '<div style="font-size:12px;color:var(--muted);margin-top:4px">Effective water volume: ' + eff_v + ' ' + v_lbl() + ' (tank ' + d_v(tank.gallons) + ' ' + v_lbl() + ' &minus; substrate ' + sub_total + ' L)</div>';
   }
   var bl_msg, bl_mc;
   if (bl_cls === 'danger') {
@@ -6613,7 +6613,7 @@ function rec_find_matches() {
     var sp = sp_all[key];
     if (!sp || cur_sk.indexOf(key) !== -1) return null;
     var cau = [], inc = [];
-    if (tank.gallons < sp.min_gal) inc.push('Needs ' + sp.min_gal + '+ gal (tank is ' + Math.round(tank.gallons) + ' gal)');
+    if (tank.gallons < sp.min_gal) inc.push('Needs ' + d_v(sp.min_gal) + '+ ' + v_lbl() + ' (tank is ' + d_v(tank.gallons) + ' ' + v_lbl() + ')');
     if (last_t !== null) {
       if (last_t < sp.tmin - T_CAU || last_t > sp.tmax + T_CAU) inc.push('Temp ' + d_t(last_t) + t_lbl() + ' outside range (' + d_t(sp.tmin) + '&ndash;' + d_t(sp.tmax) + t_lbl() + ')');
       else if (last_t < sp.tmin || last_t > sp.tmax) cau.push('Temp ' + d_t(last_t) + t_lbl() + ' borderline (ideal ' + d_t(sp.tmin) + '&ndash;' + d_t(sp.tmax) + t_lbl() + ')');
