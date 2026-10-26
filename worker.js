@@ -174,7 +174,7 @@ const MANIFEST = JSON.stringify({
 });
 
 const SW_JS = `
-const CACHE = 'aq-v2';
+const CACHE = 'aq-v3';
 self.addEventListener('install', e => { self.skipWaiting(); });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))));
@@ -2363,8 +2363,8 @@ function fmt_schedule(t) {
 function upd_task_sched(val) {
   var fr = document.getElementById('task_freq_row');
   var dr = document.getElementById('task_dow_row');
-  if (fr) fr.style.display = val === 'freq' ? '' : 'none';
-  if (dr) dr.style.display = val === 'dow' ? '' : 'none';
+  if (fr) fr.style.display = val === 'freq' ? 'block' : 'none';
+  if (dr) dr.style.display = val === 'dow'  ? 'block' : 'none';
 }
 function days_til(due) {
   var now = new Date(); now.setHours(0,0,0,0);
@@ -4115,12 +4115,13 @@ async function r_maint() {
            '</td><td>' + esc(t.type) + '</td>' +
            '<td><strong>' + due + '</strong><br><small style="color:var(--muted)">' + t.next_due + '</small></td>' +
            '<td>' + t.last_done + '</td><td>' + fmt_schedule(t) + '</td>' +
-           '<td style="white-space:nowrap">' +
-           '<button class="btn bp bs" data-id="' + t.id + '" onclick="mark_done_prompt(this.dataset.id)">Done</button> ' +
-           (t.days <= 0 ? '<button class="btn bg bs" data-id="' + t.id + '" onclick="do_snooze_task(this.dataset.id)">Snooze</button> ' : '') +
-           '<button class="btn bg bs" title="Edit task" data-id="' + t.id + '" onclick="do_edit_task(this.dataset.id)">&#x270E;</button> ' +
-           '<button class="btn bg bs" title="Export to calendar (.ics)" data-id="' + t.id + '" onclick="export_task_ics(this.dataset.id)">&#x1F4C5;</button> ' +
-           '<button class="btn bd bs" data-id="' + t.id + '" onclick="del_task(this.dataset.id);r_maint()">&#x2715;</button></td></tr>';
+           '<td><div style="display:flex;flex-wrap:wrap;gap:4px">' +
+           '<button class="btn bp bs" data-id="' + t.id + '" onclick="mark_done_prompt(this.dataset.id)">Done</button>' +
+           (t.days <= 0 ? '<button class="btn bg bs" data-id="' + t.id + '" onclick="do_snooze_task(this.dataset.id)">Snooze</button>' : '') +
+           '<button class="btn bg bs" title="Edit task" data-id="' + t.id + '" onclick="do_edit_task(this.dataset.id)">&#x270E;</button>' +
+           '<button class="btn bg bs" title="Export to calendar (.ics)" data-id="' + t.id + '" onclick="export_task_ics(this.dataset.id)">&#x1F4C5;</button>' +
+           '<button class="btn bd bs" data-id="' + t.id + '" onclick="del_task(this.dataset.id);r_maint()">&#x2715;</button>' +
+           '</div></td></tr>';
     });
     h += '</table></div></div>';
   }
@@ -6216,6 +6217,10 @@ function calc_tk_bionix() {
 }
 function render_tab() {
   upd_prev_bar();
+  var on_life = cur_tab === 'life';
+  var df = document.getElementById('diag_fab'), rf = document.getElementById('rec_fab');
+  if (df) df.style.display = on_life ? 'flex' : 'none';
+  if (rf) rf.style.display = on_life ? 'flex' : 'none';
   if      (cur_tab === 'dash')  r_dash();
   else if (cur_tab === 'life')  r_life();
   else if (cur_tab === 'wlog')  r_wlog();
@@ -6957,7 +6962,7 @@ function do_logout() {
 
 window.addEventListener('DOMContentLoaded', startup);
 <\/script>
-<button id="diag_fab" onclick="open_diag_wizard()" style="position:fixed;bottom:88px;right:20px;z-index:910;background:#e85d4a;color:#fff;border:none;border-radius:28px;padding:0 18px;height:52px;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,.25);cursor:pointer;display:flex;align-items:center;gap:8px;white-space:nowrap">&#x1F52C; Diagnose</button>
+<button id="diag_fab" onclick="open_diag_wizard()" style="position:fixed;bottom:calc(env(safe-area-inset-bottom) + 88px);right:20px;z-index:910;background:#e85d4a;color:#fff;border:none;border-radius:28px;padding:0 18px;height:52px;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,.25);cursor:pointer;display:none;align-items:center;gap:8px;white-space:nowrap">&#x1F52C; Diagnose</button>
 <div id="diag_wiz" style="display:none;position:fixed;top:0;right:0;bottom:0;width:100%;max-width:400px;background:#fff;box-shadow:-4px 0 32px rgba(0,0,0,.18);z-index:920;flex-direction:column">
   <div style="background:#c0392b;color:#fff;padding:14px 16px;padding-top:calc(env(safe-area-inset-top) + 14px);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
     <div style="font-size:15px;font-weight:700">&#x1F52C; Diagnose</div>
@@ -6966,7 +6971,7 @@ window.addEventListener('DOMContentLoaded', startup);
   <div id="diag_wiz_body" style="flex:1;overflow-y:auto;padding:16px"></div>
   <div id="diag_wiz_foot" style="padding:12px 16px;border-top:1px solid #eee;display:flex;gap:8px;flex-shrink:0"></div>
 </div>
-<button id="rec_fab" onclick="open_rec_wizard()" style="position:fixed;bottom:24px;right:20px;z-index:910;background:#4db8d4;color:#fff;border:none;border-radius:28px;padding:0 18px;height:52px;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,.25);cursor:pointer;display:flex;align-items:center;gap:8px;white-space:nowrap">&#x1F4AC; What can I add?</button>
+<button id="rec_fab" onclick="open_rec_wizard()" style="position:fixed;bottom:calc(env(safe-area-inset-bottom) + 24px);right:20px;z-index:910;background:#4db8d4;color:#fff;border:none;border-radius:28px;padding:0 18px;height:52px;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,.25);cursor:pointer;display:none;align-items:center;gap:8px;white-space:nowrap">&#x1F4AC; What can I add?</button>
 <div id="rec_wiz" style="display:none;position:fixed;top:0;right:0;bottom:0;width:100%;max-width:400px;background:#fff;box-shadow:-4px 0 32px rgba(0,0,0,.18);z-index:920;flex-direction:column">
   <div style="background:var(--deep);color:#fff;padding:14px 16px;padding-top:calc(env(safe-area-inset-top) + 14px);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
     <div style="font-size:15px;font-weight:700">&#x1F4AC; What can I add?</div>
