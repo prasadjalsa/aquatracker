@@ -2182,9 +2182,9 @@ function sub_edit_stock(e) {
 
 // ===== FERTILIZERS =====
 var _fert_gal = 0;
-function add_fert(tid, preset, name, dose_ml, freq_days, notes, dow) {
+function add_fert(tid, preset, name, dose_ml, freq_days, notes, dow, notify, notify_hour) {
   var task_name = 'Dose ' + name + (dose_ml ? ' — ' + dose_ml + ' ml' : '');
-  var task_id = add_task(tid, 'Fertilizer', task_name, dow?null:parseInt(freq_days)||7, today_str(), 'Fertilizer dose', undefined, undefined, dow||null);
+  var task_id = add_task(tid, 'Fertilizer', task_name, dow?null:parseInt(freq_days)||7, today_str(), 'Fertilizer dose', notify||'on_day', notify_hour!=null?parseInt(notify_hour):8, dow||null);
   var d = ld(); // reload after add_task saved
   d.ferts.push({id:gid(), tank_id:tid, preset:preset, name:name, dose_ml:parseFloat(dose_ml)||0, freq_days:dow?null:parseInt(freq_days)||7, dow:dow||null, notes:notes||'', task_id:task_id});
   sv(d); r_life();
@@ -2204,6 +2204,17 @@ function do_edit_fert(id) {
   var edit_dow_boxes = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(function(dn,i){
     return '<label style="display:flex;align-items:center;gap:4px;font-size:13px"><input type="checkbox" name="dow_' + i + '"' + (f.dow && f.dow.indexOf(i) !== -1 ? ' checked' : '') + '> ' + dn + '</label>';
   }).join('');
+  var linked_task = f.task_id ? (d.tasks||[]).find(function(t){ return t.id === f.task_id; }) : null;
+  var cur_notify = linked_task ? (linked_task.notify || 'on_day') : 'on_day';
+  var cur_hour = linked_task ? (linked_task.notify_hour != null ? linked_task.notify_hour : 8) : 8;
+  var notify_opts = [['on_day','On due date'],['1_day_before','1 day before'],['2_days_before','2 days before'],['none','No reminder']].map(function(o){
+    return '<option value="' + o[0] + '"' + (o[0] === cur_notify ? ' selected' : '') + '>' + o[1] + '</option>';
+  }).join('');
+  var hour_opts_e = '';
+  for (var eh = 6; eh <= 21; eh++) {
+    var eh_lbl = eh < 12 ? (eh + ':00 AM') : eh === 12 ? '12:00 PM' : ((eh-12) + ':00 PM');
+    hour_opts_e += '<option value="' + eh + '"' + (eh === cur_hour ? ' selected' : '') + '>' + eh_lbl + '</option>';
+  }
   om('<div class="mtitle">Edit Fertilizer</div>' +
     '<form onsubmit="sub_edit_fert(event)">' +
     '<input type="hidden" name="fid" value="' + f.id + '">' +
@@ -2217,6 +2228,10 @@ function do_edit_fert(id) {
     '<div id="task_freq_row"' + (is_dow_f ? ' style="display:none"' : '') + '><input type="number" name="freq_days" min="1" value="' + (f.freq_days || 7) + '" style="width:80px"> days</div>' +
     '<div id="task_dow_row"' + (is_dow_f ? '' : ' style="display:none"') + '><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">' + edit_dow_boxes + '</div></div></div>' +
     fg('Notes', '<input type="text" name="notes" value="' + esc(f.notes) + '">') +
+    '<div class="frow">' +
+    fg('Remind me', '<select name="fert_notify">' + notify_opts + '</select>') +
+    fg('At time', '<select name="fert_notify_hour">' + hour_opts_e + '</select>') +
+    '</div>' +
     '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Save</button></div>' +
     '</form>');
 }
@@ -2240,7 +2255,9 @@ function sub_edit_fert(e) {
           name: task_name,
           freq: dow ? null : freq_days,
           dow: dow,
-          next_due: dow && dow.length ? next_due_dow(t.last_done || today_str(), dow) : next_due(t.last_done || today_str(), freq_days)
+          next_due: dow && dow.length ? next_due_dow(t.last_done || today_str(), dow) : next_due(t.last_done || today_str(), freq_days),
+          notify: f.fert_notify ? f.fert_notify.value : (t.notify || 'on_day'),
+          notify_hour: f.fert_notify_hour ? parseInt(f.fert_notify_hour.value) : (t.notify_hour != null ? t.notify_hour : 8)
         });
       });
     }
@@ -2274,6 +2291,11 @@ function do_add_fert() {
   var fert_dow_boxes = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(function(dn,i){
     return '<label style="display:flex;align-items:center;gap:4px;font-size:13px"><input type="checkbox" name="fert_dow_' + i + '"> ' + dn + '</label>';
   }).join('');
+  var hour_opts = '';
+  for (var fh = 6; fh <= 21; fh++) {
+    var fh_lbl = fh < 12 ? (fh + ':00 AM') : fh === 12 ? '12:00 PM' : ((fh-12) + ':00 PM');
+    hour_opts += '<option value="' + fh + '"' + (fh === 8 ? ' selected' : '') + '>' + fh_lbl + '</option>';
+  }
   om('<div class="mtitle">Add Fertilizer</div>' +
     '<form id="fert_frm" onsubmit="event.preventDefault();sub_fert()">' +
     fg('Preset', '<select name="fert_preset" onchange="calc_fert_dose(this)">' + opts + '</select>') +
@@ -2287,6 +2309,10 @@ function do_add_fert() {
     '<div id="task_freq_row"><input type="number" name="fert_freq" min="1" value="' + _fert[Object.keys(_fert)[0]].freq + '" style="width:80px"> days</div>' +
     '<div id="task_dow_row" style="display:none"><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">' + fert_dow_boxes + '</div></div></div>' +
     fg('Notes', '<input type="text" name="fert_notes" placeholder="Optional">') +
+    '<div class="frow">' +
+    fg('Remind me', '<select name="fert_notify"><option value="on_day" selected>On due date</option><option value="1_day_before">1 day before</option><option value="2_days_before">2 days before</option><option value="none">No reminder</option></select>') +
+    fg('At time', '<select name="fert_notify_hour">' + hour_opts + '</select>') +
+    '</div>' +
     '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Add Fertilizer</button></div>' +
     '</form>');
 }
@@ -2298,7 +2324,7 @@ function sub_fert() {
     dow = [0,1,2,3,4,5,6].filter(function(i){ return f['fert_dow_'+i] && f['fert_dow_'+i].checked; });
     if (!dow.length) { alert('Please select at least one day of the week.'); return; }
   }
-  add_fert(at(), f.fert_preset.value, f.fert_name.value.trim(), f.fert_dose.value, f.fert_freq.value, f.fert_notes.value.trim(), dow);
+  add_fert(at(), f.fert_preset.value, f.fert_name.value.trim(), f.fert_dose.value, f.fert_freq.value, f.fert_notes.value.trim(), dow, f.fert_notify.value, f.fert_notify_hour.value);
   cm();
 }
 
