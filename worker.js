@@ -2211,8 +2211,8 @@ function do_edit_fert(id) {
     fg('Dose per application (ml)', '<input type="number" name="dose_ml" step="0.1" min="0" value="' + f.dose_ml + '" required>' + gal_note) +
     '<div class="fg"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Dose schedule</label>' +
     '<div style="display:flex;gap:16px;margin-bottom:8px">' +
-    '<label style="font-size:13px;display:flex;align-items:center;gap:5px"><input type="radio" name="sched_type" value="freq"' + (is_dow_f ? '' : ' checked') + ' onchange="upd_task_sched(this.value)"> Every N days</label>' +
-    '<label style="font-size:13px;display:flex;align-items:center;gap:5px"><input type="radio" name="sched_type" value="dow"' + (is_dow_f ? ' checked' : '') + ' onchange="upd_task_sched(this.value)"> Specific days of week</label>' +
+    '<label style="font-size:13px;display:flex;align-items:center;gap:5px"><input type="radio" name="sched_type" value="freq"' + (is_dow_f ? '' : ' checked') + ' onclick="upd_task_sched(this.value)"> Every N days</label>' +
+    '<label style="font-size:13px;display:flex;align-items:center;gap:5px"><input type="radio" name="sched_type" value="dow"' + (is_dow_f ? ' checked' : '') + ' onclick="upd_task_sched(this.value)"> Specific days of week</label>' +
     '</div>' +
     '<div id="task_freq_row"' + (is_dow_f ? ' style="display:none"' : '') + '><input type="number" name="freq_days" min="1" value="' + (f.freq_days || 7) + '" style="width:80px"> days</div>' +
     '<div id="task_dow_row"' + (is_dow_f ? '' : ' style="display:none"') + '><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">' + edit_dow_boxes + '</div></div></div>' +
@@ -2281,8 +2281,8 @@ function do_add_fert() {
     fg('Dose per application (ml)', '<input type="number" name="fert_dose" step="0.1" min="0" value="' + (Math.round(_fert[Object.keys(_fert)[0]].ml_per_gal * _fert_gal * 10) / 10) + '" required placeholder="e.g. 2.5"><small style="color:var(--muted);font-size:11px">Calculated from ' + vol_note + ' — edit if needed</small>') +
     '<div class="fg"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Dose schedule</label>' +
     '<div style="display:flex;gap:16px;margin-bottom:8px">' +
-    '<label style="font-size:13px;display:flex;align-items:center;gap:5px"><input type="radio" name="sched_type" value="freq" checked onchange="upd_task_sched(this.value)"> Every N days</label>' +
-    '<label style="font-size:13px;display:flex;align-items:center;gap:5px"><input type="radio" name="sched_type" value="dow" onchange="upd_task_sched(this.value)"> Specific days of week</label>' +
+    '<label style="font-size:13px;display:flex;align-items:center;gap:5px"><input type="radio" name="sched_type" value="freq" checked onclick="upd_task_sched(this.value)"> Every N days</label>' +
+    '<label style="font-size:13px;display:flex;align-items:center;gap:5px"><input type="radio" name="sched_type" value="dow" onclick="upd_task_sched(this.value)"> Specific days of week</label>' +
     '</div>' +
     '<div id="task_freq_row"><input type="number" name="fert_freq" min="1" value="' + _fert[Object.keys(_fert)[0]].freq + '" style="width:80px"> days</div>' +
     '<div id="task_dow_row" style="display:none"><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">' + fert_dow_boxes + '</div></div></div>' +
