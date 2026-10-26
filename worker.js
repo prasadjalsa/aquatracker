@@ -1508,22 +1508,33 @@ function get_due_tasks_s(now_utc, ud) {
   var local_total_min = ((raw_local_min % 1440) + 1440) % 1440;
   var local_hour = Math.floor(local_total_min / 60);
   var local_minute = local_total_min % 60;
-  if (local_minute >= 30) return [];
-  var local_date = date_add(now_utc.utc_date, Math.floor(raw_local_min / 1440));
-  var tomorrow = date_add(local_date, 1);
-  var day_after = date_add(local_date, 2);
-  return (ud.tasks || []).filter(function(t) {
-    if (!t.next_due) return false;
-    var n = t.notify || 'on_day';
-    if (n === 'none') return false;
-    var h = (t.notify_hour != null) ? t.notify_hour : 8;
-    if (local_hour !== h) return false;
-    if (t.next_due < local_date) return true;
-    if (n === 'on_day')        return t.next_due === local_date;
-    if (n === '1_day_before')  return t.next_due === tomorrow;
-    if (n === '2_days_before') return t.next_due === day_after;
-    return false;
-  });
+  var now_hour_str = now_utc.utc_date + 'T' + (now_utc.utc_hour < 10 ? '0' : '') + now_utc.utc_hour;
+  var result = [];
+  // Snooze: fire once at the :00 cron tick of the chosen UTC hour
+  if (now_utc.utc_minute < 30) {
+    (ud.tasks || []).forEach(function(t) {
+      if (t.snooze_fire_at === now_hour_str) result.push(t);
+    });
+  }
+  // Regular notifications: only in first 30 local minutes of the task's notify_hour
+  if (local_minute < 30) {
+    var local_date = date_add(now_utc.utc_date, Math.floor(raw_local_min / 1440));
+    var tomorrow = date_add(local_date, 1);
+    var day_after = date_add(local_date, 2);
+    (ud.tasks || []).forEach(function(t) {
+      if (t.snooze_fire_at === now_hour_str) return; // already included above
+      if (!t.next_due) return;
+      var n = t.notify || 'on_day';
+      if (n === 'none') return;
+      var h = (t.notify_hour != null) ? t.notify_hour : 8;
+      if (local_hour !== h) return;
+      if (t.next_due < local_date)              { result.push(t); return; }
+      if (n === 'on_day'       && t.next_due === local_date) { result.push(t); return; }
+      if (n === '1_day_before' && t.next_due === tomorrow)   { result.push(t); return; }
+      if (n === '2_days_before'&& t.next_due === day_after)  { result.push(t); return; }
+    });
+  }
+  return result;
 }
 async function handle_scheduled(env) {
   var now = new Date();
@@ -2378,7 +2389,7 @@ function del_task(id) {
 function mark_done(id) {
   var d = ld(), today = new Date().toISOString().slice(0,10);
   d.tasks = d.tasks.map(function(t) {
-    return t.id === id ? Object.assign({}, t, {last_done:today, next_due: t.dow && t.dow.length ? next_due_dow(today, t.dow) : next_due(today, t.freq)}) : t;
+    return t.id === id ? Object.assign({}, t, {last_done:today, next_due: t.dow && t.dow.length ? next_due_dow(today, t.dow) : next_due(today, t.freq), snooze_fire_at: null}) : t;
   });
   sv(d);
 }
@@ -2419,7 +2430,7 @@ function confirm_mark_done(id) {
   var d = ld();
   var task = d.tasks.find(function(t){ return t.id === id; }); if (!task) { cm(); return; }
   d.tasks = d.tasks.map(function(t) {
-    return t.id === id ? Object.assign({}, t, {last_done:done_date, next_due: t.dow && t.dow.length ? next_due_dow(done_date, t.dow) : next_due(done_date, t.freq)}) : t;
+    return t.id === id ? Object.assign({}, t, {last_done:done_date, next_due: t.dow && t.dow.length ? next_due_dow(done_date, t.dow) : next_due(done_date, t.freq), snooze_fire_at: null}) : t;
   });
   if (!Array.isArray(d.maint_log)) d.maint_log = [];
   d.maint_log.push({id:gid(), tank_id:task.tank_id, task_id:id, task_name:task.name, task_type:task.type, date:done_date, notes:full_note});
@@ -2431,10 +2442,28 @@ function confirm_skip_task(id) {
   var d = ld(), today = today_str();
   var task = d.tasks.find(function(t){ return t.id === id; }); if (!task) { cm(); return; }
   d.tasks = d.tasks.map(function(t) {
-    return t.id === id ? Object.assign({}, t, {next_due: t.dow && t.dow.length ? next_due_dow(today, t.dow) : next_due(today, t.freq)}) : t;
+    return t.id === id ? Object.assign({}, t, {next_due: t.dow && t.dow.length ? next_due_dow(today, t.dow) : next_due(today, t.freq), snooze_fire_at: null}) : t;
   });
   if (!Array.isArray(d.maint_log)) d.maint_log = [];
   d.maint_log.push({id:gid(), tank_id:task.tank_id, task_id:id, task_name:task.name, task_type:task.type, date:today, notes:note, skipped:true});
+  sv(d); cm(); r_maint();
+}
+function do_snooze_task(id) {
+  om('<div class="ctitle" style="margin-bottom:12px">Snooze reminder</div>' +
+     '<p style="margin:0 0 16px;font-size:14px;color:var(--muted)">Remind me again in:</p>' +
+     '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+     '<button class="btn bp" data-id="' + id + '" data-h="2" onclick="snooze_task(this.dataset.id,this.dataset.h)">2 hours</button>' +
+     '<button class="btn bp" data-id="' + id + '" data-h="3" onclick="snooze_task(this.dataset.id,this.dataset.h)">3 hours</button>' +
+     '<button class="btn bp" data-id="' + id + '" data-h="6" onclick="snooze_task(this.dataset.id,this.dataset.h)">6 hours</button>' +
+     '</div>' +
+     '<div style="margin-top:12px"><button class="btn bg" onclick="cm()">Cancel</button></div>');
+}
+function snooze_task(id, hours) {
+  var d = ld();
+  var fire_at = new Date(Date.now() + (parseInt(hours) || 2) * 3600000).toISOString().slice(0, 13);
+  d.tasks = d.tasks.map(function(t) {
+    return t.id === id ? Object.assign({}, t, {snooze_fire_at: fire_at}) : t;
+  });
   sv(d); cm(); r_maint();
 }
 function del_mlog(id) {
@@ -3995,12 +4024,23 @@ async function r_maint() {
     '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px">' +
     '<div class="fg" style="margin:0;flex:2;min-width:160px"><label style="font-size:12px;color:var(--muted);font-weight:600;display:block;margin-bottom:4px">Product</label>' +
     '<select id="dose_prod" style="width:100%" onchange="calc_dose()">' +
+    '<optgroup label="Water Treatment">' +
     '<option value="prime">Seachem Prime (dechlorinator)</option>' +
     '<option value="safe">Seachem Safe (powder dechlorinator)</option>' +
     '<option value="aquasafe">Tetra AquaSafe / API StressCoat</option>' +
     '<option value="generic">Generic dechlorinator (5 ml / 40 L)</option>' +
     '<option value="aq_salt">Aquarium salt &mdash; tonic (1 tsp / 10 L)</option>' +
     '<option value="epsom">Epsom salt &mdash; bloat / dropsy (1 tsp / 40 L)</option>' +
+    '</optgroup>' +
+    '<optgroup label="Fertilizers">' +
+    (function() {
+      var fopts = '';
+      Object.keys(_fert).forEach(function(k) {
+        if (_fert[k].ml_per_gal) fopts += '<option value="fert_' + k + '">' + _fert[k].name + '</option>';
+      });
+      return fopts;
+    })() +
+    '</optgroup>' +
     '</select></div>' +
     '<div class="fg" style="margin:0;min-width:110px"><label style="font-size:12px;color:var(--muted);font-weight:600;display:block;margin-bottom:4px">Volume (' + v_lbl() + ')</label>' +
     '<input type="number" id="dose_vol" value="' + dose_default + '" min="0.1" step="0.1" oninput="calc_dose()" style="width:100%">' +
@@ -4069,13 +4109,15 @@ async function r_maint() {
     tasks.forEach(function(t) {
       var cls = ucls(t.days);
       var due = t.days < 0 ? ('Overdue ' + Math.abs(t.days) + 'd') : t.days === 0 ? 'Today' : ('In ' + t.days + 'd');
-      h += '<tr class="trow ' + cls + '"><td><strong>' + esc(t.name) + '</strong>' +
+      var snooze_badge = t.snooze_fire_at ? ' <span style="font-size:10px;background:var(--accent);color:#fff;border-radius:4px;padding:1px 5px">Snoozed</span>' : '';
+      h += '<tr class="trow ' + cls + '"><td><strong>' + esc(t.name) + '</strong>' + snooze_badge +
            (t.notes ? '<br><small style="color:var(--muted)">' + esc(t.notes) + '</small>' : '') +
            '</td><td>' + esc(t.type) + '</td>' +
            '<td><strong>' + due + '</strong><br><small style="color:var(--muted)">' + t.next_due + '</small></td>' +
            '<td>' + t.last_done + '</td><td>' + fmt_schedule(t) + '</td>' +
            '<td style="white-space:nowrap">' +
            '<button class="btn bp bs" data-id="' + t.id + '" onclick="mark_done_prompt(this.dataset.id)">Done</button> ' +
+           (t.days <= 0 ? '<button class="btn bg bs" data-id="' + t.id + '" onclick="do_snooze_task(this.dataset.id)">Snooze</button> ' : '') +
            '<button class="btn bg bs" title="Edit task" data-id="' + t.id + '" onclick="do_edit_task(this.dataset.id)">&#x270E;</button> ' +
            '<button class="btn bg bs" title="Export to calendar (.ics)" data-id="' + t.id + '" onclick="export_task_ics(this.dataset.id)">&#x1F4C5;</button> ' +
            '<button class="btn bd bs" data-id="' + t.id + '" onclick="del_task(this.dataset.id);r_maint()">&#x2715;</button></td></tr>';
@@ -4148,6 +4190,17 @@ function calc_dose() {
   var vol = parseFloat(vol_el.value) || 0;
   if (vol <= 0) { res_el.innerHTML = ''; return; }
   var vol_l = get_pref().vol === 'L' ? vol : vol * 3.78541;
+  // Fertilizer products from presets
+  if (prod_el.value.slice(0, 5) === 'fert_') {
+    var fk = prod_el.value.slice(5);
+    var fp = _fert[fk];
+    if (!fp || !fp.ml_per_gal) { res_el.innerHTML = ''; return; }
+    var ml = vol_l * (fp.ml_per_gal / 3.78541);
+    var dose_str = (Math.round(ml * 10) / 10) + ' ml' + (ml < 0.5 ? ' &mdash; use a syringe' : '');
+    res_el.innerHTML = 'Add <strong>' + dose_str + '</strong> of ' + fp.name + ' for ' + vol + ' ' + v_lbl() + '.' +
+      '<br><span style="color:var(--muted);font-size:12px">' + fp.note + '</span>';
+    return;
+  }
   var prods = {
     prime:   {name:'Seachem Prime',              ml_per_l:5/200,   unit:'ml',  note:'Also detoxifies ammonia and nitrite. For emergency ammonia spike, use 5x dose.'},
     safe:    {name:'Seachem Safe',                mg_per_l:0.5,     unit:'mg',  note:'Dry powder — weigh carefully; 1 g treats 2 L.'},
@@ -5713,7 +5766,9 @@ function r_howto() {
     bullets([
       'Tasks are sorted by urgency: <span style="color:var(--danger);font-weight:600">overdue</span> → <span style="color:var(--warn);font-weight:600">due soon</span> → upcoming',
       'Click <strong>Mark Done</strong> to reset the timer — the next due date is recalculated automatically',
+      'Click <strong>Snooze</strong> on an overdue or due-today task to postpone the reminder by 2, 3, or 6 hours',
       'Set a frequency that matches your real routine — the app nudges you when you are overdue',
+      '<strong>Dosing Calculator:</strong> enter a volume and pick a product (dechlorinators, salts, or any fertilizer from your presets) to get the exact dose to add',
       'Water changes, filter rinses, glass wipes, fertilizing, pruning, and custom tasks are all supported',
     ])
   );
@@ -5737,14 +5792,14 @@ function r_howto() {
   );
 
   h += app_step(8, '#3ab87a', '&#x1F4BE;', 'Backup Your Data',
-    '<p style="font-size:13px;margin:0 0 6px">All data is stored in your browser. If you clear your browser data, it is gone.</p>' +
+    '<p style="font-size:13px;margin:0 0 6px">Your data is automatically synced to the cloud when you are signed in, so it is safe across devices and browser restarts.</p>' +
     bullets([
-      'Click <strong>Export</strong> in the nav bar regularly to download a JSON backup file',
-      'To restore: click <strong>Import</strong> and select your backup file',
-      'Back up before browser updates, device changes, or clearing history',
+      'Click <strong>Export</strong> in the nav bar at any time to download a local JSON backup file',
+      'To restore from a backup file: click <strong>Import</strong> and select your backup',
+      'Back up before major browser updates or clearing browser storage as an extra precaution',
       'The export file is human-readable — you can open it in any text editor',
     ]) +
-    warn_box('This app has no server or cloud sync. Your data lives only in this browser on this device. Export a backup at least monthly.')
+    tip_box('Sign in to keep your data synced automatically. If you use the app without signing in, your data is stored only in this browser.')
   );
 
   h += '</div>'; // close card
