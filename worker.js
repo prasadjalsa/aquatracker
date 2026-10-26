@@ -676,6 +676,9 @@ var FERT = {
   easy_green:    {name:'Easy Green All-in-One',    ml_per_gal:0.1,   freq:7, note:'Popular all-in-one liquid fertilizer'},
   thrive:        {name:'NilocG Thrive',            ml_per_gal:0.05,  freq:7, note:'Complete macro and micro fertilizer'},
   thrive_plus:   {name:'NilocG Thrive+',           ml_per_gal:0.05,  freq:3, note:'High-light tank all-in-one'},
+  apt_complete:  {name:'2Hr APT Complete',         ml_per_gal:0.095, freq:3, note:'All-in-one macro+micro — 2–3× per week'},
+  apt_zero:      {name:'2Hr APT Zero',             ml_per_gal:0.095, freq:3, note:'No-N no-P version for high-tech CO2 tanks'},
+  apt_fix:       {name:'2Hr APT Fix',              ml_per_gal:0.126, freq:1, note:'Liquid carbon — daily dosing'},
   custom:        {name:'Custom Fertilizer',        ml_per_gal:null,  freq:7, note:'Enter your own dose and schedule'},
 };
 
