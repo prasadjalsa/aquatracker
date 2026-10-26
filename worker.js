@@ -1777,6 +1777,7 @@ function get_plant_pos(pid) { var p = _pl[pid]; return p ? (_group_pos[p.group] 
 // In-memory data cache — populated on login, stays for the session
 var _aq = null;
 var _sync_timer = null;
+var _last_load = 0; // timestamp of last successful D1 load
 
 function ld() {
   var d = _aq || mt();
@@ -6770,7 +6771,8 @@ async function do_sync() {
     var res = await fetch('/api/data', {
       method: 'PUT',
       headers: {'Content-Type':'application/json', 'Authorization':'Bearer ' + token},
-      body: JSON.stringify({data: _aq, pref: get_pref()})
+      body: JSON.stringify({data: _aq, pref: get_pref()}),
+      keepalive: true
     });
     var body = await res.json();
     if (res.status === 401) { do_logout(); return; }
@@ -6813,6 +6815,7 @@ async function load_user_data() {
       } catch(e) {}
     }
     set_db_status('live');
+    _last_load = Date.now();
     if (json.pref && json.pref.temp) localStorage.setItem('aq_pref', JSON.stringify(json.pref));
     return true;
   } catch(e) { set_db_status('offline'); show_auth_screen(); return false; }
@@ -6960,6 +6963,17 @@ function do_logout() {
   show_login_form();
 }
 
+// Flush pending sync immediately when app is backgrounded; reload from D1 when it returns (if stale)
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'hidden') {
+    if (_sync_timer && _aq) { clearTimeout(_sync_timer); _sync_timer = null; do_sync(); }
+  } else if (document.visibilityState === 'visible') {
+    // Reload from D1 if it has been more than 2 minutes since last load — picks up changes from other devices
+    if (_aq && (Date.now() - _last_load) > 120000) {
+      load_user_data().then(function(ok) { if (ok) render_tab(); });
+    }
+  }
+});
 window.addEventListener('DOMContentLoaded', startup);
 <\/script>
 <button id="diag_fab" onclick="open_diag_wizard()" style="position:fixed;bottom:calc(env(safe-area-inset-bottom) + 88px);right:20px;z-index:910;background:#e85d4a;color:#fff;border:none;border-radius:28px;padding:0 18px;height:52px;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,.25);cursor:pointer;display:none;align-items:center;gap:8px;white-space:nowrap">&#x1F52C; Diagnose</button>
