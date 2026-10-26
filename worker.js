@@ -1265,10 +1265,6 @@ function get_rec_tasks_s(tid, ud) {
     recs.push({type:'Other',name:'Drop Checker Fluid Change',freq:14,why:'Reference solution loses accuracy after 1-2 weeks. Replace with fresh 4 dKH water and indicator drops.'});
     recs.push({type:'Other',name:'CO2 Diffuser Clean',freq:30,why:'Calcium deposits block the ceramic membrane and reduce bubble output. Soak in diluted white vinegar for 30 minutes.'});
   }
-  (ud.ferts||[]).filter(function(x){return x.tank_id===tid;}).forEach(function(f){
-    var dose_str=f.dose_ml?f.dose_ml+' ml per dose':'see bottle for dose';
-    recs.push({type:'Fertilizer',name:f.name,freq:f.freq_days,why:dose_str+' — based on '+Math.round(tank.gallons)+' gal tank'});
-  });
   return recs;
 }
 function get_disease_risks_s(tid, ud) {
@@ -2183,31 +2179,69 @@ function sub_edit_stock(e) {
 
 // ===== FERTILIZERS =====
 var _fert_gal = 0;
-function add_fert(tid, preset, name, dose_ml, freq_days, notes) {
-  var d = ld();
-  d.ferts.push({id:gid(), tank_id:tid, preset:preset, name:name, dose_ml:parseFloat(dose_ml)||0, freq_days:parseInt(freq_days)||7, notes:notes||''});
+function add_fert(tid, preset, name, dose_ml, freq_days, notes, dow) {
+  var task_name = 'Dose ' + name + (dose_ml ? ' — ' + dose_ml + ' ml' : '');
+  var task_id = add_task(tid, 'Fertilizer', task_name, dow?null:parseInt(freq_days)||7, today_str(), 'Fertilizer dose', undefined, undefined, dow||null);
+  var d = ld(); // reload after add_task saved
+  d.ferts.push({id:gid(), tank_id:tid, preset:preset, name:name, dose_ml:parseFloat(dose_ml)||0, freq_days:dow?null:parseInt(freq_days)||7, dow:dow||null, notes:notes||'', task_id:task_id});
   sv(d); r_life();
 }
-function del_fert(id) { var d = ld(); d.ferts = d.ferts.filter(function(x){return x.id!==id;}); sv(d); r_life(); }
+function del_fert(id) {
+  var d = ld();
+  var fert = d.ferts.find(function(x){return x.id===id;});
+  if (fert && fert.task_id) d.tasks = d.tasks.filter(function(x){return x.id!==fert.task_id;});
+  d.ferts = d.ferts.filter(function(x){return x.id!==id;});
+  sv(d); r_life();
+}
 function do_edit_fert(id) {
   var d = ld(), f = d.ferts.find(function(x){return x.id===id;}); if (!f) return;
   var tank = d.tanks.find(function(t){ return t.id === at(); });
   var gal_note = tank ? '<small style="color:var(--muted);font-size:11px">Tank is ' + Math.round(tank.gallons) + ' gal — adjust dose if needed</small>' : '';
+  var is_dow_f = f.dow && f.dow.length > 0;
+  var edit_dow_boxes = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(function(dn,i){
+    return '<label style="display:flex;align-items:center;gap:4px;font-size:13px"><input type="checkbox" name="dow_' + i + '"' + (f.dow && f.dow.indexOf(i) !== -1 ? ' checked' : '') + '> ' + dn + '</label>';
+  }).join('');
   om('<div class="mtitle">Edit Fertilizer</div>' +
     '<form onsubmit="sub_edit_fert(event)">' +
     '<input type="hidden" name="fid" value="' + f.id + '">' +
     fg('Name', '<input type="text" name="name" value="' + esc(f.name) + '" required>') +
     fg('Dose per application (ml)', '<input type="number" name="dose_ml" step="0.1" min="0" value="' + f.dose_ml + '" required>' + gal_note) +
-    fg('Dose every (days)', '<input type="number" name="freq_days" min="1" value="' + f.freq_days + '" required>') +
+    '<div class="fg"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Dose schedule</label>' +
+    '<div style="display:flex;gap:16px;margin-bottom:8px">' +
+    '<label style="font-size:13px;display:flex;align-items:center;gap:5px"><input type="radio" name="sched_type" value="freq"' + (is_dow_f ? '' : ' checked') + ' onchange="upd_task_sched(this.value)"> Every N days</label>' +
+    '<label style="font-size:13px;display:flex;align-items:center;gap:5px"><input type="radio" name="sched_type" value="dow"' + (is_dow_f ? ' checked' : '') + ' onchange="upd_task_sched(this.value)"> Specific days of week</label>' +
+    '</div>' +
+    '<div id="task_freq_row"' + (is_dow_f ? ' style="display:none"' : '') + '><input type="number" name="freq_days" min="1" value="' + (f.freq_days || 7) + '" style="width:80px"> days</div>' +
+    '<div id="task_dow_row"' + (is_dow_f ? '' : ' style="display:none"') + '><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">' + edit_dow_boxes + '</div></div></div>' +
     fg('Notes', '<input type="text" name="notes" value="' + esc(f.notes) + '">') +
     '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Save</button></div>' +
     '</form>');
 }
 function sub_edit_fert(e) {
   e.preventDefault(); var f = e.target, d = ld();
+  var sched_type = f.sched_type ? f.sched_type.value : 'freq';
+  var dow = null;
+  if (sched_type === 'dow') {
+    dow = [0,1,2,3,4,5,6].filter(function(i){ return f['dow_'+i] && f['dow_'+i].checked; });
+    if (!dow.length) { alert('Please select at least one day of the week.'); return; }
+  }
+  var freq_days = dow ? null : parseInt(f.freq_days.value) || 7;
   d.ferts = d.ferts.map(function(x) {
     if (x.id !== f.fid.value) return x;
-    return Object.assign({}, x, {name:f.name.value, dose_ml:parseFloat(f.dose_ml.value)||0, freq_days:parseInt(f.freq_days.value)||7, notes:f.notes.value});
+    var updated = Object.assign({}, x, {name:f.name.value, dose_ml:parseFloat(f.dose_ml.value)||0, freq_days:freq_days, dow:dow, notes:f.notes.value});
+    if (updated.task_id) {
+      var task_name = 'Dose ' + updated.name + (updated.dose_ml ? ' — ' + updated.dose_ml + ' ml' : '');
+      d.tasks = (d.tasks||[]).map(function(t) {
+        if (t.id !== updated.task_id) return t;
+        return Object.assign({}, t, {
+          name: task_name,
+          freq: dow ? null : freq_days,
+          dow: dow,
+          next_due: dow && dow.length ? next_due_dow(t.last_done || today_str(), dow) : next_due(t.last_done || today_str(), freq_days)
+        });
+      });
+    }
+    return updated;
   });
   sv(d); cm(); r_life();
 }
@@ -2234,19 +2268,34 @@ function do_add_fert() {
   var opts = Object.keys(_fert).map(function(k) {
     return '<option value="' + k + '">' + _fert[k].name + '</option>';
   }).join('');
+  var fert_dow_boxes = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(function(dn,i){
+    return '<label style="display:flex;align-items:center;gap:4px;font-size:13px"><input type="checkbox" name="fert_dow_' + i + '"> ' + dn + '</label>';
+  }).join('');
   om('<div class="mtitle">Add Fertilizer</div>' +
     '<form id="fert_frm" onsubmit="event.preventDefault();sub_fert()">' +
     fg('Preset', '<select name="fert_preset" onchange="calc_fert_dose(this)">' + opts + '</select>') +
     fg('Name', '<input type="text" name="fert_name" value="' + esc(_fert[Object.keys(_fert)[0]].name) + '" required>') +
     fg('Dose per application (ml)', '<input type="number" name="fert_dose" step="0.1" min="0" value="' + (Math.round(_fert[Object.keys(_fert)[0]].ml_per_gal * _fert_gal * 10) / 10) + '" required placeholder="e.g. 2.5"><small style="color:var(--muted);font-size:11px">Calculated from ' + vol_note + ' — edit if needed</small>') +
-    fg('Dose every (days)', '<input type="number" name="fert_freq" min="1" value="' + _fert[Object.keys(_fert)[0]].freq + '" required>') +
+    '<div class="fg"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Dose schedule</label>' +
+    '<div style="display:flex;gap:16px;margin-bottom:8px">' +
+    '<label style="font-size:13px;display:flex;align-items:center;gap:5px"><input type="radio" name="sched_type" value="freq" checked onchange="upd_task_sched(this.value)"> Every N days</label>' +
+    '<label style="font-size:13px;display:flex;align-items:center;gap:5px"><input type="radio" name="sched_type" value="dow" onchange="upd_task_sched(this.value)"> Specific days of week</label>' +
+    '</div>' +
+    '<div id="task_freq_row"><input type="number" name="fert_freq" min="1" value="' + _fert[Object.keys(_fert)[0]].freq + '" style="width:80px"> days</div>' +
+    '<div id="task_dow_row" style="display:none"><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">' + fert_dow_boxes + '</div></div></div>' +
     fg('Notes', '<input type="text" name="fert_notes" placeholder="Optional">') +
     '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Add Fertilizer</button></div>' +
     '</form>');
 }
 function sub_fert() {
   var f = document.getElementById('fert_frm');
-  add_fert(at(), f.fert_preset.value, f.fert_name.value.trim(), f.fert_dose.value, f.fert_freq.value, f.fert_notes.value.trim());
+  var sched_type = f.sched_type ? f.sched_type.value : 'freq';
+  var dow = null;
+  if (sched_type === 'dow') {
+    dow = [0,1,2,3,4,5,6].filter(function(i){ return f['fert_dow_'+i] && f['fert_dow_'+i].checked; });
+    if (!dow.length) { alert('Please select at least one day of the week.'); return; }
+  }
+  add_fert(at(), f.fert_preset.value, f.fert_name.value.trim(), f.fert_dose.value, f.fert_freq.value, f.fert_notes.value.trim(), dow);
   cm();
 }
 
@@ -2255,25 +2304,52 @@ function next_due(last, freq) {
   var ms = new Date(last + 'T00:00:00').getTime() + parseInt(freq) * 86400000;
   return new Date(ms).toISOString().slice(0,10);
 }
+function next_due_dow(from_date, dow) {
+  // find next date after from_date that falls on one of the days in dow (0=Sun..6=Sat)
+  var d = new Date(from_date + 'T00:00:00');
+  d.setDate(d.getDate() + 1);
+  for (var i = 0; i < 7; i++) {
+    if (dow.indexOf(d.getDay()) !== -1) return d.toISOString().slice(0, 10);
+    d.setDate(d.getDate() + 1);
+  }
+  return from_date;
+}
+function fmt_schedule(t) {
+  if (t.dow && t.dow.length) {
+    return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].filter(function(_,i){ return t.dow.indexOf(i) !== -1; }).join(', ');
+  }
+  return 'Every ' + (t.freq || t.freq_days || 7) + ' days';
+}
+function upd_task_sched(val) {
+  var fr = document.getElementById('task_freq_row');
+  var dr = document.getElementById('task_dow_row');
+  if (fr) fr.style.display = val === 'freq' ? '' : 'none';
+  if (dr) dr.style.display = val === 'dow' ? '' : 'none';
+}
 function days_til(due) {
   var now = new Date(); now.setHours(0,0,0,0);
   return Math.ceil((new Date(due + 'T00:00:00') - now) / 86400000);
 }
 function ucls(days) { return days < 0 ? 'tover' : days <= 3 ? 'tsoon' : 'tok'; }
-function add_task(tid, type, name, freq, last, notes, notify, notify_hour) {
+function add_task(tid, type, name, freq, last, notes, notify, notify_hour, dow) {
   var d = ld();
-  d.tasks.push({id:gid(), tank_id:tid, type:type, name:name, freq:parseInt(freq)||7, last_done:last, next_due:next_due(last,freq), notes:notes||'', notify:notify||'on_day', notify_hour:notify_hour!=null?parseInt(notify_hour):8});
+  var nd = dow && dow.length ? next_due_dow(last, dow) : next_due(last, freq);
+  var new_id = gid();
+  d.tasks.push({id:new_id, tank_id:tid, type:type, name:name, freq:dow?null:parseInt(freq)||7, dow:dow||null, last_done:last, next_due:nd, notes:notes||'', notify:notify||'on_day', notify_hour:notify_hour!=null?parseInt(notify_hour):8});
   sv(d);
+  return new_id;
 }
 function del_task(id) {
   var d = ld(), item = d.tasks.find(function(x){return x.id===id;});
   if (!confirm('Delete "' + (item ? item.name : 'this task') + '"? Cannot be undone.')) return;
-  d.tasks = d.tasks.filter(function(x){return x.id!==id;}); sv(d);
+  d.tasks = d.tasks.filter(function(x){return x.id!==id;});
+  d.ferts = (d.ferts||[]).map(function(f){ return f.task_id === id ? Object.assign({}, f, {task_id:null}) : f; });
+  sv(d);
 }
 function mark_done(id) {
   var d = ld(), today = new Date().toISOString().slice(0,10);
   d.tasks = d.tasks.map(function(t) {
-    return t.id === id ? Object.assign({}, t, {last_done:today, next_due:next_due(today,t.freq)}) : t;
+    return t.id === id ? Object.assign({}, t, {last_done:today, next_due: t.dow && t.dow.length ? next_due_dow(today, t.dow) : next_due(today, t.freq)}) : t;
   });
   sv(d);
 }
@@ -2314,7 +2390,7 @@ function confirm_mark_done(id) {
   var d = ld();
   var task = d.tasks.find(function(t){ return t.id === id; }); if (!task) { cm(); return; }
   d.tasks = d.tasks.map(function(t) {
-    return t.id === id ? Object.assign({}, t, {last_done:done_date, next_due:next_due(done_date,t.freq)}) : t;
+    return t.id === id ? Object.assign({}, t, {last_done:done_date, next_due: t.dow && t.dow.length ? next_due_dow(done_date, t.dow) : next_due(done_date, t.freq)}) : t;
   });
   if (!Array.isArray(d.maint_log)) d.maint_log = [];
   d.maint_log.push({id:gid(), tank_id:task.tank_id, task_id:id, task_name:task.name, task_type:task.type, date:done_date, notes:full_note});
@@ -2326,7 +2402,7 @@ function confirm_skip_task(id) {
   var d = ld(), today = today_str();
   var task = d.tasks.find(function(t){ return t.id === id; }); if (!task) { cm(); return; }
   d.tasks = d.tasks.map(function(t) {
-    return t.id === id ? Object.assign({}, t, {next_due:next_due(today, t.freq)}) : t;
+    return t.id === id ? Object.assign({}, t, {next_due: t.dow && t.dow.length ? next_due_dow(today, t.dow) : next_due(today, t.freq)}) : t;
   });
   if (!Array.isArray(d.maint_log)) d.maint_log = [];
   d.maint_log.push({id:gid(), tank_id:task.tank_id, task_id:id, task_name:task.name, task_type:task.type, date:today, notes:note, skipped:true});
@@ -2430,8 +2506,10 @@ function get_co2_info(tid) {
   return {type: cfg.co2_type || 'CO2', hours: cfg.hours || 0, bps: cfg.bps || 0};
 }
 
-function add_rec_task(type, name, freq) {
-  add_task(at(), type, name, parseInt(freq), today_str(), 'Recommended task');
+function add_rec_task(type, name, freq, rdow) {
+  var dow = null;
+  try { if (rdow && rdow !== 'null') dow = JSON.parse(rdow); } catch(x) {}
+  add_task(at(), type, name, parseInt(freq)||7, today_str(), 'Recommended task', undefined, undefined, dow);
   r_maint();
 }
 
@@ -3577,7 +3655,7 @@ function r_life() {
     fr.forEach(function(f) {
       h += '<tr><td><strong>' + esc(f.name) + '</strong></td>' +
            '<td>' + (f.dose_ml || '—') + ' ml</td>' +
-           '<td>' + f.freq_days + ' days</td>' +
+           '<td>' + fmt_schedule(f) + '</td>' +
            '<td>' + esc(f.notes) + '</td>' +
            '<td style="white-space:nowrap"><button class="btn bg bs" data-id="' + f.id + '" onclick="do_edit_fert(this.dataset.id)">Edit</button> <button class="btn bd bs" data-id="' + f.id + '" onclick="del_fert(this.dataset.id)">&#x2715;</button></td></tr>';
     });
@@ -3942,7 +4020,7 @@ async function r_maint() {
       if (already) {
         h += '<span class="pill pok">&#x2713; Added</span>';
       } else {
-        h += '<button class="btn bp bs" data-rtype="' + esc(t.type) + '" data-rname="' + esc(t.name) + '" data-rfreq="' + t.freq + '" onclick="add_rec_task(this.dataset.rtype,this.dataset.rname,this.dataset.rfreq)">+ Add</button>';
+        h += '<button class="btn bp bs" data-rtype="' + esc(t.type) + '" data-rname="' + esc(t.name) + '" data-rfreq="' + (t.freq||7) + '" data-rdow="' + esc(JSON.stringify(t.dow||null)) + '" onclick="add_rec_task(this.dataset.rtype,this.dataset.rname,this.dataset.rfreq,this.dataset.rdow)">+ Add</button>';
       }
       h += '</td></tr>';
     });
@@ -3966,7 +4044,7 @@ async function r_maint() {
            (t.notes ? '<br><small style="color:var(--muted)">' + esc(t.notes) + '</small>' : '') +
            '</td><td>' + esc(t.type) + '</td>' +
            '<td><strong>' + due + '</strong><br><small style="color:var(--muted)">' + t.next_due + '</small></td>' +
-           '<td>' + t.last_done + '</td><td>' + t.freq + 'd</td>' +
+           '<td>' + t.last_done + '</td><td>' + fmt_schedule(t) + '</td>' +
            '<td style="white-space:nowrap">' +
            '<button class="btn bp bs" data-id="' + t.id + '" onclick="mark_done_prompt(this.dataset.id)">Done</button> ' +
            '<button class="btn bg bs" title="Edit task" data-id="' + t.id + '" onclick="do_edit_task(this.dataset.id)">&#x270E;</button> ' +
@@ -3980,11 +4058,11 @@ async function r_maint() {
   h += '<div class="card"><div class="ctitle">Add Custom Task</div>' +
     '<form id="mf" onsubmit="sub_task(event)">' +
     '<div class="frow">' +
-    fg('Task Type', '<select name="type"><option>Water Change</option><option>Filter Clean</option><option>Gravel Vac</option><option>Glass Wipe</option><option>Fertilizer</option><option>Pruning</option><option>Water Test</option><option>Other</option></select>') +
+    fg('Task Type', '<select name="type"><option>Water Change</option><option>Filter Clean</option><option>Gravel Vac</option><option>Glass Wipe</option><option>Pruning</option><option>Water Test</option><option>Other</option></select>') +
     fg('Task Name', '<input type="text" name="name" placeholder="e.g. 25% water change" required>') +
-    fg('Every (days)', '<input type="number" name="freq" value="7" min="1" required>') +
     fg('Last Done', '<input type="date" name="last" value="' + td + '" required>') +
     '</div>' +
+    fg('Repeat every', '<div style="display:flex;align-items:center;gap:6px"><input type="number" name="freq" value="7" min="1" style="width:80px"> days</div>') +
     fg('Notes', '<input type="text" name="notes" placeholder="Optional">') +
     '<div class="frow">' +
     fg('Remind me', '<select name="notify"><option value="on_day">On due date</option><option value="1_day_before">1 day before</option><option value="2_days_before">2 days before</option><option value="none">No reminder</option></select>') +
@@ -4067,14 +4145,20 @@ function calc_dose() {
 }
 function sub_task(e) {
   e.preventDefault(); var f = e.target, tid = at();
-  add_task(tid, f.type.value, f.name.value, f.freq.value, f.last.value, f.notes.value, f.notify.value, f.notify_hour.value);
+  add_task(tid, f.type.value, f.name.value, f.freq ? f.freq.value : 7, f.last.value, f.notes.value, f.notify.value, f.notify_hour.value);
   r_maint();
 }
 function do_edit_task(id) {
   var d = ld(), t = d.tasks.find(function(x){ return x.id === id; });
   if (!t) return;
+  if (t.fert_id || t.type === 'Fertilizer') {
+    om('<div class="ctitle" style="margin-bottom:12px">Fertilizer Task</div>' +
+      '<p style="margin:0 0 12px">This task was created from a fertilizer. To change its name or schedule, edit the fertilizer in <strong>My Tank &rarr; Fertilizers</strong>.</p>' +
+      '<button class="btn bg" onclick="cm()">Close</button>');
+    return;
+  }
   var sel_type = function(v) {
-    return ['Water Change','Filter Clean','Gravel Vac','Glass Wipe','Fertilizer','Pruning','Water Test','Other'].map(function(opt) {
+    return ['Water Change','Filter Clean','Gravel Vac','Glass Wipe','Pruning','Water Test','Other'].map(function(opt) {
       return '<option' + (opt === v ? ' selected' : '') + '>' + opt + '</option>';
     }).join('');
   };
@@ -4096,9 +4180,9 @@ function do_edit_task(id) {
     '<div class="frow">' +
     fg('Task Type', '<select name="type">' + sel_type(t.type) + '</select>') +
     fg('Task Name', '<input type="text" name="name" value="' + esc(t.name) + '" required>') +
-    fg('Every (days)', '<input type="number" name="freq" value="' + t.freq + '" min="1" required>') +
     fg('Last Done', '<input type="date" name="last" value="' + (t.last_done || '') + '" required>') +
     '</div>' +
+    fg('Repeat every', '<div style="display:flex;align-items:center;gap:6px"><input type="number" name="freq" value="' + (t.freq || 7) + '" min="1" style="width:80px"> days</div>') +
     fg('Notes', '<input type="text" name="notes" value="' + esc(t.notes || '') + '">') +
     '<div class="frow">' +
     fg('Remind me', '<select name="notify">' + sel_notify(t.notify || 'on_day') + '</select>') +
@@ -4115,8 +4199,8 @@ function sub_edit_task(e, id) {
   if (!t) return;
   t.type = f.type.value;
   t.name = f.name.value;
-  t.freq = parseInt(f.freq.value) || 7;
   t.last_done = f.last.value;
+  t.dow = null; t.freq = parseInt(f.freq.value) || 7;
   t.next_due = next_due(f.last.value, f.freq.value);
   t.notes = f.notes.value;
   t.notify = f.notify.value;
@@ -6654,6 +6738,21 @@ async function startup() {
   hide_auth_screen();
   var p = get_pref();
   if (p.tz_offset == null) { p.tz_offset = new Date().getTimezoneOffset(); sv_pref(p); }
+  // Migrate existing ferts that predate auto-task creation
+  var _md = ld(), _changed = false;
+  (_md.ferts||[]).forEach(function(f) {
+    var task_exists = f.task_id && (_md.tasks||[]).some(function(t){ return t.id === f.task_id; });
+    if (!task_exists) {
+      var task_name = 'Dose ' + f.name + (f.dose_ml ? ' — ' + f.dose_ml + ' ml' : '');
+      if (!_md.tasks) _md.tasks = [];
+      var new_id = gid();
+      var nd = f.dow && f.dow.length ? next_due_dow(today_str(), f.dow) : next_due(today_str(), f.freq_days || 7);
+      _md.tasks.push({id:new_id, tank_id:f.tank_id, type:'Fertilizer', name:task_name, freq:f.dow?null:f.freq_days||7, dow:f.dow||null, last_done:today_str(), next_due:nd, notes:'Fertilizer dose', notify:'on_day', notify_hour:8});
+      f.task_id = new_id;
+      _changed = true;
+    }
+  });
+  if (_changed) sv(_md);
   init();
   if (new URLSearchParams(location.search).get('tab') === 'maint') {
     switch_tab('maint');
