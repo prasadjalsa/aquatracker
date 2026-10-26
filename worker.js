@@ -1506,8 +1506,7 @@ function get_due_tasks_s(now_utc, ud) {
   var tz_offset = (ud.pref && ud.pref.tz_offset != null) ? ud.pref.tz_offset : 0;
   var raw_local_min = now_utc.utc_hour * 60 + now_utc.utc_minute - tz_offset;
   var local_total_min = ((raw_local_min % 1440) + 1440) % 1440;
-  var local_hour = Math.floor(local_total_min / 60);
-  var local_minute = local_total_min % 60;
+  var local_window = Math.floor(local_total_min / 30); // which 30-min slot we're in
   var now_hour_str = now_utc.utc_date + 'T' + (now_utc.utc_hour < 10 ? '0' : '') + now_utc.utc_hour;
   var result = [];
   // Snooze: fire once at the :00 cron tick of the chosen UTC hour
@@ -1516,24 +1515,22 @@ function get_due_tasks_s(now_utc, ud) {
       if (t.snooze_fire_at === now_hour_str) result.push(t);
     });
   }
-  // Regular notifications: only in first 30 local minutes of the task's notify_hour
-  if (local_minute < 30) {
-    var local_date = date_add(now_utc.utc_date, Math.floor(raw_local_min / 1440));
-    var tomorrow = date_add(local_date, 1);
-    var day_after = date_add(local_date, 2);
-    (ud.tasks || []).forEach(function(t) {
-      if (t.snooze_fire_at === now_hour_str) return; // already included above
-      if (!t.next_due) return;
-      var n = t.notify || 'on_day';
-      if (n === 'none') return;
-      var h = (t.notify_hour != null) ? t.notify_hour : 8;
-      if (local_hour !== h) return;
-      if (t.next_due < local_date)              { result.push(t); return; }
-      if (n === 'on_day'       && t.next_due === local_date) { result.push(t); return; }
-      if (n === '1_day_before' && t.next_due === tomorrow)   { result.push(t); return; }
-      if (n === '2_days_before'&& t.next_due === day_after)  { result.push(t); return; }
-    });
-  }
+  // Regular notifications: fire in the matching 30-min local window
+  var local_date = date_add(now_utc.utc_date, Math.floor(raw_local_min / 1440));
+  var tomorrow = date_add(local_date, 1);
+  var day_after = date_add(local_date, 2);
+  (ud.tasks || []).forEach(function(t) {
+    if (t.snooze_fire_at === now_hour_str) return;
+    if (!t.next_due) return;
+    var n = t.notify || 'on_day';
+    if (n === 'none') return;
+    var nm = t.notify_min != null ? t.notify_min : ((t.notify_hour != null ? t.notify_hour : 8) * 60);
+    if (Math.floor(nm / 30) !== local_window) return;
+    if (t.next_due < local_date)               { result.push(t); return; }
+    if (n === 'on_day'        && t.next_due === local_date) { result.push(t); return; }
+    if (n === '1_day_before'  && t.next_due === tomorrow)   { result.push(t); return; }
+    if (n === '2_days_before' && t.next_due === day_after)  { result.push(t); return; }
+  });
   return result;
 }
 async function handle_scheduled(env) {
@@ -2194,9 +2191,9 @@ function sub_edit_stock(e) {
 
 // ===== FERTILIZERS =====
 var _fert_gal = 0;
-function add_fert(tid, preset, name, dose_ml, freq_days, notes, dow, notify, notify_hour) {
+function add_fert(tid, preset, name, dose_ml, freq_days, notes, dow, notify, notify_min) {
   var task_name = 'Dose ' + name + (dose_ml ? ' — ' + dose_ml + ' ml' : '');
-  var task_id = add_task(tid, 'Fertilizer', task_name, dow?null:parseInt(freq_days)||7, today_str(), 'Fertilizer dose', notify||'on_day', notify_hour!=null?parseInt(notify_hour):8, dow||null);
+  var task_id = add_task(tid, 'Fertilizer', task_name, dow?null:parseInt(freq_days)||7, today_str(), 'Fertilizer dose', notify||'on_day', notify_min!=null?parseInt(notify_min):480, dow||null);
   var d = ld(); // reload after add_task saved
   d.ferts.push({id:gid(), tank_id:tid, preset:preset, name:name, dose_ml:parseFloat(dose_ml)||0, freq_days:dow?null:parseInt(freq_days)||7, dow:dow||null, notes:notes||'', task_id:task_id});
   sv(d); r_life();
@@ -2218,15 +2215,10 @@ function do_edit_fert(id) {
   }).join('');
   var linked_task = f.task_id ? (d.tasks||[]).find(function(t){ return t.id === f.task_id; }) : null;
   var cur_notify = linked_task ? (linked_task.notify || 'on_day') : 'on_day';
-  var cur_hour = linked_task ? (linked_task.notify_hour != null ? linked_task.notify_hour : 8) : 8;
+  var cur_min = get_notify_min(linked_task);
   var notify_opts = [['on_day','On due date'],['1_day_before','1 day before'],['2_days_before','2 days before'],['none','No reminder']].map(function(o){
     return '<option value="' + o[0] + '"' + (o[0] === cur_notify ? ' selected' : '') + '>' + o[1] + '</option>';
   }).join('');
-  var hour_opts_e = '';
-  for (var eh = 6; eh <= 21; eh++) {
-    var eh_lbl = eh < 12 ? (eh + ':00 AM') : eh === 12 ? '12:00 PM' : ((eh-12) + ':00 PM');
-    hour_opts_e += '<option value="' + eh + '"' + (eh === cur_hour ? ' selected' : '') + '>' + eh_lbl + '</option>';
-  }
   om('<div class="mtitle">Edit Fertilizer</div>' +
     '<form onsubmit="sub_edit_fert(event)">' +
     '<input type="hidden" name="fid" value="' + f.id + '">' +
@@ -2242,7 +2234,7 @@ function do_edit_fert(id) {
     fg('Notes', '<input type="text" name="notes" value="' + esc(f.notes) + '">') +
     '<div class="frow">' +
     fg('Remind me', '<select name="fert_notify">' + notify_opts + '</select>') +
-    fg('At time', '<select name="fert_notify_hour">' + hour_opts_e + '</select>') +
+    fg('At time', '<select name="fert_notify_hour">' + mk_time_opts(cur_min) + '</select>') +
     '</div>' +
     '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Save</button></div>' +
     '</form>');
@@ -2269,7 +2261,7 @@ function sub_edit_fert(e) {
           dow: dow,
           next_due: dow && dow.length ? next_due_dow(t.last_done || today_str(), dow) : next_due(t.last_done || today_str(), freq_days),
           notify: f.fert_notify ? f.fert_notify.value : (t.notify || 'on_day'),
-          notify_hour: f.fert_notify_hour ? parseInt(f.fert_notify_hour.value) : (t.notify_hour != null ? t.notify_hour : 8)
+          notify_min: f.fert_notify_hour ? parseInt(f.fert_notify_hour.value) : get_notify_min(t)
         });
       });
     }
@@ -2289,6 +2281,23 @@ function calc_fert_dose(sel) {
     f.fert_dose.value = '';
   }
 }
+// Returns notify_min (minutes since midnight) from a task, handling old notify_hour format
+function get_notify_min(t) {
+  if (t && t.notify_min != null) return t.notify_min;
+  return (t && t.notify_hour != null ? t.notify_hour : 8) * 60;
+}
+// Builds <option> elements for the time picker: 6:00 AM to 11:30 PM in 30-min steps, plus 12:00 AM
+function mk_time_opts(cur_min) {
+  var opts = '';
+  for (var m = 360; m <= 1410; m += 30) {
+    var h = Math.floor(m / 60), mn = m % 60;
+    var h12 = h > 12 ? h - 12 : h;
+    var lbl = h12 + ':' + (mn === 0 ? '00' : '30') + ' ' + (h < 12 ? 'AM' : 'PM');
+    opts += '<option value="' + m + '"' + (m === cur_min ? ' selected' : '') + '>' + lbl + '</option>';
+  }
+  opts += '<option value="0"' + (cur_min === 0 ? ' selected' : '') + '>12:00 AM</option>';
+  return opts;
+}
 function do_add_fert() {
   var d = ld();
   var tank = d.tanks.find(function(t){ return t.id === at(); });
@@ -2303,11 +2312,6 @@ function do_add_fert() {
   var fert_dow_boxes = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(function(dn,i){
     return '<label style="display:flex;align-items:center;gap:4px;font-size:13px"><input type="checkbox" name="fert_dow_' + i + '"> ' + dn + '</label>';
   }).join('');
-  var hour_opts = '';
-  for (var fh = 6; fh <= 21; fh++) {
-    var fh_lbl = fh < 12 ? (fh + ':00 AM') : fh === 12 ? '12:00 PM' : ((fh-12) + ':00 PM');
-    hour_opts += '<option value="' + fh + '"' + (fh === 8 ? ' selected' : '') + '>' + fh_lbl + '</option>';
-  }
   om('<div class="mtitle">Add Fertilizer</div>' +
     '<form id="fert_frm" onsubmit="event.preventDefault();sub_fert()">' +
     fg('Preset', '<select name="fert_preset" onchange="calc_fert_dose(this)">' + opts + '</select>') +
@@ -2323,7 +2327,7 @@ function do_add_fert() {
     fg('Notes', '<input type="text" name="fert_notes" placeholder="Optional">') +
     '<div class="frow">' +
     fg('Remind me', '<select name="fert_notify"><option value="on_day" selected>On due date</option><option value="1_day_before">1 day before</option><option value="2_days_before">2 days before</option><option value="none">No reminder</option></select>') +
-    fg('At time', '<select name="fert_notify_hour">' + hour_opts + '</select>') +
+    fg('At time', '<select name="fert_notify_hour">' + mk_time_opts(480) + '</select>') +
     '</div>' +
     '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Add Fertilizer</button></div>' +
     '</form>');
@@ -2372,11 +2376,11 @@ function days_til(due) {
   return Math.ceil((new Date(due + 'T00:00:00') - now) / 86400000);
 }
 function ucls(days) { return days < 0 ? 'tover' : days <= 3 ? 'tsoon' : 'tok'; }
-function add_task(tid, type, name, freq, last, notes, notify, notify_hour, dow) {
+function add_task(tid, type, name, freq, last, notes, notify, notify_min, dow) {
   var d = ld();
   var nd = dow && dow.length ? next_due_dow(last, dow) : next_due(last, freq);
   var new_id = gid();
-  d.tasks.push({id:new_id, tank_id:tid, type:type, name:name, freq:dow?null:parseInt(freq)||7, dow:dow||null, last_done:last, next_due:nd, notes:notes||'', notify:notify||'on_day', notify_hour:notify_hour!=null?parseInt(notify_hour):8});
+  d.tasks.push({id:new_id, tank_id:tid, type:type, name:name, freq:dow?null:parseInt(freq)||7, dow:dow||null, last_done:last, next_due:nd, notes:notes||'', notify:notify||'on_day', notify_min:notify_min!=null?parseInt(notify_min):480});
   sv(d);
   return new_id;
 }
@@ -4139,7 +4143,7 @@ async function r_maint() {
     fg('Notes', '<input type="text" name="notes" placeholder="Optional">') +
     '<div class="frow">' +
     fg('Remind me', '<select name="notify"><option value="on_day">On due date</option><option value="1_day_before">1 day before</option><option value="2_days_before">2 days before</option><option value="none">No reminder</option></select>') +
-    fg('At time', '<select name="notify_hour"><option value="6">6:00 AM</option><option value="7">7:00 AM</option><option value="8" selected>8:00 AM</option><option value="9">9:00 AM</option><option value="10">10:00 AM</option><option value="11">11:00 AM</option><option value="12">12:00 PM</option><option value="13">1:00 PM</option><option value="14">2:00 PM</option><option value="15">3:00 PM</option><option value="16">4:00 PM</option><option value="17">5:00 PM</option><option value="18">6:00 PM</option><option value="19">7:00 PM</option><option value="20">8:00 PM</option><option value="21">9:00 PM</option></select>') +
+    fg('At time', '<select name="notify_hour">' + mk_time_opts(480) + '</select>') +
     '</div>' +
     '<button type="submit" class="btn bp" style="margin-top:8px">Add Task</button></form></div>';
 
@@ -4251,14 +4255,7 @@ function do_edit_task(id) {
       return '<option value="' + o[0] + '"' + (o[0] === v ? ' selected' : '') + '>' + o[1] + '</option>';
     }).join('');
   };
-  var sel_hour = function(v) {
-    var opts = [];
-    for (var h = 6; h <= 21; h++) {
-      var lbl = h < 12 ? (h + ':00 AM') : h === 12 ? '12:00 PM' : ((h-12) + ':00 PM');
-      opts.push('<option value="' + h + '"' + (h === v ? ' selected' : '') + '>' + lbl + '</option>');
-    }
-    return opts.join('');
-  };
+  var sel_hour = function(v) { return mk_time_opts(v); };
   om('<div class="ctitle" style="margin-bottom:12px">Edit Task</div>' +
     '<form id="ef" data-tid="' + id + '" onsubmit="sub_edit_task(event,this.dataset.tid)">' +
     '<div class="frow">' +
@@ -4270,7 +4267,7 @@ function do_edit_task(id) {
     fg('Notes', '<input type="text" name="notes" value="' + esc(t.notes || '') + '">') +
     '<div class="frow">' +
     fg('Remind me', '<select name="notify">' + sel_notify(t.notify || 'on_day') + '</select>') +
-    fg('At time', '<select name="notify_hour">' + sel_hour(t.notify_hour != null ? t.notify_hour : 8) + '</select>') +
+    fg('At time', '<select name="notify_hour">' + sel_hour(get_notify_min(t)) + '</select>') +
     '</div>' +
     '<div style="display:flex;gap:8px;margin-top:12px">' +
     '<button type="submit" class="btn bp" style="flex:1">Save</button>' +
@@ -4288,7 +4285,7 @@ function sub_edit_task(e, id) {
   t.next_due = next_due(f.last.value, f.freq.value);
   t.notes = f.notes.value;
   t.notify = f.notify.value;
-  t.notify_hour = parseInt(f.notify_hour.value);
+  t.notify_min = parseInt(f.notify_hour.value);
   sv(d); cm(); r_maint();
 }
 
@@ -6839,7 +6836,7 @@ async function startup() {
       if (!_md.tasks) _md.tasks = [];
       var new_id = gid();
       var nd = f.dow && f.dow.length ? next_due_dow(today_str(), f.dow) : next_due(today_str(), f.freq_days || 7);
-      _md.tasks.push({id:new_id, tank_id:f.tank_id, type:'Fertilizer', name:task_name, freq:f.dow?null:f.freq_days||7, dow:f.dow||null, last_done:today_str(), next_due:nd, notes:'Fertilizer dose', notify:'on_day', notify_hour:8});
+      _md.tasks.push({id:new_id, tank_id:f.tank_id, type:'Fertilizer', name:task_name, freq:f.dow?null:f.freq_days||7, dow:f.dow||null, last_done:today_str(), next_due:nd, notes:'Fertilizer dose', notify:'on_day', notify_min:480});
       f.task_id = new_id;
       _changed = true;
     }
