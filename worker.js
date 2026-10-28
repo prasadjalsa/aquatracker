@@ -3984,7 +3984,7 @@ function export_wlog_csv(tid) {
     rows.push(row.join(','));
   });
   var tank_name = tank ? tank.name.replace(/[^a-z0-9_\-]/gi, '_') : 'tank';
-  var blob = new Blob([rows.join('\r\n')], {type: 'text/csv'});
+  var blob = new Blob([rows.join(String.fromCharCode(13, 10))], {type: 'text/csv'});
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
   a.href = url; a.download = 'water_log_' + tank_name + '.csv';
