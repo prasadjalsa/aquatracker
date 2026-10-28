@@ -6908,6 +6908,20 @@ async function startup() {
     }
   });
   if (_changed) sv(_md);
+  // One-time migration: recalculate next_due using local timezone (fixes UTC off-by-one on UTC+ devices)
+  var _md2 = ld(), _changed2 = false;
+  if (!(_md2.flags && _md2.flags.next_due_tz_fixed)) {
+    (_md2.tasks || []).forEach(function(t) {
+      if (t.last_done) {
+        t.next_due = t.dow && t.dow.length ? next_due_dow(t.last_done, t.dow) : next_due(t.last_done, t.freq || 7);
+        _changed2 = true;
+      }
+    });
+    if (!_md2.flags) _md2.flags = {};
+    _md2.flags.next_due_tz_fixed = true;
+    _changed2 = true;
+  }
+  if (_changed2) sv(_md2);
   init();
   if (new URLSearchParams(location.search).get('tab') === 'maint') {
     switch_tab('maint');
