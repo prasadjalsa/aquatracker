@@ -1940,7 +1940,7 @@ function sub_save_treatment(e) {
 // ===== FEEDING LOG =====
 function add_feeding(tid, food_type, amt, notes) {
   var d = ld(), now = new Date();
-  d.feeding.push({id:gid(), tank_id:tid, date:now.toISOString().slice(0,10), ts:now.getTime(), food_type:food_type||'', amt:amt||'', notes:notes||''});
+  d.feeding.push({id:gid(), tank_id:tid, date:today_str(), ts:now.getTime(), food_type:food_type||'', amt:amt||'', notes:notes||''});
   sv(d);
 }
 function del_feeding(id) {
@@ -2346,15 +2346,16 @@ function sub_fert() {
 
 // ===== MAINTENANCE =====
 function next_due(last, freq) {
-  var ms = new Date(last + 'T00:00:00').getTime() + parseInt(freq) * 86400000;
-  return new Date(ms).toISOString().slice(0,10);
+  var d = new Date(last + 'T00:00:00');
+  d.setDate(d.getDate() + parseInt(freq));
+  return fmt_local_date(d);
 }
 function next_due_dow(from_date, dow) {
   // find next date after from_date that falls on one of the days in dow (0=Sun..6=Sat)
   var d = new Date(from_date + 'T00:00:00');
   d.setDate(d.getDate() + 1);
   for (var i = 0; i < 7; i++) {
-    if (dow.indexOf(d.getDay()) !== -1) return d.toISOString().slice(0, 10);
+    if (dow.indexOf(d.getDay()) !== -1) return fmt_local_date(d);
     d.setDate(d.getDate() + 1);
   }
   return from_date;
@@ -2392,7 +2393,7 @@ function del_task(id) {
   sv(d);
 }
 function mark_done(id) {
-  var d = ld(), today = new Date().toISOString().slice(0,10);
+  var d = ld(), today = today_str();
   d.tasks = d.tasks.map(function(t) {
     return t.id === id ? Object.assign({}, t, {last_done:today, next_due: t.dow && t.dow.length ? next_due_dow(today, t.dow) : next_due(today, t.freq), snooze_fire_at: null}) : t;
   });
@@ -2865,7 +2866,11 @@ function no_tank() {
   return '<div class="empty-s"><h2>No Tank Selected</h2><p>Add a tank using the button in the top bar.</p>' +
          '<button class="btn bp" onclick="do_add_tank()">Add Your First Tank</button></div>';
 }
-function today_str() { return new Date().toISOString().slice(0,10); }
+function fmt_local_date(d) {
+  var m = d.getMonth() + 1, day = d.getDate();
+  return d.getFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day;
+}
+function today_str() { return fmt_local_date(new Date()); }
 function scard(l, v, s) {
   return '<div class="scard"><div class="slbl">' + l + '</div><div class="sval">' + v + '</div>' + (s ? '<div class="ssub">' + s + '</div>' : '') + '</div>';
 }
@@ -5156,7 +5161,7 @@ function sub_add_equip(e) {
   var cfg = read_equip_cfg(f);
   if (f.type.value === 'CO2 System') {
     cfg.co2_used_g = 0;
-    cfg.co2_last_cfg_date = cfg.co2_refill_date || new Date().toISOString().slice(0,10);
+    cfg.co2_last_cfg_date = cfg.co2_refill_date || today_str();
   }
   add_equip(at(), f.type.value, f.name.value, f.brand.value, f.notes.value, cfg);
   cm(); r_life();
@@ -5169,7 +5174,7 @@ function sub_edit_equip(e) {
     var d = ld();
     var old_eq = d.equip.find(function(x){ return x.id === f.dataset.id; });
     var old_cfg = old_eq ? (old_eq.config || {}) : {};
-    var today = new Date().toISOString().slice(0,10);
+    var today = today_str();
     if (new_cfg.co2_refill_date !== old_cfg.co2_refill_date) {
       // refill — reset accumulator from new refill date
       new_cfg.co2_used_g = 0;
