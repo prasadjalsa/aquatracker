@@ -3947,7 +3947,7 @@ function export_wlog_csv(tid) {
   function csv_val(v) {
     if (v === null || v === undefined) return '';
     var s = String(v);
-    if (s.indexOf(',') !== -1 || s.indexOf('"') !== -1 || s.indexOf('\n') !== -1) return '"' + s.replace(/"/g, '""') + '"';
+    if (s.indexOf(',') !== -1 || s.indexOf('"') !== -1) return '"' + s.replace(/"/g, '""') + '"';
     return s;
   }
   var cols = ['Date'];
