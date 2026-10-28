@@ -3837,7 +3837,9 @@ function r_wlog() {
     var has_phosphate = entries.some(function(e){ return e.phosphate !== null && e.phosphate !== undefined; });
     var has_tds = entries.some(function(e){ return e.tds !== null && e.tds !== undefined; });
     var has_uia = entries.some(function(e){ return calc_uia(e.ammonia, e.ph, e.temp_f) !== null; });
-    h += '<div class="card"><div class="ctitle">History</div><div class="tw"><table>' +
+    h += '<div class="card"><div class="ctitle" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">History' +
+      '<button class="btn bg bs" style="font-size:12px" onclick="export_wlog_csv(at())">&#x2193; Export CSV</button>' +
+      '</div><div class="tw"><table>' +
       '<tr><th>Date</th>' + (has_therm ? '<th>Temp ' + t_lbl() + '</th>' : '') + '<th>NH3 TAN</th>' + (has_uia ? '<th>UIA</th>' : '') + '<th>NO2 (ppm)</th><th>NO3 (ppm)</th><th>pH</th><th>GH (dGH)</th><th>GH (ppm)</th>' +
       (has_ca_mg ? '<th>Ca (ppm)</th><th>Mg (ppm)</th>' : '') +
       (has_phosphate ? '<th>PO4 (ppm)</th>' : '') +
@@ -3924,6 +3926,65 @@ function r_wlog() {
   }
   el.innerHTML = h;
   if (entries.length >= 2) draw_chart(tid, 'temp_f');
+}
+function export_wlog_csv(tid) {
+  var d = ld();
+  var tank = d.tanks.find(function(t){ return t.id === tid; });
+  var entries = get_water(tid);
+  if (!entries.length) return;
+  var sorted = entries.slice().sort(function(a, b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+  var has_therm = d.equip.some(function(e){ return e.tank_id === tid && e.type === 'Thermometer'; });
+  var has_ca_mg = entries.some(function(e){ return e.calcium !== null && e.calcium !== undefined; });
+  var has_phosphate = entries.some(function(e){ return e.phosphate !== null && e.phosphate !== undefined; });
+  var has_tds = entries.some(function(e){ return e.tds !== null && e.tds !== undefined; });
+  var has_uia = entries.some(function(e){ return calc_uia(e.ammonia, e.ph, e.temp_f) !== null; });
+  var use_c = get_pref().temp === 'C';
+  function csv_val(v) {
+    if (v === null || v === undefined) return '';
+    var s = String(v);
+    if (s.indexOf(',') !== -1 || s.indexOf('"') !== -1 || s.indexOf('\n') !== -1) return '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }
+  var cols = ['Date'];
+  if (has_therm) cols.push('Temp (' + (use_c ? 'C' : 'F') + ')');
+  cols.push('NH3 TAN (ppm)');
+  if (has_uia) cols.push('UIA (ppm)');
+  cols.push('NO2 (ppm)', 'NO3 (ppm)', 'pH', 'GH (dGH)', 'GH (ppm)');
+  if (has_ca_mg) cols.push('Ca (ppm)', 'Mg (ppm)');
+  if (has_phosphate) cols.push('PO4 (ppm)');
+  if (has_tds) cols.push('TDS (ppm)');
+  cols.push('Notes');
+  var rows = [cols.join(',')];
+  sorted.forEach(function(e) {
+    var temp_disp = '';
+    if (has_therm) {
+      var tv = d_t(e.temp_f);
+      temp_disp = tv !== null ? String(tv) : '';
+    }
+    var uia_disp = '';
+    if (has_uia) {
+      var uv = calc_uia(e.ammonia, e.ph, e.temp_f);
+      uia_disp = uv !== null ? String(uv) : '';
+    }
+    var gh_ppm = e.gh != null ? String(Math.round(e.gh * 17.9)) : '';
+    var row = [csv_val(e.date)];
+    if (has_therm) row.push(csv_val(temp_disp));
+    row.push(csv_val(e.ammonia !== null && e.ammonia !== undefined ? e.ammonia : ''));
+    if (has_uia) row.push(csv_val(uia_disp));
+    row.push(csv_val(e.nitrite !== null && e.nitrite !== undefined ? e.nitrite : ''), csv_val(e.nitrate !== null && e.nitrate !== undefined ? e.nitrate : ''), csv_val(e.ph !== null && e.ph !== undefined ? e.ph : ''), csv_val(e.gh !== null && e.gh !== undefined ? e.gh : ''), csv_val(gh_ppm));
+    if (has_ca_mg) row.push(csv_val(e.calcium !== null && e.calcium !== undefined ? e.calcium : ''), csv_val(e.magnesium !== null && e.magnesium !== undefined ? e.magnesium : ''));
+    if (has_phosphate) row.push(csv_val(e.phosphate !== null && e.phosphate !== undefined ? e.phosphate : ''));
+    if (has_tds) row.push(csv_val(e.tds !== null && e.tds !== undefined ? e.tds : ''));
+    row.push(csv_val(e.notes || ''));
+    rows.push(row.join(','));
+  });
+  var tank_name = tank ? tank.name.replace(/[^a-z0-9_\-]/gi, '_') : 'tank';
+  var blob = new Blob([rows.join('\r\n')], {type: 'text/csv'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = 'water_log_' + tank_name + '.csv';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 var wlog_adv = false;
 function tog_wlog_adv() {
