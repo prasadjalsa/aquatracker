@@ -1194,6 +1194,9 @@ function get_param_alerts_s(tid, ud) {
   if(last.nitrate!==null&&last.nitrate>40) alerts.push({level:'warn',msg:'Nitrate is high ('+last.nitrate+' ppm). Do a 25-30% water change to reduce it. Target is below 20 ppm.'});
   if(last.nitrate!==null&&prev.nitrate!==null&&last.nitrate>prev.nitrate+15) alerts.push({level:'warn',msg:'Nitrate rising fast ('+prev.nitrate+' → '+last.nitrate+' ppm). Consider increasing water change frequency.'});
   if(last.ph!==null&&prev.ph!==null&&prev.ph-last.ph>=0.3) alerts.push({level:'warn',msg:'pH dropped '+((prev.ph-last.ph).toFixed(2))+' units between tests ('+prev.ph+' → '+last.ph+'). Sudden pH swings stress fish. Check buffering capacity (KH).'});
+  if(last.kh!==null&&last.kh<1) alerts.push({level:'danger',msg:'KH is critically low ('+last.kh+' dKH) — pH buffering is nearly gone. A pH crash can happen overnight. Add crushed coral to the filter immediately.'});
+  else if(last.kh!==null&&last.kh<3) alerts.push({level:'warn',msg:'KH is low ('+last.kh+' dKH). pH stability is at risk. Add crushed coral or use a carbonate buffer to raise it gradually.'});
+  else if(last.kh!==null&&prev.kh!==null&&prev.kh-last.kh>=1) alerts.push({level:'warn',msg:'KH dropped '+((prev.kh-last.kh).toFixed(1))+' dKH between tests ('+prev.kh+' → '+last.kh+' dKH). Falling KH means buffering is being consumed. Watch for pH swings.'});
   if(last.temp_f!==null&&prev.temp_f!==null&&Math.abs(last.temp_f-prev.temp_f)>=4){
     var dt=function(f){return Math.round((f-32)*5/9*10)/10;};
     alerts.push({level:'warn',msg:'Temperature changed '+Math.abs(dt(last.temp_f)-dt(prev.temp_f)).toFixed(1)+'°C between tests ('+dt(prev.temp_f)+' → '+dt(last.temp_f)+'°C). Rapid swings cause stress and disease.'});
@@ -1232,6 +1235,9 @@ function get_water_recs_s(lr, tid, ud) {
   else if(lr.gh!==null&&lr.gh<4) recs.push({level:'warn',param:'Hardness (GH)',msg:'GH is slightly low. Add Seachem Equilibrium or crushed coral gradually &mdash; raise by no more than 2 dGH per day to avoid stressing fish.'});
   else if(lr.gh!==null&&lr.gh>15) recs.push({level:'danger',param:'Hardness (GH)',msg:'Water is very hard. Mix in RO or distilled water during water changes to reduce GH gradually. Peat moss in the filter also softens water over time.'});
   else if(lr.gh!==null&&lr.gh>12) recs.push({level:'warn',param:'Hardness (GH)',msg:'GH is slightly high. Replace a portion of water change volume with RO or distilled water to bring it down slowly.'});
+  if(lr.kh!==null&&lr.kh<1) recs.push({level:'danger',param:'KH (Carbonate Hardness)',msg:'KH is critically low &mdash; pH buffering is nearly gone and a crash can happen overnight. Add <strong>crushed coral</strong> to the filter as a long-term fix. For fast correction, dissolve 1/4 tsp of baking soda per 40 L and add gradually. Retest within 24 hours.'});
+  else if(lr.kh!==null&&lr.kh<3) recs.push({level:'warn',param:'KH (Carbonate Hardness)',msg:'KH is low &mdash; buffering capacity is reduced and pH may swing, especially in planted tanks or tanks with CO2. Add <strong>crushed coral</strong> to the filter or use Seachem Alkaline Buffer. Raise by no more than 1-2 dKH per day to avoid stressing fish.'});
+  else if(lr.kh!==null&&lr.kh>12) recs.push({level:'warn',param:'KH (Carbonate Hardness)',msg:'KH is very high. Most fish tolerate this but it limits CO2 availability in planted tanks. To lower KH, replace part of each water change with RO or distilled water.'});
   if(lr.temp_f!==null){
     var tc=Math.round((lr.temp_f-32)*5/9);
     if(tc>30) recs.push({level:'danger',param:'Temperature',msg:'Tank is too hot. Increase surface agitation to boost oxygenation (heat reduces O2). Float a bag of ice, remove the lid, or point a fan at the water surface. Check heater for malfunction.'});
@@ -2501,9 +2507,9 @@ function sub_add_mlog(e) {
 }
 
 // ===== WATER LOG =====
-function add_water(tid, date, tf, nh3, no2, no3, ph, gh, notes, ca, mg, phosphate, tds) {
+function add_water(tid, date, tf, nh3, no2, no3, ph, gh, notes, ca, mg, phosphate, tds, kh) {
   var d = ld();
-  d.water.push({id:gid(), tank_id:tid, date:date, temp_f:pn(tf), ammonia:pn(nh3), nitrite:pn(no2), nitrate:pn(no3), ph:pn(ph), gh:pn(gh), notes:notes||'', calcium:pn(ca), magnesium:pn(mg), phosphate:pn(phosphate), tds:pn(tds)});
+  d.water.push({id:gid(), tank_id:tid, date:date, temp_f:pn(tf), ammonia:pn(nh3), nitrite:pn(no2), nitrate:pn(no3), ph:pn(ph), gh:pn(gh), notes:notes||'', calcium:pn(ca), magnesium:pn(mg), phosphate:pn(phosphate), tds:pn(tds), kh:kh!=null?pn(kh):null});
   sv(d);
 }
 function del_water(id) {
@@ -3809,6 +3815,7 @@ function r_wlog() {
     fgh('Nitrate (ppm)', '<input type="number" name="no3" step="0.1" placeholder="e.g. 10">', 'Keep below 20 ppm. Reduced by regular water changes.') +
     fgh('pH', '<input type="number" name="ph" step="0.01" placeholder="e.g. 7.0">', 'Stability matters more than exact value. Avoid sudden changes.') +
     fgh('Hardness GH (ppm)', '<input type="number" name="gh" step="1"' + (last_gh_ppm !== null ? ' value="' + last_gh_ppm + '"' : ' placeholder="e.g. 143"') + '>', gh_hint) +
+    fgh('Carbonate Hardness KH (ppm)', '<input type="number" name="kh" step="1" placeholder="e.g. 107">', 'BIONIX: B drops &times; 25 = ppm (Total Alkalinity). Converted to dKH automatically. Ideal: 3&ndash;8 dKH (54&ndash;143 ppm).') +
     fgh('Notes', '<input type="text" name="notes" placeholder="Optional notes">', '') +
     '</div>' +
     '<div style="margin:8px 0 10px">' +
@@ -3841,11 +3848,13 @@ function r_wlog() {
     var has_ca_mg = entries.some(function(e){ return e.calcium !== null && e.calcium !== undefined; });
     var has_phosphate = entries.some(function(e){ return e.phosphate !== null && e.phosphate !== undefined; });
     var has_tds = entries.some(function(e){ return e.tds !== null && e.tds !== undefined; });
+    var has_kh  = entries.some(function(e){ return e.kh  !== null && e.kh  !== undefined; });
     var has_uia = entries.some(function(e){ return calc_uia(e.ammonia, e.ph, e.temp_f) !== null; });
     h += '<div class="card"><div class="ctitle" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">History' +
       '<button class="btn bg bs" style="font-size:12px" onclick="export_wlog_csv(at())">&#x2193; Export CSV</button>' +
       '</div><div class="tw"><table>' +
       '<tr><th>Date</th>' + (has_therm ? '<th>Temp ' + t_lbl() + '</th>' : '') + '<th>NH3 TAN</th>' + (has_uia ? '<th>UIA</th>' : '') + '<th>NO2 (ppm)</th><th>NO3 (ppm)</th><th>pH</th><th>GH (dGH)</th><th>GH (ppm)</th>' +
+      (has_kh ? '<th>KH (dKH)</th><th>KH (ppm)</th>' : '') +
       (has_ca_mg ? '<th>Ca (ppm)</th><th>Mg (ppm)</th>' : '') +
       (has_phosphate ? '<th>PO4 (ppm)</th>' : '') +
       (has_tds ? '<th>TDS (ppm)</th>' : '') +
@@ -3865,6 +3874,8 @@ function r_wlog() {
            wlog_cell('ph', e.ph, prev ? prev.ph : null) +
            wlog_cell('gh', e.gh, prev ? prev.gh : null) +
            wlog_cell('gh', e.gh != null ? Math.round(e.gh * 17.9) : null, prev && prev.gh != null ? Math.round(prev.gh * 17.9) : null) +
+           (has_kh ? '<td>' + (e.kh != null ? Math.round(e.kh * 10) / 10 : '&mdash;') + '</td>' +
+                     '<td>' + (e.kh != null ? Math.round(e.kh * 17.86) : '&mdash;') + '</td>' : '') +
            (has_ca_mg ? wlog_cell('calcium', e.calcium, prev ? prev.calcium : null) + wlog_cell('magnesium', e.magnesium, prev ? prev.magnesium : null) : '') +
            (has_phosphate ? '<td>' + (e.phosphate !== null && e.phosphate !== undefined ? e.phosphate : '&mdash;') + '</td>' : '') +
            (has_tds ? '<td>' + (e.tds !== null && e.tds !== undefined ? e.tds : '&mdash;') + '</td>' : '') +
@@ -3888,6 +3899,7 @@ function r_wlog() {
       '<tr><td>Nitrate (NO3)</td><td>0&ndash;20 ppm</td><td>21&ndash;40 ppm</td><td>&gt; 40 ppm</td></tr>' +
       '<tr><td>pH</td><td>6.5&ndash;7.5</td><td>6.0&ndash;6.4 or 7.6&ndash;8.0</td><td>&lt; 6.0 or &gt; 8.0</td></tr>' +
       '<tr><td>Hardness (GH)</td><td>71&ndash;215 ppm (4&ndash;12 dGH)</td><td>36&ndash;70 or 216&ndash;268 ppm</td><td>&lt; 36 or &gt; 268 ppm</td></tr>' +
+      '<tr><td>Carbonate Hardness (KH)</td><td>54&ndash;143 ppm (3&ndash;8 dKH)</td><td>18&ndash;53 or 144&ndash;268 ppm</td><td>&lt; 18 ppm (&lt; 1 dKH) &mdash; pH crash risk</td></tr>' +
       '<tr><td>Calcium (Ca)</td><td>20&ndash;60 ppm</td><td>10&ndash;19 or 61&ndash;80 ppm</td><td>&lt; 10 or &gt; 80 ppm</td></tr>' +
       '<tr><td>Magnesium (Mg)</td><td>5&ndash;20 ppm</td><td>2&ndash;4 or 21&ndash;30 ppm</td><td>&lt; 2 or &gt; 30 ppm</td></tr>' +
       '<tr><td>Ca:Mg ratio</td><td>3:1 to 5:1</td><td>2:1 to 6:1</td><td>&lt; 2:1 or &gt; 6:1</td></tr>' +
@@ -3942,6 +3954,7 @@ function export_wlog_csv(tid) {
   var has_ca_mg = entries.some(function(e){ return e.calcium !== null && e.calcium !== undefined; });
   var has_phosphate = entries.some(function(e){ return e.phosphate !== null && e.phosphate !== undefined; });
   var has_tds = entries.some(function(e){ return e.tds !== null && e.tds !== undefined; });
+  var has_kh_csv = entries.some(function(e){ return e.kh !== null && e.kh !== undefined; });
   var has_uia = entries.some(function(e){ return calc_uia(e.ammonia, e.ph, e.temp_f) !== null; });
   var use_c = get_pref().temp === 'C';
   function csv_val(v) {
@@ -3955,6 +3968,7 @@ function export_wlog_csv(tid) {
   cols.push('NH3 TAN (ppm)');
   if (has_uia) cols.push('UIA (ppm)');
   cols.push('NO2 (ppm)', 'NO3 (ppm)', 'pH', 'GH (dGH)', 'GH (ppm)');
+  if (has_kh_csv) cols.push('KH (dKH)', 'KH (ppm)');
   if (has_ca_mg) cols.push('Ca (ppm)', 'Mg (ppm)');
   if (has_phosphate) cols.push('PO4 (ppm)');
   if (has_tds) cols.push('TDS (ppm)');
@@ -3977,6 +3991,7 @@ function export_wlog_csv(tid) {
     row.push(csv_val(e.ammonia !== null && e.ammonia !== undefined ? e.ammonia : ''));
     if (has_uia) row.push(csv_val(uia_disp));
     row.push(csv_val(e.nitrite !== null && e.nitrite !== undefined ? e.nitrite : ''), csv_val(e.nitrate !== null && e.nitrate !== undefined ? e.nitrate : ''), csv_val(e.ph !== null && e.ph !== undefined ? e.ph : ''), csv_val(e.gh !== null && e.gh !== undefined ? e.gh : ''), csv_val(gh_ppm));
+    if (has_kh_csv) row.push(csv_val(e.kh !== null && e.kh !== undefined ? Math.round(e.kh * 10) / 10 : ''), csv_val(e.kh !== null && e.kh !== undefined ? Math.round(e.kh * 17.86) : ''));
     if (has_ca_mg) row.push(csv_val(e.calcium !== null && e.calcium !== undefined ? e.calcium : ''), csv_val(e.magnesium !== null && e.magnesium !== undefined ? e.magnesium : ''));
     if (has_phosphate) row.push(csv_val(e.phosphate !== null && e.phosphate !== undefined ? e.phosphate : ''));
     if (has_tds) row.push(csv_val(e.tds !== null && e.tds !== undefined ? e.tds : ''));
@@ -4005,7 +4020,9 @@ function sub_water(e) {
   var mg = f.mg ? f.mg.value : '';
   var gh_ppm = f.gh ? pn(f.gh.value) : null;
   var gh_dgh = gh_ppm !== null ? Math.round(gh_ppm / 17.9 * 100) / 100 : '';
-  add_water(tid, f.date.value, f.tf ? inp_t(f.tf.value) : null, f.nh3.value, f.no2.value, f.no3.value, f.ph.value, gh_dgh, f.notes.value, ca, mg, f.phosphate ? f.phosphate.value : '', f.tds ? f.tds.value : '');
+  var kh_ppm = f.kh && f.kh.value !== '' ? pn(f.kh.value) : null;
+  var kh_dkh = kh_ppm !== null ? Math.round(kh_ppm / 17.86 * 100) / 100 : null;
+  add_water(tid, f.date.value, f.tf ? inp_t(f.tf.value) : null, f.nh3.value, f.no2.value, f.no3.value, f.ph.value, gh_dgh, f.notes.value, ca, mg, f.phosphate ? f.phosphate.value : '', f.tds ? f.tds.value : '', kh_dkh);
   r_wlog();
 }
 function do_edit_water(id) {
@@ -4015,6 +4032,7 @@ function do_edit_water(id) {
   var tid = e.tank_id;
   var has_therm = d.equip.some(function(eq){ return eq.tank_id === tid && eq.type === 'Thermometer'; });
   var gh_ppm_val = e.gh != null ? Math.round(e.gh * 17.9) : '';
+  var kh_ppm_val = e.kh != null ? Math.round(e.kh * 17.86) : '';
   var temp_disp  = e.temp_f != null ? d_t(e.temp_f) : '';
   var fv = function(v){ return v != null ? v : ''; };
   om('<div class="mtitle">Edit Water Reading</div>' +
@@ -4028,6 +4046,7 @@ function do_edit_water(id) {
     fgh('Nitrate (ppm)', '<input type="number" name="no3" step="0.1"  value="' + fv(e.nitrate) + '">', '') +
     fgh('pH',            '<input type="number" name="ph"  step="0.01" value="' + fv(e.ph) + '">', '') +
     fgh('Hardness GH (ppm)', '<input type="number" name="gh" step="1" value="' + gh_ppm_val + '">', 'Value in ppm — converted to dGH on save') +
+    fgh('Carbonate Hardness KH (ppm)', '<input type="number" name="kh" step="1" value="' + kh_ppm_val + '">', 'Value in ppm — converted to dKH on save') +
     fgh('Notes', '<input type="text" name="notes" value="' + esc(e.notes || '') + '">', '') +
     '</div><div class="frow">' +
     fgh('Calcium (ppm)',   '<input type="number" name="ca" step="0.1" value="' + fv(e.calcium) + '">', 'Optional') +
@@ -4047,6 +4066,8 @@ function sub_edit_water(e, id) {
   var has_therm = d.equip.some(function(eq){ return eq.tank_id === tid && eq.type === 'Thermometer'; });
   var gh_ppm = f.gh && f.gh.value !== '' ? pn(f.gh.value) : null;
   var gh_dgh = gh_ppm !== null ? Math.round(gh_ppm / 17.9 * 100) / 100 : null;
+  var kh_ppm_e = f.kh && f.kh.value !== '' ? pn(f.kh.value) : null;
+  var kh_dkh_e = kh_ppm_e !== null ? Math.round(kh_ppm_e / 17.86 * 100) / 100 : null;
   d.water[idx] = {
     id: id, tank_id: tid,
     date:      f.date.value,
@@ -4056,6 +4077,7 @@ function sub_edit_water(e, id) {
     nitrate:   pn(f.no3.value),
     ph:        pn(f.ph.value),
     gh:        gh_dgh,
+    kh:        kh_dkh_e,
     notes:     f.notes.value || '',
     calcium:   f.ca && f.ca.value !== '' ? pn(f.ca.value) : null,
     magnesium: f.mg && f.mg.value !== '' ? pn(f.mg.value) : null
@@ -5889,7 +5911,8 @@ function r_tools() {
       {id:'ammonia',  label:'Ammonia'},
       {id:'nitrite',  label:'Nitrite'},
       {id:'nitrate',  label:'Nitrate'},
-      {id:'th_ca_mg', label:'Total Hardness, Calcium & Magnesium'}
+      {id:'th_ca_mg',      label:'Total Hardness, Calcium & Magnesium'},
+      {id:'kh_alkalinity', label:'Carbonate Hardness (KH) / Alkalinity'}
     ]}
   ];
   h += '<div class="card">';
@@ -6120,8 +6143,43 @@ function r_tools() {
     h += '</div>';
   }
 
-  if (!tk_brand) {
-    h += '<p style="font-size:13px;color:var(--muted);padding:8px 0">Select a brand above to see instructions.</p>';
+  // BIONIX — Carbonate Hardness (KH) / Alkalinity
+  if (tk_brand === 'bionix' && tk_test === 'kh_alkalinity') {
+    h += tk_tips_html('Note down values A and B as you go &mdash; you will need both for the final calculation.');
+    h += '<div style="background:#f8fbff;border-radius:8px;padding:14px;border-left:4px solid #e07b39;margin-bottom:14px">';
+    h += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#8a4010">KH / Alkalinity Test Procedure</div>';
+    h += tk_steps_html([
+      'Fill the test tube with <strong>2 ml</strong> of sample water using the syringe.',
+      'Add <strong>1 drop of Alkalinity Reagent 1</strong>. Close the cap and shake for a few seconds.',
+      '<strong>If the solution turns pink:</strong> Add <strong>Alkalinity Reagent 2 drop by drop</strong> until the colour changes from pink to <strong>colourless</strong>. Count the drops used &mdash; this is value <strong>A</strong>. <br><span style="color:var(--muted);font-size:12px">If the colour remains unchanged after Reagent 1, then A&nbsp;=&nbsp;0.</span>',
+      'Add <strong>1 drop of Alkalinity Reagent 3</strong> to the test tube. The solution will change colour to <strong>Orange</strong>.',
+      'Add <strong>Alkalinity Reagent 2 drop by drop</strong>, shaking gently and waiting 1 second after each drop. Continue until the colour changes from Orange to <strong>Pinkish Red</strong>. Count all drops &mdash; this is value <strong>B</strong>.'
+    ], '#e07b39');
+    h += '</div>';
+    h += '<div style="background:#fff8f0;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px">';
+    h += '<div style="font-weight:600;margin-bottom:6px">Formulas</div>';
+    h += '<div style="display:grid;grid-template-columns:auto 1fr;gap:4px 16px;font-size:13px">';
+    [
+      ['Total Alkalinity (ppm)',          'B &times; 25'],
+      ['Carbonate Alkalinity (ppm CaCO3)','2 &times; A &times; 25'],
+      ['Bicarbonate Alkalinity (ppm)',    '(B &minus; 2A) &times; 25'],
+      ['KH (dKH)',                        'Total Alkalinity &divide; 17.86'],
+    ].forEach(function(f) {
+      h += '<div style="font-weight:600;color:#8a4010;white-space:nowrap">' + f[0] + '</div><div>' + f[1] + '</div>';
+    });
+    h += '</div></div>';
+    h += '<div style="background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:14px">';
+    h += '<div style="font-size:13px;font-weight:700;margin-bottom:10px">Result Calculator</div>';
+    h += '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px">';
+    h += '<div class="fg" style="margin:0"><label style="font-size:12px;font-weight:600">Value <strong>A</strong> (drops to clear pink phase, 0 if no pink)</label>' +
+         '<input type="number" id="tk_kh_a" min="0" max="99" placeholder="e.g. 0" style="width:120px" oninput="calc_tk_kh()"></div>';
+    h += '<div class="fg" style="margin:0"><label style="font-size:12px;font-weight:600">Value <strong>B</strong> (drops to change Orange to Pinkish Red)</label>' +
+         '<input type="number" id="tk_kh_b" min="0" max="99" placeholder="e.g. 6" style="width:120px" oninput="calc_tk_kh()"></div>';
+    h += '</div>';
+    h += '<div id="tk_kh_results"><p style="font-size:13px;color:var(--muted)">Enter values A and B above to see your results.</p></div>';
+    h += '</div>';
+  }
+  if (!tk_brand) {    h += '<p style="font-size:13px;color:var(--muted);padding:8px 0">Select a brand above to see instructions.</p>';
   } else if (!tk_test) {
     h += '<p style="font-size:13px;color:var(--muted);padding:8px 0">Select a test above to see the procedure.</p>';
   }
@@ -6139,6 +6197,7 @@ function r_tools() {
     ['NO3 &mdash; Nitrate',   'BIONIX Test Kit', 'Keep below 20 ppm. Do a water change if reading exceeds 40 ppm.'],
     ['pH',                    'BIONIX Test Kit', 'Test at the same time each day. Stability matters more than the exact number.'],
     ['GH &mdash; Hardness',   'BIONIX Test Kit', 'Count drops until colour changes. BIONIX: drops &times; 25 = ppm. Ideal 4&ndash;12 dGH (71&ndash;215 ppm).'],
+    ['KH &mdash; Carbonate Hardness', 'BIONIX Test Kit', 'BIONIX: B drops &times; 25 = Total Alkalinity ppm; &divide; 17.86 = dKH. Ideal 3&ndash;8 dKH. Low KH (&lt; 2) risks pH crash.'],
     ['CO2 (injected tanks)',  'CO2 Drop Checker', 'Fill with 4 dKH reference water + bromothymol blue. Green = 20&ndash;30 ppm ideal. Blue = too little, Yellow = too much.'],
     ['Temperature',           'Digital aquarium thermometer', 'Stick-on strip thermometers are inaccurate. Use a digital probe.'],
   ].forEach(function(r) {
@@ -6278,6 +6337,35 @@ function calc_tk_bionix() {
     h = '<p style="font-size:13px;color:var(--muted)">Enter the drops above to see your results.</p>';
   }
   el_res.innerHTML = h;
+}
+function calc_tk_kh() {
+  var el_a = document.getElementById('tk_kh_a');
+  var el_b = document.getElementById('tk_kh_b');
+  var el_res = document.getElementById('tk_kh_results');
+  if (!el_a || !el_b || !el_res) return;
+  var a = parseInt(el_a.value);
+  var b = parseInt(el_b.value);
+  if (isNaN(b) || b <= 0) { el_res.innerHTML = '<p style="font-size:13px;color:var(--muted)">Enter values A and B above to see your results.</p>'; return; }
+  if (isNaN(a) || a < 0) a = 0;
+  var total_alk   = b * 25;
+  var carb_alk    = 2 * a * 25;
+  var bicarb_alk  = (b - 2 * a) * 25;
+  var kh_dkh      = Math.round(total_alk / 17.86 * 10) / 10;
+  var row = function(lbl, val, note) {
+    return '<tr><td style="font-weight:500">' + lbl + '</td>' +
+           '<td style="font-weight:700;color:var(--surf)">' + val + '</td>' +
+           '<td style="font-size:12px;color:var(--muted)">' + (note||'') + '</td></tr>';
+  };
+  var kh_cls = kh_dkh < 2 ? 'color:var(--danger)' : kh_dkh > 12 ? 'color:var(--warn)' : 'color:var(--ok)';
+  el_res.innerHTML = '<div class="tw"><table>' +
+    '<tr><th>Parameter</th><th>Result</th><th>Reference</th></tr>' +
+    row('Total Alkalinity', total_alk + ' ppm', 'KH in ppm (as CaCO3)') +
+    '<tr><td style="font-weight:500">KH</td>' +
+    '<td style="font-weight:700;' + kh_cls + '">' + kh_dkh + ' dKH</td>' +
+    '<td style="font-size:12px;color:var(--muted)">Ideal: 3&ndash;8 dKH. Below 2 dKH risks pH crash.</td></tr>' +
+    row('Carbonate Alkalinity', carb_alk + ' ppm CaCO3', 'From carbonate ions (CO3&sup2;&minus;)') +
+    row('Bicarbonate Alkalinity', bicarb_alk + ' ppm CaCO3', 'From bicarbonate ions (HCO3&minus;)') +
+    '</table></div>';
 }
 function render_tab() {
   upd_prev_bar();
