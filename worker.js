@@ -405,6 +405,22 @@ var SP = {
 ['red_eared_slider','indian_flapshell','painted_turtle'].forEach(function(k){ if(SP[k]) SP[k].type='Turtle'; });
 Object.keys(SP).forEach(function(k){ if(!SP[k].type) SP[k].type='Fish'; });
 
+// Swimming zone assignments — 'surface', 'mid', 'bottom', 'all'; default 'mid'
+var _z_surface = ['clown_killifish','sparkling_gourami','striped_panchax','medaka','blue_medaka','white_medaka','koi_medaka','indian_flying_barb'];
+var _z_bottom  = ['corydoras','panda_corydoras','peppered_corydoras','sterbai_corydoras','kuhli_loach','bristlenose_pleco','common_pleco','otocinclus','hillstream_loach','ram_cichlid','electric_blue_ram','bolivian_ram','siamese_algae_eater','flying_fox','red_tail_shark','garra','solar_catfish','striped_dwarf_catfish','tengara_catfish','scarlet_badis','badis','gangetic_leaffish','cherry_shrimp','crystal_shrimp','amano_shrimp','ghost_shrimp','blue_velvet_shrimp','snowball_shrimp','bamboo_shrimp','cpo_crayfish','electric_blue_crayfish','marbled_crayfish','red_swamp_crayfish','white_specter_crayfish','brazos_dwarf_crayfish','cajun_dwarf_crayfish','red_claw_crayfish','nerite_snail','mystery_snail','assassin_snail','trumpet_snail','ramshorn_snail','zebra_nerite','horned_nerite','red_racer_nerite','rabbit_snail','black_devil_snail','pagoda_snail','spike_apple_snail','giant_apple_snail','trapdoor_snail','bladder_snail','pond_snail','ivory_mystery','gold_mystery','chocolate_rabbit_snail','winged_nerite'];
+var _z_all     = ['goldfish','african_dwarf_frog','red_eared_slider','indian_flapshell','painted_turtle'];
+_z_surface.forEach(function(k){ if(SP[k]) SP[k].zone='surface'; });
+_z_bottom.forEach(function(k){  if(SP[k]) SP[k].zone='bottom'; });
+_z_all.forEach(function(k){     if(SP[k]) SP[k].zone='all'; });
+Object.keys(SP).forEach(function(k){ if(!SP[k].zone) SP[k].zone='mid'; });
+
+// Activity level — 'low', 'medium', 'high'; default 'medium'
+var _act_high = ['zebra_danio','giant_danio','tiger_barb','hillstream_loach','roseline_shark','boesemani_rainbow','malabar_danio','bengal_danio','indian_flying_barb','neon_rainbowfish','white_cloud_minnow'];
+var _act_low  = ['discus','kuhli_loach','badis','scarlet_badis','gangetic_leaffish','banded_leaffish','african_dwarf_frog','red_eared_slider','indian_flapshell','painted_turtle','goldfish','common_pleco'];
+_act_high.forEach(function(k){ if(SP[k]) SP[k].activity='high'; });
+_act_low.forEach(function(k){  if(SP[k]) SP[k].activity='low'; });
+Object.keys(SP).forEach(function(k){ if(!SP[k].activity) SP[k].activity='medium'; });
+
 // Breeding behaviour — assigned post-definition to keep SP entries readable
 var SP_BREEDS = {
   guppy:             {breeds:'Easy',     fry_fate:'eaten',   breed_note:'Livebearer — drops fry every 4-6 weeks. Fry eaten in community tanks unless separated.', breed_cond:{pair:true,ratio:'1M:2F'}},
@@ -1118,10 +1134,43 @@ function calc_space_score_s(tid, ud) {
   (ud.stock||[]).filter(function(x){return x.tank_id===tid&&!x.preview;}).forEach(function(s){
     var sp=sp_all[s.species_id]; if(!sp||sp.inv) return;
     var sz=sp.size_in||2;
+    var act_mult=sp.activity==='high'?1.4:sp.activity==='low'?0.7:1.0;
     var gal=sz<=1.5?0.75:sz<=3?sz*1.0:sz<=6?sz*1.5:sz*2.5;
-    total+=gal*s.qty;
+    total+=gal*act_mult*s.qty;
   });
   return Math.round(total*10)/10;
+}
+function get_zone_mult_s(tid, ud) {
+  var sp_all=get_sp_s(ud), zones={};
+  (ud.stock||[]).filter(function(x){return x.tank_id===tid&&!x.preview;}).forEach(function(s){
+    var sp=sp_all[s.species_id]; if(!sp||sp.inv) return;
+    var z=sp.zone||'mid';
+    if(z==='surface'||z==='mid'||z==='bottom') zones[z]=true;
+  });
+  var zc=Object.keys(zones).length;
+  return zc>=3?1.3:zc===2?1.15:1.0;
+}
+function calc_footprint_ratio_s(tid, ud) {
+  var tank=(ud.tanks||[]).find(function(t){return t.id===tid;}); if(!tank) return null;
+  var len=tank.length_cm, wid=tank.width_cm;
+  if(!len||!wid) return null;
+  var fp=(len/2.54)*(wid/2.54); // sq inches
+  var sp_all=get_sp_s(ud), zone_demand={surface:0,mid:0,bottom:0};
+  (ud.stock||[]).filter(function(x){return x.tank_id===tid&&!x.preview;}).forEach(function(s){
+    var sp=sp_all[s.species_id]; if(!sp||sp.inv) return;
+    var sz=sp.size_in||2;
+    var act_mult=sp.activity==='high'?1.4:sp.activity==='low'?0.7:1.0;
+    var demand=sz*sz*act_mult*s.qty;
+    var z=sp.zone||'mid';
+    if(z==='all'){zone_demand.surface+=demand/3;zone_demand.mid+=demand/3;zone_demand.bottom+=demand/3;}
+    else zone_demand[z]=(zone_demand[z]||0)+demand;
+  });
+  var zone_cap={surface:fp*0.25,mid:fp*0.50,bottom:fp*0.25};
+  var max_ratio=0;
+  ['surface','mid','bottom'].forEach(function(z){
+    if(zone_demand[z]>0) max_ratio=Math.max(max_ratio,zone_demand[z]/zone_cap[z]);
+  });
+  return Math.round(max_ratio*100)/100;
 }
 function get_filter_mult_s(tid, ud) {
   var tank=(ud.tanks||[]).find(function(t){return t.id===tid;}); if(!tank||!tank.gallons) return 1.0;
@@ -1264,12 +1313,15 @@ function get_rec_tasks_s(tid, ud) {
   var sub_lit_s=calc_substrate_liters_s(tid,ud);
   var max_bl=Math.round(max_bioload_s(tank.gallons,calc_plant_score_s(tid,ud),sub_lit_s)*filter_mult);
   var sp_sc=calc_space_score_s(tid,ud);
-  var sp_cap_s=Math.max(1,tank.gallons-(sub_lit_s||0)/3.78541);
+  var zone_mult=get_zone_mult_s(tid,ud);
+  var sp_cap_s=Math.max(1,(tank.gallons-(sub_lit_s||0)/3.78541)*zone_mult);
+  var fp_ratio=calc_footprint_ratio_s(tid,ud);
   var bl_ratio=max_bl>0?cur_bl/max_bl:0;
   var sp_ratio=sp_cap_s>0?sp_sc/sp_cap_s:0;
-  var stock_ratio=Math.max(bl_ratio,sp_ratio);
+  var stock_ratio=Math.max(bl_ratio,sp_ratio,fp_ratio||0);
   var recs=[];
   if(sp_ratio>1) recs.push({type:'Stocking',name:'Reduce stocking — swimming space over limit',freq:0,why:'Space needed ('+Math.round(sp_sc)+' gal) exceeds tank capacity ('+Math.round(sp_cap_s)+' gal). Fish are cramped regardless of water quality.'});
+  if(fp_ratio!==null&&fp_ratio>1) recs.push({type:'Stocking',name:'Footprint overloaded — fish need more floor/swim area',freq:0,why:'Zone footprint ratio is '+Math.round(fp_ratio*100)+'%. Some zones are physically too crowded for the fish you have.'});
   var wc_freq=stock_ratio>=0.8?3:stock_ratio>=0.5?7:14;
   var wc_why=stock_ratio>=0.8?'High stocking density - frequent changes critical':stock_ratio>=0.5?'Weekly changes maintain water quality':'Light stocking - bi-weekly is fine';
   recs.push({type:'Water Change',name:'25% Water Change',freq:wc_freq,why:wc_why});
@@ -1818,12 +1870,12 @@ function sv(d) {
 function mt() { return {tanks:[], equip:[], plants:[], stock:[], tasks:[], water:[], feeding:[], ferts:[], custom_sp:{}, maint_log:[], treatment_log:[]}; }
 // Merged species lookup: built-in SP + user custom_sp
 function get_sp(d) { return Object.assign({}, _sp, d ? d.custom_sp : {}); }
-function add_custom_sp(sp_id, name, type, tmin, tmax, pmin, pmax, gmin, gmax, size_in, min_gal, bioload, level, note) {
+function add_custom_sp(sp_id, name, type, tmin, tmax, pmin, pmax, gmin, gmax, size_in, min_gal, bioload, level, note, zone, activity) {
   var d = ld();
   d.custom_sp[sp_id] = {name:name, type:type||'Fish', tmin:parseFloat(tmin)||72, tmax:parseFloat(tmax)||82,
     pmin:parseFloat(pmin)||6.5, pmax:parseFloat(pmax)||7.5, gmin:parseFloat(gmin)||4, gmax:parseFloat(gmax)||12,
     size_in:parseFloat(size_in)||2, min_gal:parseInt(min_gal,10)||10, bioload:parseInt(bioload,10)||2,
-    level:level||'Beginner', note:note||'', custom:true};
+    level:level||'Beginner', note:note||'', zone:zone||'mid', activity:activity||'medium', custom:true};
   sv(d);
 }
 function del_custom_sp(sp_id) {
@@ -1895,15 +1947,18 @@ function fl_lbl() { return get_pref().vol === 'L' ? 'LPH' : 'GPH'; }
 function inp_fl(v) { var n = parseFloat(v) || 0; return get_pref().vol === 'L' ? Math.round(n / 3.78541) : n; }
 
 // ===== TANKS =====
-function add_tank(name, gal, setup, notes, rt_min, rt_max) {
+function add_tank(name, gal, setup, notes, rt_min, rt_max, len_cm, wid_cm, ht_cm) {
   var d = ld(), g = parseFloat(gal) || 0;
   var t = {id:gid(), name:name, gallons:g, liters:g2l(g), setup_date:setup, notes:notes||'',
            room_tmin: rt_min ? parseFloat(rt_min) : null,
            room_tmax: rt_max ? parseFloat(rt_max) : null,
+           length_cm: len_cm ? parseFloat(len_cm) : null,
+           width_cm:  wid_cm ? parseFloat(wid_cm) : null,
+           height_cm: ht_cm  ? parseFloat(ht_cm)  : null,
            substrate_liters: 0};
   d.tanks.push(t); sv(d); sat(t.id); return t.id;
 }
-function upd_tank(id, name, gal, setup, notes, rt_min, rt_max, show_feed_log) {
+function upd_tank(id, name, gal, setup, notes, rt_min, rt_max, show_feed_log, len_cm, wid_cm, ht_cm) {
   var d = ld(), g = parseFloat(gal) || 0;
   d.tanks = d.tanks.map(function(t) {
     if (t.id !== id) return t;
@@ -1911,7 +1966,10 @@ function upd_tank(id, name, gal, setup, notes, rt_min, rt_max, show_feed_log) {
       name:name, gallons:g, liters:g2l(g), setup_date:setup, notes:notes||'',
       room_tmin: rt_min ? parseFloat(rt_min) : null,
       room_tmax: rt_max ? parseFloat(rt_max) : null,
-      show_feed_log: !!show_feed_log
+      show_feed_log: !!show_feed_log,
+      length_cm: len_cm ? parseFloat(len_cm) : null,
+      width_cm:  wid_cm ? parseFloat(wid_cm) : null,
+      height_cm: ht_cm  ? parseFloat(ht_cm)  : null
     });
   });
   sv(d);
@@ -2553,14 +2611,48 @@ function calc_space_score(tid) {
     var sp = sp_all[s.species_id];
     if (!sp || sp.inv) return;
     var sz = sp.size_in || 2;
+    var act_mult = sp.activity === 'high' ? 1.4 : sp.activity === 'low' ? 0.7 : 1.0;
     var gal = sz <= 1.5 ? 0.75 : sz <= 3 ? sz * 1.0 : sz <= 6 ? sz * 1.5 : sz * 2.5;
-    total += gal * s.qty;
+    total += gal * act_mult * s.qty;
   });
   return Math.round(total * 10) / 10;
 }
-function max_space(gallons, substrate_liters) {
+function get_zone_mult(tid) {
+  var d = ld(), sp_all = get_sp(d), zones = {};
+  d.stock.filter(function(x){ return x.tank_id === tid && !x.preview; }).forEach(function(s) {
+    var sp = sp_all[s.species_id]; if (!sp || sp.inv) return;
+    var z = sp.zone || 'mid';
+    if (z === 'surface' || z === 'mid' || z === 'bottom') zones[z] = true;
+  });
+  var zc = Object.keys(zones).length;
+  return zc >= 3 ? 1.3 : zc === 2 ? 1.15 : 1.0;
+}
+function calc_footprint_ratio(tid) {
+  var d = ld();
+  var tank = d.tanks.find(function(t){ return t.id === tid; }); if (!tank) return null;
+  var len = tank.length_cm, wid = tank.width_cm;
+  if (!len || !wid) return null;
+  var fp = (len / 2.54) * (wid / 2.54);
+  var sp_all = get_sp(d), zone_demand = {surface:0, mid:0, bottom:0};
+  d.stock.filter(function(x){ return x.tank_id === tid && !x.preview; }).forEach(function(s) {
+    var sp = sp_all[s.species_id]; if (!sp || sp.inv) return;
+    var sz = sp.size_in || 2;
+    var act_mult = sp.activity === 'high' ? 1.4 : sp.activity === 'low' ? 0.7 : 1.0;
+    var demand = sz * sz * act_mult * s.qty;
+    var z = sp.zone || 'mid';
+    if (z === 'all') { zone_demand.surface += demand/3; zone_demand.mid += demand/3; zone_demand.bottom += demand/3; }
+    else zone_demand[z] = (zone_demand[z] || 0) + demand;
+  });
+  var zone_cap = {surface: fp * 0.25, mid: fp * 0.50, bottom: fp * 0.25};
+  var max_ratio = 0;
+  ['surface','mid','bottom'].forEach(function(z) {
+    if (zone_demand[z] > 0) max_ratio = Math.max(max_ratio, zone_demand[z] / zone_cap[z]);
+  });
+  return Math.round(max_ratio * 100) / 100;
+}
+function max_space(gallons, substrate_liters, zone_mult) {
   var sub_gal = (substrate_liters || 0) / 3.78541;
-  return Math.max(1, gallons - sub_gal);
+  return Math.max(1, (gallons - sub_gal) * (zone_mult || 1.0));
 }
 function max_bioload(gallons, plant_score, substrate_liters) {
   var sub_gal = (substrate_liters || 0) / 3.78541;
@@ -3458,7 +3550,7 @@ async function r_dash() {
   var bl_cls = bioload_cls(cur_bl, max_bl);
   var sub_lit = calc_substrate_liters(tid);
   var sp_score = calc_space_score(tid);
-  var sp_cap = max_space(tank.gallons, sub_lit);
+  var sp_cap = max_space(tank.gallons, sub_lit, get_zone_mult(tid));
   var sp_pct = Math.min(150, Math.round(sp_score / sp_cap * 100));
   var sp_cls = bioload_cls(sp_score, sp_cap);
   var worst_cls = (bl_cls === 'danger' || sp_cls === 'danger') ? 'danger' : (bl_cls === 'warn' || sp_cls === 'warn') ? 'warn' : 'ok';
@@ -4444,7 +4536,7 @@ async function r_recs() {
   var bl_cls = bioload_cls(cur_bl, max_bl);
   var sub_total = calc_substrate_liters(tid);
   var sp_score = calc_space_score(tid);
-  var sp_cap = max_space(tank ? tank.gallons : 0, sub_total);
+  var sp_cap = max_space(tank ? tank.gallons : 0, sub_total, get_zone_mult(tid));
   var sp_pct = Math.min(150, Math.round(sp_score / sp_cap * 100));
   var sp_cls = bioload_cls(sp_score, sp_cap);
   var bl_bar_color = bl_cls === 'ok' ? 'var(--ok)' : bl_cls === 'warn' ? 'var(--warn)' : 'var(--danger)';
@@ -4932,6 +5024,13 @@ function do_add_tank() {
     fg('Min ' + t_lbl(), '<input type="number" name="room_tmin" placeholder="e.g. ' + (get_pref().temp === 'C' ? '20' : '68') + '">') +
     fg('Max ' + t_lbl(), '<input type="number" name="room_tmax" placeholder="e.g. ' + (get_pref().temp === 'C' ? '28' : '82') + '">') +
     '</div>' +
+    '<div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:2px">Tank Dimensions (optional — cm)</div>' +
+    '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Used for zone-based swimming space calculations (surface/mid/bottom).</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">' +
+    fg('Length (cm)', '<input type="number" name="length_cm" placeholder="e.g. 90" min="0">') +
+    fg('Width (cm)', '<input type="number" name="width_cm" placeholder="e.g. 45" min="0">') +
+    fg('Height (cm)', '<input type="number" name="height_cm" placeholder="e.g. 45" min="0">') +
+    '</div>' +
     fg('Notes', '<textarea name="notes" placeholder="Optional notes about your tank"></textarea>') +
     '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Add Tank</button></div>' +
     '</form>');
@@ -4941,7 +5040,7 @@ function sub_add_tank(e) {
   var lit = parseFloat(f.lit.value) || 0;
   var gal = parseFloat(f.gal.value) || 0;
   if (get_pref().vol === 'L' && lit) gal = lit / 3.78541;
-  add_tank(f.name.value, gal, f.setup.value, f.notes.value, inp_t(f.room_tmin.value), inp_t(f.room_tmax.value));
+  add_tank(f.name.value, gal, f.setup.value, f.notes.value, inp_t(f.room_tmin.value), inp_t(f.room_tmax.value), f.length_cm.value, f.width_cm.value, f.height_cm.value);
   cm(); init();
 }
 
@@ -5048,6 +5147,13 @@ function do_edit_tank() {
     fg('Min ' + t_lbl(), '<input type="number" name="room_tmin" value="' + (t.room_tmin != null ? d_t(t.room_tmin) : '') + '" placeholder="e.g. ' + (get_pref().temp === 'C' ? '20' : '68') + '">') +
     fg('Max ' + t_lbl(), '<input type="number" name="room_tmax" value="' + (t.room_tmax != null ? d_t(t.room_tmax) : '') + '" placeholder="e.g. ' + (get_pref().temp === 'C' ? '28' : '82') + '">') +
     '</div>' +
+    '<div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:2px">Tank Dimensions (optional — cm)</div>' +
+    '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Used for zone-based swimming space calculations (surface/mid/bottom).</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">' +
+    fg('Length (cm)', '<input type="number" name="length_cm" value="' + (t.length_cm || '') + '" placeholder="e.g. 90" min="0">') +
+    fg('Width (cm)', '<input type="number" name="width_cm" value="' + (t.width_cm || '') + '" placeholder="e.g. 45" min="0">') +
+    fg('Height (cm)', '<input type="number" name="height_cm" value="' + (t.height_cm || '') + '" placeholder="e.g. 45" min="0">') +
+    '</div>' +
     fg('Notes', '<textarea name="notes">' + esc(t.notes) + '</textarea>') +
     '<div class="fg"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400">' +
     '<input type="checkbox" name="show_feed_log"' + (t.show_feed_log ? ' checked' : '') + '>' +
@@ -5060,7 +5166,7 @@ function sub_edit_tank(e) {
   var lit = parseFloat(f.lit.value) || 0;
   var gal = parseFloat(f.gal.value) || 0;
   if (get_pref().vol === 'L' && lit) gal = lit / 3.78541;
-  upd_tank(at(), f.name.value, gal, f.setup.value, f.notes.value, inp_t(f.room_tmin.value), inp_t(f.room_tmax.value), f.show_feed_log.checked);
+  upd_tank(at(), f.name.value, gal, f.setup.value, f.notes.value, inp_t(f.room_tmin.value), inp_t(f.room_tmax.value), f.show_feed_log.checked, f.length_cm.value, f.width_cm.value, f.height_cm.value);
   cm(); init();
 }
 function do_del_tank() {
@@ -5644,6 +5750,10 @@ function do_add_stock() {
     fgh('Bioload', '<select name="csp_bioload"><option value="1">1 — Very low</option><option value="2" selected>2 — Low</option><option value="3">3 — Medium</option><option value="4">4 — High</option><option value="5">5 — Very high</option></select>') +
     fgh('Care level', '<select name="csp_level"><option value="Beginner">Beginner</option><option value="Intermediate">Intermediate</option><option value="Advanced">Advanced</option></select>') +
     '</div>' +
+    '<div class="frow">' +
+    fgh('Swimming zone', '<select name="csp_zone"><option value="mid">Mid-water</option><option value="surface">Surface</option><option value="bottom">Bottom</option><option value="all">All levels</option></select>') +
+    fgh('Activity level', '<select name="csp_activity"><option value="medium">Medium</option><option value="low">Low</option><option value="high">High</option></select>') +
+    '</div>' +
     '</div>' +
     '<div class="frow">' +
     fg('Quantity', '<input type="number" name="qty" value="1" min="1" oninput="upd_stk_qty()">') +
@@ -5669,7 +5779,7 @@ function sub_add_stock(e) {
     sid = 'custom_' + gid();
     add_custom_sp(sid, cname, f.csp_type.value, f.csp_tmin.value, f.csp_tmax.value,
       f.csp_pmin.value, f.csp_pmax.value, f.csp_gmin.value, f.csp_gmax.value,
-      f.csp_size.value, f.csp_mingal.value, f.csp_bioload.value, f.csp_level.value, '');
+      f.csp_size.value, f.csp_mingal.value, f.csp_bioload.value, f.csp_level.value, '', f.csp_zone.value, f.csp_activity.value);
     add_stock(at(), sid, cname, f.qty.value, f.added.value, f.notes.value);
   } else {
     add_stock(at(), sid, f.dname.value, f.qty.value, f.added.value, f.notes.value, f.male ? f.male.value : '', f.female ? f.female.value : '');
