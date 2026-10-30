@@ -1320,7 +1320,7 @@ function get_rec_tasks_s(tid, ud) {
   var sp_ratio=sp_cap_s>0?sp_sc/sp_cap_s:0;
   var stock_ratio=Math.max(bl_ratio,sp_ratio,fp_ratio||0);
   var recs=[];
-  if(sp_ratio>1) recs.push({type:'Stocking',name:'Reduce stocking — swimming space over limit',freq:0,why:'Space needed ('+Math.round(sp_sc)+' gal) exceeds tank capacity ('+Math.round(sp_cap_s)+' gal). Fish are cramped regardless of water quality.'});
+  if(sp_ratio>1) recs.push({type:'Stocking',name:'Reduce stocking — swimming space over limit',freq:0,why:'Swimming space '+Math.round(sp_ratio*100)+'% full. Fish are cramped regardless of water quality.'});
   if(fp_ratio!==null&&fp_ratio>1) recs.push({type:'Stocking',name:'Footprint overloaded — fish need more floor/swim area',freq:0,why:'Zone footprint ratio is '+Math.round(fp_ratio*100)+'%. Some zones are physically too crowded for the fish you have.'});
   var wc_freq=stock_ratio>=0.8?3:stock_ratio>=0.5?7:14;
   var wc_why=stock_ratio>=0.8?'High stocking density - frequent changes critical':stock_ratio>=0.5?'Weekly changes maintain water quality':'Light stocking - bi-weekly is fine';
@@ -4550,7 +4550,7 @@ async function r_recs() {
   h += '<div style="margin-bottom:10px">';
   h += '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px">';
   h += '<span style="font-size:13px;font-weight:600">Swimming Space</span>';
-  h += '<span style="font-size:13px;font-weight:700;color:' + sp_bar_color + '">' + sp_score + ' gal needed / ' + sp_cap + ' gal available (' + sp_pct + '%)</span></div>';
+  h += '<span style="font-size:13px;font-weight:700;color:' + sp_bar_color + '">' + d_v(sp_score) + ' ' + v_lbl() + ' needed / ' + d_v(sp_cap) + ' ' + v_lbl() + ' available (' + sp_pct + '%)</span></div>';
   h += '<div class="bl-bar"><div class="bl-fill" style="width:' + Math.min(100,sp_pct) + '%;background:' + sp_bar_color + '"></div></div>';
   var sp_msg = sp_cls === 'danger' ? 'Tank is too small for swimming space. Fish are stressed. Move to a larger tank or reduce stocking.' : sp_cls === 'warn' ? 'Getting tight on swimming space. Avoid adding more fish.' : 'Swimming space within comfortable range.';
   h += '<p style="font-size:13px;color:' + sp_bar_color + ';margin-top:4px">' + sp_msg + '</p>';
@@ -4603,7 +4603,7 @@ async function r_recs() {
     var pl_tier = pl_score >= 10 ? 'Heavily planted' : pl_score >= 6 ? 'Well planted' : pl_score >= 3 ? 'Planted' : 'Lightly planted';
     h += '<p style="font-size:12px;color:var(--muted);margin-top:4px">' + pl_tier + ': +' + pl_pct + '% waste capacity bonus (absorption score ' + (Math.round(pl_score * 10) / 10) + ').</p>';
   }
-  h += '<p style="font-size:11px;color:var(--muted);margin-top:6px">Waste scale: 1=Very Low, 2=Low, 3=Medium, 4=High, 5=Very High &nbsp;|&nbsp; Space: size-adjusted gal needed vs available</p>';
+  h += '<p style="font-size:11px;color:var(--muted);margin-top:6px">Waste scale: 1=Very Low, 2=Low, 3=Medium, 4=High, 5=Very High &nbsp;|&nbsp; Space: size-adjusted ' + v_lbl() + ' needed vs available</p>';
   h += '</div></div>';
 
   // Equipment check card
