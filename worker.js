@@ -1290,12 +1290,34 @@ function get_water_recs_s(lr, tid, ud) {
   else if(lr.ph!==null&&lr.ph<6.5) recs.push({level:'warn',param:'pH',msg:'pH is slightly low. Add crushed coral or aragonite to buffer naturally. Check KH &mdash; if KH is near zero, pH will keep crashing. Driftwood in the tank also contributes to acidity.'});
   else if(lr.ph!==null&&lr.ph>8.0) recs.push({level:'danger',param:'pH',msg:'pH is very high. Mix in RO or distilled water during water changes to dilute. Driftwood and Indian almond leaves lower pH gradually. Avoid chemical pH-down &mdash; it causes instability.'});
   else if(lr.ph!==null&&lr.ph>7.5) recs.push({level:'warn',param:'pH',msg:'pH is slightly high. Driftwood or peat moss in the filter will lower it gradually. Indian almond leaves also help and are safe for all fish.'});
-  if(lr.gh!==null&&lr.gh<2) recs.push({level:'danger',param:'Hardness (GH)',msg:'Water is critically soft. Add Seachem Equilibrium, crushed coral, or a Wonder Shell to raise GH. Extremely soft water causes osmotic stress and interferes with fish osmoregulation.'});
-  else if(lr.gh!==null&&lr.gh<4) recs.push({level:'warn',param:'Hardness (GH)',msg:'GH is slightly low. Add Seachem Equilibrium or crushed coral gradually &mdash; raise by no more than 2 dGH per day to avoid stressing fish.'});
+  if(lr.gh!==null&&lr.gh<2){
+    var gh_need=4-lr.gh, vol_l=tank?Math.round(tank.gallons*3.78541):0;
+    var eq_g=vol_l>0?Math.round(gh_need*vol_l*0.0667*10)/10:0;
+    var eq_tsp=vol_l>0?Math.round(eq_g/5.3*10)/10:0;
+    var dose_gh_d=vol_l>0?' To reach 4 dGH in your tank ('+vol_l+' L): dissolve <strong>'+eq_g+' g (~'+eq_tsp+' tsp) of Seachem Equilibrium</strong> in a cup of tank water and pour in slowly. Do not raise more than 2 dGH per day &mdash; split across multiple sessions if needed.':'';
+    recs.push({level:'danger',param:'Hardness (GH)',msg:'Water is critically soft ('+lr.gh+' dGH). Osmotic stress will affect fish health.'+dose_gh_d+' Crushed coral or Wonder Shells raise GH passively as a longer-term fix.'});
+  }
+  else if(lr.gh!==null&&lr.gh<4){
+    var gh_need=4-lr.gh, vol_l=tank?Math.round(tank.gallons*3.78541):0;
+    var eq_g=vol_l>0?Math.round(gh_need*vol_l*0.0667*10)/10:0;
+    var eq_tsp=vol_l>0?Math.round(eq_g/5.3*10)/10:0;
+    var dose_gh_w=vol_l>0?' For your tank ('+vol_l+' L): dissolve <strong>'+eq_g+' g (~'+eq_tsp+' tsp) of Seachem Equilibrium</strong> in a cup of tank water and add slowly. Raise no more than 2 dGH per day.':'';
+    recs.push({level:'warn',param:'Hardness (GH)',msg:'GH is slightly low ('+lr.gh+' dGH).'+dose_gh_w+' Crushed coral in the filter is a slower but more stable alternative.'});
+  }
   else if(lr.gh!==null&&lr.gh>15) recs.push({level:'danger',param:'Hardness (GH)',msg:'Water is very hard. Mix in RO or distilled water during water changes to reduce GH gradually. Peat moss in the filter also softens water over time.'});
   else if(lr.gh!==null&&lr.gh>12) recs.push({level:'warn',param:'Hardness (GH)',msg:'GH is slightly high. Replace a portion of water change volume with RO or distilled water to bring it down slowly.'});
-  if(lr.kh!==null&&lr.kh<1) recs.push({level:'danger',param:'KH (Carbonate Hardness)',msg:'KH is critically low &mdash; pH buffering is nearly gone and a crash can happen overnight. Add <strong>crushed coral</strong> to the filter as a long-term fix. For fast correction, dissolve 1/4 tsp of baking soda per 40 L and add gradually. Retest within 24 hours.'});
-  else if(lr.kh!==null&&lr.kh<3) recs.push({level:'warn',param:'KH (Carbonate Hardness)',msg:'KH is low &mdash; buffering capacity is reduced and pH may swing, especially in planted tanks or tanks with CO2. Add <strong>crushed coral</strong> to the filter or use Seachem Alkaline Buffer. Raise by no more than 1-2 dKH per day to avoid stressing fish.'});
+  if(lr.kh!==null&&lr.kh<1){
+    var kh_need=3-lr.kh, vol_l=tank?Math.round(tank.gallons*3.78541):0;
+    var bs_tsp=vol_l>0?Math.round(kh_need*vol_l*0.005*10)/10:0;
+    var dose_kh_d=vol_l>0?' For fast correction: dissolve <strong>'+bs_tsp+' tsp of baking soda (NaHCO&#x2083;)</strong> in a cup of water and add 1/4 tsp at a time over 30 min, retesting between additions. Alternatively, use <strong>Seachem Alkaline Buffer</strong> per label. For long-term stability, add crushed coral to the filter.':'';
+    recs.push({level:'danger',param:'KH (Carbonate Hardness)',msg:'KH is critically low &mdash; pH buffering is nearly gone and a crash can happen overnight.'+dose_kh_d+' Retest within 24 hours.'});
+  }
+  else if(lr.kh!==null&&lr.kh<3){
+    var kh_need=3-lr.kh, vol_l=tank?Math.round(tank.gallons*3.78541):0;
+    var bs_tsp=vol_l>0?Math.round(kh_need*vol_l*0.005*10)/10:0;
+    var dose_kh_w=vol_l>0?' To raise to 3 dKH in your tank ('+vol_l+' L): dissolve <strong>'+bs_tsp+' tsp of baking soda</strong> in tank water and add slowly, or use <strong>Seachem Alkaline Buffer</strong> per label. Raise no more than 1&ndash;2 dKH per day.':'';
+    recs.push({level:'warn',param:'KH (Carbonate Hardness)',msg:'KH is low &mdash; buffering capacity is reduced and pH may swing, especially in planted tanks or tanks with CO2.'+dose_kh_w+' Crushed coral in the filter is a stable long-term solution.'});
+  }
   else if(lr.kh!==null&&lr.kh>12) recs.push({level:'warn',param:'KH (Carbonate Hardness)',msg:'KH is very high. Most fish tolerate this but it limits CO2 availability in planted tanks. To lower KH, replace part of each water change with RO or distilled water.'});
   if(lr.temp_f!==null){
     var tc=Math.round((lr.temp_f-32)*5/9);
