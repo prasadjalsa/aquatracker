@@ -1113,6 +1113,16 @@ function calc_bioload_s(tid, ud) {
   });
   return Math.round(total);
 }
+function calc_space_score_s(tid, ud) {
+  var sp_all=get_sp_s(ud), total=0;
+  (ud.stock||[]).filter(function(x){return x.tank_id===tid&&!x.preview;}).forEach(function(s){
+    var sp=sp_all[s.species_id]; if(!sp||sp.inv) return;
+    var sz=sp.size_in||2;
+    var gal=sz<=1.5?0.75:sz<=3?sz*1.0:sz<=6?sz*1.5:sz*2.5;
+    total+=gal*s.qty;
+  });
+  return Math.round(total*10)/10;
+}
 function get_filter_mult_s(tid, ud) {
   var tank=(ud.tanks||[]).find(function(t){return t.id===tid;}); if(!tank||!tank.gallons) return 1.0;
   var filters=(ud.equip||[]).filter(function(x){return x.tank_id===tid&&x.type==='Filter'&&x.config&&x.config.flow_gph>0;});
@@ -1251,15 +1261,21 @@ function get_rec_tasks_s(tid, ud) {
   var pl_count=(ud.plants||[]).filter(function(x){return x.tank_id===tid;}).length;
   var filter_mult=get_filter_mult_s(tid,ud);
   var cur_bl=calc_bioload_s(tid,ud);
-  var max_bl=Math.round(max_bioload_s(tank.gallons,calc_plant_score_s(tid,ud),calc_substrate_liters_s(tid,ud))*filter_mult);
+  var sub_lit_s=calc_substrate_liters_s(tid,ud);
+  var max_bl=Math.round(max_bioload_s(tank.gallons,calc_plant_score_s(tid,ud),sub_lit_s)*filter_mult);
+  var sp_sc=calc_space_score_s(tid,ud);
+  var sp_cap_s=Math.max(1,tank.gallons-(sub_lit_s||0)/3.78541);
   var bl_ratio=max_bl>0?cur_bl/max_bl:0;
+  var sp_ratio=sp_cap_s>0?sp_sc/sp_cap_s:0;
+  var stock_ratio=Math.max(bl_ratio,sp_ratio);
   var recs=[];
-  var wc_freq=bl_ratio>=0.8?3:bl_ratio>=0.5?7:14;
-  var wc_why=bl_ratio>=0.8?'High bioload - frequent changes critical':bl_ratio>=0.5?'Weekly changes maintain water quality':'Light stocking - bi-weekly is fine';
+  if(sp_ratio>1) recs.push({type:'Stocking',name:'Reduce stocking — swimming space over limit',freq:0,why:'Space needed ('+Math.round(sp_sc)+' gal) exceeds tank capacity ('+Math.round(sp_cap_s)+' gal). Fish are cramped regardless of water quality.'});
+  var wc_freq=stock_ratio>=0.8?3:stock_ratio>=0.5?7:14;
+  var wc_why=stock_ratio>=0.8?'High stocking density - frequent changes critical':stock_ratio>=0.5?'Weekly changes maintain water quality':'Light stocking - bi-weekly is fine';
   recs.push({type:'Water Change',name:'25% Water Change',freq:wc_freq,why:wc_why});
-  var fc_freq=bl_ratio>=0.7?14:30;
+  var fc_freq=stock_ratio>=0.7?14:30;
   recs.push({type:'Filter Clean',name:'Filter Media Rinse',freq:fc_freq,why:'Rinse in tank water (not tap) to preserve beneficial bacteria'});
-  var wt_freq=bl_ratio>=0.7?7:14;
+  var wt_freq=stock_ratio>=0.7?7:14;
   var cyc_stat=cycle_status_s(tid,ud);
   var is_cycling=!tank.cycled&&cyc_stat.phase<4&&cyc_stat.test_freq!==null;
   if(is_cycling) recs.push({type:'Water Test',name:'Cycle Monitoring Test',freq:cyc_stat.test_freq,why:'Tank is cycling — test NH3, NO2, NO3 every '+cyc_stat.test_freq+' days until both read 0 ppm with detectable nitrate'});
@@ -2531,6 +2547,21 @@ function calc_bioload(tid) {
   });
   return Math.round(total);
 }
+function calc_space_score(tid) {
+  var d = ld(), sp_all = get_sp(d), total = 0;
+  d.stock.filter(function(x){ return x.tank_id === tid && !x.preview; }).forEach(function(s) {
+    var sp = sp_all[s.species_id];
+    if (!sp || sp.inv) return;
+    var sz = sp.size_in || 2;
+    var gal = sz <= 1.5 ? 0.75 : sz <= 3 ? sz * 1.0 : sz <= 6 ? sz * 1.5 : sz * 2.5;
+    total += gal * s.qty;
+  });
+  return Math.round(total * 10) / 10;
+}
+function max_space(gallons, substrate_liters) {
+  var sub_gal = (substrate_liters || 0) / 3.78541;
+  return Math.max(1, gallons - sub_gal);
+}
 function max_bioload(gallons, plant_score, substrate_liters) {
   var sub_gal = (substrate_liters || 0) / 3.78541;
   var eff_gal = Math.max(1, gallons - sub_gal);
@@ -3423,9 +3454,15 @@ async function r_dash() {
   var cur_bl = calc_bioload(tid);
   var filter_mult = get_filter_mult(tid);
   var max_bl = Math.round(max_bioload(tank.gallons, calc_plant_score(tid), calc_substrate_liters(tid)) * filter_mult);
-  var bl_pct = max_bl > 0 ? Math.min(100, Math.round(cur_bl / max_bl * 100)) : 0;
+  var bl_pct = max_bl > 0 ? Math.min(150, Math.round(cur_bl / max_bl * 100)) : 0;
   var bl_cls = bioload_cls(cur_bl, max_bl);
-  var bl_color = bl_cls === 'ok' ? 'var(--ok)' : bl_cls === 'warn' ? 'var(--warn)' : 'var(--danger)';
+  var sub_lit = calc_substrate_liters(tid);
+  var sp_score = calc_space_score(tid);
+  var sp_cap = max_space(tank.gallons, sub_lit);
+  var sp_pct = Math.min(150, Math.round(sp_score / sp_cap * 100));
+  var sp_cls = bioload_cls(sp_score, sp_cap);
+  var worst_cls = (bl_cls === 'danger' || sp_cls === 'danger') ? 'danger' : (bl_cls === 'warn' || sp_cls === 'warn') ? 'warn' : 'ok';
+  var bl_color = worst_cls === 'ok' ? 'var(--ok)' : worst_cls === 'warn' ? 'var(--warn)' : 'var(--danger)';
   var p_alerts = _dcomp ? _dcomp.alerts : [];
   var overdue = tasks.filter(function(x){ return days_til(x.next_due) < 0; });
   var due_today = tasks.filter(function(x){ return days_til(x.next_due) === 0; });
@@ -3440,10 +3477,11 @@ async function r_dash() {
     var hs_wp = Math.min(40, hs_dc * 15 + hs_wc * 8);
     if (hs_wp > 0) { hs -= hs_wp; hs_f.push({l:'Water quality issues', c:hs_dc?'var(--danger)':'var(--warn)', p:-hs_wp}); }
   }
-  if (max_bl > 0) {
-    var hs_br = cur_bl / max_bl;
-    var hs_bp = hs_br > 1 ? 20 : hs_br > 0.8 ? 10 : hs_br > 0.6 ? 5 : 0;
-    if (hs_bp > 0) { hs -= hs_bp; hs_f.push({l:'Bioload ' + bl_pct + '% full', c:hs_br>1?'var(--danger)':'var(--warn)', p:-hs_bp}); }
+  if (max_bl > 0 || sp_cap > 0) {
+    var hs_ratio = Math.max(max_bl > 0 ? cur_bl / max_bl : 0, sp_cap > 0 ? sp_score / sp_cap : 0);
+    var hs_bp = hs_ratio > 1 ? 20 : hs_ratio > 0.8 ? 10 : hs_ratio > 0.6 ? 5 : 0;
+    var hs_lbl = sp_score / sp_cap > cur_bl / max_bl ? 'Space ' + sp_pct + '% full' : 'Waste load ' + bl_pct + '% full';
+    if (hs_bp > 0) { hs -= hs_bp; hs_f.push({l: hs_lbl, c: hs_ratio > 1 ? 'var(--danger)' : 'var(--warn)', p: -hs_bp}); }
   }
   var hs_op = Math.min(20, overdue.length * 8);
   if (hs_op > 0) { hs -= hs_op; hs_f.push({l:overdue.length+' overdue task'+(overdue.length>1?'s':''), c:'var(--danger)', p:-hs_op}); }
@@ -3500,9 +3538,21 @@ async function r_dash() {
   var age = Math.max(0, Math.floor((Date.now() - new Date(tank.setup_date + 'T00:00:00').getTime()) / 86400000));
   h += scard('Tank Age', age + ' days', 'since ' + tank.setup_date);
   h += scard('Livestock', d.stock.filter(function(x){return x.tank_id===tid;}).length + ' entries', pl_count + ' plant species');
-  h += '<div class="scard"><div class="slbl">BIOLOAD</div>' +
-       '<div class="sval" style="color:' + bl_color + '">' + cur_bl + '<span style="font-size:14px;font-weight:400;color:var(--muted)"> / ' + max_bl + '</span></div>' +
-       '<div class="ssub">' + bl_pct + '% full' + (cur_bl > max_bl ? ' - OVER LIMIT' : '') + '</div></div>';
+  var sp_color = sp_cls === 'ok' ? 'var(--ok)' : sp_cls === 'warn' ? 'var(--warn)' : 'var(--danger)';
+  var wst_color = bl_cls === 'ok' ? 'var(--ok)' : bl_cls === 'warn' ? 'var(--warn)' : 'var(--danger)';
+  h += '<div class="scard"><div class="slbl">STOCKING</div>' +
+       '<div style="font-size:12px;margin-top:2px">' +
+       '<div style="display:flex;justify-content:space-between;margin-bottom:2px">' +
+       '<span style="color:var(--muted)">Space</span>' +
+       '<span style="font-weight:700;color:' + sp_color + '">' + sp_pct + '%</span></div>' +
+       '<div style="height:5px;background:#e8edf2;border-radius:3px;margin-bottom:5px;overflow:hidden">' +
+       '<div style="height:100%;width:' + Math.min(100,sp_pct) + '%;background:' + sp_color + ';border-radius:3px"></div></div>' +
+       '<div style="display:flex;justify-content:space-between;margin-bottom:2px">' +
+       '<span style="color:var(--muted)">Waste</span>' +
+       '<span style="font-weight:700;color:' + wst_color + '">' + bl_pct + '%</span></div>' +
+       '<div style="height:5px;background:#e8edf2;border-radius:3px;overflow:hidden">' +
+       '<div style="height:100%;width:' + Math.min(100,bl_pct) + '%;background:' + wst_color + ';border-radius:3px"></div></div>' +
+       '</div></div>';
   h += scard('Next Task', nt_txt, '');
   // Feeding card
   var last_f = last_feeding(tid), ft = feedings_today(tid);
@@ -4390,22 +4440,36 @@ async function r_recs() {
   var cur_bl = calc_bioload(tid);
   var pl_score = calc_plant_score(tid);
   var max_bl = Math.round(max_bioload(tank ? tank.gallons : 0, pl_score, calc_substrate_liters(tid)) * filter_mult);
-  var bl_pct = max_bl > 0 ? Math.min(100, Math.round(cur_bl / max_bl * 100)) : 0;
+  var bl_pct = max_bl > 0 ? Math.min(150, Math.round(cur_bl / max_bl * 100)) : 0;
   var bl_cls = bioload_cls(cur_bl, max_bl);
+  var sub_total = calc_substrate_liters(tid);
+  var sp_score = calc_space_score(tid);
+  var sp_cap = max_space(tank ? tank.gallons : 0, sub_total);
+  var sp_pct = Math.min(150, Math.round(sp_score / sp_cap * 100));
+  var sp_cls = bioload_cls(sp_score, sp_cap);
   var bl_bar_color = bl_cls === 'ok' ? 'var(--ok)' : bl_cls === 'warn' ? 'var(--warn)' : 'var(--danger)';
+  var sp_bar_color = sp_cls === 'ok' ? 'var(--ok)' : sp_cls === 'warn' ? 'var(--warn)' : 'var(--danger)';
   var h = '';
 
   // Bioload card
-  h += '<div class="card"><div class="ctitle">Tank Bioload</div>';
-  h += '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">';
-  h += '<span style="font-size:22px;font-weight:700;color:var(--deep)">' + cur_bl + '</span>';
-  h += '<span style="font-size:14px;color:var(--muted)">/ ' + max_bl + ' units (' + bl_pct + '% capacity)</span></div>';
-  h += '<div class="bl-bar"><div class="bl-fill" style="width:' + bl_pct + '%;background:' + bl_bar_color + '"></div></div>';
-  var sub_total = calc_substrate_liters(tid);
-  if (sub_total > 0 && tank) {
-    var eff_v = d_v((tank.liters - sub_total) / 3.78541);
-    h += '<div style="font-size:12px;color:var(--muted);margin-top:4px">Effective water volume: ' + eff_v + ' ' + v_lbl() + ' (tank ' + d_v(tank.gallons) + ' ' + v_lbl() + ' &minus; substrate ' + sub_total + ' L)</div>';
-  }
+  h += '<div class="card"><div class="ctitle">Stocking &amp; Bioload</div>';
+
+  // Space score bar
+  h += '<div style="margin-bottom:10px">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px">';
+  h += '<span style="font-size:13px;font-weight:600">Swimming Space</span>';
+  h += '<span style="font-size:13px;font-weight:700;color:' + sp_bar_color + '">' + sp_score + ' gal needed / ' + sp_cap + ' gal available (' + sp_pct + '%)</span></div>';
+  h += '<div class="bl-bar"><div class="bl-fill" style="width:' + Math.min(100,sp_pct) + '%;background:' + sp_bar_color + '"></div></div>';
+  var sp_msg = sp_cls === 'danger' ? 'Tank is too small for swimming space. Fish are stressed. Move to a larger tank or reduce stocking.' : sp_cls === 'warn' ? 'Getting tight on swimming space. Avoid adding more fish.' : 'Swimming space within comfortable range.';
+  h += '<p style="font-size:13px;color:' + sp_bar_color + ';margin-top:4px">' + sp_msg + '</p>';
+  h += '</div>';
+
+  // Waste load bar
+  h += '<div style="margin-bottom:10px">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px">';
+  h += '<span style="font-size:13px;font-weight:600">Waste Load</span>';
+  h += '<span style="font-size:13px;font-weight:700;color:' + bl_bar_color + '">' + cur_bl + ' / ' + max_bl + ' units (' + bl_pct + '%)</span></div>';
+  h += '<div class="bl-bar"><div class="bl-fill" style="width:' + Math.min(100,bl_pct) + '%;background:' + bl_bar_color + '"></div></div>';
   var bl_msg, bl_mc;
   if (bl_cls === 'danger') {
     bl_mc = 'var(--danger)';
@@ -4429,30 +4493,26 @@ async function r_recs() {
     var pl_mult_pct = Math.round((pl_score >= 10 ? 0.4 : pl_score >= 6 ? 0.3 : pl_score >= 3 ? 0.2 : pl_score >= 1 ? 0.1 : 0) * 100);
     if (has_plants && pl_mult_pct > 0) already.push('plants +' + pl_mult_pct + '%');
     var already_txt = already.length ? ' (' + already.join(', ') + ' already applied)' : '';
-    if (!fixes.length) {
-      bl_msg = 'Overstocked' + already_txt + '. Your setup is fully optimised — the only fix is to reduce fish count.';
-    } else {
-      bl_msg = 'Overstocked' + already_txt + '. Options: ' + fixes.join('; or ') + '. If still over after changes, reduce fish count.';
-    }
+    bl_msg = !fixes.length ? 'Overstocked' + already_txt + '. Setup fully optimised — only fix is to reduce fish count.' : 'Overstocked' + already_txt + '. Options: ' + fixes.join('; or ') + '.';
   } else if (bl_cls === 'warn') {
     bl_mc = 'var(--warn)';
-    bl_msg = 'Nearing capacity. Hold off adding more fish and monitor water quality closely.';
+    bl_msg = 'Nearing waste capacity. Hold off adding more fish and monitor water quality closely.';
   } else {
     bl_mc = 'var(--ok)';
-    bl_msg = 'Bioload is within safe range.';
+    bl_msg = 'Waste load within safe range.';
   }
   h += '<p style="font-size:13px;color:' + bl_mc + ';margin-top:4px">' + bl_msg + '</p>';
   if (filter_mult !== 1.0) {
-    var fmsg = filter_mult < 1.0 ? 'Filter flow below 4x turnover: capacity reduced by 15%. Aim for 4-6x (' + fl_lbl() + ' = ' + d_fl(Math.ceil((tank ? tank.gallons : 0) * 4)) + '-' + d_fl(Math.ceil((tank ? tank.gallons : 0) * 6)) + ').' : 'High-flow filter (6x+ turnover): +10% capacity bonus applied.';
+    var fmsg = filter_mult < 1.0 ? 'Filter flow below 4x turnover: capacity reduced by 15%.' : 'High-flow filter (6x+ turnover): +10% capacity bonus applied.';
     h += '<p style="font-size:12px;color:' + (filter_mult < 1.0 ? 'var(--danger)' : 'var(--ok)') + ';margin-top:4px">' + fmsg + '</p>';
   }
   if (pl_score > 0) {
     var pl_pct = Math.round((pl_score >= 10 ? 0.4 : pl_score >= 6 ? 0.3 : pl_score >= 3 ? 0.2 : 0.1) * 100);
     var pl_tier = pl_score >= 10 ? 'Heavily planted' : pl_score >= 6 ? 'Well planted' : pl_score >= 3 ? 'Planted' : 'Lightly planted';
-    h += '<p style="font-size:12px;color:var(--muted);margin-top:4px">' + pl_tier + ': +' + pl_pct + '% capacity bonus applied (absorption score ' + (Math.round(pl_score * 10) / 10) + ').</p>';
+    h += '<p style="font-size:12px;color:var(--muted);margin-top:4px">' + pl_tier + ': +' + pl_pct + '% waste capacity bonus (absorption score ' + (Math.round(pl_score * 10) / 10) + ').</p>';
   }
-  h += '<p style="font-size:11px;color:var(--muted);margin-top:6px">Scale: 1=Very Low, 2=Low, 3=Medium, 4=High, 5=Very High</p>';
-  h += '</div>';
+  h += '<p style="font-size:11px;color:var(--muted);margin-top:6px">Waste scale: 1=Very Low, 2=Low, 3=Medium, 4=High, 5=Very High &nbsp;|&nbsp; Space: size-adjusted gal needed vs available</p>';
+  h += '</div></div>';
 
   // Equipment check card
   var filters_eq = d.equip.filter(function(x){ return x.tank_id === tid && x.type === 'Filter'; });
