@@ -1290,19 +1290,36 @@ function get_water_recs_s(lr, tid, ud) {
   else if(lr.ph!==null&&lr.ph<6.5) recs.push({level:'warn',param:'pH',msg:'pH is slightly low. Add crushed coral or aragonite to buffer naturally. Check KH &mdash; if KH is near zero, pH will keep crashing. Driftwood in the tank also contributes to acidity.'});
   else if(lr.ph!==null&&lr.ph>8.0) recs.push({level:'danger',param:'pH',msg:'pH is very high. Mix in RO or distilled water during water changes to dilute. Driftwood and Indian almond leaves lower pH gradually. Avoid chemical pH-down &mdash; it causes instability.'});
   else if(lr.ph!==null&&lr.ph>7.5) recs.push({level:'warn',param:'pH',msg:'pH is slightly high. Driftwood or peat moss in the filter will lower it gradually. Indian almond leaves also help and are safe for all fish.'});
+  var sp_all_r=get_sp_s(ud), gh_min_req=-Infinity, gh_max_req=Infinity;
+  (ud.stock||[]).filter(function(x){return x.tank_id===tid&&!x.preview;}).forEach(function(s){
+    var sp=sp_all_r[s.species_id]; if(!sp) return;
+    gh_min_req=Math.max(gh_min_req,sp.gmin||0);
+    gh_max_req=Math.min(gh_max_req,sp.gmax||30);
+  });
+  if(gh_min_req===-Infinity) gh_min_req=null;
+  if(gh_max_req===Infinity) gh_max_req=null;
   if(lr.gh!==null&&lr.gh<2){
-    var gh_need=4-lr.gh, vol_l=tank?Math.round(tank.gallons*3.78541):0;
+    var gh_target=gh_min_req!==null?Math.max(4,gh_min_req):4;
+    var gh_need=gh_target-lr.gh, vol_l=tank?Math.round(tank.gallons*3.78541):0;
     var eq_g=vol_l>0?Math.round(gh_need*vol_l*0.0667*10)/10:0;
     var eq_tsp=vol_l>0?Math.round(eq_g/5.3*10)/10:0;
-    var dose_gh_d=vol_l>0?' To reach 4 dGH in your tank ('+vol_l+' L): dissolve <strong>'+eq_g+' g (~'+eq_tsp+' tsp) of Seachem Equilibrium</strong> in a cup of tank water and pour in slowly. Do not raise more than 2 dGH per day &mdash; split across multiple sessions if needed.':'';
+    var dose_gh_d=vol_l>0?' To reach '+gh_target+' dGH in your tank ('+vol_l+' L): dissolve <strong>'+eq_g+' g (~'+eq_tsp+' tsp) of Seachem Equilibrium</strong> in a cup of tank water and pour in slowly. Do not raise more than 2 dGH per day &mdash; split across multiple sessions if needed.':'';
     recs.push({level:'danger',param:'Hardness (GH)',msg:'Water is critically soft ('+lr.gh+' dGH). Osmotic stress will affect fish health.'+dose_gh_d+' Crushed coral or Wonder Shells raise GH passively as a longer-term fix.'});
   }
   else if(lr.gh!==null&&lr.gh<4){
-    var gh_need=4-lr.gh, vol_l=tank?Math.round(tank.gallons*3.78541):0;
+    var gh_target=gh_min_req!==null?Math.max(4,gh_min_req):4;
+    var gh_need=gh_target-lr.gh, vol_l=tank?Math.round(tank.gallons*3.78541):0;
     var eq_g=vol_l>0?Math.round(gh_need*vol_l*0.0667*10)/10:0;
     var eq_tsp=vol_l>0?Math.round(eq_g/5.3*10)/10:0;
     var dose_gh_w=vol_l>0?' For your tank ('+vol_l+' L): dissolve <strong>'+eq_g+' g (~'+eq_tsp+' tsp) of Seachem Equilibrium</strong> in a cup of tank water and add slowly. Raise no more than 2 dGH per day.':'';
     recs.push({level:'warn',param:'Hardness (GH)',msg:'GH is slightly low ('+lr.gh+' dGH).'+dose_gh_w+' Crushed coral in the filter is a slower but more stable alternative.'});
+  }
+  else if(lr.gh!==null&&gh_min_req!==null&&lr.gh<gh_min_req){
+    var gh_need=gh_min_req-lr.gh, vol_l=tank?Math.round(tank.gallons*3.78541):0;
+    var eq_g=vol_l>0?Math.round(gh_need*vol_l*0.0667*10)/10:0;
+    var eq_tsp=vol_l>0?Math.round(eq_g/5.3*10)/10:0;
+    var dose_gh_f=vol_l>0?' To reach '+gh_min_req+' dGH in your tank ('+vol_l+' L): dissolve <strong>'+eq_g+' g (~'+eq_tsp+' tsp) of Seachem Equilibrium</strong> in a cup of tank water and add slowly. Raise no more than 2 dGH per day.':'';
+    recs.push({level:'warn',param:'Hardness (GH)',msg:'GH ('+lr.gh+' dGH) is below what your fish need (minimum '+gh_min_req+' dGH).'+dose_gh_f+' Crushed coral in the filter is a passive long-term option.'});
   }
   else if(lr.gh!==null&&lr.gh>15) recs.push({level:'danger',param:'Hardness (GH)',msg:'Water is very hard. Mix in RO or distilled water during water changes to reduce GH gradually. Peat moss in the filter also softens water over time.'});
   else if(lr.gh!==null&&lr.gh>12) recs.push({level:'warn',param:'Hardness (GH)',msg:'GH is slightly high. Replace a portion of water change volume with RO or distilled water to bring it down slowly.'});
