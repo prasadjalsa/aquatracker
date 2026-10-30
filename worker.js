@@ -5055,7 +5055,7 @@ function upd_prev_bar() {
 
 function copy_tank_data(src_id, dst_id) {
   var d = ld();
-  ['equip','plants','stock','ferts'].forEach(function(k) {
+  ['equip','plants','stock','ferts','water'].forEach(function(k) {
     d[k].filter(function(x){ return x.tank_id === src_id; }).forEach(function(x) {
       var copy = JSON.parse(JSON.stringify(x));
       copy.id = gid(); copy.tank_id = dst_id;
