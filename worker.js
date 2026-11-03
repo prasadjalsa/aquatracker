@@ -1352,6 +1352,17 @@ function get_water_recs_s(lr, tid, ud) {
     recs.push({level:'warn',param:'KH (Carbonate Hardness)',msg:'KH is low &mdash; buffering capacity is reduced and pH may swing, especially in planted tanks or tanks with CO2.'+dose_kh_w+' Crushed coral in the filter is a stable long-term solution.'});
   }
   else if(lr.kh!==null&&lr.kh>12) recs.push({level:'warn',param:'KH (Carbonate Hardness)',msg:'KH is very high. Most fish tolerate this but it limits CO2 availability in planted tanks. To lower KH, replace part of each water change with RO or distilled water.'});
+  if(lr.kh!==null&&lr.ph!==null){
+    var inferred_co2=Math.round(3*lr.kh*Math.pow(10,7-lr.ph)*10)/10;
+    var co2_info=get_co2_info_s(tid,ud);
+    var has_co2_sys=co2_info!==null&&(co2_info.hours>0||co2_info.bps>0);
+    if(inferred_co2>30)
+      recs.push({level:'danger',param:'Dissolved CO2 (inferred)',msg:'Based on your KH ('+lr.kh+' dKH) and pH ('+lr.ph+'), dissolved CO2 is approximately <strong>'+inferred_co2+' ppm</strong> &mdash; above the safe limit of 30 ppm. Fish may gasp at the surface or show laboured breathing. Increase surface agitation immediately to off-gas CO2.'+(has_co2_sys?' Reduce injection rate or shorten CO2 on-time.':'')});
+    else if(inferred_co2>20&&!has_co2_sys)
+      recs.push({level:'warn',param:'Dissolved CO2 (inferred)',msg:'Based on your KH ('+lr.kh+' dKH) and pH ('+lr.ph+'), dissolved CO2 is approximately <strong>'+inferred_co2+' ppm</strong>. Without an active CO2 system this is higher than expected &mdash; check for poor surface circulation or decomposing organic matter reducing pH.'});
+    else if(inferred_co2<5&&has_co2_sys)
+      recs.push({level:'warn',param:'Dissolved CO2 (inferred)',msg:'Based on your KH ('+lr.kh+' dKH) and pH ('+lr.ph+'), dissolved CO2 is only approximately <strong>'+inferred_co2+' ppm</strong> despite having a CO2 system. Check diffuser placement, increase bubble rate, or verify the cylinder has gas remaining. Target is 15&ndash;30 ppm for planted tanks.'});
+  }
   if(lr.temp_f!==null){
     var tc=Math.round((lr.temp_f-32)*5/9);
     if(tc>30) recs.push({level:'danger',param:'Temperature',msg:'Tank is too hot. Increase surface agitation to boost oxygenation (heat reduces O2). Float a bag of ice, remove the lid, or point a fan at the water surface. Check heater for malfunction.'});
