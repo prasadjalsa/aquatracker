@@ -1286,11 +1286,27 @@ function get_water_recs_s(lr, tid, ud) {
   }
   if(lr.nitrate!==null&&lr.nitrate>40) recs.push({level:'danger',param:'Nitrate',msg:'Do a 30&ndash;50% water change to pull nitrate below 20 ppm. Reduce feeding frequency. Adding fast-growing plants (hornwort, water wisteria) consumes nitrate continuously.'});
   else if(lr.nitrate!==null&&lr.nitrate>20&&!cycling_active) recs.push({level:'warn',param:'Nitrate',msg:'Nitrate is elevated. A 25% water change will help. Consider increasing change frequency or adding plants to keep it under 20 ppm long-term.'});
-  if(lr.ph!==null&&lr.ph<6.0) recs.push({level:'danger',param:'pH',msg:'pH is critically low. Add crushed coral to the filter or substrate &mdash; it buffers slowly and safely. Avoid liquid pH-up; it causes dangerous swings. Max safe change: 0.2 units per day.'});
-  else if(lr.ph!==null&&lr.ph<6.5) recs.push({level:'warn',param:'pH',msg:'pH is slightly low. Add crushed coral or aragonite to buffer naturally. Check KH &mdash; if KH is near zero, pH will keep crashing. Driftwood in the tank also contributes to acidity.'});
-  else if(lr.ph!==null&&lr.ph>8.0) recs.push({level:'danger',param:'pH',msg:'pH is very high. Mix in RO or distilled water during water changes to dilute. Driftwood and Indian almond leaves lower pH gradually. Avoid chemical pH-down &mdash; it causes instability.'});
-  else if(lr.ph!==null&&lr.ph>7.5) recs.push({level:'warn',param:'pH',msg:'pH is slightly high. Driftwood or peat moss in the filter will lower it gradually. Indian almond leaves also help and are safe for all fish.'});
-  var sp_all_r=get_sp_s(ud), gh_min_req=-Infinity, gh_max_req=Infinity;
+  var sp_all_r=get_sp_s(ud);
+  var ph_handled=false;
+  if(lr.ph!==null&&lr.ph<6.0){  recs.push({level:'danger',param:'pH',msg:'pH is critically low. Add crushed coral to the filter or substrate &mdash; it buffers slowly and safely. Avoid liquid pH-up; it causes dangerous swings. Max safe change: 0.2 units per day.'}); ph_handled=true; }
+  else if(lr.ph!==null&&lr.ph<6.5){ recs.push({level:'warn',param:'pH',msg:'pH is slightly low. Add crushed coral or aragonite to buffer naturally. Check KH &mdash; if KH is near zero, pH will keep crashing. Driftwood in the tank also contributes to acidity.'}); ph_handled=true; }
+  else if(lr.ph!==null&&lr.ph>8.0){ recs.push({level:'danger',param:'pH',msg:'pH is very high. Mix in RO or distilled water during water changes to dilute. Driftwood and Indian almond leaves lower pH gradually. Avoid chemical pH-down &mdash; it causes instability.'}); ph_handled=true; }
+  else if(lr.ph!==null&&lr.ph>7.5){ recs.push({level:'warn',param:'pH',msg:'pH is slightly high. Driftwood or peat moss in the filter will lower it gradually. Indian almond leaves also help and are safe for all fish.'}); ph_handled=true; }
+  if(!ph_handled&&lr.ph!==null){
+    var ph_min_req=-Infinity, ph_max_req=Infinity;
+    (ud.stock||[]).filter(function(x){return x.tank_id===tid&&!x.preview;}).forEach(function(s){
+      var sp=sp_all_r[s.species_id]; if(!sp) return;
+      ph_min_req=Math.max(ph_min_req,sp.pmin||0);
+      ph_max_req=Math.min(ph_max_req,sp.pmax||14);
+    });
+    if(ph_min_req===-Infinity) ph_min_req=null;
+    if(ph_max_req===Infinity) ph_max_req=null;
+    if(ph_min_req!==null&&lr.ph<ph_min_req)
+      recs.push({level:'warn',param:'pH',msg:'pH ('+lr.ph+') is below the minimum required by your fish ('+ph_min_req+'). Add crushed coral or aragonite to raise it gradually &mdash; no more than 0.2 units per day. Check KH: low buffering causes pH to drift back down.'});
+    else if(ph_max_req!==null&&lr.ph>ph_max_req)
+      recs.push({level:'warn',param:'pH',msg:'pH ('+lr.ph+') is above the maximum your fish prefer ('+ph_max_req+'). Driftwood, Indian almond leaves, or peat moss in the filter will lower it gradually. Avoid chemical pH-down &mdash; it causes instability.'});
+  }
+  var gh_min_req=-Infinity, gh_max_req=Infinity;
   (ud.stock||[]).filter(function(x){return x.tank_id===tid&&!x.preview;}).forEach(function(s){
     var sp=sp_all_r[s.species_id]; if(!sp) return;
     gh_min_req=Math.max(gh_min_req,sp.gmin||0);
@@ -4228,6 +4244,8 @@ function do_edit_water(id) {
     fgh('pH',            '<input type="number" name="ph"  step="0.01" value="' + fv(e.ph) + '">', '') +
     fgh('Hardness GH (ppm)', '<input type="number" name="gh" step="1" value="' + gh_ppm_val + '">', 'Value in ppm — converted to dGH on save') +
     fgh('Carbonate Hardness KH (ppm)', '<input type="number" name="kh" step="1" value="' + kh_ppm_val + '">', 'Value in ppm — converted to dKH on save') +
+    fgh('Phosphate PO4 (ppm)', '<input type="number" name="phosphate" step="0.01" value="' + fv(e.phosphate) + '">', 'Optional') +
+    fgh('TDS (ppm)', '<input type="number" name="tds" step="1" value="' + fv(e.tds) + '">', 'Optional') +
     fgh('Notes', '<input type="text" name="notes" value="' + esc(e.notes || '') + '">', '') +
     '</div><div class="frow">' +
     fgh('Calcium (ppm)',   '<input type="number" name="ca" step="0.1" value="' + fv(e.calcium) + '">', 'Optional') +
@@ -4261,7 +4279,9 @@ function sub_edit_water(e, id) {
     kh:        kh_dkh_e,
     notes:     f.notes.value || '',
     calcium:   f.ca && f.ca.value !== '' ? pn(f.ca.value) : null,
-    magnesium: f.mg && f.mg.value !== '' ? pn(f.mg.value) : null
+    magnesium: f.mg && f.mg.value !== '' ? pn(f.mg.value) : null,
+    phosphate: f.phosphate && f.phosphate.value !== '' ? pn(f.phosphate.value) : null,
+    tds:       f.tds && f.tds.value !== '' ? pn(f.tds.value) : null
   };
   sv(d); cm(); r_wlog(); r_dash();
 }
