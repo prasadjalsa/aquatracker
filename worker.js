@@ -1252,7 +1252,11 @@ function get_param_alerts_s(tid, ud) {
   }
   if(last.nitrate!==null&&last.nitrate>40) alerts.push({level:'warn',msg:'Nitrate is high ('+last.nitrate+' ppm). Do a 25-30% water change to reduce it. Target is below 20 ppm.'});
   if(last.nitrate!==null&&prev.nitrate!==null&&last.nitrate>prev.nitrate+15) alerts.push({level:'warn',msg:'Nitrate rising fast ('+prev.nitrate+' → '+last.nitrate+' ppm). Consider increasing water change frequency.'});
-  if(last.ph!==null&&prev.ph!==null&&prev.ph-last.ph>=0.3) alerts.push({level:'warn',msg:'pH dropped '+((prev.ph-last.ph).toFixed(2))+' units between tests ('+prev.ph+' → '+last.ph+'). Sudden pH swings stress fish. Check buffering capacity (KH).'});
+  if(last.ph!==null&&prev.ph!==null&&prev.ph-last.ph>=0.3){
+    var has_co2_a=last.co2_on===true;
+    if(has_co2_a) alerts.push({level:'warn',msg:'pH dropped '+((prev.ph-last.ph).toFixed(2))+' units between tests ('+prev.ph+' → '+last.ph+'). With CO2 running this can be a normal lights-on swing &mdash; if readings were taken at different times of day, the drop may not be a problem. If both readings were taken at the same time, check CO2 rate and KH buffering.'});
+    else alerts.push({level:'warn',msg:'pH dropped '+((prev.ph-last.ph).toFixed(2))+' units between tests ('+prev.ph+' → '+last.ph+'). Sudden pH swings stress fish. Check buffering capacity (KH).'});
+  }
   if(last.kh!==null&&last.kh<1) alerts.push({level:'danger',msg:'KH is critically low ('+last.kh+' dKH) — pH buffering is nearly gone. A pH crash can happen overnight. Add crushed coral to the filter immediately.'});
   else if(last.kh!==null&&last.kh<3) alerts.push({level:'warn',msg:'KH is low ('+last.kh+' dKH). pH stability is at risk. Add crushed coral or use a carbonate buffer to raise it gradually.'});
   else if(last.kh!==null&&prev.kh!==null&&prev.kh-last.kh>=1) alerts.push({level:'warn',msg:'KH dropped '+((prev.kh-last.kh).toFixed(1))+' dKH between tests ('+prev.kh+' → '+last.kh+' dKH). Falling KH means buffering is being consumed. Watch for pH swings.'});
@@ -1287,9 +1291,21 @@ function get_water_recs_s(lr, tid, ud) {
   if(lr.nitrate!==null&&lr.nitrate>40) recs.push({level:'danger',param:'Nitrate',msg:'Do a 30&ndash;50% water change to pull nitrate below 20 ppm. Reduce feeding frequency. Adding fast-growing plants (hornwort, water wisteria) consumes nitrate continuously.'});
   else if(lr.nitrate!==null&&lr.nitrate>20&&!cycling_active) recs.push({level:'warn',param:'Nitrate',msg:'Nitrate is elevated. A 25% water change will help. Consider increasing change frequency or adding plants to keep it under 20 ppm long-term.'});
   var sp_all_r=get_sp_s(ud);
+  var has_co2=lr.co2_on===true;
+  var inferred_co2_ph=lr.kh!==null&&lr.ph!==null?Math.round(3*lr.kh*Math.pow(10,7-lr.ph)*10)/10:null;
   var ph_handled=false;
-  if(lr.ph!==null&&lr.ph<6.0){  recs.push({level:'danger',param:'pH',msg:'pH is critically low. Add crushed coral to the filter or substrate &mdash; it buffers slowly and safely. Avoid liquid pH-up; it causes dangerous swings. Max safe change: 0.2 units per day.'}); ph_handled=true; }
-  else if(lr.ph!==null&&lr.ph<6.5){ recs.push({level:'warn',param:'pH',msg:'pH is slightly low. Add crushed coral or aragonite to buffer naturally. Check KH &mdash; if KH is near zero, pH will keep crashing. Driftwood in the tank also contributes to acidity.'}); ph_handled=true; }
+  if(lr.ph!==null&&lr.ph<6.0){
+    var msg_ph_crit=has_co2
+      ? 'pH is critically low ('+lr.ph+'). With your CO2 system running, this is likely CO2-driven'+(inferred_co2_ph!==null?' (inferred CO2: '+inferred_co2_ph+' ppm)':'')+'. Reduce injection rate or shorten CO2 on-time immediately &mdash; do not add buffer until CO2 is under control, as the two will fight and cause instability. If CO2 is already off, raise KH to improve buffering.'
+      : 'pH is critically low. Add crushed coral to the filter or substrate &mdash; it buffers slowly and safely. Avoid liquid pH-up; it causes dangerous swings. Max safe change: 0.2 units per day.';
+    recs.push({level:'danger',param:'pH',msg:msg_ph_crit}); ph_handled=true;
+  }
+  else if(lr.ph!==null&&lr.ph<6.5){
+    var msg_ph_low=has_co2
+      ? 'pH is slightly low ('+lr.ph+'). With a CO2 system this may be intentional &mdash; many planted tanks target pH 6.5&ndash;6.8'+(inferred_co2_ph!==null?', giving ~'+inferred_co2_ph+' ppm CO2':'')+'. If CO2 is in the 15&ndash;30 ppm range and fish are behaving normally, no action needed. If pH is drifting lower over time, check KH &mdash; low buffering means CO2 can push pH below safe levels overnight.'
+      : 'pH is slightly low. Add crushed coral or aragonite to buffer naturally. Check KH &mdash; if KH is near zero, pH will keep crashing. Driftwood in the tank also contributes to acidity.';
+    recs.push({level:'warn',param:'pH',msg:msg_ph_low}); ph_handled=true;
+  }
   else if(lr.ph!==null&&lr.ph>8.0){ recs.push({level:'danger',param:'pH',msg:'pH is very high. Mix in RO or distilled water during water changes to dilute. Driftwood and Indian almond leaves lower pH gradually. Avoid chemical pH-down &mdash; it causes instability.'}); ph_handled=true; }
   else if(lr.ph!==null&&lr.ph>7.5){ recs.push({level:'warn',param:'pH',msg:'pH is slightly high. Driftwood or peat moss in the filter will lower it gradually. Indian almond leaves also help and are safe for all fish.'}); ph_handled=true; }
   if(!ph_handled&&lr.ph!==null){
@@ -1352,16 +1368,13 @@ function get_water_recs_s(lr, tid, ud) {
     recs.push({level:'warn',param:'KH (Carbonate Hardness)',msg:'KH is low &mdash; buffering capacity is reduced and pH may swing, especially in planted tanks or tanks with CO2.'+dose_kh_w+' Crushed coral in the filter is a stable long-term solution.'});
   }
   else if(lr.kh!==null&&lr.kh>12) recs.push({level:'warn',param:'KH (Carbonate Hardness)',msg:'KH is very high. Most fish tolerate this but it limits CO2 availability in planted tanks. To lower KH, replace part of each water change with RO or distilled water.'});
-  if(lr.kh!==null&&lr.ph!==null){
-    var inferred_co2=Math.round(3*lr.kh*Math.pow(10,7-lr.ph)*10)/10;
-    var co2_info=get_co2_info_s(tid,ud);
-    var has_co2_sys=co2_info!==null&&(co2_info.hours>0||co2_info.bps>0);
-    if(inferred_co2>30)
-      recs.push({level:'danger',param:'Dissolved CO2 (inferred)',msg:'Based on your KH ('+lr.kh+' dKH) and pH ('+lr.ph+'), dissolved CO2 is approximately <strong>'+inferred_co2+' ppm</strong> &mdash; above the safe limit of 30 ppm. Fish may gasp at the surface or show laboured breathing. Increase surface agitation immediately to off-gas CO2.'+(has_co2_sys?' Reduce injection rate or shorten CO2 on-time.':'')});
-    else if(inferred_co2>20&&!has_co2_sys)
-      recs.push({level:'warn',param:'Dissolved CO2 (inferred)',msg:'Based on your KH ('+lr.kh+' dKH) and pH ('+lr.ph+'), dissolved CO2 is approximately <strong>'+inferred_co2+' ppm</strong>. Without an active CO2 system this is higher than expected &mdash; check for poor surface circulation or decomposing organic matter reducing pH.'});
-    else if(inferred_co2<5&&has_co2_sys)
-      recs.push({level:'warn',param:'Dissolved CO2 (inferred)',msg:'Based on your KH ('+lr.kh+' dKH) and pH ('+lr.ph+'), dissolved CO2 is only approximately <strong>'+inferred_co2+' ppm</strong> despite having a CO2 system. Check diffuser placement, increase bubble rate, or verify the cylinder has gas remaining. Target is 15&ndash;30 ppm for planted tanks.'});
+  if(inferred_co2_ph!==null){
+    if(inferred_co2_ph>30)
+      recs.push({level:'danger',param:'Dissolved CO2 (inferred)',msg:'Based on your KH ('+lr.kh+' dKH) and pH ('+lr.ph+'), dissolved CO2 is approximately <strong>'+inferred_co2_ph+' ppm</strong> &mdash; above the safe limit of 30 ppm. Fish may gasp at the surface or show laboured breathing. Increase surface agitation immediately to off-gas CO2.'+(has_co2?' Reduce injection rate or shorten CO2 on-time.':'')});
+    else if(inferred_co2_ph>20&&!has_co2)
+      recs.push({level:'warn',param:'Dissolved CO2 (inferred)',msg:'Based on your KH ('+lr.kh+' dKH) and pH ('+lr.ph+'), dissolved CO2 is approximately <strong>'+inferred_co2_ph+' ppm</strong>. Without an active CO2 system this is higher than expected &mdash; check for poor surface circulation or decomposing organic matter reducing pH.'});
+    else if(inferred_co2_ph<5&&has_co2)
+      recs.push({level:'warn',param:'Dissolved CO2 (inferred)',msg:'Based on your KH ('+lr.kh+' dKH) and pH ('+lr.ph+'), dissolved CO2 is only approximately <strong>'+inferred_co2_ph+' ppm</strong> despite having a CO2 system. Check diffuser placement, increase bubble rate, or verify the cylinder has gas remaining. Target is 15&ndash;30 ppm for planted tanks.'});
   }
   if(lr.temp_f!==null){
     var tc=Math.round((lr.temp_f-32)*5/9);
@@ -2647,9 +2660,9 @@ function sub_add_mlog(e) {
 }
 
 // ===== WATER LOG =====
-function add_water(tid, date, tf, nh3, no2, no3, ph, gh, notes, ca, mg, phosphate, tds, kh) {
+function add_water(tid, date, tf, nh3, no2, no3, ph, gh, notes, ca, mg, phosphate, tds, kh, co2_on) {
   var d = ld();
-  d.water.push({id:gid(), tank_id:tid, date:date, temp_f:pn(tf), ammonia:pn(nh3), nitrite:pn(no2), nitrate:pn(no3), ph:pn(ph), gh:pn(gh), notes:notes||'', calcium:pn(ca), magnesium:pn(mg), phosphate:pn(phosphate), tds:pn(tds), kh:kh!=null?pn(kh):null});
+  d.water.push({id:gid(), tank_id:tid, date:date, temp_f:pn(tf), ammonia:pn(nh3), nitrite:pn(no2), nitrate:pn(no3), ph:pn(ph), gh:pn(gh), notes:notes||'', calcium:pn(ca), magnesium:pn(mg), phosphate:pn(phosphate), tds:pn(tds), kh:kh!=null?pn(kh):null, co2_on:co2_on===true?true:null});
   sv(d);
 }
 function del_water(id) {
@@ -4005,6 +4018,7 @@ function r_wlog() {
   var tid = at(), d = ld(), el = document.getElementById('p-wlog');
   if (!d.tanks.find(function(t){return t.id===tid;})) { el.innerHTML = no_tank(); return; }
   var has_therm = d.equip.some(function(e){ return e.tank_id === tid && e.type === 'Thermometer'; });
+  var has_co2_eq = d.equip.some(function(e){ return e.tank_id === tid && e.type === 'CO2 System'; });
   var prev_r = last_r(tid);
   var last_gh_val = prev_r ? prev_r.gh : null;
   var last_gh_ppm = last_gh_val !== null ? Math.round(last_gh_val * 17.9 * 10) / 10 : null;
@@ -4014,6 +4028,10 @@ function r_wlog() {
   var td = today_str();
   var h = '<div class="card"><div class="ctitle">Add Water Reading</div>' +
     '<form id="wf" onsubmit="sub_water(event)">' +
+    (has_co2_eq ? '<div style="background:#e8f4fb;border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:13px">' +
+      '<label style="display:flex;align-items:center;gap:8px;cursor:pointer">' +
+      '<input type="checkbox" name="co2_on" value="1" checked style="width:16px;height:16px"> ' +
+      '<span><strong>CO2 was running</strong> when this sample was taken</span></label></div>' : '') +
     '<div class="frow">' +
     fgh('Date', '<input type="date" name="date" value="' + td + '" required>', '') +
     (has_therm ? fgh('Temperature (' + t_lbl() + ')', '<input type="number" name="tf" step="0.1" placeholder="e.g. ' + (get_pref().temp === 'C' ? '24' : '76') + '">', 'Stable temp is as important as the number itself.') : '') +
@@ -4230,7 +4248,7 @@ function sub_water(e) {
   var gh_dgh = gh_ppm !== null ? Math.round(gh_ppm / 17.9 * 100) / 100 : '';
   var kh_ppm = f.kh && f.kh.value !== '' ? pn(f.kh.value) : null;
   var kh_dkh = kh_ppm !== null ? Math.round(kh_ppm / 17.86 * 100) / 100 : null;
-  add_water(tid, f.date.value, f.tf ? inp_t(f.tf.value) : null, f.nh3.value, f.no2.value, f.no3.value, f.ph.value, gh_dgh, f.notes.value, ca, mg, f.phosphate ? f.phosphate.value : '', f.tds ? f.tds.value : '', kh_dkh);
+  add_water(tid, f.date.value, f.tf ? inp_t(f.tf.value) : null, f.nh3.value, f.no2.value, f.no3.value, f.ph.value, gh_dgh, f.notes.value, ca, mg, f.phosphate ? f.phosphate.value : '', f.tds ? f.tds.value : '', kh_dkh, f.co2_on ? f.co2_on.checked : null);
   r_wlog();
 }
 function do_edit_water(id) {
@@ -4243,8 +4261,13 @@ function do_edit_water(id) {
   var kh_ppm_val = e.kh != null ? Math.round(e.kh * 17.86) : '';
   var temp_disp  = e.temp_f != null ? d_t(e.temp_f) : '';
   var fv = function(v){ return v != null ? v : ''; };
+  var has_co2_eq_e = d.equip.some(function(eq){ return eq.tank_id === tid && eq.type === 'CO2 System'; });
   om('<div class="mtitle">Edit Water Reading</div>' +
     '<form data-eid="' + id + '" onsubmit="sub_edit_water(event,this.dataset.eid)">' +
+    (has_co2_eq_e ? '<div style="background:#e8f4fb;border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:13px">' +
+      '<label style="display:flex;align-items:center;gap:8px;cursor:pointer">' +
+      '<input type="checkbox" name="co2_on" value="1"' + (e.co2_on === true ? ' checked' : '') + ' style="width:16px;height:16px"> ' +
+      '<span><strong>CO2 was running</strong> when this sample was taken</span></label></div>' : '') +
     '<div class="frow">' +
     fgh('Date', '<input type="date" name="date" value="' + e.date + '" required>', '') +
     (has_therm ? fgh('Temperature (' + t_lbl() + ')', '<input type="number" name="tf" step="0.1" value="' + temp_disp + '">', '') : '') +
@@ -4292,7 +4315,8 @@ function sub_edit_water(e, id) {
     calcium:   f.ca && f.ca.value !== '' ? pn(f.ca.value) : null,
     magnesium: f.mg && f.mg.value !== '' ? pn(f.mg.value) : null,
     phosphate: f.phosphate && f.phosphate.value !== '' ? pn(f.phosphate.value) : null,
-    tds:       f.tds && f.tds.value !== '' ? pn(f.tds.value) : null
+    tds:       f.tds && f.tds.value !== '' ? pn(f.tds.value) : null,
+    co2_on:    f.co2_on ? (f.co2_on.checked ? true : null) : null
   };
   sv(d); cm(); r_wlog(); r_dash();
 }
