@@ -6450,7 +6450,7 @@ function r_howto() {
     bullets([
       '<strong>Equipment:</strong> log your filter, heater, light, CO2 system. The app uses filter type to adjust bioload capacity, and heater presence to check if your fish need one.',
       '<strong>Plants:</strong> choose from 20 common species. The app tracks light and CO2 requirements and uses your plant list to filter fish and plant suggestions in Recommendations.',
-      '<strong>Fertilizers:</strong> pick a preset (Seachem Flourish, Easy Green, etc.) and the app calculates your dose from your tank volume. Each fertilizer appears as a scheduled task in your Recommended Schedule.',
+      '<strong>Fertilizers:</strong> pick a preset (Seachem Flourish, Easy Green, APT Zero, etc.) and the app calculates the exact dose for your tank volume. Each fertilizer creates a scheduled task in your Maintenance tab. For auto-dosers, enable <strong>Automated dosing</strong> to record your reservoir mix (concentrate + RO water), daily dose rate, and timer — the app tracks remaining volume, warns at 10%, and creates a refill task whose due date is driven by what is actually left in the reservoir.',
       '<strong>Livestock:</strong> add each species individually. The app checks bioload, tank size, and compatibility with every other species in the tank.',
     ])
   );
@@ -6461,7 +6461,9 @@ function r_howto() {
       'The app draws a line chart so you can see parameter trends over time',
       'The Dashboard shows your latest readings with colour-coded status (green = safe, amber = watch, red = act now)',
       'During the nitrogen cycle, log every 2 days — the Cycle Tracker on the Dashboard reads directly from these entries',
-      'All data stays in your browser (localStorage) — export a backup from the nav bar regularly',
+      'If you have a CO2 system, tick <strong>CO2 was running when this sample was taken</strong> at the top of the form — the app uses this flag to give CO2-aware pH and buffering recommendations instead of generic ones',
+      'Log both KH and pH together and the app will infer your dissolved CO2 concentration automatically (shown in the What To Do section on the Dashboard)',
+      'All data is synced to the cloud when you are signed in — export a local backup from the nav bar as an extra precaution',
     ])
   );
 
@@ -6471,20 +6473,22 @@ function r_howto() {
       '<strong>Nitrogen Cycle Tracker:</strong> shows the current cycle phase, testing frequency, and what to do next. Disappears once the cycle is complete.',
       '<strong>New Tank Setup Checklist:</strong> tracks your first-time setup steps. Auto-checks filter, heater, and water tests when you add them in other tabs.',
       '<strong>Water readings card:</strong> last logged values with status indicators. Ammonia and nitrite show a warning at any level above 0.',
-      '<strong>Bioload gauge:</strong> shows what percentage of your tank\\'s capacity is used by your current stocking.',
+      '<strong>What To Do section:</strong> personalised action items based on your latest water reading — includes fish-specific pH guidance, dissolved CO2 inferred from KH and pH, KH buffering advice, and CO2-aware recommendations when you log with the CO2 checkbox ticked.',
+      '<strong>Bioload gauge:</strong> shows what percentage of your tank capacity is used by your current stocking.',
       '<strong>Upcoming tasks:</strong> next three maintenance tasks with days remaining.',
     ])
   );
 
   h += app_step(5, '#6b7280', '&#x1F4CB;', 'Maintenance Tab',
-    '<p style="font-size:13px;margin:0 0 6px">Your personal task list. Add tasks manually or import them from the Recommended Schedule.</p>' +
+    '<p style="font-size:13px;margin:0 0 6px">Your task list and activity log. Add tasks manually or import from the Recommended Schedule.</p>' +
     bullets([
       'Tasks are sorted by urgency: <span style="color:var(--danger);font-weight:600">overdue</span> → <span style="color:var(--warn);font-weight:600">due soon</span> → upcoming',
-      'Click <strong>Mark Done</strong> to reset the timer — the next due date is recalculated automatically',
+      'Click <strong>Mark Done</strong> to reset the timer — the next due date recalculates automatically',
       'Click <strong>Snooze</strong> on an overdue or due-today task to postpone the reminder by 2, 3, or 6 hours',
-      'Set a frequency that matches your real routine — the app nudges you when you are overdue',
-      '<strong>Dosing Calculator:</strong> enter a volume and pick a product (dechlorinators, salts, or any fertilizer from your presets) to get the exact dose to add',
-      'Water changes, filter rinses, glass wipes, fertilizing, pruning, and custom tasks are all supported',
+      '<strong>Logs are displayed as a colour-coded calendar</strong> — each day shows coloured dots by task type. Tap any day to see the full detail. Colours: blue = water change, green = fertilizer, orange = filter, teal = water test, and so on.',
+      'Use <strong>+ Log Activity</strong> to add a manual log entry. For a one-off fertilizer dose from your auto-doser, select Fertilizer, pick the fert from the dropdown, and tick <strong>Deduct from reservoir</strong> — the reservoir level updates automatically.',
+      'Automated fertilizer refill tasks have a due date driven by remaining reservoir volume, not a fixed interval — the date shifts whenever you log a manual dose or change the recipe.',
+      '<strong>Dosing Calculator:</strong> enter a volume and pick a product (dechlorinators, salts, or any fertilizer preset) to get the exact dose',
     ])
   );
 
@@ -6492,6 +6496,7 @@ function r_howto() {
     '<p style="font-size:13px;margin:0 0 6px">The app analyses your tank and gives you personalised suggestions.</p>' +
     bullets([
       '<strong>Recommended Schedule:</strong> water change frequency, filter clean, water test, glass wipe, gravel vac, plant trimming, fertilizer doses — all tuned to your bioload and setup. Click <em>Add Task</em> to send any recommendation to Maintenance.',
+      '<strong>Equipment Check:</strong> live status for your CO2 cylinder (estimated gas remaining, days left, and working pressure if logged) and automated fertilizer reservoirs (% remaining and days until refill). Each has an <em>Edit recipe</em> link if you need to update the config.',
       '<strong>Livestock Compatibility:</strong> shows the safe temperature, pH, and GH range that all your current fish agree on. Flags any incompatible pairs.',
     ])
   );
