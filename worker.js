@@ -2697,7 +2697,14 @@ function mark_done_prompt(id) {
     extra = '<div class="fg"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Volume changed (' + vol_unit + ') <span style="font-weight:400;color:var(--muted)">(optional)</span></label>' +
       '<input type="number" id="mlog_vol" min="0" step="0.1" placeholder="e.g. 15" style="width:100%;box-sizing:border-box"></div>';
   } else if (is_refill_task) {
-    extra = '<div style="background:#e8f4fb;border-radius:6px;padding:8px 10px;font-size:13px;color:#1a5a7a">Marking this done resets the reservoir timer to the date you select above.</div>';
+    var rf_total = (linked_fert.auto_conc_ml||0) + (linked_fert.auto_ro_ml||0);
+    extra = '<div style="background:#e8f4fb;border-radius:6px;padding:8px 10px;font-size:13px;color:#1a5a7a">' +
+      'Marking this done resets the reservoir timer to the date you select above.' +
+      '<div style="margin-top:6px;font-size:12px;color:#555">Refilling as: <strong>' +
+        (linked_fert.auto_conc_ml||0) + ' ml concentrate + ' + (linked_fert.auto_ro_ml||0) + ' ml RO = ' + rf_total + ' ml</strong>' +
+        (linked_fert.auto_dose_ml_day ? ' at <strong>' + linked_fert.auto_dose_ml_day + ' ml/day</strong>' : '') +
+        '. To change: <button class="btn bg bs" style="font-size:11px" data-fid="' + linked_fert.id + '" onclick="cm();do_edit_fert(this.dataset.fid)">Edit fertilizer &rarr;</button>' +
+      '</div></div>';
   } else if (is_auto_dose) {
     extra = '<div class="fg" style="background:#e8f4fb;border-radius:6px;padding:8px 10px">' +
       '<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">' +
@@ -4689,11 +4696,18 @@ async function r_maint() {
   if (low_ferts.length) {
     low_ferts.forEach(function(f){
       var res = calc_auto_fert_remaining(f);
-      h += '<div style="display:flex;gap:8px;align-items:center;font-size:13px;padding:10px 12px;margin-bottom:8px;' +
+      var rf_total_ml = (f.auto_conc_ml||0) + (f.auto_ro_ml||0);
+      h += '<div style="font-size:13px;padding:10px 12px;margin-bottom:8px;' +
            'background:#fff0f0;border-left:3px solid var(--danger);border-radius:0 6px 6px 0">' +
+           '<div style="display:flex;gap:8px;align-items:center">' +
            '<span style="flex:1">&#x26A0;&#xFE0F; <strong>' + esc(f.name) + '</strong> reservoir is running low &mdash; ' +
            res.remaining_ml + ' ml remaining (' + res.pct + '%). Refill when you next dose.</span>' +
-           '<button class="btn bd bs" style="font-size:12px" data-fid="' + f.id + '" onclick="refill_fert_reservoir(this.dataset.fid)">Refill Now</button></div>';
+           '<button class="btn bd bs" style="font-size:12px" data-fid="' + f.id + '" onclick="refill_fert_reservoir(this.dataset.fid)">Refill Now</button></div>' +
+           '<div style="font-size:11px;color:#888;margin-top:5px">Refilling as: ' +
+           (f.auto_conc_ml||0) + ' ml concentrate + ' + (f.auto_ro_ml||0) + ' ml RO = ' + rf_total_ml + ' ml' +
+           (f.auto_dose_ml_day ? ' &middot; ' + f.auto_dose_ml_day + ' ml/day' : '') +
+           ' &middot; <button class="btn bg bs" style="font-size:10px;padding:1px 6px" data-fid="' + f.id + '" onclick="do_edit_fert(this.dataset.fid)">Edit recipe &rarr;</button></div>' +
+           '</div>';
     });
   }
 
@@ -5220,7 +5234,8 @@ async function r_recs() {
         h += '<span style="color:' + bar_color + ';font-weight:600">' + (days_left !== null ? '~' + days_left + ' days left' : '') + '</span>';
         h += '</div>';
         if (f.auto_dose_ml_day) {
-          h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + f.auto_dose_ml_day + ' ml/day &mdash; ' + f.auto_conc_ml + ' ml concentrate + ' + f.auto_ro_ml + ' ml RO</div>';
+          h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + f.auto_dose_ml_day + ' ml/day &mdash; ' + f.auto_conc_ml + ' ml concentrate + ' + f.auto_ro_ml + ' ml RO' +
+            ' &mdash; <button class="btn bg bs" style="font-size:10px;padding:1px 6px" data-fid="' + f.id + '" onclick="do_edit_fert(this.dataset.fid)">Edit recipe &rarr;</button></div>';
         }
         if (res.pct <= 10) {
           h += '<div style="font-size:12px;color:var(--danger);font-weight:600;margin-top:4px">&#x26A0; Reservoir nearly empty &mdash; refill soon. ' +
