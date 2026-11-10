@@ -2359,14 +2359,15 @@ function add_fert(tid, preset, name, dose_ml, freq_days, notes, dow, notify, not
   var entry = {id:gid(), tank_id:tid, preset:preset, name:name, dose_ml:parseFloat(dose_ml)||0, freq_days:dow?null:parseInt(freq_days)||7, dow:dow||null, notes:notes||'', task_id:task_id};
   if (is_auto) {
     Object.assign(entry, auto_fields);
-    var refill_freq = calc_refill_freq(auto_fields);
-    if (refill_freq) {
-      var refill_id = add_task(tid, 'Fertilizer Refill', 'Refill reservoir — ' + name, refill_freq, auto_fields.auto_last_fill_date||today_str(), '', notify||'on_day', notify_min!=null?parseInt(notify_min):480, null);
-      d = ld(); // reload again after second add_task
+    var has_reservoir = (auto_fields.auto_conc_ml||0) + (auto_fields.auto_ro_ml||0) > 0;
+    if (has_reservoir) {
+      var refill_id = add_task(tid, 'Fertilizer Refill', 'Refill reservoir — ' + name, 1, auto_fields.auto_last_fill_date||today_str(), '', notify||'on_day', notify_min!=null?parseInt(notify_min):480, null);
+      d = ld();
       entry.auto_refill_task_id = refill_id;
     }
   }
   d.ferts.push(entry);
+  if (entry.auto_refill_task_id) sync_refill_task_due(d, entry);
   sv(d); r_life();
 }
 function del_fert(id) {
@@ -2457,19 +2458,17 @@ function sub_edit_fert(e) {
         });
       });
     }
-    if (updated.auto_refill_task_id) {
-      var new_freq = is_auto_edit ? calc_refill_freq(auto_patch) : null;
+    if (updated.auto_refill_task_id && is_auto_edit) {
       d.tasks = (d.tasks||[]).map(function(t) {
         if (t.id !== updated.auto_refill_task_id) return t;
-        if (!is_auto_edit) return t; // keep task but leave as-is if automation was disabled
         return Object.assign({}, t, {
           name: 'Refill reservoir — ' + updated.name,
-          freq: new_freq,
-          next_due: new_freq ? next_due(auto_patch.auto_last_fill_date||t.last_done||today_str(), new_freq) : t.next_due,
+          freq: null,
           notify: f.fert_notify ? f.fert_notify.value : (t.notify || 'on_day'),
           notify_min: f.fert_notify_hour ? parseInt(f.fert_notify_hour.value) : get_notify_min(t)
         });
       });
+      sync_refill_task_due(d, updated);
     }
     return updated;
   });
@@ -2600,15 +2599,22 @@ function calc_auto_fert_remaining(f) {
   var pct = Math.round(remaining_ml / total * 100);
   return {remaining_ml: remaining_ml, pct: pct, total_ml: total};
 }
-function calc_refill_freq(f) {
-  var total = (f.auto_conc_ml||0) + (f.auto_ro_ml||0);
-  if (!total || !f.auto_dose_ml_day) return null;
-  return Math.max(1, Math.floor(total / f.auto_dose_ml_day * 0.9));
+function calc_refill_due_date(f) {
+  var res = calc_auto_fert_remaining(f);
+  if (!res || !f.auto_dose_ml_day) return null;
+  var margin_ml = res.total_ml * 0.1;
+  if (res.remaining_ml <= margin_ml) return today_str();
+  var days_left = Math.max(0, Math.floor((res.remaining_ml - margin_ml) / f.auto_dose_ml_day));
+  return next_due(today_str(), days_left);
 }
-function calc_refill_due(f) {
-  var freq = calc_refill_freq(f);
-  if (!freq || !f.auto_last_fill_date) return null;
-  return next_due(f.auto_last_fill_date, freq);
+function sync_refill_task_due(d, fert) {
+  if (!fert || !fert.auto_refill_task_id) return;
+  var due = calc_refill_due_date(fert);
+  if (!due) return;
+  d.tasks = (d.tasks || []).map(function(t) {
+    if (t.id !== fert.auto_refill_task_id) return t;
+    return Object.assign({}, t, {next_due: due, freq: null});
+  });
 }
 function tog_auto_fert() {
   var cb = document.getElementById('auto_fert_cb');
@@ -2631,11 +2637,12 @@ function refill_fert_reservoir(fid) {
   if (!fert) return;
   d.ferts = d.ferts.map(function(f){ return f.id===fid ? Object.assign({},f,{auto_last_fill_date:today, auto_extra_ml:0}) : f; });
   if (fert.auto_refill_task_id) {
-    var freq = calc_refill_freq(fert);
     d.tasks = (d.tasks||[]).map(function(t){
       if (t.id !== fert.auto_refill_task_id) return t;
-      return Object.assign({}, t, {last_done:today, next_due:freq?next_due(today,freq):t.next_due, snooze_fire_at:null});
+      return Object.assign({}, t, {last_done:today, snooze_fire_at:null});
     });
+    var updated_fert = d.ferts.find(function(f){ return f.id === fid; });
+    sync_refill_task_due(d, updated_fert);
   }
   sv(d); r_maint();
 }
@@ -2730,28 +2737,27 @@ function confirm_mark_done(id) {
   var is_auto_dose  = linked_fert && linked_fert.automated && linked_fert.task_id === id;
   if (is_refill_task) {
     parts.unshift('Reservoir refilled');
-    var freq = calc_refill_freq(linked_fert);
     d.ferts = d.ferts.map(function(x){ return x.auto_refill_task_id===id ? Object.assign({},x,{auto_last_fill_date:done_date, auto_extra_ml:0}) : x; });
-    d.tasks = d.tasks.map(function(t){ return t.id===id ? Object.assign({},t,{next_due:freq?next_due(done_date,freq):t.next_due}) : t; });
   } else if (is_auto_dose) {
     parts.unshift('Automated');
     if (refill_el && refill_el.checked) {
       parts.push('reservoir refilled');
-      var freq2 = calc_refill_freq(linked_fert);
       d.ferts = d.ferts.map(function(x){
-        return x.task_id===id ? Object.assign({},x,{auto_last_fill_date:done_date}) : x;
+        return x.task_id===id ? Object.assign({},x,{auto_last_fill_date:done_date, auto_extra_ml:0}) : x;
       });
-      if (linked_fert.auto_refill_task_id && freq2) {
-        d.tasks = d.tasks.map(function(t){
-          return t.id===linked_fert.auto_refill_task_id ? Object.assign({},t,{last_done:done_date,next_due:next_due(done_date,freq2),snooze_fire_at:null}) : t;
-        });
-      }
     }
   }
   var full_note = parts.join(' — ');
   d.tasks = d.tasks.map(function(t) {
     return t.id === id ? Object.assign({}, t, {last_done:done_date, next_due: t.dow && t.dow.length ? next_due_dow(done_date, t.dow) : next_due(done_date, t.freq), snooze_fire_at: null}) : t;
   });
+  if (is_refill_task) {
+    var rf = d.ferts.find(function(x){ return x.auto_refill_task_id===id; });
+    sync_refill_task_due(d, rf);
+  } else if (is_auto_dose && linked_fert.auto_refill_task_id) {
+    var rf2 = d.ferts.find(function(x){ return x.task_id===id; });
+    if (rf2) sync_refill_task_due(d, rf2);
+  }
   if (!Array.isArray(d.maint_log)) d.maint_log = [];
   d.maint_log.push({id:gid(), tank_id:task.tank_id, task_id:id, task_name:task.name, task_type:task.type, date:done_date, notes:full_note});
   sv(d); cm(); r_maint();
@@ -2881,11 +2887,13 @@ function sub_add_mlog(e) {
   var fert_sel = document.getElementById('mlog_fert_sel');
   var deduct_cb = document.getElementById('mlog_deduct');
   if (fert_sel && fert_sel.value && deduct_cb && deduct_cb.checked) {
-    var fid = fert_sel.value;
+    var fid_m = fert_sel.value;
     d.ferts = (d.ferts || []).map(function(x){
-      if (x.id !== fid) return x;
+      if (x.id !== fid_m) return x;
       return Object.assign({}, x, {auto_extra_ml: Math.round(((x.auto_extra_ml || 0) + (x.auto_dose_ml_day || 0)) * 10) / 10});
     });
+    var updated_fert_m = d.ferts.find(function(x){ return x.id === fid_m; });
+    if (updated_fert_m) sync_refill_task_due(d, updated_fert_m);
   }
   sv(d); cm(); r_maint();
 }
