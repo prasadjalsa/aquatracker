@@ -2595,7 +2595,8 @@ function calc_auto_fert_remaining(f) {
   var total = (f.auto_conc_ml||0) + (f.auto_ro_ml||0);
   if (!total || !f.auto_dose_ml_day || !f.auto_last_fill_date) return null;
   var days = day_diff(today_str(), f.auto_last_fill_date);
-  var remaining_ml = Math.max(0, Math.round((total - days * f.auto_dose_ml_day) * 10) / 10);
+  var extra = f.auto_extra_ml || 0;
+  var remaining_ml = Math.max(0, Math.round((total - days * f.auto_dose_ml_day - extra) * 10) / 10);
   var pct = Math.round(remaining_ml / total * 100);
   return {remaining_ml: remaining_ml, pct: pct, total_ml: total};
 }
@@ -2628,7 +2629,7 @@ function refill_fert_reservoir(fid) {
   var d = ld(), today = today_str();
   var fert = d.ferts.find(function(f){ return f.id === fid; });
   if (!fert) return;
-  d.ferts = d.ferts.map(function(f){ return f.id===fid ? Object.assign({},f,{auto_last_fill_date:today}) : f; });
+  d.ferts = d.ferts.map(function(f){ return f.id===fid ? Object.assign({},f,{auto_last_fill_date:today, auto_extra_ml:0}) : f; });
   if (fert.auto_refill_task_id) {
     var freq = calc_refill_freq(fert);
     d.tasks = (d.tasks||[]).map(function(t){
@@ -2730,7 +2731,7 @@ function confirm_mark_done(id) {
   if (is_refill_task) {
     parts.unshift('Reservoir refilled');
     var freq = calc_refill_freq(linked_fert);
-    d.ferts = d.ferts.map(function(x){ return x.auto_refill_task_id===id ? Object.assign({},x,{auto_last_fill_date:done_date}) : x; });
+    d.ferts = d.ferts.map(function(x){ return x.auto_refill_task_id===id ? Object.assign({},x,{auto_last_fill_date:done_date, auto_extra_ml:0}) : x; });
     d.tasks = d.tasks.map(function(t){ return t.id===id ? Object.assign({},t,{next_due:freq?next_due(done_date,freq):t.next_due}) : t; });
   } else if (is_auto_dose) {
     parts.unshift('Automated');
@@ -2841,23 +2842,51 @@ function show_cal_day(ds) {
 function do_add_mlog() {
   var type_opts = ['Water Change','Filter Clean','Gravel Vac','Glass Wipe','Fertilizer','Pruning','Water Test','Equipment Service','Other']
     .map(function(o){ return '<option>' + o + '</option>'; }).join('');
+  var d = ld(), tid = at();
+  var auto_ferts = (d.ferts || []).filter(function(f){ return f.tank_id === tid && f.automated; });
+  var fert_wrap = '';
+  if (auto_ferts.length) {
+    var fert_opts = auto_ferts.map(function(f){
+      return '<option value="' + f.id + '">' + esc(f.name) + ' (' + (f.auto_dose_ml_day || '?') + ' ml/day)</option>';
+    }).join('');
+    fert_wrap = '<div id="mlog_fert_wrap" style="display:none;background:#e8f4fb;border-radius:6px;padding:8px 10px;margin-top:4px">' +
+      '<div style="font-size:12px;font-weight:600;margin-bottom:6px">Automated fertilizer</div>' +
+      '<select id="mlog_fert_sel" style="width:100%;margin-bottom:8px;box-sizing:border-box"><option value="">-- not from reservoir --</option>' + fert_opts + '</select>' +
+      '<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">' +
+      '<input type="checkbox" id="mlog_deduct" style="width:16px;height:16px"> Deduct dose from reservoir</label>' +
+      '</div>';
+  }
   om('<div class="mtitle">Log Activity</div>' +
     '<form onsubmit="sub_add_mlog(event)">' +
     '<div class="frow">' +
-    fg('Type', '<select name="type">' + type_opts + '</select>') +
+    fg('Type', '<select name="type" onchange="tog_mlog_fert(this.value)">' + type_opts + '</select>') +
     fg('Activity', '<input type="text" name="name" placeholder="e.g. 30% water change" required>') +
     '</div><div class="frow">' +
     fg('Date', '<input type="date" name="date" value="' + today_str() + '" required>') +
     fg('Notes', '<input type="text" name="notes" placeholder="Optional">') +
     '</div>' +
+    fert_wrap +
     '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Save Log</button></div>' +
     '</form>');
+}
+function tog_mlog_fert(val) {
+  var wrap = document.getElementById('mlog_fert_wrap');
+  if (wrap) wrap.style.display = val === 'Fertilizer' ? '' : 'none';
 }
 function sub_add_mlog(e) {
   e.preventDefault(); var f = e.target;
   var d = ld();
   if (!Array.isArray(d.maint_log)) d.maint_log = [];
   d.maint_log.push({id:gid(), tank_id:at(), task_id:null, task_name:f.name.value, task_type:f.type.value, date:f.date.value, notes:f.notes.value.trim()});
+  var fert_sel = document.getElementById('mlog_fert_sel');
+  var deduct_cb = document.getElementById('mlog_deduct');
+  if (fert_sel && fert_sel.value && deduct_cb && deduct_cb.checked) {
+    var fid = fert_sel.value;
+    d.ferts = (d.ferts || []).map(function(x){
+      if (x.id !== fid) return x;
+      return Object.assign({}, x, {auto_extra_ml: Math.round(((x.auto_extra_ml || 0) + (x.auto_dose_ml_day || 0)) * 10) / 10});
+    });
+  }
   sv(d); cm(); r_maint();
 }
 
