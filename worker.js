@@ -2595,6 +2595,7 @@ function refill_fert_reservoir(fid) {
   d.ferts = d.ferts.map(function(f){ return f.id===fid ? Object.assign({},f,{auto_last_fill_date:today_str()}) : f; });
   sv(d); r_maint();
 }
+function fmt_schedule(t) {
   if (t.dow && t.dow.length) {
     return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].filter(function(_,i){ return t.dow.indexOf(i) !== -1; }).join(', ');
   }
