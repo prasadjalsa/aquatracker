@@ -2356,7 +2356,15 @@ function add_fert(tid, preset, name, dose_ml, freq_days, notes, dow, notify, not
   var task_id = add_task(tid, 'Fertilizer', task_name, dow?null:parseInt(freq_days)||7, today_str(), 'Fertilizer dose', notify||'on_day', notify_min!=null?parseInt(notify_min):480, dow||null);
   var d = ld(); // reload after add_task saved
   var entry = {id:gid(), tank_id:tid, preset:preset, name:name, dose_ml:parseFloat(dose_ml)||0, freq_days:dow?null:parseInt(freq_days)||7, dow:dow||null, notes:notes||'', task_id:task_id};
-  if (is_auto) Object.assign(entry, auto_fields);
+  if (is_auto) {
+    Object.assign(entry, auto_fields);
+    var refill_freq = calc_refill_freq(auto_fields);
+    if (refill_freq) {
+      var refill_id = add_task(tid, 'Fertilizer Refill', 'Refill reservoir — ' + name, refill_freq, auto_fields.auto_last_fill_date||today_str(), '', notify||'on_day', notify_min!=null?parseInt(notify_min):480, null);
+      d = ld(); // reload again after second add_task
+      entry.auto_refill_task_id = refill_id;
+    }
+  }
   d.ferts.push(entry);
   sv(d); r_life();
 }
@@ -2364,6 +2372,7 @@ function del_fert(id) {
   var d = ld();
   var fert = d.ferts.find(function(x){return x.id===id;});
   if (fert && fert.task_id) d.tasks = d.tasks.filter(function(x){return x.id!==fert.task_id;});
+  if (fert && fert.auto_refill_task_id) d.tasks = d.tasks.filter(function(x){return x.id!==fert.auto_refill_task_id;});
   d.ferts = d.ferts.filter(function(x){return x.id!==id;});
   sv(d); r_life();
 }
@@ -2447,11 +2456,24 @@ function sub_edit_fert(e) {
         });
       });
     }
+    if (updated.auto_refill_task_id) {
+      var new_freq = is_auto_edit ? calc_refill_freq(auto_patch) : null;
+      d.tasks = (d.tasks||[]).map(function(t) {
+        if (t.id !== updated.auto_refill_task_id) return t;
+        if (!is_auto_edit) return t; // keep task but leave as-is if automation was disabled
+        return Object.assign({}, t, {
+          name: 'Refill reservoir — ' + updated.name,
+          freq: new_freq,
+          next_due: new_freq ? next_due(auto_patch.auto_last_fill_date||t.last_done||today_str(), new_freq) : t.next_due,
+          notify: f.fert_notify ? f.fert_notify.value : (t.notify || 'on_day'),
+          notify_min: f.fert_notify_hour ? parseInt(f.fert_notify_hour.value) : get_notify_min(t)
+        });
+      });
+    }
     return updated;
   });
   sv(d); cm(); r_life();
 }
-function calc_fert_dose(sel) {
   var f = document.getElementById('fert_frm');
   var fp = _fert[sel.value];
   if (!fp) return;
@@ -2575,6 +2597,16 @@ function calc_auto_fert_remaining(f) {
   var pct = Math.round(remaining_ml / total * 100);
   return {remaining_ml: remaining_ml, pct: pct, total_ml: total};
 }
+function calc_refill_freq(f) {
+  var total = (f.auto_conc_ml||0) + (f.auto_ro_ml||0);
+  if (!total || !f.auto_dose_ml_day) return null;
+  return Math.max(1, Math.floor(total / f.auto_dose_ml_day * 0.9));
+}
+function calc_refill_due(f) {
+  var freq = calc_refill_freq(f);
+  if (!freq || !f.auto_last_fill_date) return null;
+  return next_due(f.auto_last_fill_date, freq);
+}
 function tog_auto_fert() {
   var cb = document.getElementById('auto_fert_cb');
   var wrap = document.getElementById('auto_fert_wrap');
@@ -2591,8 +2623,17 @@ function upd_auto_fert_total() {
   lbl.textContent = '= ' + total + ' ml total — lasts ' + days + ' days';
 }
 function refill_fert_reservoir(fid) {
-  var d = ld();
-  d.ferts = d.ferts.map(function(f){ return f.id===fid ? Object.assign({},f,{auto_last_fill_date:today_str()}) : f; });
+  var d = ld(), today = today_str();
+  var fert = d.ferts.find(function(f){ return f.id === fid; });
+  if (!fert) return;
+  d.ferts = d.ferts.map(function(f){ return f.id===fid ? Object.assign({},f,{auto_last_fill_date:today}) : f; });
+  if (fert.auto_refill_task_id) {
+    var freq = calc_refill_freq(fert);
+    d.tasks = (d.tasks||[]).map(function(t){
+      if (t.id !== fert.auto_refill_task_id) return t;
+      return Object.assign({}, t, {last_done:today, next_due:freq?next_due(today,freq):t.next_due, snooze_fire_at:null});
+    });
+  }
   sv(d); r_maint();
 }
 function fmt_schedule(t) {
@@ -2637,14 +2678,17 @@ function mark_done(id) {
 function mark_done_prompt(id) {
   var d = ld();
   var task = d.tasks.find(function(t){ return t.id === id; }); if (!task) return;
-  var linked_fert = d.ferts.find(function(x){ return x.task_id === id; });
-  var is_auto = linked_fert && linked_fert.automated;
+  var linked_fert = d.ferts.find(function(x){ return x.task_id === id || x.auto_refill_task_id === id; });
+  var is_refill_task = linked_fert && linked_fert.auto_refill_task_id === id;
+  var is_auto_dose  = linked_fert && linked_fert.automated && linked_fert.task_id === id;
   var vol_unit = get_pref().vol === 'L' ? 'L' : 'gal';
   var extra = '';
   if (task.type === 'Water Change') {
     extra = '<div class="fg"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Volume changed (' + vol_unit + ') <span style="font-weight:400;color:var(--muted)">(optional)</span></label>' +
       '<input type="number" id="mlog_vol" min="0" step="0.1" placeholder="e.g. 15" style="width:100%;box-sizing:border-box"></div>';
-  } else if (task.type === 'Fertilizer' && is_auto) {
+  } else if (is_refill_task) {
+    extra = '<div style="background:#e8f4fb;border-radius:6px;padding:8px 10px;font-size:13px;color:#1a5a7a">Marking this done resets the reservoir timer to the date you select above.</div>';
+  } else if (is_auto_dose) {
     extra = '<div class="fg" style="background:#e8f4fb;border-radius:6px;padding:8px 10px">' +
       '<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">' +
       '<input type="checkbox" id="mlog_refill" style="width:16px;height:16px"> ' +
@@ -2678,13 +2722,27 @@ function confirm_mark_done(id) {
   if (note_el && note_el.value.trim()) parts.push(note_el.value.trim());
   var d = ld();
   var task = d.tasks.find(function(t){ return t.id === id; }); if (!task) { cm(); return; }
-  var linked_fert = d.ferts.find(function(x){ return x.task_id === id; });
-  var is_auto = linked_fert && linked_fert.automated;
-  if (is_auto) {
+  var linked_fert = d.ferts.find(function(x){ return x.task_id === id || x.auto_refill_task_id === id; });
+  var is_refill_task = linked_fert && linked_fert.auto_refill_task_id === id;
+  var is_auto_dose  = linked_fert && linked_fert.automated && linked_fert.task_id === id;
+  if (is_refill_task) {
+    parts.unshift('Reservoir refilled');
+    var freq = calc_refill_freq(linked_fert);
+    d.ferts = d.ferts.map(function(x){ return x.auto_refill_task_id===id ? Object.assign({},x,{auto_last_fill_date:done_date}) : x; });
+    d.tasks = d.tasks.map(function(t){ return t.id===id ? Object.assign({},t,{next_due:freq?next_due(done_date,freq):t.next_due}) : t; });
+  } else if (is_auto_dose) {
     parts.unshift('Automated');
     if (refill_el && refill_el.checked) {
       parts.push('reservoir refilled');
-      d.ferts = d.ferts.map(function(x){ return x.task_id===id ? Object.assign({},x,{auto_last_fill_date:done_date}) : x; });
+      var freq2 = calc_refill_freq(linked_fert);
+      d.ferts = d.ferts.map(function(x){
+        return x.task_id===id ? Object.assign({},x,{auto_last_fill_date:done_date}) : x;
+      });
+      if (linked_fert.auto_refill_task_id && freq2) {
+        d.tasks = d.tasks.map(function(t){
+          return t.id===linked_fert.auto_refill_task_id ? Object.assign({},t,{last_done:done_date,next_due:next_due(done_date,freq2),snooze_fire_at:null}) : t;
+        });
+      }
     }
   }
   var full_note = parts.join(' — ');
