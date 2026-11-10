@@ -2350,11 +2350,14 @@ function sub_edit_stock(e) {
 
 // ===== FERTILIZERS =====
 var _fert_gal = 0;
-function add_fert(tid, preset, name, dose_ml, freq_days, notes, dow, notify, notify_min) {
-  var task_name = 'Dose ' + name + (dose_ml ? ' — ' + dose_ml + ' ml' : '');
+function add_fert(tid, preset, name, dose_ml, freq_days, notes, dow, notify, notify_min, auto_fields) {
+  var is_auto = auto_fields && auto_fields.automated;
+  var task_name = 'Dose ' + name + (dose_ml ? ' — ' + dose_ml + ' ml' : '') + (is_auto ? ' (Auto)' : '');
   var task_id = add_task(tid, 'Fertilizer', task_name, dow?null:parseInt(freq_days)||7, today_str(), 'Fertilizer dose', notify||'on_day', notify_min!=null?parseInt(notify_min):480, dow||null);
   var d = ld(); // reload after add_task saved
-  d.ferts.push({id:gid(), tank_id:tid, preset:preset, name:name, dose_ml:parseFloat(dose_ml)||0, freq_days:dow?null:parseInt(freq_days)||7, dow:dow||null, notes:notes||'', task_id:task_id});
+  var entry = {id:gid(), tank_id:tid, preset:preset, name:name, dose_ml:parseFloat(dose_ml)||0, freq_days:dow?null:parseInt(freq_days)||7, dow:dow||null, notes:notes||'', task_id:task_id};
+  if (is_auto) Object.assign(entry, auto_fields);
+  d.ferts.push(entry);
   sv(d); r_life();
 }
 function del_fert(id) {
@@ -2391,6 +2394,24 @@ function do_edit_fert(id) {
     '<div id="task_freq_row"' + (is_dow_f ? ' style="display:none"' : '') + '><input type="number" name="freq_days" min="1" value="' + (f.freq_days || 7) + '" style="width:80px"> days</div>' +
     '<div id="task_dow_row"' + (is_dow_f ? '' : ' style="display:none"') + '><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">' + edit_dow_boxes + '</div></div></div>' +
     fg('Notes', '<input type="text" name="notes" value="' + esc(f.notes) + '">') +
+    '<div class="fg"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Automated dosing</label>' +
+    '<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">' +
+    '<input type="checkbox" id="auto_fert_cb" name="auto_enabled" onchange="tog_auto_fert()" style="width:16px;height:16px"' + (f.automated ? ' checked' : '') + '> ' +
+    'This fertilizer is dispensed automatically (dosing pump)</label>' +
+    '<div id="auto_fert_wrap" style="display:' + (f.automated ? '' : 'none') + ';margin-top:10px;background:#f4f8ff;border-radius:6px;padding:10px;font-size:13px">' +
+    '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">' +
+    '<label>Concentrate <input type="number" id="auto_conc_ml" name="auto_conc_ml" step="0.1" min="0" placeholder="e.g. 20" value="' + (f.auto_conc_ml||'') + '" style="width:80px" oninput="upd_auto_fert_total()"> ml</label>' +
+    '<span style="color:var(--muted)">+</span>' +
+    '<label>RO water <input type="number" id="auto_ro_ml" name="auto_ro_ml" step="0.1" min="0" placeholder="e.g. 40" value="' + (f.auto_ro_ml||'') + '" style="width:80px" oninput="upd_auto_fert_total()"> ml</label>' +
+    '<span id="auto_total_lbl" style="color:var(--muted);font-style:italic">' + (f.automated&&f.auto_conc_ml&&f.auto_ro_ml ? '= ' + (f.auto_conc_ml+f.auto_ro_ml) + ' ml total' + (f.auto_dose_ml_day ? ' — lasts ' + Math.floor((f.auto_conc_ml+f.auto_ro_ml)/f.auto_dose_ml_day) + ' days' : '') : '') + '</span></div>' +
+    '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">' +
+    '<label>Daily dose <input type="number" id="auto_dose_ml_day" name="auto_dose_ml_day" step="0.1" min="0" placeholder="e.g. 3" value="' + (f.auto_dose_ml_day||'') + '" style="width:70px" oninput="upd_auto_fert_total()"> ml/day from reservoir</label></div>' +
+    '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">' +
+    '<label>Timer runs <input type="number" name="auto_timer_sec" step="1" min="1" placeholder="e.g. 30" value="' + (f.auto_timer_sec||'') + '" style="width:70px"> seconds at </label>' +
+    '<select name="auto_timer_min">' + mk_time_opts(f.auto_timer_min||600) + '</select></div>' +
+    '<div style="display:flex;align-items:center;gap:8px">' +
+    '<label>Reservoir last filled <input type="date" name="auto_last_fill" value="' + (f.auto_last_fill_date||today_str()) + '" style="width:160px"></label></div>' +
+    '</div></div>' +
     '<div class="frow">' +
     fg('Remind me', '<select name="fert_notify">' + notify_opts + '</select>') +
     fg('At time', '<select name="fert_notify_hour">' + mk_time_opts(cur_min) + '</select>') +
@@ -2407,11 +2428,13 @@ function sub_edit_fert(e) {
     if (!dow.length) { alert('Please select at least one day of the week.'); return; }
   }
   var freq_days = dow ? null : parseInt(f.freq_days.value) || 7;
+  var is_auto_edit = f.auto_enabled && f.auto_enabled.checked;
+  var auto_patch = is_auto_edit ? {automated:true, auto_conc_ml:parseFloat(f.auto_conc_ml.value)||0, auto_ro_ml:parseFloat(f.auto_ro_ml.value)||0, auto_dose_ml_day:parseFloat(f.auto_dose_ml_day.value)||0, auto_timer_sec:parseInt(f.auto_timer_sec.value)||0, auto_timer_min:parseInt(f.auto_timer_min.value)||600, auto_last_fill_date:f.auto_last_fill.value||today_str()} : {automated:false, auto_conc_ml:null, auto_ro_ml:null, auto_dose_ml_day:null, auto_timer_sec:null, auto_timer_min:null, auto_last_fill_date:null};
   d.ferts = d.ferts.map(function(x) {
     if (x.id !== f.fid.value) return x;
-    var updated = Object.assign({}, x, {name:f.name.value, dose_ml:parseFloat(f.dose_ml.value)||0, freq_days:freq_days, dow:dow, notes:f.notes.value});
+    var updated = Object.assign({}, x, {name:f.name.value, dose_ml:parseFloat(f.dose_ml.value)||0, freq_days:freq_days, dow:dow, notes:f.notes.value}, auto_patch);
     if (updated.task_id) {
-      var task_name = 'Dose ' + updated.name + (updated.dose_ml ? ' — ' + updated.dose_ml + ' ml' : '');
+      var task_name = 'Dose ' + updated.name + (updated.dose_ml ? ' — ' + updated.dose_ml + ' ml' : '') + (is_auto_edit ? ' (Auto)' : '');
       d.tasks = (d.tasks||[]).map(function(t) {
         if (t.id !== updated.task_id) return t;
         return Object.assign({}, t, {
@@ -2484,6 +2507,24 @@ function do_add_fert() {
     '<div id="task_freq_row"><input type="number" name="fert_freq" min="1" value="' + _fert[Object.keys(_fert)[0]].freq + '" style="width:80px"> days</div>' +
     '<div id="task_dow_row" style="display:none"><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">' + fert_dow_boxes + '</div></div></div>' +
     fg('Notes', '<input type="text" name="fert_notes" placeholder="Optional">') +
+    '<div class="fg"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Automated dosing</label>' +
+    '<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">' +
+    '<input type="checkbox" id="auto_fert_cb" name="auto_enabled" onchange="tog_auto_fert()" style="width:16px;height:16px"> ' +
+    'This fertilizer is dispensed automatically (dosing pump)</label>' +
+    '<div id="auto_fert_wrap" style="display:none;margin-top:10px;background:#f4f8ff;border-radius:6px;padding:10px;font-size:13px">' +
+    '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">' +
+    '<label>Concentrate <input type="number" id="auto_conc_ml" name="auto_conc_ml" step="0.1" min="0" placeholder="e.g. 20" style="width:80px" oninput="upd_auto_fert_total()"> ml</label>' +
+    '<span style="color:var(--muted)">+</span>' +
+    '<label>RO water <input type="number" id="auto_ro_ml" name="auto_ro_ml" step="0.1" min="0" placeholder="e.g. 40" style="width:80px" oninput="upd_auto_fert_total()"> ml</label>' +
+    '<span id="auto_total_lbl" style="color:var(--muted);font-style:italic"></span></div>' +
+    '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">' +
+    '<label>Daily dose <input type="number" id="auto_dose_ml_day" name="auto_dose_ml_day" step="0.1" min="0" placeholder="e.g. 3" style="width:70px" oninput="upd_auto_fert_total()"> ml/day from reservoir</label></div>' +
+    '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">' +
+    '<label>Timer runs <input type="number" name="auto_timer_sec" step="1" min="1" placeholder="e.g. 30" style="width:70px"> seconds at </label>' +
+    '<select name="auto_timer_min">' + mk_time_opts(600) + '</select></div>' +
+    '<div style="display:flex;align-items:center;gap:8px">' +
+    '<label>Reservoir last filled <input type="date" name="auto_last_fill" value="' + today_str() + '" style="width:160px"></label></div>' +
+    '</div></div>' +
     '<div class="frow">' +
     fg('Remind me', '<select name="fert_notify"><option value="on_day" selected>On due date</option><option value="1_day_before">1 day before</option><option value="2_days_before">2 days before</option><option value="none">No reminder</option></select>') +
     fg('At time', '<select name="fert_notify_hour">' + mk_time_opts(480) + '</select>') +
@@ -2499,7 +2540,11 @@ function sub_fert() {
     dow = [0,1,2,3,4,5,6].filter(function(i){ return f['fert_dow_'+i] && f['fert_dow_'+i].checked; });
     if (!dow.length) { alert('Please select at least one day of the week.'); return; }
   }
-  add_fert(at(), f.fert_preset.value, f.fert_name.value.trim(), f.fert_dose.value, f.fert_freq.value, f.fert_notes.value.trim(), dow, f.fert_notify.value, f.fert_notify_hour.value);
+  var auto_fields = null;
+  if (f.auto_enabled && f.auto_enabled.checked) {
+    auto_fields = {automated:true, auto_conc_ml:parseFloat(f.auto_conc_ml.value)||0, auto_ro_ml:parseFloat(f.auto_ro_ml.value)||0, auto_dose_ml_day:parseFloat(f.auto_dose_ml_day.value)||0, auto_timer_sec:parseInt(f.auto_timer_sec.value)||0, auto_timer_min:parseInt(f.auto_timer_min.value)||600, auto_last_fill_date:f.auto_last_fill.value||today_str()};
+  }
+  add_fert(at(), f.fert_preset.value, f.fert_name.value.trim(), f.fert_dose.value, f.fert_freq.value, f.fert_notes.value.trim(), dow, f.fert_notify.value, f.fert_notify_hour.value, auto_fields);
   cm();
 }
 
@@ -2519,7 +2564,37 @@ function next_due_dow(from_date, dow) {
   }
   return from_date;
 }
-function fmt_schedule(t) {
+function day_diff(a, b) {
+  return Math.round((new Date(a+'T00:00:00') - new Date(b+'T00:00:00')) / 86400000);
+}
+function calc_auto_fert_remaining(f) {
+  var total = (f.auto_conc_ml||0) + (f.auto_ro_ml||0);
+  if (!total || !f.auto_dose_ml_day || !f.auto_last_fill_date) return null;
+  var days = day_diff(today_str(), f.auto_last_fill_date);
+  var remaining_ml = Math.max(0, Math.round((total - days * f.auto_dose_ml_day) * 10) / 10);
+  var pct = Math.round(remaining_ml / total * 100);
+  return {remaining_ml: remaining_ml, pct: pct, total_ml: total};
+}
+function tog_auto_fert() {
+  var cb = document.getElementById('auto_fert_cb');
+  var wrap = document.getElementById('auto_fert_wrap');
+  if (wrap) wrap.style.display = cb && cb.checked ? '' : 'none';
+}
+function upd_auto_fert_total() {
+  var c = document.getElementById('auto_conc_ml'), r = document.getElementById('auto_ro_ml');
+  var dv = document.getElementById('auto_dose_ml_day');
+  var lbl = document.getElementById('auto_total_lbl');
+  if (!c || !r || !lbl) return;
+  var total = (parseFloat(c.value)||0) + (parseFloat(r.value)||0);
+  var daily = parseFloat(dv && dv.value) || 0;
+  var days = daily > 0 ? Math.floor(total / daily) : '—';
+  lbl.textContent = '= ' + total + ' ml total — lasts ' + days + ' days';
+}
+function refill_fert_reservoir(fid) {
+  var d = ld();
+  d.ferts = d.ferts.map(function(f){ return f.id===fid ? Object.assign({},f,{auto_last_fill_date:today_str()}) : f; });
+  sv(d); r_maint();
+}
   if (t.dow && t.dow.length) {
     return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].filter(function(_,i){ return t.dow.indexOf(i) !== -1; }).join(', ');
   }
@@ -2559,12 +2634,20 @@ function mark_done(id) {
   sv(d);
 }
 function mark_done_prompt(id) {
-  var task = ld().tasks.find(function(t){ return t.id === id; }); if (!task) return;
+  var d = ld();
+  var task = d.tasks.find(function(t){ return t.id === id; }); if (!task) return;
+  var linked_fert = d.ferts.find(function(x){ return x.task_id === id; });
+  var is_auto = linked_fert && linked_fert.automated;
   var vol_unit = get_pref().vol === 'L' ? 'L' : 'gal';
   var extra = '';
   if (task.type === 'Water Change') {
     extra = '<div class="fg"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Volume changed (' + vol_unit + ') <span style="font-weight:400;color:var(--muted)">(optional)</span></label>' +
       '<input type="number" id="mlog_vol" min="0" step="0.1" placeholder="e.g. 15" style="width:100%;box-sizing:border-box"></div>';
+  } else if (task.type === 'Fertilizer' && is_auto) {
+    extra = '<div class="fg" style="background:#e8f4fb;border-radius:6px;padding:8px 10px">' +
+      '<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">' +
+      '<input type="checkbox" id="mlog_refill" style="width:16px;height:16px"> ' +
+      '<span>Reservoir refilled today</span></label></div>';
   } else if (task.type === 'Fertilizer') {
     extra = '<div class="fg"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Dose <span style="font-weight:400;color:var(--muted)">(optional)</span></label>' +
       '<input type="text" id="mlog_detail" placeholder="e.g. 5 ml" style="width:100%;box-sizing:border-box"></div>';
@@ -2586,14 +2669,24 @@ function confirm_mark_done(id) {
   var note_el = document.getElementById('mlog_note');
   var vol_el  = document.getElementById('mlog_vol');
   var det_el  = document.getElementById('mlog_detail');
+  var refill_el = document.getElementById('mlog_refill');
   var done_date = (date_el && date_el.value) ? date_el.value : today_str();
   var parts = [];
   if (vol_el  && vol_el.value)  parts.push(vol_el.value + ' ' + (get_pref().vol === 'L' ? 'L' : 'gal') + ' changed');
   if (det_el  && det_el.value)  parts.push(det_el.value);
   if (note_el && note_el.value.trim()) parts.push(note_el.value.trim());
-  var full_note = parts.join(' — ');
   var d = ld();
   var task = d.tasks.find(function(t){ return t.id === id; }); if (!task) { cm(); return; }
+  var linked_fert = d.ferts.find(function(x){ return x.task_id === id; });
+  var is_auto = linked_fert && linked_fert.automated;
+  if (is_auto) {
+    parts.unshift('Automated');
+    if (refill_el && refill_el.checked) {
+      parts.push('reservoir refilled');
+      d.ferts = d.ferts.map(function(x){ return x.task_id===id ? Object.assign({},x,{auto_last_fill_date:done_date}) : x; });
+    }
+  }
+  var full_note = parts.join(' — ');
   d.tasks = d.tasks.map(function(t) {
     return t.id === id ? Object.assign({}, t, {last_done:done_date, next_due: t.dow && t.dow.length ? next_due_dow(done_date, t.dow) : next_due(done_date, t.freq), snooze_fire_at: null}) : t;
   });
@@ -3946,11 +4039,24 @@ function r_life() {
 
   h += '<div class="card"><div class="ctitle">Fertilizers <button class="btn bp bs" onclick="do_add_fert()">+ Add</button></div>';
   if (fr.length) {
-    h += '<div class="tw"><table><tr><th>Name</th><th>Dose</th><th>Every</th><th>Notes</th><th></th></tr>';
+    h += '<div class="tw"><table><tr><th>Name</th><th>Dose</th><th>Every</th><th>Reservoir</th><th>Notes</th><th></th></tr>';
     fr.forEach(function(f) {
-      h += '<tr><td><strong>' + esc(f.name) + '</strong></td>' +
+      var res_cell = '&mdash;';
+      if (f.automated) {
+        var res = calc_auto_fert_remaining(f);
+        if (res) {
+          var res_col = res.pct <= 10 ? 'var(--danger)' : res.pct <= 30 ? 'var(--warn)' : 'var(--muted)';
+          var res_icon = res.pct <= 10 ? '&#x26A0;&#xFE0F; ' : '';
+          res_cell = '<span style="color:' + res_col + ';font-weight:' + (res.pct <= 30 ? '600' : '400') + '">' + res_icon + res.remaining_ml + ' ml (' + res.pct + '%)</span>';
+        } else {
+          res_cell = '<span style="color:var(--muted)">Not configured</span>';
+        }
+      }
+      var auto_badge = f.automated ? ' <span class="pill pok" style="font-size:10px">Auto</span>' : '';
+      h += '<tr><td><strong>' + esc(f.name) + '</strong>' + auto_badge + '</td>' +
            '<td>' + (f.dose_ml || '—') + ' ml</td>' +
            '<td>' + fmt_schedule(f) + '</td>' +
+           '<td>' + res_cell + '</td>' +
            '<td>' + esc(f.notes) + '</td>' +
            '<td style="white-space:nowrap"><button class="btn bg bs" data-id="' + f.id + '" onclick="do_edit_fert(this.dataset.id)">Edit</button> <button class="btn bd bs" data-id="' + f.id + '" onclick="del_fert(this.dataset.id)">&#x2715;</button></td></tr>';
     });
@@ -4427,6 +4533,23 @@ async function r_maint() {
     h += '<p class="emsg">Add a tank with livestock to see personalized recommendations.</p>';
   }
   h += '</div>';
+
+  // Reservoir low alerts for automated ferts
+  var low_ferts = d.ferts.filter(function(f){
+    if (!f.automated || f.tank_id !== tid) return false;
+    var res = calc_auto_fert_remaining(f);
+    return res && res.pct <= 10;
+  });
+  if (low_ferts.length) {
+    low_ferts.forEach(function(f){
+      var res = calc_auto_fert_remaining(f);
+      h += '<div style="display:flex;gap:8px;align-items:center;font-size:13px;padding:10px 12px;margin-bottom:8px;' +
+           'background:#fff0f0;border-left:3px solid var(--danger);border-radius:0 6px 6px 0">' +
+           '<span style="flex:1">&#x26A0;&#xFE0F; <strong>' + esc(f.name) + '</strong> reservoir is running low &mdash; ' +
+           res.remaining_ml + ' ml remaining (' + res.pct + '%). Refill when you next dose.</span>' +
+           '<button class="btn bd bs" style="font-size:12px" data-fid="' + f.id + '" onclick="refill_fert_reservoir(this.dataset.fid)">Refill Now</button></div>';
+    });
+  }
 
   // Existing tasks
   var tasks = d.tasks.filter(function(x){return x.tank_id===tid;})
