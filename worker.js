@@ -2474,6 +2474,7 @@ function sub_edit_fert(e) {
   });
   sv(d); cm(); r_life();
 }
+function calc_fert_dose(sel) {
   var f = document.getElementById('fert_frm');
   var fp = _fert[sel.value];
   if (!fp) return;
