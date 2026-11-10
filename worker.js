@@ -6821,6 +6821,68 @@ function r_tools() {
 
   h += '</div>'; // end Test Kit card
 
+  // === Calculators ===
+  var last_w = (d.water||[]).filter(function(x){return x.tank_id===tid;}).sort(function(a,b){return b.date.localeCompare(a.date);})[0];
+  var last_gh_v = last_w && last_w.gh != null ? last_w.gh : '';
+  var last_kh_v = last_w && last_w.kh != null ? last_w.kh : '';
+  var wc_sub_l_t   = calc_substrate_liters(tid);
+  var wc_sub_gal_t = wc_sub_l_t / 3.78541;
+  var wc_eff_gal_t = Math.max((tank.gallons||0) - wc_sub_gal_t, 0);
+  var wc_eff_lbl_t = get_pref().vol === 'L' ? (Math.round(wc_eff_gal_t*3.78541*10)/10)+' L' : (Math.round(wc_eff_gal_t*10)/10)+' gal';
+  var dose_def_t   = Math.round(wc_eff_gal_t*(get_pref().vol==='L'?3.78541:1)*10)/10;
+  var tank_vol_lbl = get_pref().vol === 'L' ? Math.round((tank.gallons||0)*3.78541) : Math.round((tank.gallons||0)*10)/10;
+
+  h += '<div class="card"><div class="ctitle">Calculators</div>';
+
+  // ── Water Change ──
+  h += '<div style="margin-bottom:18px">';
+  h += '<div style="font-size:13px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Water Change</div>';
+  h += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;margin-bottom:6px">';
+  h += '<span>Effective volume: <strong>' + wc_eff_lbl_t + '</strong>';
+  if (wc_sub_l_t > 0) h += ' <span style="font-size:11px;color:var(--muted)">(tank minus ' + wc_sub_l_t + ' L substrate)</span>';
+  h += '</span></div>';
+  h += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px">';
+  h += '<span>Change:</span><input type="number" id="wc_pct" value="25" min="1" max="100" style="width:70px" oninput="calc_wc()"><span>%</span>';
+  h += '</div><div id="wc_result" style="margin-top:8px;font-size:13px"></div>';
+  h += '</div>';
+
+  // ── Dosing ──
+  h += '<div style="margin-bottom:18px;padding-top:14px;border-top:1px solid #f0f0f0">';
+  h += '<div style="font-size:13px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Product Dose</div>';
+  h += '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px">';
+  h += '<div class="fg" style="margin:0;flex:2;min-width:160px"><label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Product</label>';
+  h += '<select id="dose_prod" style="width:100%" onchange="calc_dose()">';
+  h += '<optgroup label="Water Treatment"><option value="prime">Seachem Prime</option><option value="safe">Seachem Safe (powder)</option><option value="aquasafe">Tetra AquaSafe / API StressCoat</option><option value="generic">Generic dechlorinator (5 ml / 40 L)</option><option value="aq_salt">Aquarium salt — tonic</option><option value="epsom">Epsom salt — bloat/dropsy</option></optgroup>';
+  h += '<optgroup label="Fertilizers">';
+  Object.keys(_fert).forEach(function(k){ if (_fert[k].ml_per_gal) h += '<option value="fert_' + k + '">' + _fert[k].name + '</option>'; });
+  h += '</optgroup></select></div>';
+  h += '<div class="fg" style="margin:0;min-width:110px"><label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Volume (' + v_lbl() + ')</label>';
+  h += '<input type="number" id="dose_vol" value="' + dose_def_t + '" min="0.1" step="0.1" oninput="calc_dose()" style="width:100%"></div>';
+  h += '</div><div id="dose_result" style="font-size:13px"></div>';
+  h += '</div>';
+
+  // ── GH Adjustment ──
+  h += '<div style="margin-bottom:18px;padding-top:14px;border-top:1px solid #f0f0f0">';
+  h += '<div style="font-size:13px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">GH Adjustment &mdash; Seachem Equilibrium</div>';
+  h += '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px">';
+  h += '<div class="fg" style="margin:0;min-width:100px"><label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Current GH (dGH)</label><input type="number" id="gh_cur" value="' + last_gh_v + '" min="0" step="0.5" placeholder="e.g. 2" oninput="calc_gh()" style="width:100%"></div>';
+  h += '<div class="fg" style="margin:0;min-width:100px"><label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Target GH (dGH)</label><input type="number" id="gh_tgt" value="6" min="0" step="0.5" oninput="calc_gh()" style="width:100%"></div>';
+  h += '<div class="fg" style="margin:0;min-width:110px"><label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Tank volume (' + v_lbl() + ')</label><input type="number" id="gh_vol" value="' + tank_vol_lbl + '" min="1" step="1" oninput="calc_gh()" style="width:100%"></div>';
+  h += '</div><div id="gh_result" style="font-size:13px"></div>';
+  h += '</div>';
+
+  // ── KH Adjustment ──
+  h += '<div style="padding-top:14px;border-top:1px solid #f0f0f0">';
+  h += '<div style="font-size:13px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">KH Adjustment &mdash; Baking Soda / Alkaline Buffer</div>';
+  h += '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px">';
+  h += '<div class="fg" style="margin:0;min-width:100px"><label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Current KH (dKH)</label><input type="number" id="kh_cur" value="' + last_kh_v + '" min="0" step="0.5" placeholder="e.g. 1" oninput="calc_kh()" style="width:100%"></div>';
+  h += '<div class="fg" style="margin:0;min-width:100px"><label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Target KH (dKH)</label><input type="number" id="kh_tgt" value="4" min="0" step="0.5" oninput="calc_kh()" style="width:100%"></div>';
+  h += '<div class="fg" style="margin:0;min-width:110px"><label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Tank volume (' + v_lbl() + ')</label><input type="number" id="kh_vol" value="' + tank_vol_lbl + '" min="1" step="1" oninput="calc_kh()" style="width:100%"></div>';
+  h += '</div><div id="kh_result" style="font-size:13px"></div>';
+  h += '</div>';
+
+  h += '</div>'; // end calculators card
+
   // === Water Testing Tools ===
   h += '<div class="card">';
   h += '<div class="ctitle">Water Testing Tools</div>';
@@ -6914,68 +6976,6 @@ function r_tools() {
     });
     h += '</div></div></div>';
   }
-
-  // === Calculators ===
-  var last_w = (d.water||[]).filter(function(x){return x.tank_id===tid;}).sort(function(a,b){return b.date.localeCompare(a.date);})[0];
-  var last_gh_v = last_w && last_w.gh != null ? last_w.gh : '';
-  var last_kh_v = last_w && last_w.kh != null ? last_w.kh : '';
-  var wc_sub_l_t   = calc_substrate_liters(tid);
-  var wc_sub_gal_t = wc_sub_l_t / 3.78541;
-  var wc_eff_gal_t = Math.max((tank.gallons||0) - wc_sub_gal_t, 0);
-  var wc_eff_lbl_t = get_pref().vol === 'L' ? (Math.round(wc_eff_gal_t*3.78541*10)/10)+' L' : (Math.round(wc_eff_gal_t*10)/10)+' gal';
-  var dose_def_t   = Math.round(wc_eff_gal_t*(get_pref().vol==='L'?3.78541:1)*10)/10;
-  var tank_vol_lbl = get_pref().vol === 'L' ? Math.round((tank.gallons||0)*3.78541) : Math.round((tank.gallons||0)*10)/10;
-
-  h += '<div class="card"><div class="ctitle">Calculators</div>';
-
-  // ── Water Change ──
-  h += '<div style="margin-bottom:18px">';
-  h += '<div style="font-size:13px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Water Change</div>';
-  h += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;margin-bottom:6px">';
-  h += '<span>Effective volume: <strong>' + wc_eff_lbl_t + '</strong>';
-  if (wc_sub_l_t > 0) h += ' <span style="font-size:11px;color:var(--muted)">(tank minus ' + wc_sub_l_t + ' L substrate)</span>';
-  h += '</span></div>';
-  h += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px">';
-  h += '<span>Change:</span><input type="number" id="wc_pct" value="25" min="1" max="100" style="width:70px" oninput="calc_wc()"><span>%</span>';
-  h += '</div><div id="wc_result" style="margin-top:8px;font-size:13px"></div>';
-  h += '</div>';
-
-  // ── Dosing ──
-  h += '<div style="margin-bottom:18px;padding-top:14px;border-top:1px solid #f0f0f0">';
-  h += '<div style="font-size:13px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Product Dose</div>';
-  h += '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px">';
-  h += '<div class="fg" style="margin:0;flex:2;min-width:160px"><label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Product</label>';
-  h += '<select id="dose_prod" style="width:100%" onchange="calc_dose()">';
-  h += '<optgroup label="Water Treatment"><option value="prime">Seachem Prime</option><option value="safe">Seachem Safe (powder)</option><option value="aquasafe">Tetra AquaSafe / API StressCoat</option><option value="generic">Generic dechlorinator (5 ml / 40 L)</option><option value="aq_salt">Aquarium salt — tonic</option><option value="epsom">Epsom salt — bloat/dropsy</option></optgroup>';
-  h += '<optgroup label="Fertilizers">';
-  Object.keys(_fert).forEach(function(k){ if (_fert[k].ml_per_gal) h += '<option value="fert_' + k + '">' + _fert[k].name + '</option>'; });
-  h += '</optgroup></select></div>';
-  h += '<div class="fg" style="margin:0;min-width:110px"><label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Volume (' + v_lbl() + ')</label>';
-  h += '<input type="number" id="dose_vol" value="' + dose_def_t + '" min="0.1" step="0.1" oninput="calc_dose()" style="width:100%"></div>';
-  h += '</div><div id="dose_result" style="font-size:13px"></div>';
-  h += '</div>';
-
-  // ── GH Adjustment ──
-  h += '<div style="margin-bottom:18px;padding-top:14px;border-top:1px solid #f0f0f0">';
-  h += '<div style="font-size:13px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">GH Adjustment &mdash; Seachem Equilibrium</div>';
-  h += '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px">';
-  h += '<div class="fg" style="margin:0;min-width:100px"><label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Current GH (dGH)</label><input type="number" id="gh_cur" value="' + last_gh_v + '" min="0" step="0.5" placeholder="e.g. 2" oninput="calc_gh()" style="width:100%"></div>';
-  h += '<div class="fg" style="margin:0;min-width:100px"><label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Target GH (dGH)</label><input type="number" id="gh_tgt" value="6" min="0" step="0.5" oninput="calc_gh()" style="width:100%"></div>';
-  h += '<div class="fg" style="margin:0;min-width:110px"><label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Tank volume (' + v_lbl() + ')</label><input type="number" id="gh_vol" value="' + tank_vol_lbl + '" min="1" step="1" oninput="calc_gh()" style="width:100%"></div>';
-  h += '</div><div id="gh_result" style="font-size:13px"></div>';
-  h += '</div>';
-
-  // ── KH Adjustment ──
-  h += '<div style="padding-top:14px;border-top:1px solid #f0f0f0">';
-  h += '<div style="font-size:13px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">KH Adjustment &mdash; Baking Soda / Alkaline Buffer</div>';
-  h += '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px">';
-  h += '<div class="fg" style="margin:0;min-width:100px"><label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Current KH (dKH)</label><input type="number" id="kh_cur" value="' + last_kh_v + '" min="0" step="0.5" placeholder="e.g. 1" oninput="calc_kh()" style="width:100%"></div>';
-  h += '<div class="fg" style="margin:0;min-width:100px"><label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Target KH (dKH)</label><input type="number" id="kh_tgt" value="4" min="0" step="0.5" oninput="calc_kh()" style="width:100%"></div>';
-  h += '<div class="fg" style="margin:0;min-width:110px"><label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Tank volume (' + v_lbl() + ')</label><input type="number" id="kh_vol" value="' + tank_vol_lbl + '" min="1" step="1" oninput="calc_kh()" style="width:100%"></div>';
-  h += '</div><div id="kh_result" style="font-size:13px"></div>';
-  h += '</div>';
-
-  h += '</div>'; // end calculators card
 
   // === Quick Reference Tips ===
   h += '<div class="card">';
