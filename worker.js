@@ -2350,6 +2350,7 @@ function sub_edit_stock(e) {
 
 // ===== FERTILIZERS =====
 var _fert_gal = 0;
+var _cal_year = null, _cal_month = null, _cal_sel = null;
 function add_fert(tid, preset, name, dose_ml, freq_days, notes, dow, notify, notify_min, auto_fields) {
   var is_auto = auto_fields && auto_fields.automated;
   var task_name = 'Dose ' + name + (dose_ml ? ' — ' + dose_ml + ' ml' : '') + (is_auto ? ' (Auto)' : '');
@@ -2788,6 +2789,54 @@ function del_mlog(id) {
   var d = ld();
   d.maint_log = (d.maint_log || []).filter(function(x){ return x.id !== id; });
   sv(d); r_maint();
+}
+function mlog_color(type) {
+  var t = (type || '').toLowerCase();
+  if (t === 'water change')               return '#2196f3';
+  if (t.indexOf('fertilizer refill') !== -1) return '#81c784';
+  if (t.indexOf('fertilizer') !== -1)     return '#4caf50';
+  if (t.indexOf('filter') !== -1)         return '#ff9800';
+  if (t.indexOf('gravel') !== -1)         return '#795548';
+  if (t.indexOf('glass') !== -1)          return '#03a9f4';
+  if (t.indexOf('pruning') !== -1)        return '#8bc34a';
+  if (t.indexOf('water test') !== -1 || t === 'test') return '#00bcd4';
+  if (t.indexOf('treatment') !== -1)      return '#e91e63';
+  if (t.indexOf('co2') !== -1)            return '#9c27b0';
+  if (t.indexOf('equipment') !== -1)      return '#607d8b';
+  return '#9e9e9e';
+}
+function cal_nav(dir) {
+  var now = new Date();
+  if (_cal_year === null) { _cal_year = now.getFullYear(); _cal_month = now.getMonth(); }
+  _cal_month += dir;
+  if (_cal_month > 11) { _cal_month = 0; _cal_year++; }
+  if (_cal_month < 0)  { _cal_month = 11; _cal_year--; }
+  _cal_sel = null;
+  r_maint();
+}
+function show_cal_day(ds) {
+  _cal_sel = ds;
+  var d = ld(), tid = at();
+  var entries = (d.maint_log || []).filter(function(x){ return x.tank_id === tid && x.date === ds; });
+  var el = document.getElementById('cal_detail');
+  if (!el) return;
+  if (!entries.length) { el.innerHTML = ''; return; }
+  var h = '<div style="border-top:1px solid #e0e0e0;padding-top:10px">';
+  h += '<div style="font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">' + ds + '</div>';
+  entries.forEach(function(e) {
+    var col = mlog_color(e.task_type);
+    h += '<div style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid #f4f4f4">';
+    h += '<span style="width:10px;height:10px;border-radius:50%;background:' + col + ';flex-shrink:0;margin-top:3px"></span>';
+    h += '<div style="flex:1;min-width:0">';
+    h += '<div style="font-size:13px;font-weight:600">' + esc(e.task_name) + (e.skipped ? ' <span class="pill pwarn" style="font-size:10px">Skipped</span>' : '') + '</div>';
+    if (e.task_type) h += '<div style="font-size:11px;color:var(--muted)">' + esc(e.task_type) + '</div>';
+    if (e.notes)     h += '<div style="font-size:12px;color:var(--muted);margin-top:2px">' + esc(e.notes) + '</div>';
+    h += '</div>';
+    h += '<button class="btn bd bs" style="font-size:11px" data-lid="' + e.id + '" onclick="del_mlog(this.dataset.lid)">&#x2715;</button>';
+    h += '</div>';
+  });
+  h += '</div>';
+  el.innerHTML = h;
 }
 function do_add_mlog() {
   var type_opts = ['Water Change','Filter Clean','Gravel Vac','Glass Wipe','Fertilizer','Pruning','Water Test','Equipment Service','Other']
@@ -4654,29 +4703,78 @@ async function r_maint() {
     '</div>' +
     '<button type="submit" class="btn bp" style="margin-top:8px">Add Task</button></form></div>';
 
-  // Maintenance Logs
-  var ml = (d.maint_log || []).filter(function(x){ return x.tank_id === tid; })
-    .sort(function(a, b){ return b.date.localeCompare(a.date); });
+  // Maintenance Logs — calendar view
+  var cal_ml = (d.maint_log || []).filter(function(x){ return x.tank_id === tid; });
+  var now_dt = new Date();
+  var cy = _cal_year !== null ? _cal_year : now_dt.getFullYear();
+  var cmv = _cal_month !== null ? _cal_month : now_dt.getMonth();
+  var mm = cmv + 1;
+  var mm_pad = mm < 10 ? '0' + mm : '' + mm;
+  var month_names_c = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var day_names_c = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var cal_by_date = {};
+  cal_ml.forEach(function(e) { if (!cal_by_date[e.date]) cal_by_date[e.date] = []; cal_by_date[e.date].push(e); });
+  var today_s = today_str();
+  var first_dow = new Date(cy, cmv, 1).getDay();
+  var days_in_mon = new Date(cy, cmv + 1, 0).getDate();
+
   h += '<div class="card"><div class="ctitle">Logs <button class="btn bp bs" onclick="do_add_mlog()">+ Log Activity</button></div>';
-  if (ml.length) {
-    h += '<div class="tw"><table><tr><th>Date</th><th>Task</th><th>Type</th><th>Notes</th><th></th></tr>';
-    ml.slice(0, 100).forEach(function(entry) {
-      h += '<tr><td style="white-space:nowrap">' + entry.date + '</td>' +
-           '<td><strong>' + esc(entry.task_name) + '</strong>' + (entry.skipped ? ' <span class="pill pwarn" style="font-size:10px">Skipped</span>' : '') + '</td>' +
-           '<td style="color:var(--muted)">' + esc(entry.task_type) + '</td>' +
-           '<td style="font-size:12px;color:var(--muted)">' + (entry.notes ? esc(entry.notes) : '&mdash;') + '</td>' +
-           '<td><button class="btn bd bs" style="font-size:11px" data-lid="' + entry.id + '" onclick="del_mlog(this.dataset.lid)">&#x2715;</button></td></tr>';
-    });
-    h += '</table></div>';
-    if (ml.length > 100) h += '<p style="font-size:12px;color:var(--muted);text-align:center;margin-top:6px">Showing latest 100 entries</p>';
-  } else {
-    h += '<p class="emsg">No logs yet. Mark a task done or tap + Log Activity to add your first entry.</p>';
+  h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
+  h += '<button class="btn bg" onclick="cal_nav(-1)" style="padding:4px 14px;font-size:18px;line-height:1">&lsaquo;</button>';
+  h += '<span style="font-weight:600;font-size:15px">' + month_names_c[cmv] + ' ' + cy + '</span>';
+  h += '<button class="btn bg" onclick="cal_nav(1)" style="padding:4px 14px;font-size:18px;line-height:1">&rsaquo;</button>';
+  h += '</div>';
+  h += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px">';
+  day_names_c.forEach(function(dn) {
+    h += '<div style="text-align:center;font-size:10px;font-weight:700;color:var(--muted);padding:2px 0">' + dn + '</div>';
+  });
+  h += '</div>';
+  h += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">';
+  for (var pad_i = 0; pad_i < first_dow; pad_i++) h += '<div></div>';
+  for (var day_i = 1; day_i <= days_in_mon; day_i++) {
+    var dd_pad = day_i < 10 ? '0' + day_i : '' + day_i;
+    var ds = cy + '-' + mm_pad + '-' + dd_pad;
+    var day_entries = cal_by_date[ds] || [];
+    var is_today = ds === today_s;
+    var has_entries = day_entries.length > 0;
+    var cell_style = 'min-height:54px;border-radius:6px;padding:4px;box-sizing:border-box;' +
+      (is_today ? 'background:#e8f0fe;border:1.5px solid #4a90e2;' : has_entries ? 'background:#f8f9fa;border:1px solid #e0e0e0;' : 'border:1px solid #f0f0f0;') +
+      (has_entries ? 'cursor:pointer;' : '');
+    h += '<div style="' + cell_style + '"' + (has_entries ? ' data-ds="' + ds + '" onclick="show_cal_day(this.dataset.ds)"' : '') + '>';
+    h += '<div style="font-size:11px;font-weight:' + (is_today ? '700' : '400') + ';color:' + (is_today ? '#4a90e2' : 'var(--txt)') + '">' + day_i + '</div>';
+    if (has_entries) {
+      var shown_e = day_entries.slice(0, 4);
+      var extra_e = day_entries.length - shown_e.length;
+      h += '<div style="display:flex;flex-wrap:wrap;gap:2px;margin-top:3px">';
+      shown_e.forEach(function(e) {
+        h += '<span style="width:7px;height:7px;border-radius:50%;background:' + mlog_color(e.task_type) + ';display:block"></span>';
+      });
+      if (extra_e > 0) h += '<span style="font-size:9px;color:var(--muted);line-height:9px">+' + extra_e + '</span>';
+      h += '</div>';
+    }
+    h += '</div>';
   }
+  h += '</div>';
+  var type_seen = {};
+  cal_ml.forEach(function(e) { if (e.task_type) type_seen[e.task_type] = true; });
+  var legend_types = Object.keys(type_seen);
+  if (legend_types.length) {
+    h += '<div style="display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:10px;padding-top:8px;border-top:1px solid #f0f0f0">';
+    legend_types.forEach(function(tp) {
+      h += '<span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)">' +
+        '<span style="width:8px;height:8px;border-radius:50%;background:' + mlog_color(tp) + ';display:inline-block"></span>' +
+        esc(tp) + '</span>';
+    });
+    h += '</div>';
+  }
+  if (!cal_ml.length) h += '<p class="emsg" style="margin-top:10px">No logs yet. Mark a task done or tap + Log Activity.</p>';
+  h += '<div id="cal_detail" style="margin-top:8px"></div>';
   h += '</div>';
 
   el.innerHTML = h;
   calc_wc();
   calc_dose();
+  if (_cal_sel) show_cal_day(_cal_sel);
 }
 function calc_wc() {
   var pct_el = document.getElementById('wc_pct');
