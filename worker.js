@@ -1239,30 +1239,30 @@ function get_param_alerts_s(tid, ud) {
   var cycling_active=tank&&!tank.cycled&&cyc&&cyc.phase>=1&&cyc.phase<4;
   var has_fish=(ud.stock||[]).filter(function(s){return s.tank_id===tid&&!s.preview;}).length>0;
   if(last.ammonia!==null&&last.ammonia>0&&prev.ammonia!==null&&prev.ammonia>0){
-    if(!cycling_active) alerts.push({level:'danger',msg:'Ammonia TAN has been elevated across multiple tests ('+prev.ammonia+' ppm → '+last.ammonia+' ppm). Do a 25-50% water change immediately and recheck in 24h.'});
-    else if(has_fish&&last.ammonia>2) alerts.push({level:'warn',msg:'Ammonia TAN is '+last.ammonia+' ppm during a fish-in cycle. Do a 20-30% partial water change to bring it below 2 ppm — leave some for bacteria. Avoid full water changes during cycling.'});
+    if(!cycling_active) alerts.push({param:'Ammonia',level:'danger',msg:'Ammonia TAN has been elevated across multiple tests ('+prev.ammonia+' ppm → '+last.ammonia+' ppm). Do a 25-50% water change immediately and recheck in 24h.'});
+    else if(has_fish&&last.ammonia>2) alerts.push({param:'Ammonia',level:'warn',msg:'Ammonia TAN is '+last.ammonia+' ppm during a fish-in cycle. Do a 20-30% partial water change to bring it below 2 ppm — leave some for bacteria. Avoid full water changes during cycling.'});
   }
   var last_uia=calc_uia_s(last.ammonia,last.ph,last.temp_f);
   var uia_note=(last.temp_f===null||last.temp_f===undefined)?' (temperature not logged — assumed 25°C)':'';
-  if(last_uia!==null&&last_uia>=0.05&&(!cycling_active||has_fish)) alerts.push({level:'danger',msg:'Un-ionized ammonia (UIA) is '+last_uia+' ppm — above the toxic threshold of 0.05 ppm'+uia_note+'. Even if TAN looks moderate, UIA at this pH and temperature is lethal. Do an immediate water change and lower pH slightly.'});
-  else if(last_uia!==null&&last_uia>=0.02&&!cycling_active) alerts.push({level:'warn',msg:'Un-ionized ammonia (UIA) is '+last_uia+' ppm — approaching the danger threshold of 0.05 ppm'+uia_note+'. Monitor closely and be ready for a water change.'});
+  if(last_uia!==null&&last_uia>=0.05&&(!cycling_active||has_fish)) alerts.push({param:'Ammonia (UIA)',level:'danger',msg:'Un-ionized ammonia (UIA) is '+last_uia+' ppm — above the toxic threshold of 0.05 ppm'+uia_note+'. Even if TAN looks moderate, UIA at this pH and temperature is lethal. Do an immediate water change and lower pH slightly.'});
+  else if(last_uia!==null&&last_uia>=0.02&&!cycling_active) alerts.push({param:'Ammonia (UIA)',level:'warn',msg:'Un-ionized ammonia (UIA) is '+last_uia+' ppm — approaching the danger threshold of 0.05 ppm'+uia_note+'. Monitor closely and be ready for a water change.'});
   if(last.nitrite!==null&&last.nitrite>0&&prev.nitrite!==null&&prev.nitrite>0){
-    if(cycling_active) alerts.push({level:'warn',msg:'Nitrite spike is ongoing — cycling is in progress. Do not add fish yet. Avoid large water changes.'});
-    else alerts.push({level:'danger',msg:'Nitrite remains elevated across multiple tests ('+prev.nitrite+' ppm → '+last.nitrite+' ppm). Tank may not be fully cycled. Hold off adding fish.'});
+    if(cycling_active) alerts.push({param:'Nitrite',level:'warn',msg:'Nitrite spike is ongoing — cycling is in progress. Do not add fish yet. Avoid large water changes.'});
+    else alerts.push({param:'Nitrite',level:'danger',msg:'Nitrite remains elevated across multiple tests ('+prev.nitrite+' ppm → '+last.nitrite+' ppm). Tank may not be fully cycled. Hold off adding fish.'});
   }
-  if(last.nitrate!==null&&last.nitrate>40) alerts.push({level:'warn',msg:'Nitrate is high ('+last.nitrate+' ppm). Do a 25-30% water change to reduce it. Target is below 20 ppm.'});
-  if(last.nitrate!==null&&prev.nitrate!==null&&last.nitrate>prev.nitrate+15) alerts.push({level:'warn',msg:'Nitrate rising fast ('+prev.nitrate+' → '+last.nitrate+' ppm). Consider increasing water change frequency.'});
+  if(last.nitrate!==null&&last.nitrate>40) alerts.push({param:'Nitrate',level:'warn',msg:'Nitrate is high ('+last.nitrate+' ppm). Do a 25-30% water change to reduce it. Target is below 20 ppm.'});
+  if(last.nitrate!==null&&prev.nitrate!==null&&last.nitrate>prev.nitrate+15) alerts.push({param:'Nitrate',level:'warn',msg:'Nitrate rising fast ('+prev.nitrate+' → '+last.nitrate+' ppm). Consider increasing water change frequency.'});
   if(last.ph!==null&&prev.ph!==null&&prev.ph-last.ph>=0.3){
     var has_co2_a=last.co2_on===true;
-    if(has_co2_a) alerts.push({level:'warn',msg:'pH dropped '+((prev.ph-last.ph).toFixed(2))+' units between tests ('+prev.ph+' → '+last.ph+'). With CO2 running this can be a normal lights-on swing &mdash; if readings were taken at different times of day, the drop may not be a problem. If both readings were taken at the same time, check CO2 rate and KH buffering.'});
-    else alerts.push({level:'warn',msg:'pH dropped '+((prev.ph-last.ph).toFixed(2))+' units between tests ('+prev.ph+' → '+last.ph+'). Sudden pH swings stress fish. Check buffering capacity (KH).'});
+    if(has_co2_a) alerts.push({param:'pH',level:'warn',msg:'pH dropped '+((prev.ph-last.ph).toFixed(2))+' units between tests ('+prev.ph+' → '+last.ph+'). With CO2 running this can be a normal lights-on swing &mdash; if readings were taken at different times of day, the drop may not be a problem. If both readings were taken at the same time, check CO2 rate and KH buffering.'});
+    else alerts.push({param:'pH',level:'warn',msg:'pH dropped '+((prev.ph-last.ph).toFixed(2))+' units between tests ('+prev.ph+' → '+last.ph+'). Sudden pH swings stress fish. Check buffering capacity (KH).'});
   }
-  if(last.kh!==null&&last.kh<1) alerts.push({level:'danger',msg:'KH is critically low ('+last.kh+' dKH) — pH buffering is nearly gone. A pH crash can happen overnight. Add crushed coral to the filter immediately.'});
-  else if(last.kh!==null&&last.kh<3) alerts.push({level:'warn',msg:'KH is low ('+last.kh+' dKH). pH stability is at risk. Add crushed coral or use a carbonate buffer to raise it gradually.'});
-  else if(last.kh!==null&&prev.kh!==null&&prev.kh-last.kh>=1) alerts.push({level:'warn',msg:'KH dropped '+((prev.kh-last.kh).toFixed(1))+' dKH between tests ('+prev.kh+' → '+last.kh+' dKH). Falling KH means buffering is being consumed. Watch for pH swings.'});
+  if(last.kh!==null&&last.kh<1) alerts.push({param:'KH',level:'danger',msg:'KH is critically low ('+last.kh+' dKH) — pH buffering is nearly gone. A pH crash can happen overnight. Add crushed coral to the filter immediately.'});
+  else if(last.kh!==null&&last.kh<3) alerts.push({param:'KH',level:'warn',msg:'KH is low ('+last.kh+' dKH). pH stability is at risk. Add crushed coral or use a carbonate buffer to raise it gradually.'});
+  else if(last.kh!==null&&prev.kh!==null&&prev.kh-last.kh>=1) alerts.push({param:'KH',level:'warn',msg:'KH dropped '+((prev.kh-last.kh).toFixed(1))+' dKH between tests ('+prev.kh+' → '+last.kh+' dKH). Falling KH means buffering is being consumed. Watch for pH swings.'});
   if(last.temp_f!==null&&prev.temp_f!==null&&Math.abs(last.temp_f-prev.temp_f)>=4){
     var dt=function(f){return Math.round((f-32)*5/9*10)/10;};
-    alerts.push({level:'warn',msg:'Temperature changed '+Math.abs(dt(last.temp_f)-dt(prev.temp_f)).toFixed(1)+'°C between tests ('+dt(prev.temp_f)+' → '+dt(last.temp_f)+'°C). Rapid swings cause stress and disease.'});
+    alerts.push({param:'Temperature',level:'warn',msg:'Temperature changed '+Math.abs(dt(last.temp_f)-dt(prev.temp_f)).toFixed(1)+'°C between tests ('+dt(prev.temp_f)+' → '+dt(last.temp_f)+'°C). Rapid swings cause stress and disease.'});
   }
   return alerts;
 }
@@ -3892,7 +3892,11 @@ async function r_dash() {
     var hs_dc = p_alerts.filter(function(a){ return a.level === 'danger'; }).length;
     var hs_wc = p_alerts.filter(function(a){ return a.level !== 'danger'; }).length;
     var hs_wp = Math.min(40, hs_dc * 15 + hs_wc * 8);
-    if (hs_wp > 0) { hs -= hs_wp; hs_f.push({l:'Water quality issues', c:hs_dc?'var(--danger)':'var(--warn)', p:-hs_wp}); }
+    if (hs_wp > 0) {
+      var hs_params = p_alerts.map(function(a){ return a.param || ''; }).filter(function(p,i,arr){ return p && arr.indexOf(p) === i; });
+      var hs_lbl = 'Water quality: ' + hs_params.join(', ');
+      hs -= hs_wp; hs_f.push({l: hs_lbl, c: hs_dc ? 'var(--danger)' : 'var(--warn)', p: -hs_wp});
+    }
   }
   if (max_bl > 0 || sp_cap > 0) {
     var hs_ratio = Math.max(max_bl > 0 ? cur_bl / max_bl : 0, sp_cap > 0 ? sp_score / sp_cap : 0);
