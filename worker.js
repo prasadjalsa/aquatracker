@@ -5066,7 +5066,38 @@ async function r_recs() {
     }
   }
   h += '</div></div>';
-
+  // Fertilizer reservoir rows — one per automated fert for this tank
+  var auto_ferts = d.ferts.filter(function(f){ return f.tank_id === tid && f.automated; });
+  if (auto_ferts.length) {
+    h += '<div class="card"><div class="ctitle">Fertilizer Reservoirs</div>';
+    auto_ferts.forEach(function(f) {
+      var res = calc_auto_fert_remaining(f);
+      h += '<div style="margin-bottom:10px">';
+      h += '<div style="font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">' + esc(f.name) + '</div>';
+      if (!res) {
+        h += '<div style="font-size:12px;color:var(--muted)">Fill in reservoir size and last fill date in the fertilizer config to track levels.</div>';
+      } else {
+        var bar_color = res.pct > 30 ? 'var(--ok)' : res.pct > 10 ? 'var(--warn)' : 'var(--danger)';
+        var days_left = f.auto_dose_ml_day > 0 ? Math.round(res.remaining_ml / f.auto_dose_ml_day) : null;
+        h += '<div class="bl-bar"><div class="bl-fill" style="width:' + res.pct + '%;background:' + bar_color + '"></div></div>';
+        h += '<div style="display:flex;justify-content:space-between;font-size:12px;margin-top:4px">';
+        h += '<span style="color:var(--muted)">' + res.remaining_ml + ' ml remaining of ' + res.total_ml + ' ml (' + res.pct + '%)</span>';
+        h += '<span style="color:' + bar_color + ';font-weight:600">' + (days_left !== null ? '~' + days_left + ' days left' : '') + '</span>';
+        h += '</div>';
+        if (f.auto_dose_ml_day) {
+          h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + f.auto_dose_ml_day + ' ml/day &mdash; ' + f.auto_conc_ml + ' ml concentrate + ' + f.auto_ro_ml + ' ml RO</div>';
+        }
+        if (res.pct <= 10) {
+          h += '<div style="font-size:12px;color:var(--danger);font-weight:600;margin-top:4px">&#x26A0; Reservoir nearly empty &mdash; refill soon. ' +
+            '<button class="btn bg" style="font-size:11px;padding:2px 8px;margin-left:6px" data-fid="' + f.id + '" onclick="refill_fert_reservoir(this.dataset.fid)">Refill Now</button></div>';
+        } else if (res.pct <= 30) {
+          h += '<div style="font-size:12px;color:var(--warn);margin-top:4px">Getting low &mdash; plan a refill.</div>';
+        }
+      }
+      h += '</div>';
+    });
+    h += '</div>';
+  }
   if (!sk.length) {
     h += '<div class="card"><div class="empty-s"><h2>No Livestock Added</h2>' +
       '<p>Add fish or shrimp in the Equipment &amp; Life tab to see parameter recommendations.</p></div></div>';
