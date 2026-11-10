@@ -4858,14 +4858,35 @@ function calc_gh() {
   if (tgt <= cur) { res_el.innerHTML = '<span style="color:var(--muted)">Target is already met &mdash; no Equilibrium needed.</span>'; return; }
   var vol_l = get_pref().vol === 'L' ? vol : vol * 3.78541;
   var need = tgt - cur;
-  var eq_g = Math.round(need * vol_l * 0.0667 * 10) / 10;
-  var eq_tsp = Math.round(eq_g / 5.3 * 10) / 10;
-  var sessions = need > 2 ? Math.ceil(need / 2) : 1;
-  var per_session_g = Math.round(eq_g / sessions * 10) / 10;
-  var per_session_tsp = Math.round(per_session_g / 5.3 * 10) / 10;
-  var msg = 'Add <strong>' + eq_g + ' g (~' + eq_tsp + ' tsp) of Seachem Equilibrium</strong> to raise GH from ' + cur + ' to ' + tgt + ' dGH.';
-  if (sessions > 1) msg += ' Split into <strong>' + sessions + ' sessions</strong> (~' + per_session_g + ' g / ' + per_session_tsp + ' tsp each) &mdash; raise no more than 2 dGH per day, retesting between additions.';
-  msg += '<br><span style="color:var(--muted);font-size:12px">Dissolve in a cup of tank water first, then pour in slowly near the filter outlet.</span>';
+  var eq_g_total = Math.round(need * vol_l * 0.0667 * 10) / 10;
+  var eq_tsp_total = Math.round(eq_g_total / 5.3 * 10) / 10;
+  var max_per_day = 2;
+  var sessions = need > max_per_day ? Math.ceil(need / max_per_day) : 1;
+  var msg = '';
+  if (need > 3) {
+    msg += '<div style="background:#fff8e1;border-left:3px solid #f9a825;padding:8px 10px;border-radius:4px;margin-bottom:10px;font-size:12px">';
+    msg += '<strong>Fish safety warning:</strong> A jump of ' + need + ' dGH is large. Sudden GH spikes cause osmotic stress &mdash; fish lose the ability to regulate fluid balance, which can be fatal. Do not add the full amount at once.';
+    msg += '</div>';
+  }
+  msg += 'Total needed: <strong>' + eq_g_total + ' g (~' + eq_tsp_total + ' tsp) of Seachem Equilibrium</strong> to go from ' + cur + ' &rarr; ' + tgt + ' dGH.';
+  if (sessions > 1) {
+    msg += '<br><br><strong>Spread over ' + sessions + ' days</strong> (max 2 dGH per day):';
+    msg += '<div style="margin-top:6px;display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:12px">';
+    var remaining_dgh = need;
+    for (var i = 0; i < sessions; i++) {
+      var day_dgh = Math.min(max_per_day, remaining_dgh);
+      var day_g   = Math.round(day_dgh * vol_l * 0.0667 * 10) / 10;
+      var day_tsp = Math.round(day_g / 5.3 * 10) / 10;
+      var from_dgh = Math.round((cur + i * max_per_day) * 10) / 10;
+      var to_dgh   = Math.round((from_dgh + day_dgh) * 10) / 10;
+      msg += '<span style="color:var(--muted)">Day ' + (i+1) + '</span>';
+      msg += '<span>' + day_g + ' g (' + day_tsp + ' tsp) &mdash; ' + from_dgh + ' &rarr; ' + to_dgh + ' dGH. Retest before next dose.</span>';
+      remaining_dgh -= day_dgh;
+    }
+    msg += '</div>';
+    if (need > 3) msg += '<div style="font-size:12px;margin-top:8px;color:var(--muted)">Ideally do each dose during a partial water change &mdash; the dilution softens the transition for fish.</div>';
+  }
+  msg += '<div style="font-size:12px;color:var(--muted);margin-top:8px">Dissolve each dose in a cup of tank water first, then pour in slowly near the filter outlet.</div>';
   res_el.innerHTML = msg;
 }
 function calc_kh() {
@@ -4881,12 +4902,33 @@ function calc_kh() {
   if (tgt <= cur) { res_el.innerHTML = '<span style="color:var(--muted)">Target is already met &mdash; no adjustment needed.</span>'; return; }
   var vol_l = get_pref().vol === 'L' ? vol : vol * 3.78541;
   var need = tgt - cur;
-  var bs_tsp = Math.round(need * vol_l * 0.005 * 10) / 10;
-  var sessions = need > 2 ? Math.ceil(need / 2) : 1;
-  var per_session_tsp = Math.round(bs_tsp / sessions * 10) / 10;
-  var msg = 'Add <strong>' + bs_tsp + ' tsp of baking soda (NaHCO₃)</strong> to raise KH from ' + cur + ' to ' + tgt + ' dKH.';
-  if (sessions > 1) msg += ' Split into <strong>' + sessions + ' sessions</strong> (~' + per_session_tsp + ' tsp each) &mdash; raise no more than 2 dKH per day, retesting between additions.';
-  msg += '<br><span style="color:var(--muted);font-size:12px">Dissolve each dose in a cup of water before adding. Alternatively, use <strong>Seachem Alkaline Buffer</strong> per label for a more controlled rise. Crushed coral in the filter is a passive long-term option.</span>';
+  var bs_tsp_total = Math.round(need * vol_l * 0.005 * 10) / 10;
+  var max_per_day = 2;
+  var sessions = need > max_per_day ? Math.ceil(need / max_per_day) : 1;
+  var msg = '';
+  if (need > 3) {
+    msg += '<div style="background:#fff8e1;border-left:3px solid #f9a825;padding:8px 10px;border-radius:4px;margin-bottom:10px;font-size:12px">';
+    msg += '<strong>Fish safety warning:</strong> A jump of ' + need + ' dKH is large. A rapid KH rise drives pH up with it &mdash; pH shock is acutely dangerous to fish and can be fatal within hours. Do not add the full amount at once.';
+    msg += '</div>';
+  }
+  msg += 'Total needed: <strong>' + bs_tsp_total + ' tsp of baking soda (NaHCO₃)</strong> to go from ' + cur + ' &rarr; ' + tgt + ' dKH.';
+  if (sessions > 1) {
+    msg += '<br><br><strong>Spread over ' + sessions + ' days</strong> (max 2 dKH per day):';
+    msg += '<div style="margin-top:6px;display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:12px">';
+    var remaining_dkh = need;
+    for (var j = 0; j < sessions; j++) {
+      var day_dkh = Math.min(max_per_day, remaining_dkh);
+      var day_tsp = Math.round(day_dkh * vol_l * 0.005 * 10) / 10;
+      var from_dkh = Math.round((cur + j * max_per_day) * 10) / 10;
+      var to_dkh   = Math.round((from_dkh + day_dkh) * 10) / 10;
+      msg += '<span style="color:var(--muted)">Day ' + (j+1) + '</span>';
+      msg += '<span>' + day_tsp + ' tsp &mdash; ' + from_dkh + ' &rarr; ' + to_dkh + ' dKH. Retest before next dose.</span>';
+      remaining_dkh -= day_dkh;
+    }
+    msg += '</div>';
+    if (need > 3) msg += '<div style="font-size:12px;margin-top:8px;color:var(--muted)">Each dose is best added during a partial water change &mdash; the fresh water buffers the pH shift and reduces stress on fish.</div>';
+  }
+  msg += '<div style="font-size:12px;color:var(--muted);margin-top:8px">Dissolve each dose in a cup of water before adding. For a more controlled rise use <strong>Seachem Alkaline Buffer</strong> per label, or add crushed coral to the filter as a passive long-term option.</div>';
   res_el.innerHTML = msg;
 }
 function sub_task(e) {
