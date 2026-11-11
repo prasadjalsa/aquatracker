@@ -2860,11 +2860,11 @@ function do_add_mlog() {
   var fert_wrap = '';
   if (auto_ferts.length) {
     var fert_opts = auto_ferts.map(function(f){
-      return '<option value="' + f.id + '">' + esc(f.name) + ' (' + (f.auto_dose_ml_day || '?') + ' ml/day)</option>';
+      return '<option value="' + f.id + '" data-dose="' + (f.auto_dose_ml_day || 0) + '" data-fname="' + esc(f.name) + '">' + esc(f.name) + ' (' + (f.auto_dose_ml_day || '?') + ' ml/day)</option>';
     }).join('');
     fert_wrap = '<div id="mlog_fert_wrap" style="display:none;background:#e8f4fb;border-radius:6px;padding:8px 10px;margin-top:4px">' +
       '<div style="font-size:12px;font-weight:600;margin-bottom:6px">Automated fertilizer</div>' +
-      '<select id="mlog_fert_sel" style="width:100%;margin-bottom:8px;box-sizing:border-box"><option value="">-- not from reservoir --</option>' + fert_opts + '</select>' +
+      '<select id="mlog_fert_sel" onchange="mlog_fert_pick(this)" style="width:100%;margin-bottom:8px;box-sizing:border-box"><option value="">-- not from reservoir --</option>' + fert_opts + '</select>' +
       '<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">' +
       '<input type="checkbox" id="mlog_deduct" style="width:16px;height:16px"> Deduct dose from reservoir</label>' +
       '</div>';
@@ -2873,7 +2873,7 @@ function do_add_mlog() {
     '<form onsubmit="sub_add_mlog(event)">' +
     '<div class="frow">' +
     fg('Type', '<select name="type" onchange="tog_mlog_fert(this.value)">' + type_opts + '</select>') +
-    fg('Activity', '<input type="text" name="name" placeholder="e.g. 30% water change" required>') +
+    fg('Activity', '<input type="text" id="mlog_act_name" name="name" placeholder="e.g. 30% water change" required>') +
     '</div><div class="frow">' +
     fg('Date', '<input type="date" name="date" value="' + today_str() + '" required>') +
     fg('Notes', '<input type="text" name="notes" placeholder="Optional">') +
@@ -2885,6 +2885,24 @@ function do_add_mlog() {
 function tog_mlog_fert(val) {
   var wrap = document.getElementById('mlog_fert_wrap');
   if (wrap) wrap.style.display = val === 'Fertilizer' ? '' : 'none';
+  if (val !== 'Fertilizer') {
+    var sel = document.getElementById('mlog_fert_sel');
+    if (sel) sel.value = '';
+  }
+}
+function mlog_fert_pick(sel) {
+  var name_el = document.getElementById('mlog_act_name');
+  var deduct_el = document.getElementById('mlog_deduct');
+  var opt = sel.options[sel.selectedIndex];
+  if (sel.value && name_el) {
+    var fname = opt.dataset.fname || opt.text;
+    var dose = opt.dataset.dose || '';
+    name_el.value = fname + (dose ? ' - ' + dose + ' ml' : '');
+    if (deduct_el) deduct_el.checked = true;
+  } else {
+    if (name_el && name_el.value.indexOf(' ml') !== -1) name_el.value = '';
+    if (deduct_el) deduct_el.checked = false;
+  }
 }
 function sub_add_mlog(e) {
   e.preventDefault(); var f = e.target;
