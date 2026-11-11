@@ -3725,6 +3725,7 @@ function r_cycle_card(tid) {
          '<div><div style="font-size:13px;font-weight:600;color:var(--ok)">Do a 30-50% water change now</div>' +
          '<div style="font-size:12px;color:#555;margin-top:2px">Nitrates have built up during the cycle. Flush them out before adding your first fish. Treat the new water with dechlorinator first.</div></div>' +
          '</div>';
+    h += '<div style="margin-top:10px;text-align:right"><button class="btn bp bs" onclick="mark_cycled(at())">Done &mdash; hide this</button></div>';
   }
   h += '</div>';
   return h;
