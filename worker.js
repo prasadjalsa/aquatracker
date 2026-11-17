@@ -5355,8 +5355,11 @@ async function r_recs() {
     {l:'Nitrite',     u:'ppm', mn:0, mx:0, k:'nitrite', tox:true,  conv:null},
     {l:'Nitrate',     u:'ppm', mn:0, mx:20, k:'nitrate', tox:false, conv:null},
     {l:'pH',          u:'',    mn:rng.ph.ok?rng.ph.min:null, mx:rng.ph.ok?rng.ph.max:null, k:'ph', tox:false, conv:null},
-    {l:'Hardness (GH)',u:'dGH',mn:rng.gh.ok?rng.gh.min:null, mx:rng.gh.ok?rng.gh.max:null, k:'gh', tox:false, conv:null}
+    {l:'Hardness (GH)',u:'dGH',mn:rng.gh.ok?rng.gh.min:null, mx:rng.gh.ok?rng.gh.max:null, k:'gh', tox:false, conv:null},
+    {l:'Carbonate Hardness (KH)', u:'dKH', mn:3, mx:8, k:'kh', tox:false, conv:null}
   ];
+  if (lr && lr.tds != null)       rp.push({l:'TDS',            u:'ppm', mn:100, mx:400, k:'tds',       tox:false, conv:null});
+  if (lr && lr.phosphate != null) rp.push({l:'Phosphate (PO4)',u:'ppm', mn:0.5, mx:2,   k:'phosphate', tox:false, conv:null});
   rp.forEach(function(p) {
     var raw = lr ? lr[p.k] : null, cur = (p.conv && raw !== null) ? p.conv(raw) : raw;
     var mn_chk = p.k === 'temp_f' ? (rng.temp.ok?rng.temp.min:null) : p.mn;
@@ -5387,6 +5390,17 @@ async function r_recs() {
         else note = 'Close to the limit — safe range is ' + lo + '–' + hi + (p.u?' '+p.u:'') + '.';
       } else if (p.k === 'nitrate') {
         note = raw > 40 ? 'Too high — do a 50% water change. Above 40 ppm stresses fish.' : 'Elevated — aim for below 20 ppm. Schedule a water change.';
+      } else if (p.k === 'kh') {
+        note = raw < 1 ? 'Critical — pH buffering nearly gone. A pH crash can happen overnight. Add crushed coral to the filter immediately.' :
+               raw < 3 ? 'Low — pH stability at risk. Add crushed coral or use a carbonate buffer to raise it gradually.' :
+               raw > 12 ? 'Very high — limits CO2 availability in planted tanks. Replace part of each water change with RO water to lower slowly.' :
+                          'Slightly high — generally harmless for most fish.';
+      } else if (p.k === 'tds') {
+        note = raw < 100 ? 'Low — may indicate very soft/pure water. Fine for some shrimp but most fish need higher mineral content.' :
+               raw > 400 ? 'High — consider more frequent water changes or mixing in RO water.' : '';
+      } else if (p.k === 'phosphate') {
+        note = raw < 0.2 ? 'Very low — can trigger green spot algae on leaves and glass.' :
+               raw > 2 ? 'High — may fuel algae growth. Increase water change frequency.' : '';
       }
     } else if (c === 'muted') {
       note = 'No reading logged yet.';
