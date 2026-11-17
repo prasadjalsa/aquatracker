@@ -1140,7 +1140,7 @@ function calc_space_score_s(tid, ud) {
     var ter_mult=sp.territorial?1.3:1.0;
     var school_mult=(sp.min_fish&&s.qty>=sp.min_fish)?0.8:1.0;
     var gal=sz<=1.0?0.5:sz<=1.5?0.75:sz<=3?sz*1.0:sz<=6?sz*1.5:sz*2.5;
-    total+=gal*act_mult*ter_mult*school_mult*s.qty;
+    total+=Math.max(gal*act_mult*ter_mult*school_mult*s.qty, sp.min_gal||0);
   });
   return Math.round(total*10)/10;
 }
@@ -2962,7 +2962,7 @@ function calc_space_score(tid) {
     var ter_mult = sp.territorial ? 1.3 : 1.0;
     var school_mult = (sp.min_fish && s.qty >= sp.min_fish) ? 0.8 : 1.0;
     var gal = sz <= 1.0 ? 0.5 : sz <= 1.5 ? 0.75 : sz <= 3 ? sz * 1.0 : sz <= 6 ? sz * 1.5 : sz * 2.5;
-    total += gal * act_mult * ter_mult * school_mult * s.qty;
+    total += Math.max(gal * act_mult * ter_mult * school_mult * s.qty, sp.min_gal || 0);
   });
   return Math.round(total * 10) / 10;
 }
