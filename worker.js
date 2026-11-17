@@ -4261,6 +4261,8 @@ function wlog_cls(key, val) {
     return val >= 20 && val <= 60 ? 'var(--ok)' : val >= 10 && val <= 80 ? 'var(--warn)' : 'var(--danger)';
   if (key === 'magnesium')
     return val >= 5 && val <= 20 ? 'var(--ok)' : val >= 2 && val <= 30 ? 'var(--warn)' : 'var(--danger)';
+  if (key === 'kh')
+    return val < 1 ? 'var(--danger)' : val < 3 ? 'var(--warn)' : val <= 8 ? 'var(--ok)' : val <= 12 ? 'var(--warn)' : 'var(--danger)';
   return '';
 }
 function wlog_lbl(key, val) {
@@ -4280,6 +4282,8 @@ function wlog_lbl(key, val) {
     return val < 10 ? 'Low' : val <= 20 ? 'Slightly low' : val <= 60 ? 'Good' : val <= 80 ? 'Slightly high' : 'High';
   if (key === 'magnesium')
     return val < 2 ? 'Low' : val <= 5 ? 'Slightly low' : val <= 20 ? 'Good' : val <= 30 ? 'Slightly high' : 'High';
+  if (key === 'kh')
+    return val < 1 ? 'Critical' : val < 3 ? 'Low' : val <= 8 ? 'Good' : val <= 12 ? 'High' : 'Very high';
   return '';
 }
 function wlog_arrow(cur, prev) {
@@ -4382,11 +4386,11 @@ function r_wlog() {
            wlog_cell('ph', e.ph, prev ? prev.ph : null) +
            wlog_cell('gh', e.gh, prev ? prev.gh : null) +
            wlog_cell('gh', e.gh != null ? Math.round(e.gh * 17.9) : null, prev && prev.gh != null ? Math.round(prev.gh * 17.9) : null) +
-           (has_kh ? '<td>' + (e.kh != null ? Math.round(e.kh * 10) / 10 : '&mdash;') + '</td>' +
-                     '<td>' + (e.kh != null ? Math.round(e.kh * 17.86) : '&mdash;') + '</td>' : '') +
+           (has_kh ? wlog_cell('kh', e.kh, prev ? prev.kh : null) +
+                     '<td>' + (e.kh != null ? Math.round(e.kh * 17.86) + wlog_arrow(e.kh, prev ? prev.kh : null) : '&mdash;') + '</td>' : '') +
            (has_ca_mg ? wlog_cell('calcium', e.calcium, prev ? prev.calcium : null) + wlog_cell('magnesium', e.magnesium, prev ? prev.magnesium : null) : '') +
-           (has_phosphate ? '<td>' + (e.phosphate !== null && e.phosphate !== undefined ? e.phosphate : '&mdash;') + '</td>' : '') +
-           (has_tds ? '<td>' + (e.tds !== null && e.tds !== undefined ? e.tds : '&mdash;') + '</td>' : '') +
+           (has_phosphate ? '<td>' + (e.phosphate !== null && e.phosphate !== undefined ? e.phosphate + wlog_arrow(e.phosphate, prev ? prev.phosphate : null) : '&mdash;') + '</td>' : '') +
+           (has_tds ? '<td>' + (e.tds !== null && e.tds !== undefined ? e.tds + wlog_arrow(e.tds, prev ? prev.tds : null) : '&mdash;') + '</td>' : '') +
            '<td>' + esc(e.notes) + '</td>' +
            '<td style="white-space:nowrap">' +
            '<button class="btn bg bs" style="margin-right:4px" data-id="' + e.id + '" onclick="do_edit_water(this.dataset.id)">&#x270E;</button>' +
