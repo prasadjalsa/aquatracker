@@ -417,8 +417,10 @@ Object.keys(SP).forEach(function(k){ if(!SP[k].zone) SP[k].zone='mid'; });
 // Activity level — 'low', 'medium', 'high'; default 'medium'
 var _act_high = ['zebra_danio','giant_danio','tiger_barb','hillstream_loach','roseline_shark','boesemani_rainbow','malabar_danio','bengal_danio','indian_flying_barb','neon_rainbowfish','white_cloud_minnow','swordtail','african_cichlid','rosy_barb'];
 var _act_low  = ['discus','kuhli_loach','badis','scarlet_badis','gangetic_leaffish','banded_leaffish','african_dwarf_frog','red_eared_slider','indian_flapshell','painted_turtle','goldfish','common_pleco','chili_rasbora','ember_tetra','celestial_pearl_danio','dwarf_puffer','sparkling_gourami','clown_killifish','honey_gourami','betta','otocinclus','ram_cichlid','electric_blue_ram','bolivian_ram','angelfish','bamboo_shrimp','pygmy_corydoras','pearl_gourami','medaka','blue_medaka','white_medaka','koi_medaka','indian_glass_fish'];
+var _territorial = ['betta','oscar','convict_cichlid','firemouth_cichlid','african_cichlid','red_tail_shark','peacock_cichlid','paradise_fish','blue_gourami','dwarf_gourami','flying_fox','electric_blue_crayfish','red_swamp_crayfish','white_specter_crayfish'];
 _act_high.forEach(function(k){ if(SP[k]) SP[k].activity='high'; });
 _act_low.forEach(function(k){  if(SP[k]) SP[k].activity='low'; });
+_territorial.forEach(function(k){ if(SP[k]) SP[k].territorial=true; });
 Object.keys(SP).forEach(function(k){ if(!SP[k].activity) SP[k].activity='medium'; });
 
 // Breeding behaviour — assigned post-definition to keep SP entries readable
@@ -1135,8 +1137,10 @@ function calc_space_score_s(tid, ud) {
     var sp=sp_all[s.species_id]; if(!sp||sp.inv) return;
     var sz=sp.size_in||2;
     var act_mult=sp.activity==='high'?1.4:sp.activity==='low'?0.7:1.0;
-    var gal=sz<=1.5?0.75:sz<=3?sz*1.0:sz<=6?sz*1.5:sz*2.5;
-    total+=gal*act_mult*s.qty;
+    var ter_mult=sp.territorial?1.3:1.0;
+    var school_mult=(sp.min_fish&&s.qty>=sp.min_fish)?0.8:1.0;
+    var gal=sz<=1.0?0.5:sz<=1.5?0.75:sz<=3?sz*1.0:sz<=6?sz*1.5:sz*2.5;
+    total+=gal*act_mult*ter_mult*school_mult*s.qty;
   });
   return Math.round(total*10)/10;
 }
@@ -2955,8 +2959,10 @@ function calc_space_score(tid) {
     if (!sp || sp.inv) return;
     var sz = sp.size_in || 2;
     var act_mult = sp.activity === 'high' ? 1.4 : sp.activity === 'low' ? 0.7 : 1.0;
+    var ter_mult = sp.territorial ? 1.3 : 1.0;
+    var school_mult = (sp.min_fish && s.qty >= sp.min_fish) ? 0.8 : 1.0;
     var gal = sz <= 1.0 ? 0.5 : sz <= 1.5 ? 0.75 : sz <= 3 ? sz * 1.0 : sz <= 6 ? sz * 1.5 : sz * 2.5;
-    total += gal * act_mult * s.qty;
+    total += gal * act_mult * ter_mult * school_mult * s.qty;
   });
   return Math.round(total * 10) / 10;
 }
