@@ -4043,12 +4043,10 @@ async function r_dash() {
       {k:'nitrite',   l:'Nitrite',          u:'ppm', mn:0,  mx:0,  tox:true,  conv:null},
       {k:'nitrate',   l:'Nitrate',          u:'ppm', mn:0,  mx:40, tox:false, conv:null},
       {k:'ph',        l:'pH',               u:'',    mn:rng&&rng.ph.ok?rng.ph.min:null, mx:rng&&rng.ph.ok?rng.ph.max:null, tox:false, conv:null},
-      {k:'gh',        l:'Hardness (GH)',    u:'dGH', mn:rng&&rng.gh.ok?rng.gh.min:null, mx:rng&&rng.gh.ok?rng.gh.max:null, tox:false, conv:null}
+      {k:'gh',        l:'Hardness (GH)',    u:'dGH', mn:rng&&rng.gh.ok?rng.gh.min:null, mx:rng&&rng.gh.ok?rng.gh.max:null, tox:false, conv:null},
+      {k:'kh',        l:'Carbonate Hardness (KH)', u:'dKH', mn:3, mx:8, tox:false, conv:null}
     );
     // Only show Ca/Mg rows if they were logged for this reading
-    if (lr.kh !== null && lr.kh !== undefined) {
-      ps.push({k:'kh', l:'Carbonate Hardness (KH)', u:'dKH', mn:3, mx:8, tox:false, conv:null});
-    }
     if (lr.calcium !== null && lr.calcium !== undefined) {
       ps.push({k:'calcium',   l:'Calcium (Ca)',   u:'ppm', mn:20, mx:60, tox:false, conv:null});
       ps.push({k:'magnesium', l:'Magnesium (Mg)', u:'ppm', mn:5,  mx:20, tox:false, conv:null});
