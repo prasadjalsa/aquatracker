@@ -1937,6 +1937,7 @@ function ld() {
   var d = _aq || mt();
   if (!Array.isArray(d.feeding))        d.feeding       = [];
   if (!Array.isArray(d.ferts))          d.ferts         = [];
+  if (!Array.isArray(d.reservoirs))     d.reservoirs    = [];
   if (!Array.isArray(d.maint_log))      d.maint_log     = [];
   if (!Array.isArray(d.treatment_log))  d.treatment_log = [];
   if (!d.custom_sp)                     d.custom_sp     = {};
@@ -2611,6 +2612,15 @@ function calc_refill_due_date(f) {
   var days_left = Math.max(0, Math.floor((res.remaining_ml - margin_ml) / f.auto_dose_ml_day));
   return next_due(today_str(), days_left);
 }
+// Reservoir remaining — uses snapshot_ml + snapshot_date so top-ups work correctly
+function reservoir_remaining(r) {
+  if (!r.total_ml || !r.daily_dose_ml || !r.snapshot_date) return null;
+  var days = day_diff(today_str(), r.snapshot_date);
+  var ml = Math.max(0, Math.round(((r.snapshot_ml || 0) - days * r.daily_dose_ml) * 10) / 10);
+  var pct = Math.round(ml / r.total_ml * 100);
+  var days_left = r.daily_dose_ml > 0 ? Math.floor(ml / r.daily_dose_ml) : null;
+  return {remaining_ml: ml, pct: pct, days_left: days_left};
+}
 function sync_refill_task_due(d, fert) {
   if (!fert || !fert.auto_refill_task_id) return;
   var due = calc_refill_due_date(fert);
@@ -2649,6 +2659,164 @@ function refill_fert_reservoir(fid) {
     sync_refill_task_due(d, updated_fert);
   }
   sv(d); r_maint();
+}
+// ===== RESERVOIRS =====
+function add_reservoir(tid, name, total_ml, daily_dose_ml, timer_sec, timer_min, fert_ids, snapshot_ml) {
+  var d = ld();
+  d.reservoirs.push({
+    id: gen_id(), tank_id: tid, name: name,
+    total_ml: total_ml, daily_dose_ml: daily_dose_ml,
+    timer_sec: timer_sec || 0, timer_min: timer_min || 600,
+    snapshot_ml: snapshot_ml != null ? snapshot_ml : total_ml,
+    snapshot_date: today_str(),
+    fert_ids: fert_ids || []
+  });
+  sv(d); r_life();
+}
+function del_reservoir(id) {
+  var d = ld();
+  d.reservoirs = d.reservoirs.filter(function(x){return x.id!==id;});
+  sv(d); r_life();
+}
+function do_add_reservoir() {
+  var d = ld(), tid = at();
+  var tank_ferts = d.ferts.filter(function(f){return f.tank_id===tid;});
+  var fert_checks = tank_ferts.map(function(f){
+    return '<label style="display:flex;align-items:center;gap:6px;font-weight:400"><input type="checkbox" name="res_fert_ids" value="' + f.id + '"> ' + esc(f.name) + '</label>';
+  }).join('');
+  var h = '<div class="card"><div class="ctitle">Add Dosing Reservoir</div>' +
+    '<form id="res_frm" onsubmit="event.preventDefault();sub_reservoir()">' +
+    fg('Name', '<input type="text" name="res_name" placeholder="e.g. Macro Blend" required style="width:200px">') +
+    '<div class="fg"><label>Capacity</label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+    '<input type="number" name="res_total_ml" step="0.1" min="1" placeholder="150" required style="width:80px" oninput="upd_res_total()"> ml total' +
+    ' &nbsp; <input type="number" name="res_daily_ml" step="0.1" min="0.1" placeholder="5" required style="width:70px" oninput="upd_res_total()"> ml/day' +
+    ' &nbsp; <span id="res_total_lbl" style="color:var(--muted);font-style:italic"></span></div></div>' +
+    '<div class="fg"><label>Timer</label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+    '<input type="number" name="res_timer_sec" step="1" min="1" placeholder="30" style="width:70px"> seconds at' +
+    ' <select name="res_timer_min">' + mk_time_opts(600) + '</select></div></div>' +
+    (tank_ferts.length ? '<div class="fg"><label>Contents</label><div style="display:flex;flex-direction:column;gap:4px">' + fert_checks + '</div></div>' : '') +
+    '<div style="text-align:right;margin-top:12px"><button type="button" class="btn bg bs" onclick="cm()">Cancel</button> <button type="submit" class="btn bp bs">Save</button></div>' +
+    '</form></div>';
+  document.getElementById('ovc').innerHTML = h;
+  document.getElementById('ov').classList.add('on');
+}
+function sub_reservoir() {
+  var f = document.getElementById('res_frm');
+  var name = f.res_name.value.trim();
+  if (!name) return;
+  var total_ml = parseFloat(f.res_total_ml.value) || 0;
+  var daily_ml = parseFloat(f.res_daily_ml.value) || 0;
+  var timer_sec = parseInt(f.res_timer_sec.value) || 0;
+  var timer_min = parseInt(f.res_timer_min.value) || 600;
+  var fert_ids = Array.from(f.querySelectorAll('[name="res_fert_ids"]:checked')).map(function(cb){return cb.value;});
+  add_reservoir(at(), name, total_ml, daily_ml, timer_sec, timer_min, fert_ids, null);
+  cm();
+}
+function do_edit_reservoir(id) {
+  var d = ld(), r = d.reservoirs.find(function(x){return x.id===id;}); if (!r) return;
+  var tid = r.tank_id;
+  var tank_ferts = d.ferts.filter(function(f){return f.tank_id===tid;});
+  var rem = reservoir_remaining(r);
+  var cur_ml = rem ? rem.remaining_ml : (r.snapshot_ml || r.total_ml);
+  var fert_checks = tank_ferts.map(function(f){
+    var checked = r.fert_ids && r.fert_ids.indexOf(f.id) !== -1 ? ' checked' : '';
+    return '<label style="display:flex;align-items:center;gap:6px;font-weight:400"><input type="checkbox" name="res_fert_ids" value="' + f.id + '"' + checked + '> ' + esc(f.name) + '</label>';
+  }).join('');
+  var days_since = rem ? Math.round((r.total_ml - cur_ml) / (r.daily_dose_ml || 1) * 10) / 10 : 0;
+  var h = '<div class="card"><div class="ctitle">Edit Reservoir</div>' +
+    '<form id="res_edit_frm" onsubmit="event.preventDefault();sub_edit_reservoir()" data-id="' + r.id + '">' +
+    fg('Name', '<input type="text" name="res_name" value="' + esc(r.name) + '" required style="width:200px">') +
+    '<div class="fg"><label>Capacity</label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+    '<input type="number" name="res_total_ml" step="0.1" min="1" value="' + r.total_ml + '" required style="width:80px" oninput="upd_res_edit_total()"> ml total' +
+    ' &nbsp; <input type="number" name="res_daily_ml" step="0.1" min="0.1" value="' + r.daily_dose_ml + '" required style="width:70px" oninput="upd_res_edit_total()"> ml/day' +
+    ' &nbsp; <span id="res_edit_total_lbl" style="color:var(--muted);font-style:italic">lasts ' + (r.daily_dose_ml > 0 ? Math.floor(r.total_ml / r.daily_dose_ml) : '—') + ' days</span></div></div>' +
+    '<div class="fg"><label>Timer</label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+    '<input type="number" name="res_timer_sec" step="1" min="1" value="' + (r.timer_sec||'') + '" placeholder="30" style="width:70px"> seconds at' +
+    ' <select name="res_timer_min">' + mk_time_opts(r.timer_min||600) + '</select></div></div>' +
+    (tank_ferts.length ? '<div class="fg"><label>Contents</label><div style="display:flex;flex-direction:column;gap:4px">' + fert_checks + '</div></div>' : '') +
+    '<div class="fg"><label>Current remaining</label><div style="display:flex;gap:8px;align-items:center">' +
+    '<input type="number" name="res_snapshot_ml" step="0.1" min="0" value="' + cur_ml + '" style="width:80px"> ml' +
+    ' <span style="color:var(--muted);font-size:12px">(update if recipe or amount changed)</span></div></div>' +
+    '<div style="text-align:right;margin-top:12px"><button type="button" class="btn bg bs" onclick="cm()">Cancel</button> <button type="submit" class="btn bp bs">Save</button></div>' +
+    '</form></div>';
+  document.getElementById('ovc').innerHTML = h;
+  document.getElementById('ov').classList.add('on');
+}
+function sub_edit_reservoir() {
+  var f = document.getElementById('res_edit_frm');
+  var id = f.dataset.id;
+  var d = ld();
+  var name = f.res_name.value.trim(); if (!name) return;
+  var total_ml = parseFloat(f.res_total_ml.value) || 0;
+  var daily_ml = parseFloat(f.res_daily_ml.value) || 0;
+  var timer_sec = parseInt(f.res_timer_sec.value) || 0;
+  var timer_min = parseInt(f.res_timer_min.value) || 600;
+  var fert_ids = Array.from(f.querySelectorAll('[name="res_fert_ids"]:checked')).map(function(cb){return cb.value;});
+  var snapshot_ml = parseFloat(f.res_snapshot_ml.value);
+  if (isNaN(snapshot_ml)) snapshot_ml = total_ml;
+  d.reservoirs = d.reservoirs.map(function(r) {
+    if (r.id !== id) return r;
+    return Object.assign({}, r, {name: name, total_ml: total_ml, daily_dose_ml: daily_ml,
+      timer_sec: timer_sec, timer_min: timer_min, fert_ids: fert_ids,
+      snapshot_ml: snapshot_ml, snapshot_date: today_str()});
+  });
+  sv(d); cm(); r_life();
+}
+function do_refill_reservoir(id) {
+  var d = ld();
+  d.reservoirs = d.reservoirs.map(function(r){
+    return r.id === id ? Object.assign({}, r, {snapshot_ml: r.total_ml, snapshot_date: today_str()}) : r;
+  });
+  sv(d); r_life(); r_maint();
+}
+function do_topup_reservoir(id) {
+  var d = ld(), r = d.reservoirs.find(function(x){return x.id===id;}); if (!r) return;
+  var rem = reservoir_remaining(r);
+  var cur = rem ? rem.remaining_ml : 0;
+  var h = '<div class="card"><div class="ctitle">Top Up Reservoir</div>' +
+    '<p style="font-size:13px;color:var(--muted)">Current remaining: <strong>' + cur + ' ml</strong></p>' +
+    '<div class="fg"><label>How much are you adding?</label>' +
+    '<div style="display:flex;gap:8px;align-items:center">' +
+    '<input type="number" id="topup_ml" step="0.1" min="0.1" placeholder="50" style="width:80px"> ml' +
+    ' <span id="topup_after" style="color:var(--muted);font-size:12px"></span></div></div>' +
+    '<script>document.getElementById("topup_ml").oninput=function(){' +
+    'var v=parseFloat(this.value)||0,tot=' + r.total_ml + ',cur=' + cur + ';' +
+    'var after=Math.min(tot,cur+v);' +
+    'document.getElementById("topup_after").textContent="→ "+after+" ml after top up";};<\/script>' +
+    '<div style="text-align:right;margin-top:12px">' +
+    '<button class="btn bg bs" onclick="cm()">Cancel</button> ' +
+    '<button class="btn bp bs" data-id="' + id + '" data-cur="' + cur + '" data-tot="' + r.total_ml + '" onclick="sub_topup_reservoir(this.dataset.id,this.dataset.cur,this.dataset.tot)">Top Up</button></div>' +
+    '</div>';
+  document.getElementById('ovc').innerHTML = h;
+  document.getElementById('ov').classList.add('on');
+}
+function sub_topup_reservoir(id, cur_ml, total_ml) {
+  var added = parseFloat(document.getElementById('topup_ml').value) || 0;
+  if (!added) return;
+  var after = Math.min(parseFloat(total_ml), parseFloat(cur_ml) + added);
+  var d = ld();
+  d.reservoirs = d.reservoirs.map(function(r){
+    return r.id === id ? Object.assign({}, r, {snapshot_ml: Math.round(after * 10) / 10, snapshot_date: today_str()}) : r;
+  });
+  sv(d); cm(); r_life(); r_maint();
+}
+function upd_res_total() {
+  var c = document.getElementById('res_frm');
+  if (!c) return;
+  var total = parseFloat(c.res_total_ml.value) || 0;
+  var daily = parseFloat(c.res_daily_ml.value) || 0;
+  var days = daily > 0 ? Math.floor(total / daily) : '—';
+  var lbl = document.getElementById('res_total_lbl');
+  if (lbl) lbl.textContent = total && daily ? '= ' + total + ' ml — lasts ' + days + ' days' : '';
+}
+function upd_res_edit_total() {
+  var c = document.getElementById('res_edit_frm');
+  if (!c) return;
+  var total = parseFloat(c.res_total_ml.value) || 0;
+  var daily = parseFloat(c.res_daily_ml.value) || 0;
+  var days = daily > 0 ? Math.floor(total / daily) : '—';
+  var lbl = document.getElementById('res_edit_total_lbl');
+  if (lbl) lbl.textContent = total && daily ? 'lasts ' + days + ' days' : '';
 }
 function fmt_schedule(t) {
   if (t.dow && t.dow.length) {
@@ -4247,6 +4415,41 @@ function r_life() {
   } else h += '<p class="emsg">No fertilizers added. Add one to get dosing reminders in the Recommended Schedule.</p>';
   h += '</div>';
 
+  // Dosing Reservoirs
+  var res_list = d.reservoirs.filter(function(x){return x.tank_id===tid;});
+  h += '<div class="card"><div class="ctitle">Dosing Reservoirs <button class="btn bp bs" onclick="do_add_reservoir()">+ Add</button></div>';
+  if (res_list.length) {
+    res_list.forEach(function(r) {
+      var rem = reservoir_remaining(r);
+      var pct = rem ? rem.pct : 100;
+      var bar_col = pct <= 10 ? 'var(--danger)' : pct <= 30 ? 'var(--warn)' : 'var(--ok)';
+      var days_txt = rem && rem.days_left != null ? rem.days_left + ' days left' : '';
+      var contents = (r.fert_ids||[]).map(function(fid){
+        var f = d.ferts.find(function(x){return x.id===fid;});
+        return f ? esc(f.name) : '';
+      }).filter(Boolean).join(', ');
+      h += '<div style="border:1px solid #dde;border-radius:6px;padding:10px 12px;margin-bottom:8px">' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+        '<strong>' + esc(r.name) + '</strong>' +
+        (rem ? '<span style="color:' + bar_col + ';font-weight:600;font-size:13px">' + rem.remaining_ml + ' ml (' + pct + '%)</span>' : '') +
+        (days_txt ? '<span style="color:var(--muted);font-size:12px">' + days_txt + '</span>' : '') +
+        '<div style="flex:1"></div>' +
+        '<button class="btn bp bs" style="font-size:12px" data-id="' + r.id + '" onclick="do_refill_reservoir(this.dataset.id)">Refill</button>' +
+        '<button class="btn bg bs" style="font-size:12px" data-id="' + r.id + '" onclick="do_topup_reservoir(this.dataset.id)">Top up</button>' +
+        '<button class="btn bg bs" style="font-size:12px" data-id="' + r.id + '" onclick="do_edit_reservoir(this.dataset.id)">Edit</button>' +
+        '<button class="btn bd bs" style="font-size:12px" data-id="' + r.id + '" onclick="del_reservoir(this.dataset.id)">&#x2715;</button></div>' +
+        '<div style="background:#e8edf2;border-radius:4px;height:6px;margin-top:8px">' +
+        '<div style="background:' + bar_col + ';border-radius:4px;height:6px;width:' + Math.min(100, pct) + '%"></div></div>' +
+        (contents ? '<div style="font-size:11px;color:var(--muted);margin-top:5px">Contents: ' + contents + '</div>' : '') +
+        '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + r.total_ml + ' ml capacity &middot; ' + r.daily_dose_ml + ' ml/day' +
+        (r.timer_sec ? ' &middot; ' + r.timer_sec + 's timer' : '') + '</div>' +
+        '</div>';
+    });
+  } else {
+    h += '<p class="emsg">No reservoirs added. Create one to track your dosing pump blend.</p>';
+  }
+  h += '</div>';
+
   el.innerHTML = h;
 }
 
@@ -4702,6 +4905,26 @@ async function r_maint() {
            (f.auto_dose_ml_day ? ' &middot; ' + f.auto_dose_ml_day + ' ml/day' : '') +
            ' &middot; <button class="btn bg bs" style="font-size:10px;padding:1px 6px" data-fid="' + f.id + '" onclick="do_edit_fert(this.dataset.fid)">Edit recipe &rarr;</button></div>' +
            '</div>';
+    });
+  }
+
+  // Low reservoir alerts
+  var low_res = (d.reservoirs||[]).filter(function(r){
+    if (r.tank_id !== tid) return false;
+    var rem = reservoir_remaining(r);
+    return rem && rem.pct <= 10;
+  });
+  if (low_res.length) {
+    low_res.forEach(function(r) {
+      var rem = reservoir_remaining(r);
+      h += '<div style="font-size:13px;padding:10px 12px;margin-bottom:8px;' +
+           'background:#fff0f0;border-left:3px solid var(--danger);border-radius:0 6px 6px 0">' +
+           '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+           '<span style="flex:1">&#x26A0;&#xFE0F; <strong>' + esc(r.name) + '</strong> reservoir is running low &mdash; ' +
+           rem.remaining_ml + ' ml remaining (' + rem.pct + '%). Refill or top up soon.</span>' +
+           '<button class="btn bp bs" style="font-size:12px" data-id="' + r.id + '" onclick="do_refill_reservoir(this.dataset.id)">Refill</button>' +
+           '<button class="btn bg bs" style="font-size:12px" data-id="' + r.id + '" onclick="do_topup_reservoir(this.dataset.id)">Top up</button>' +
+           '</div></div>';
     });
   }
 
