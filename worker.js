@@ -2539,7 +2539,7 @@ function add_reservoir(tid, name, ingredients, water_ml, daily_dose_ml, timer_se
   var d = ld();
   var total = ingredients.reduce(function(s,x){return s+(x.concentrate_ml||0);},0) + (water_ml||0);
   d.reservoirs.push({
-    id: gen_id(), tank_id: tid, name: name,
+    id: gid(), tank_id: tid, name: name,
     ingredients: ingredients, water_ml: water_ml||0,
     daily_dose_ml: daily_dose_ml,
     timer_sec: timer_sec || 0, timer_min: timer_min || 600,
