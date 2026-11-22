@@ -2365,9 +2365,18 @@ function add_fert(tid, preset, name, notes, automated) {
 function del_fert(id) {
   var d = ld();
   var fert = d.ferts.find(function(x){return x.id===id;});
+  var in_res = (d.reservoirs||[]).filter(function(r){
+    return (r.ingredients||[]).some(function(ing){return ing.fert_id===id;});
+  });
+  var msg = 'Delete this fertilizer?';
+  if (in_res.length) msg += ' It is used in ' + in_res.length + ' reservoir(s): ' + in_res.map(function(r){return r.name;}).join(', ') + '. It will be removed from those recipes too.';
+  msg += ' Cannot be undone.';
+  if (!confirm(msg)) return;
   if (fert && fert.task_id) d.tasks = d.tasks.filter(function(x){return x.id!==fert.task_id;});
-  if (fert && fert.auto_refill_task_id) d.tasks = d.tasks.filter(function(x){return x.id!==fert.auto_refill_task_id;});
   d.ferts = d.ferts.filter(function(x){return x.id!==id;});
+  d.reservoirs = (d.reservoirs||[]).map(function(r){
+    return Object.assign({}, r, {ingredients: (r.ingredients||[]).filter(function(ing){return ing.fert_id!==id;})});
+  });
   sv(d); r_life();
 }
 function do_edit_fert(id) {
@@ -2389,18 +2398,6 @@ function sub_edit_fert(e) {
     return Object.assign({}, x, {name:f.name.value, notes:f.notes.value, automated:!!(f.auto_enabled && f.auto_enabled.checked)});
   });
   sv(d); cm(); r_life();
-}
-function calc_fert_dose(sel) {
-  var f = document.getElementById('fert_frm');
-  var fp = _fert[sel.value];
-  if (!fp) return;
-  f.fert_name.value = fp.name;
-  f.fert_freq.value = fp.freq;
-  if (fp.ml_per_gal !== null) {
-    f.fert_dose.value = Math.round(fp.ml_per_gal * _fert_gal * 10) / 10;
-  } else {
-    f.fert_dose.value = '';
-  }
 }
 function upd_fert_name(sel) {
   var fp = _fert[sel.value];
@@ -2463,24 +2460,7 @@ function next_due_dow(from_date, dow) {
 function day_diff(a, b) {
   return Math.round((new Date(a+'T00:00:00') - new Date(b+'T00:00:00')) / 86400000);
 }
-function calc_auto_fert_remaining(f) {
-  var total = (f.auto_conc_ml||0) + (f.auto_ro_ml||0);
-  if (!total || !f.auto_dose_ml_day || !f.auto_last_fill_date) return null;
-  var days = day_diff(today_str(), f.auto_last_fill_date);
-  var extra = f.auto_extra_ml || 0;
-  var remaining_ml = Math.max(0, Math.round((total - days * f.auto_dose_ml_day - extra) * 10) / 10);
-  var pct = Math.round(remaining_ml / total * 100);
-  return {remaining_ml: remaining_ml, pct: pct, total_ml: total};
-}
-function calc_refill_due_date(f) {
-  var res = calc_auto_fert_remaining(f);
-  if (!res || !f.auto_dose_ml_day) return null;
-  var margin_ml = res.total_ml * 0.1;
-  if (res.remaining_ml <= margin_ml) return today_str();
-  var days_left = Math.max(0, Math.floor((res.remaining_ml - margin_ml) / f.auto_dose_ml_day));
-  return next_due(today_str(), days_left);
-}
-// Reservoir remaining — uses snapshot_ml + snapshot_date so top-ups work correctly
+// ===== RESERVOIRS =====
 function reservoir_total_ml(r) {
   var conc = (r.ingredients||[]).reduce(function(s,x){return s+(x.concentrate_ml||0);},0);
   return conc + (r.water_ml||0) || r.total_ml || 0;
@@ -2493,45 +2473,6 @@ function reservoir_remaining(r) {
   var pct = Math.round(ml / total * 100);
   var days_left = r.daily_dose_ml > 0 ? Math.floor(ml / r.daily_dose_ml) : null;
   return {remaining_ml: ml, pct: pct, days_left: days_left, total_ml: total};
-}
-function sync_refill_task_due(d, fert) {
-  if (!fert || !fert.auto_refill_task_id) return;
-  var due = calc_refill_due_date(fert);
-  if (!due) return;
-  d.tasks = (d.tasks || []).map(function(t) {
-    if (t.id !== fert.auto_refill_task_id) return t;
-    return Object.assign({}, t, {next_due: due, freq: null});
-  });
-}
-function tog_auto_fert() {
-  var cb = document.getElementById('auto_fert_cb');
-  var wrap = document.getElementById('auto_fert_wrap');
-  if (wrap) wrap.style.display = cb && cb.checked ? '' : 'none';
-}
-function upd_auto_fert_total() {
-  var c = document.getElementById('auto_conc_ml'), r = document.getElementById('auto_ro_ml');
-  var dv = document.getElementById('auto_dose_ml_day');
-  var lbl = document.getElementById('auto_total_lbl');
-  if (!c || !r || !lbl) return;
-  var total = (parseFloat(c.value)||0) + (parseFloat(r.value)||0);
-  var daily = parseFloat(dv && dv.value) || 0;
-  var days = daily > 0 ? Math.floor(total / daily) : '—';
-  lbl.textContent = '= ' + total + ' ml total — lasts ' + days + ' days';
-}
-function refill_fert_reservoir(fid) {
-  var d = ld(), today = today_str();
-  var fert = d.ferts.find(function(f){ return f.id === fid; });
-  if (!fert) return;
-  d.ferts = d.ferts.map(function(f){ return f.id===fid ? Object.assign({},f,{auto_last_fill_date:today, auto_extra_ml:0}) : f; });
-  if (fert.auto_refill_task_id) {
-    d.tasks = (d.tasks||[]).map(function(t){
-      if (t.id !== fert.auto_refill_task_id) return t;
-      return Object.assign({}, t, {last_done:today, snooze_fire_at:null});
-    });
-    var updated_fert = d.ferts.find(function(f){ return f.id === fid; });
-    sync_refill_task_due(d, updated_fert);
-  }
-  sv(d); r_maint();
 }
 // ===== RESERVOIRS =====
 var _res_fert_opts = '';
@@ -2602,7 +2543,7 @@ function sub_log_res_dose(e) {
     notes:dose + ' ml' + (f.notes.value.trim() ? ' — ' + f.notes.value.trim() : '')});
   var new_remaining = Math.max(0, Math.round((cur - dose) * 10) / 10);
   d.reservoirs = d.reservoirs.map(function(x){
-    return x.id===id ? Object.assign({},x,{snapshot_ml:new_remaining,snapshot_date:today,last_auto_dosed_date:today}) : x;
+    return x.id===id ? Object.assign({},x,{snapshot_ml:new_remaining,snapshot_date:today}) : x;
   });
   sv(d); cm(); r_maint();
 }
@@ -2663,11 +2604,14 @@ function sub_reservoir() {
   var f = document.getElementById('res_frm');
   var name = f.res_name.value.trim(); if (!name) return;
   var rows = document.querySelectorAll('#res_frm .res_ing_row');
-  var ingredients = [];
+  var seen = {}, ingredients = [];
   rows.forEach(function(row){
     var fid = row.querySelector('[name="res_ing_fert"]').value;
     var ml = parseFloat(row.querySelector('[name="res_ing_ml"]').value) || 0;
-    if (fid && ml > 0) ingredients.push({fert_id: fid, concentrate_ml: ml});
+    if (fid && ml > 0) {
+      if (seen[fid]) { seen[fid].concentrate_ml = Math.round((seen[fid].concentrate_ml + ml) * 10) / 10; }
+      else { seen[fid] = {fert_id: fid, concentrate_ml: ml}; ingredients.push(seen[fid]); }
+    }
   });
   var water_ml = parseFloat(f.res_water_ml.value) || 0;
   var daily_ml = parseFloat(f.res_daily_ml.value) || 0;
@@ -2679,9 +2623,9 @@ function sub_reservoir() {
 function do_edit_reservoir(id) {
   var d = ld(), r = d.reservoirs.find(function(x){return x.id===id;}); if (!r) return;
   var tid = r.tank_id;
-  var tank_ferts = d.ferts.filter(function(f){return f.tank_id===tid && f.automated;});
+  var tank_ferts = d.ferts.filter(function(f){return f.tank_id===tid;});
   _res_fert_opts = '<option value="">Select fertilizer</option>' +
-    tank_ferts.map(function(f){ return '<option value="' + f.id + '">' + esc(f.name) + '</option>'; }).join('');
+    tank_ferts.map(function(f){ return '<option value="' + f.id + '">' + esc(f.name) + (f.automated ? '' : ' (manual)') + '</option>'; }).join('');
   var rem = reservoir_remaining(r);
   var cur_ml = rem ? rem.remaining_ml : (r.snapshot_ml || 0);
   var total = reservoir_total_ml(r);
@@ -2715,13 +2659,13 @@ function sub_edit_reservoir() {
   var r_orig = d.reservoirs.find(function(x){return x.id===id;}); if (!r_orig) return;
   var name = f.res_name.value.trim(); if (!name) return;
   var rows = document.querySelectorAll('#res_edit_frm .res_ing_row');
-  var ingredients = [];
-  var new_ml = 0;
+  var seen = {}, ingredients = [], new_ml = 0;
   rows.forEach(function(row){
     var fid = row.querySelector('[name="res_ing_fert"]').value;
     var ml = parseFloat(row.querySelector('[name="res_ing_ml"]').value) || 0;
     if (fid && ml > 0) {
-      ingredients.push({fert_id: fid, concentrate_ml: ml});
+      if (seen[fid]) { seen[fid].concentrate_ml = Math.round((seen[fid].concentrate_ml + ml) * 10) / 10; }
+      else { seen[fid] = {fert_id: fid, concentrate_ml: ml}; ingredients.push(seen[fid]); }
       if (!row.dataset.existing) new_ml += ml;
     }
   });
@@ -2765,6 +2709,7 @@ function do_topup_reservoir(id) {
   var tot = reservoir_total_ml(r);
   var h = '<div class="card"><div class="ctitle">Top Up Reservoir</div>' +
     '<p style="font-size:13px;color:var(--muted)">Current remaining: <strong>' + cur + ' ml</strong> of ' + tot + ' ml</p>' +
+    '<p style="font-size:11px;color:var(--muted);margin-top:-4px">Per-ingredient breakdown uses the original recipe ratio — adding a different mix may change actual concentrations.</p>' +
     '<div class="fg"><label>How much are you adding?</label>' +
     '<div style="display:flex;gap:8px;align-items:center">' +
     '<input type="number" id="topup_ml" step="0.1" min="0.1" placeholder="50" style="width:80px"' +
@@ -2838,28 +2783,11 @@ function mark_done(id) {
 function mark_done_prompt(id) {
   var d = ld();
   var task = d.tasks.find(function(t){ return t.id === id; }); if (!task) return;
-  var linked_fert = d.ferts.find(function(x){ return x.task_id === id || x.auto_refill_task_id === id; });
-  var is_refill_task = linked_fert && linked_fert.auto_refill_task_id === id;
-  var is_auto_dose  = linked_fert && linked_fert.automated && linked_fert.task_id === id;
   var vol_unit = get_pref().vol === 'L' ? 'L' : 'gal';
   var extra = '';
   if (task.type === 'Water Change') {
     extra = '<div class="fg"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Volume changed (' + vol_unit + ') <span style="font-weight:400;color:var(--muted)">(optional)</span></label>' +
       '<input type="number" id="mlog_vol" min="0" step="0.1" placeholder="e.g. 15" style="width:100%;box-sizing:border-box"></div>';
-  } else if (is_refill_task) {
-    var rf_total = (linked_fert.auto_conc_ml||0) + (linked_fert.auto_ro_ml||0);
-    extra = '<div style="background:#e8f4fb;border-radius:6px;padding:8px 10px;font-size:13px;color:#1a5a7a">' +
-      'Marking this done resets the reservoir timer to the date you select above.' +
-      '<div style="margin-top:6px;font-size:12px;color:#555">Refilling as: <strong>' +
-        (linked_fert.auto_conc_ml||0) + ' ml concentrate + ' + (linked_fert.auto_ro_ml||0) + ' ml RO = ' + rf_total + ' ml</strong>' +
-        (linked_fert.auto_dose_ml_day ? ' at <strong>' + linked_fert.auto_dose_ml_day + ' ml/day</strong>' : '') +
-        '. To change: <button class="btn bg bs" style="font-size:11px" data-fid="' + linked_fert.id + '" onclick="cm();do_edit_fert(this.dataset.fid)">Edit fertilizer &rarr;</button>' +
-      '</div></div>';
-  } else if (is_auto_dose) {
-    extra = '<div class="fg" style="background:#e8f4fb;border-radius:6px;padding:8px 10px">' +
-      '<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">' +
-      '<input type="checkbox" id="mlog_refill" style="width:16px;height:16px"> ' +
-      '<span>Reservoir refilled today</span></label></div>';
   } else if (task.type === 'Fertilizer') {
     extra = '<div class="fg"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Dose <span style="font-weight:400;color:var(--muted)">(optional)</span></label>' +
       '<input type="text" id="mlog_detail" placeholder="e.g. 5 ml" style="width:100%;box-sizing:border-box"></div>';
@@ -2881,7 +2809,6 @@ function confirm_mark_done(id) {
   var note_el = document.getElementById('mlog_note');
   var vol_el  = document.getElementById('mlog_vol');
   var det_el  = document.getElementById('mlog_detail');
-  var refill_el = document.getElementById('mlog_refill');
   var done_date = (date_el && date_el.value) ? date_el.value : today_str();
   var parts = [];
   if (vol_el  && vol_el.value)  parts.push(vol_el.value + ' ' + (get_pref().vol === 'L' ? 'L' : 'gal') + ' changed');
@@ -2889,32 +2816,10 @@ function confirm_mark_done(id) {
   if (note_el && note_el.value.trim()) parts.push(note_el.value.trim());
   var d = ld();
   var task = d.tasks.find(function(t){ return t.id === id; }); if (!task) { cm(); return; }
-  var linked_fert = d.ferts.find(function(x){ return x.task_id === id || x.auto_refill_task_id === id; });
-  var is_refill_task = linked_fert && linked_fert.auto_refill_task_id === id;
-  var is_auto_dose  = linked_fert && linked_fert.automated && linked_fert.task_id === id;
-  if (is_refill_task) {
-    parts.unshift('Reservoir refilled');
-    d.ferts = d.ferts.map(function(x){ return x.auto_refill_task_id===id ? Object.assign({},x,{auto_last_fill_date:done_date, auto_extra_ml:0}) : x; });
-  } else if (is_auto_dose) {
-    parts.unshift('Automated');
-    if (refill_el && refill_el.checked) {
-      parts.push('reservoir refilled');
-      d.ferts = d.ferts.map(function(x){
-        return x.task_id===id ? Object.assign({},x,{auto_last_fill_date:done_date, auto_extra_ml:0}) : x;
-      });
-    }
-  }
   var full_note = parts.join(' — ');
   d.tasks = d.tasks.map(function(t) {
     return t.id === id ? Object.assign({}, t, {last_done:done_date, next_due: t.dow && t.dow.length ? next_due_dow(done_date, t.dow) : next_due(done_date, t.freq), snooze_fire_at: null}) : t;
   });
-  if (is_refill_task) {
-    var rf = d.ferts.find(function(x){ return x.auto_refill_task_id===id; });
-    sync_refill_task_due(d, rf);
-  } else if (is_auto_dose && linked_fert.auto_refill_task_id) {
-    var rf2 = d.ferts.find(function(x){ return x.task_id===id; });
-    if (rf2) sync_refill_task_due(d, rf2);
-  }
   if (!Array.isArray(d.maint_log)) d.maint_log = [];
   d.maint_log.push({id:gid(), tank_id:task.tank_id, task_id:id, task_name:task.name, task_type:task.type, date:done_date, notes:full_note});
   sv(d); cm(); r_maint();
@@ -4278,6 +4183,8 @@ async function r_dash() {
 function r_life() {
   var tid = at(), d = ld(), el = document.getElementById('p-life');
   if (!d.tanks.find(function(t){return t.id===tid;})) { el.innerHTML = no_tank(); return; }
+  check_reservoir_auto_dose();
+  d = ld();
   var eq = d.equip.filter(function(x){return x.tank_id===tid;});
   var pl = d.plants.filter(function(x){return x.tank_id===tid;});
   var sk = d.stock.filter(function(x){return x.tank_id===tid;});
@@ -5216,6 +5123,8 @@ function sub_edit_task(e, id) {
 async function r_recs() {
   var tid = at(), d = ld(), el = document.getElementById('p-recs');
   if (!d.tanks.find(function(t){return t.id===tid;})) { el.innerHTML = no_tank(); return; }
+  check_reservoir_auto_dose();
+  d = ld();
   var tank = d.tanks.find(function(t){ return t.id === tid; });
   var pl_in_tank = d.plants.filter(function(x){ return x.tank_id === tid; });
   var sk = d.stock.filter(function(x){return x.tank_id===tid;});
