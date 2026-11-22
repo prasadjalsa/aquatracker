@@ -4797,44 +4797,25 @@ async function r_maint() {
   }
   h += '</div>';
 
-  // Reservoir low alerts for automated ferts
-  var low_ferts = d.ferts.filter(function(f){
-    if (!f.automated || f.tank_id !== tid) return false;
-    var res = calc_auto_fert_remaining(f);
-    return res && res.pct <= 10;
-  });
-  if (low_ferts.length) {
-    low_ferts.forEach(function(f){
-      var res = calc_auto_fert_remaining(f);
-      var rf_total_ml = (f.auto_conc_ml||0) + (f.auto_ro_ml||0);
-      h += '<div style="font-size:13px;padding:10px 12px;margin-bottom:8px;' +
-           'background:#fff0f0;border-left:3px solid var(--danger);border-radius:0 6px 6px 0">' +
-           '<div style="display:flex;gap:8px;align-items:center">' +
-           '<span style="flex:1">&#x26A0;&#xFE0F; <strong>' + esc(f.name) + '</strong> reservoir is running low &mdash; ' +
-           res.remaining_ml + ' ml remaining (' + res.pct + '%). Refill when you next dose.</span>' +
-           '<button class="btn bd bs" style="font-size:12px" data-fid="' + f.id + '" onclick="refill_fert_reservoir(this.dataset.fid)">Refill Now</button></div>' +
-           '<div style="font-size:11px;color:#888;margin-top:5px">Refilling as: ' +
-           (f.auto_conc_ml||0) + ' ml concentrate + ' + (f.auto_ro_ml||0) + ' ml RO = ' + rf_total_ml + ' ml' +
-           (f.auto_dose_ml_day ? ' &middot; ' + f.auto_dose_ml_day + ' ml/day' : '') +
-           ' &middot; <button class="btn bg bs" style="font-size:10px;padding:1px 6px" data-fid="' + f.id + '" onclick="do_edit_fert(this.dataset.fid)">Edit recipe &rarr;</button></div>' +
-           '</div>';
-    });
-  }
-
-  // Low reservoir alerts
+  // Low reservoir alerts — warn at ≤5 days, danger at ≤2 days
   var low_res = (d.reservoirs||[]).filter(function(r){
     if (r.tank_id !== tid) return false;
     var rem = reservoir_remaining(r);
-    return rem && rem.pct <= 10;
+    if (!rem) return false;
+    return (rem.days_left != null && rem.days_left <= 5) || rem.pct <= 10;
   });
   if (low_res.length) {
     low_res.forEach(function(r) {
       var rem = reservoir_remaining(r);
+      var is_danger = rem.days_left != null ? rem.days_left <= 2 : rem.pct <= 10;
+      var bg = is_danger ? '#fff0f0' : '#fff8e6';
+      var border = is_danger ? 'var(--danger)' : 'var(--warn)';
+      var days_msg = rem.days_left != null ? rem.days_left + ' days left' : rem.pct + '% remaining';
       h += '<div style="font-size:13px;padding:10px 12px;margin-bottom:8px;' +
-           'background:#fff0f0;border-left:3px solid var(--danger);border-radius:0 6px 6px 0">' +
+           'background:' + bg + ';border-left:3px solid ' + border + ';border-radius:0 6px 6px 0">' +
            '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
            '<span style="flex:1">&#x26A0;&#xFE0F; <strong>' + esc(r.name) + '</strong> reservoir is running low &mdash; ' +
-           rem.remaining_ml + ' ml remaining (' + rem.pct + '%). Refill or top up soon.</span>' +
+           rem.remaining_ml + ' ml (' + days_msg + '). Refill or top up soon.</span>' +
            '<button class="btn bp bs" style="font-size:12px" data-id="' + r.id + '" onclick="do_refill_reservoir(this.dataset.id)">Refill</button>' +
            '<button class="btn bg bs" style="font-size:12px" data-id="' + r.id + '" onclick="do_topup_reservoir(this.dataset.id)">Top up</button>' +
            '</div></div>';
