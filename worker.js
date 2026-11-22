@@ -4395,7 +4395,7 @@ function r_life() {
   } else h += '<p class="emsg">No livestock added yet.</p>';
   h += '</div>';
 
-  h += '<div class="card"><div class="ctitle">Fertilizers <button class="btn bp bs" onclick="do_add_fert()">+ Add</button></div>';
+  h += '<div class="card"><div class="ctitle">Fertilizers <button class="btn bp bs" onclick="do_add_fert()">+ Add</button> <button class="btn bp bs" onclick="do_add_reservoir()">+ Add Reservoir</button></div>';
   if (fr.length) {
     h += '<div class="tw"><table><tr><th>Name</th><th>Dose</th><th>Every</th><th>Reservoir</th><th>Notes</th><th></th></tr>';
     fr.forEach(function(f) {
@@ -4420,12 +4420,12 @@ function r_life() {
     });
     h += '</table></div>';
   } else h += '<p class="emsg">No fertilizers added. Add one to get dosing reminders in the Recommended Schedule.</p>';
-  h += '</div>';
 
-  // Dosing Reservoirs
+  // Dosing Reservoirs — grouped inside the Fertilizers card
   var res_list = d.reservoirs.filter(function(x){return x.tank_id===tid;});
-  h += '<div class="card"><div class="ctitle">Dosing Reservoirs <button class="btn bp bs" onclick="do_add_reservoir()">+ Add</button></div>';
   if (res_list.length) {
+    h += '<div style="border-top:1px solid #dde;margin-top:12px;padding-top:10px">' +
+         '<div style="font-weight:600;font-size:13px;margin-bottom:8px;color:var(--mid)">Dosing Reservoirs</div>';
     res_list.forEach(function(r) {
       var rem = reservoir_remaining(r);
       var pct = rem ? rem.pct : 100;
@@ -4452,8 +4452,7 @@ function r_life() {
         (r.timer_sec ? ' &middot; ' + r.timer_sec + 's timer' : '') + '</div>' +
         '</div>';
     });
-  } else {
-    h += '<p class="emsg">No reservoirs added. Create one to track your dosing pump blend.</p>';
+    h += '</div>';
   }
   h += '</div>';
 
