@@ -5408,7 +5408,10 @@ async function r_recs() {
         return (frt?esc(frt.name):'?')+' '+cpd+'ml';
       }) : [];
       var pct = rem ? rem.pct : 100;
-      var bar_col = pct <= 10 ? 'var(--danger)' : pct <= 30 ? 'var(--warn)' : 'var(--ok)';
+      var days_left = rem ? rem.days_left : null;
+      var bar_col = (pct <= 10 || (days_left != null && days_left <= 2)) ? 'var(--danger)'
+                  : (pct <= 30 || (days_left != null && days_left <= 5)) ? 'var(--warn)'
+                  : 'var(--ok)';
       h += '<div style="margin-bottom:12px">' +
         '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
         '<strong style="font-size:14px">' + esc(r.name) + '</strong>' +
