@@ -2777,18 +2777,25 @@ function do_topup_reservoir(id) {
     '<p style="font-size:13px;color:var(--muted)">Current remaining: <strong>' + cur + ' ml</strong></p>' +
     '<div class="fg"><label>How much are you adding?</label>' +
     '<div style="display:flex;gap:8px;align-items:center">' +
-    '<input type="number" id="topup_ml" step="0.1" min="0.1" placeholder="50" style="width:80px"> ml' +
+    '<input type="number" id="topup_ml" step="0.1" min="0.1" placeholder="50" style="width:80px"' +
+    ' data-tot="' + r.total_ml + '" data-cur="' + cur + '" oninput="upd_topup_preview()"> ml' +
     ' <span id="topup_after" style="color:var(--muted);font-size:12px"></span></div></div>' +
-    '<script>document.getElementById("topup_ml").oninput=function(){' +
-    'var v=parseFloat(this.value)||0,tot=' + r.total_ml + ',cur=' + cur + ';' +
-    'var after=Math.min(tot,cur+v);' +
-    'document.getElementById("topup_after").textContent="→ "+after+" ml after top up";};<\/script>' +
     '<div style="text-align:right;margin-top:12px">' +
     '<button class="btn bg bs" onclick="cm()">Cancel</button> ' +
     '<button class="btn bp bs" data-id="' + id + '" data-cur="' + cur + '" data-tot="' + r.total_ml + '" onclick="sub_topup_reservoir(this.dataset.id,this.dataset.cur,this.dataset.tot)">Top Up</button></div>' +
     '</div>';
   document.getElementById('ovc').innerHTML = h;
   document.getElementById('ov').classList.add('on');
+}
+function upd_topup_preview() {
+  var inp = document.getElementById('topup_ml');
+  var lbl = document.getElementById('topup_after');
+  if (!inp || !lbl) return;
+  var v = parseFloat(inp.value) || 0;
+  var tot = parseFloat(inp.dataset.tot) || 0;
+  var cur = parseFloat(inp.dataset.cur) || 0;
+  var after = Math.min(tot, cur + v);
+  lbl.textContent = after + ' ml after top up';
 }
 function sub_topup_reservoir(id, cur_ml, total_ml) {
   var added = parseFloat(document.getElementById('topup_ml').value) || 0;
