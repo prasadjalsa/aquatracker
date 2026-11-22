@@ -5483,36 +5483,34 @@ async function r_recs() {
     }
   }
   h += '</div></div>';
-  // Fertilizer reservoir rows — one per automated fert for this tank
-  var auto_ferts = d.ferts.filter(function(f){ return f.tank_id === tid && f.automated; });
-  if (auto_ferts.length) {
+  // Fertilizer Reservoirs card — dosing reservoirs with daily breakdown
+  var tank_res_r = (d.reservoirs||[]).filter(function(r){return r.tank_id===tid && r.daily_dose_ml;});
+  if (tank_res_r.length) {
     h += '<div class="card"><div class="ctitle">Fertilizer Reservoirs</div>';
-    auto_ferts.forEach(function(f) {
-      var res = calc_auto_fert_remaining(f);
-      h += '<div style="margin-bottom:10px">';
-      h += '<div style="font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">' + esc(f.name) + '</div>';
-      if (!res) {
-        h += '<div style="font-size:12px;color:var(--muted)">Fill in reservoir size and last fill date in the fertilizer config to track levels.</div>';
-      } else {
-        var bar_color = res.pct > 30 ? 'var(--ok)' : res.pct > 10 ? 'var(--warn)' : 'var(--danger)';
-        var days_left = f.auto_dose_ml_day > 0 ? Math.round(res.remaining_ml / f.auto_dose_ml_day) : null;
-        h += '<div class="bl-bar"><div class="bl-fill" style="width:' + res.pct + '%;background:' + bar_color + '"></div></div>';
-        h += '<div style="display:flex;justify-content:space-between;font-size:12px;margin-top:4px">';
-        h += '<span style="color:var(--muted)">' + res.remaining_ml + ' ml remaining of ' + res.total_ml + ' ml (' + res.pct + '%)</span>';
-        h += '<span style="color:' + bar_color + ';font-weight:600">' + (days_left !== null ? '~' + days_left + ' days left' : '') + '</span>';
-        h += '</div>';
-        if (f.auto_dose_ml_day) {
-          h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + f.auto_dose_ml_day + ' ml/day &mdash; ' + f.auto_conc_ml + ' ml concentrate + ' + f.auto_ro_ml + ' ml RO' +
-            ' &mdash; <button class="btn bg bs" style="font-size:10px;padding:1px 6px" data-fid="' + f.id + '" onclick="do_edit_fert(this.dataset.fid)">Edit recipe &rarr;</button></div>';
-        }
-        if (res.pct <= 10) {
-          h += '<div style="font-size:12px;color:var(--danger);font-weight:600;margin-top:4px">&#x26A0; Reservoir nearly empty &mdash; refill soon. ' +
-            '<button class="btn bg" style="font-size:11px;padding:2px 8px;margin-left:6px" data-fid="' + f.id + '" onclick="refill_fert_reservoir(this.dataset.fid)">Refill Now</button></div>';
-        } else if (res.pct <= 30) {
-          h += '<div style="font-size:12px;color:var(--warn);margin-top:4px">Getting low &mdash; plan a refill.</div>';
-        }
-      }
-      h += '</div>';
+    tank_res_r.forEach(function(r) {
+      var total = reservoir_total_ml(r);
+      var rem = reservoir_remaining(r);
+      var hh_r = r.timer_min != null ? Math.floor(r.timer_min/60) : null;
+      var mm_r = r.timer_min != null ? r.timer_min%60 : null;
+      var time_txt = hh_r !== null ? (hh_r>12?hh_r-12:(hh_r||12))+':'+(mm_r<10?'0'+mm_r:mm_r)+(hh_r<12?' AM':' PM') : '';
+      var daily_parts = total > 0 ? (r.ingredients||[]).map(function(ing){
+        var frt = d.ferts.find(function(x){return x.id===ing.fert_id;});
+        var cpd = Math.round(ing.concentrate_ml/total*r.daily_dose_ml*100)/100;
+        return (frt?esc(frt.name):'?')+' '+cpd+'ml';
+      }) : [];
+      var pct = rem ? rem.pct : 100;
+      var bar_col = pct <= 10 ? 'var(--danger)' : pct <= 30 ? 'var(--warn)' : 'var(--ok)';
+      h += '<div style="margin-bottom:12px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
+        '<strong style="font-size:14px">' + esc(r.name) + '</strong>' +
+        (rem ? '<span style="font-size:12px;color:' + bar_col + ';font-weight:600">' + rem.remaining_ml + ' ml left' + (rem.days_left!=null?' &middot; '+rem.days_left+' days':'') + '</span>' : '') +
+        '</div>' +
+        (rem ? '<div style="background:#e8edf2;border-radius:4px;height:5px;margin:4px 0"><div style="background:' + bar_col + ';border-radius:4px;height:5px;width:' + Math.min(100,pct) + '%"></div></div>' : '') +
+        '<div style="font-size:12px;color:var(--muted);margin-top:2px">' +
+        r.daily_dose_ml + ' ml/day' + (time_txt ? ' at ' + time_txt : '') + (r.timer_sec ? ' (' + r.timer_sec + 's)' : '') +
+        '</div>' +
+        (daily_parts.length ? '<div style="font-size:12px;color:#555;margin-top:3px">Per dose: ' + daily_parts.join(' &middot; ') + ' concentrate</div>' : '') +
+        '</div>';
     });
     h += '</div>';
   }
@@ -5741,38 +5739,6 @@ async function r_recs() {
          food_section('Supplements', 'var(--mid)', supplement) +
          food_section('Treats (2-3x per week)', 'var(--warn)', treat) +
          '</div>';
-  }
-
-  // Daily Dosing card
-  var tank_res_r = (d.reservoirs||[]).filter(function(r){return r.tank_id===tid && r.daily_dose_ml;});
-  if (tank_res_r.length) {
-    h += '<div class="card"><div class="ctitle">Daily Dosing</div>';
-    tank_res_r.forEach(function(r) {
-      var total = reservoir_total_ml(r);
-      var rem = reservoir_remaining(r);
-      var hh_r = r.timer_min != null ? Math.floor(r.timer_min/60) : null;
-      var mm_r = r.timer_min != null ? r.timer_min%60 : null;
-      var time_txt = hh_r !== null ? (hh_r>12?hh_r-12:(hh_r||12))+':'+(mm_r<10?'0'+mm_r:mm_r)+(hh_r<12?' AM':' PM') : '';
-      var daily_parts = total > 0 ? (r.ingredients||[]).map(function(ing){
-        var frt = d.ferts.find(function(x){return x.id===ing.fert_id;});
-        var cpd = Math.round(ing.concentrate_ml/total*r.daily_dose_ml*100)/100;
-        return (frt?esc(frt.name):'?')+' '+cpd+'ml';
-      }) : [];
-      var pct = rem ? rem.pct : 100;
-      var bar_col = pct <= 10 ? 'var(--danger)' : pct <= 30 ? 'var(--warn)' : 'var(--ok)';
-      h += '<div style="margin-bottom:12px">' +
-        '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
-        '<strong style="font-size:14px">' + esc(r.name) + '</strong>' +
-        (rem ? '<span style="font-size:12px;color:' + bar_col + ';font-weight:600">' + rem.remaining_ml + ' ml left' + (rem.days_left!=null?' &middot; '+rem.days_left+' days':'') + '</span>' : '') +
-        '</div>' +
-        (rem ? '<div style="background:#e8edf2;border-radius:4px;height:5px;margin:4px 0"><div style="background:' + bar_col + ';border-radius:4px;height:5px;width:' + Math.min(100,pct) + '%"></div></div>' : '') +
-        '<div style="font-size:12px;color:var(--muted);margin-top:2px">' +
-        r.daily_dose_ml + ' ml/day' + (time_txt ? ' at ' + time_txt : '') + (r.timer_sec ? ' (' + r.timer_sec + 's)' : '') +
-        '</div>' +
-        (daily_parts.length ? '<div style="font-size:12px;color:#555;margin-top:3px">Per dose: ' + daily_parts.join(' &middot; ') + ' concentrate</div>' : '') +
-        '</div>';
-    });
-    h += '</div>';
   }
 
   el.innerHTML = h;
