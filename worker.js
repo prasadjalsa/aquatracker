@@ -2697,7 +2697,7 @@ function do_add_reservoir() {
     (tank_ferts.length ? '<div class="fg"><label>Contents</label><div style="display:flex;flex-direction:column;gap:4px">' + fert_checks + '</div></div>' : '') +
     '<div style="text-align:right;margin-top:12px"><button type="button" class="btn bg bs" onclick="cm()">Cancel</button> <button type="submit" class="btn bp bs">Save</button></div>' +
     '</form></div>';
-  document.getElementById('ovc').innerHTML = h;
+  document.getElementById('mb').innerHTML = h;
   document.getElementById('ov').classList.add('on');
 }
 function sub_reservoir() {
@@ -2739,7 +2739,7 @@ function do_edit_reservoir(id) {
     ' <span style="color:var(--muted);font-size:12px">(update if recipe or amount changed)</span></div></div>' +
     '<div style="text-align:right;margin-top:12px"><button type="button" class="btn bg bs" onclick="cm()">Cancel</button> <button type="submit" class="btn bp bs">Save</button></div>' +
     '</form></div>';
-  document.getElementById('ovc').innerHTML = h;
+  document.getElementById('mb').innerHTML = h;
   document.getElementById('ov').classList.add('on');
 }
 function sub_edit_reservoir() {
@@ -2784,7 +2784,7 @@ function do_topup_reservoir(id) {
     '<button class="btn bg bs" onclick="cm()">Cancel</button> ' +
     '<button class="btn bp bs" data-id="' + id + '" data-cur="' + cur + '" data-tot="' + r.total_ml + '" onclick="sub_topup_reservoir(this.dataset.id,this.dataset.cur,this.dataset.tot)">Top Up</button></div>' +
     '</div>';
-  document.getElementById('ovc').innerHTML = h;
+  document.getElementById('mb').innerHTML = h;
   document.getElementById('ov').classList.add('on');
 }
 function upd_topup_preview() {
