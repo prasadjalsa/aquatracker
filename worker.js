@@ -5800,6 +5800,9 @@ async function r_recs() {
   }
 
   el.innerHTML = h;
+}
+
+// ===== MODALS =====
 function om(h) { document.getElementById('mb').innerHTML = h; document.getElementById('ov').classList.add('on'); }
 function cm() { document.getElementById('ov').classList.remove('on'); }
 
