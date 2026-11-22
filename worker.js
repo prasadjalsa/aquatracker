@@ -2566,15 +2566,12 @@ function check_reservoir_auto_dose() {
     if (r.last_auto_dosed_date === today) return r;
     if (cur_min < r.timer_min) return r;
     if (!Array.isArray(d.maint_log)) d.maint_log = [];
-    var rem = reservoir_remaining(r);
-    var cur = rem ? rem.remaining_ml : (r.snapshot_ml || 0);
     var dose = r.daily_dose_ml || 0;
-    var new_remaining = Math.max(0, Math.round((cur - dose) * 10) / 10);
     d.maint_log.push({id:gid(), tank_id:tid, task_id:null,
       task_name:'Auto-dosed: ' + r.name, task_type:'Fertilizer', date:today,
       notes:(dose ? dose + ' ml dispensed by pump' : 'Automated pump dose')});
     changed = true;
-    return Object.assign({}, r, {snapshot_ml:new_remaining, snapshot_date:today, last_auto_dosed_date:today});
+    return Object.assign({}, r, {last_auto_dosed_date:today});
   });
   if (changed) sv(d);
 }
@@ -3009,18 +3006,19 @@ function do_add_mlog() {
   var type_opts = ['Water Change','Filter Clean','Gravel Vac','Glass Wipe','Fertilizer','Pruning','Water Test','Equipment Service','Other']
     .map(function(o){ return '<option>' + o + '</option>'; }).join('');
   var d = ld(), tid = at();
-  var auto_ferts = (d.ferts || []).filter(function(f){ return f.tank_id === tid && f.automated; });
+  var tank_res = (d.reservoirs||[]).filter(function(r){ return r.tank_id === tid && r.daily_dose_ml; });
   var fert_wrap = '';
-  if (auto_ferts.length) {
-    var fert_opts = auto_ferts.map(function(f){
-      return '<option value="' + f.id + '" data-dose="' + (f.auto_dose_ml_day || 0) + '" data-fname="' + esc(f.name) + '">' + esc(f.name) + ' (' + (f.auto_dose_ml_day || '?') + ' ml/day)</option>';
-    }).join('');
+  if (tank_res.length) {
+    var res_opts = '<option value="">-- manual / not from reservoir --</option>' +
+      tank_res.map(function(r){
+        return '<option value="' + r.id + '" data-daily="' + (r.daily_dose_ml||0) + '" data-rname="' + esc(r.name) + '">' + esc(r.name) + ' (' + (r.daily_dose_ml||'?') + ' ml/day)</option>';
+      }).join('');
     fert_wrap = '<div id="mlog_fert_wrap" style="display:none;background:#e8f4fb;border-radius:6px;padding:8px 10px;margin-top:4px">' +
-      '<div style="font-size:12px;font-weight:600;margin-bottom:6px">Automated fertilizer</div>' +
-      '<select id="mlog_fert_sel" onchange="mlog_fert_pick(this)" style="width:100%;margin-bottom:8px;box-sizing:border-box"><option value="">-- not from reservoir --</option>' + fert_opts + '</select>' +
-      '<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">' +
-      '<input type="checkbox" id="mlog_deduct" style="width:16px;height:16px"> Deduct dose from reservoir</label>' +
-      '</div>';
+      '<div style="font-size:12px;font-weight:600;margin-bottom:6px">Deduct from reservoir?</div>' +
+      '<select id="mlog_res_sel" onchange="mlog_res_pick(this)" style="width:100%;margin-bottom:4px;box-sizing:border-box">' + res_opts + '</select>' +
+      '<div id="mlog_res_amt_wrap" style="display:none">' +
+      fg('Amount dosed (ml)', '<input type="number" id="mlog_res_amt" name="mlog_dose_ml" step="0.1" min="0.1" placeholder="ml" style="width:100px">') +
+      '</div></div>';
   }
   om('<div class="mtitle">Log Activity</div>' +
     '<form onsubmit="sub_add_mlog(event)">' +
@@ -3039,22 +3037,25 @@ function tog_mlog_fert(val) {
   var wrap = document.getElementById('mlog_fert_wrap');
   if (wrap) wrap.style.display = val === 'Fertilizer' ? '' : 'none';
   if (val !== 'Fertilizer') {
-    var sel = document.getElementById('mlog_fert_sel');
+    var sel = document.getElementById('mlog_res_sel');
     if (sel) sel.value = '';
+    var amt_wrap = document.getElementById('mlog_res_amt_wrap');
+    if (amt_wrap) amt_wrap.style.display = 'none';
   }
 }
-function mlog_fert_pick(sel) {
+function mlog_res_pick(sel) {
   var name_el = document.getElementById('mlog_act_name');
-  var deduct_el = document.getElementById('mlog_deduct');
+  var amt_wrap = document.getElementById('mlog_res_amt_wrap');
+  var amt_inp = document.getElementById('mlog_res_amt');
   var opt = sel.options[sel.selectedIndex];
-  if (sel.value && name_el) {
-    var fname = opt.dataset.fname || opt.text;
-    var dose = opt.dataset.dose || '';
-    name_el.value = fname + (dose ? ' - ' + dose + ' ml' : '');
-    if (deduct_el) deduct_el.checked = true;
+  if (sel.value) {
+    if (amt_wrap) amt_wrap.style.display = '';
+    if (amt_inp && opt.dataset.daily) amt_inp.value = opt.dataset.daily;
+    if (name_el) name_el.value = 'Dosed: ' + (opt.dataset.rname || opt.text);
   } else {
-    if (name_el && name_el.value.indexOf(' ml') !== -1) name_el.value = '';
-    if (deduct_el) deduct_el.checked = false;
+    if (amt_wrap) amt_wrap.style.display = 'none';
+    if (amt_inp) amt_inp.value = '';
+    if (name_el && name_el.value.indexOf('Dosed: ') === 0) name_el.value = '';
   }
 }
 function sub_add_mlog(e) {
@@ -3062,16 +3063,22 @@ function sub_add_mlog(e) {
   var d = ld();
   if (!Array.isArray(d.maint_log)) d.maint_log = [];
   d.maint_log.push({id:gid(), tank_id:at(), task_id:null, task_name:f.name.value, task_type:f.type.value, date:f.date.value, notes:f.notes.value.trim()});
-  var fert_sel = document.getElementById('mlog_fert_sel');
-  var deduct_cb = document.getElementById('mlog_deduct');
-  if (fert_sel && fert_sel.value && deduct_cb && deduct_cb.checked) {
-    var fid_m = fert_sel.value;
-    d.ferts = (d.ferts || []).map(function(x){
-      if (x.id !== fid_m) return x;
-      return Object.assign({}, x, {auto_extra_ml: Math.round(((x.auto_extra_ml || 0) + (x.auto_dose_ml_day || 0)) * 10) / 10});
-    });
-    var updated_fert_m = d.ferts.find(function(x){ return x.id === fid_m; });
-    if (updated_fert_m) sync_refill_task_due(d, updated_fert_m);
+  var res_sel = document.getElementById('mlog_res_sel');
+  var dose_inp = document.getElementById('mlog_res_amt');
+  if (res_sel && res_sel.value && dose_inp) {
+    var rid = res_sel.value;
+    var dose_ml = parseFloat(dose_inp.value) || 0;
+    if (dose_ml > 0) {
+      var res = (d.reservoirs||[]).find(function(x){return x.id===rid;});
+      if (res) {
+        var rem = reservoir_remaining(res);
+        var cur_ml = rem ? rem.remaining_ml : (res.snapshot_ml || 0);
+        var new_snap = Math.max(0, Math.round((cur_ml - dose_ml) * 10) / 10);
+        d.reservoirs = d.reservoirs.map(function(x){
+          return x.id===rid ? Object.assign({},x,{snapshot_ml:new_snap, snapshot_date:today_str()}) : x;
+        });
+      }
+    }
   }
   sv(d); cm(); r_maint();
 }
@@ -4387,44 +4394,13 @@ function r_life() {
     h += '<div style="border-top:1px solid #dde;margin-top:12px;padding-top:10px">' +
          '<div style="font-weight:600;font-size:13px;margin-bottom:8px;color:var(--mid)">Dosing Reservoirs</div>';
     res_list.forEach(function(r) {
-      var rem = reservoir_remaining(r);
-      var total = reservoir_total_ml(r);
-      var pct = rem ? rem.pct : 100;
-      var bar_col = pct <= 10 ? 'var(--danger)' : pct <= 30 ? 'var(--warn)' : 'var(--ok)';
-      var days_txt = rem && rem.days_left != null ? rem.days_left + ' days left' : '';
-      var recipe_parts = (r.ingredients||[]).map(function(ing){
-        var frt = d.ferts.find(function(x){return x.id===ing.fert_id;});
-        return (frt ? esc(frt.name) : 'Unknown') + ' ' + ing.concentrate_ml + 'ml';
-      });
-      if (r.water_ml) recipe_parts.push(r.water_ml + 'ml water');
-      var recipe_txt = recipe_parts.join(' + ') + (total ? ' = ' + total + 'ml total' : '');
-      var daily_parts = total > 0 && r.daily_dose_ml ? (r.ingredients||[]).map(function(ing){
-        var frt = d.ferts.find(function(x){return x.id===ing.fert_id;});
-        var cpd = Math.round(ing.concentrate_ml / total * r.daily_dose_ml * 100) / 100;
-        return (frt ? esc(frt.name) : '?') + ' ' + cpd + 'ml';
-      }) : [];
-      var timer_txt = r.timer_sec ? r.timer_sec + 's' : '';
-      if (r.timer_min != null) {
-        var hh = Math.floor(r.timer_min/60), hmm = r.timer_min%60;
-        var h12 = hh > 12 ? hh-12 : (hh||12);
-        timer_txt += (timer_txt ? ' at ' : '') + h12 + ':' + (hmm<10?'0'+hmm:hmm) + (hh<12?' AM':' PM');
-      }
-      h += '<div style="border:1px solid #dde;border-radius:6px;padding:10px 12px;margin-bottom:8px">' +
-        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
-        '<strong>' + esc(r.name) + '</strong>' +
-        (rem ? '<span style="color:' + bar_col + ';font-weight:600;font-size:13px">' + rem.remaining_ml + 'ml (' + pct + '%)</span>' : '') +
-        (days_txt ? '<span style="color:var(--muted);font-size:12px">' + days_txt + '</span>' : '') +
-        '<div style="flex:1"></div>' +
+      h += '<div style="border:1px solid #dde;border-radius:6px;padding:8px 12px;margin-bottom:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">' +
+        '<strong style="flex:1">' + esc(r.name) + '</strong>' +
         '<button class="btn bp bs" style="font-size:12px" data-id="' + r.id + '" onclick="do_refill_reservoir(this.dataset.id)">Refill</button>' +
         '<button class="btn bg bs" style="font-size:12px" data-id="' + r.id + '" onclick="do_topup_reservoir(this.dataset.id)">Top up</button>' +
         '<button class="btn bg bs" style="font-size:12px" data-id="' + r.id + '" onclick="do_log_res_dose(this.dataset.id)">Log Dose</button>' +
         '<button class="btn bg bs" style="font-size:12px" data-id="' + r.id + '" onclick="do_edit_reservoir(this.dataset.id)">Edit</button>' +
-        '<button class="btn bd bs" style="font-size:12px" data-id="' + r.id + '" onclick="del_reservoir(this.dataset.id)">&#x2715;</button></div>' +
-        '<div style="background:#e8edf2;border-radius:4px;height:6px;margin-top:8px">' +
-        '<div style="background:' + bar_col + ';border-radius:4px;height:6px;width:' + Math.min(100,pct) + '%"></div></div>' +
-        (recipe_parts.length ? '<div style="font-size:11px;color:var(--muted);margin-top:6px">Recipe: ' + recipe_txt + '</div>' : '') +
-        (daily_parts.length ? '<div style="font-size:11px;color:var(--muted);margin-top:2px">Daily: ' + r.daily_dose_ml + 'ml/day &rarr; ' + daily_parts.join(' &middot; ') + ' concentrate</div>' : '') +
-        (timer_txt ? '<div style="font-size:11px;color:var(--muted);margin-top:2px">Timer: ' + timer_txt + '</div>' : '') +
+        '<button class="btn bd bs" style="font-size:12px" data-id="' + r.id + '" onclick="del_reservoir(this.dataset.id)">&#x2715;</button>' +
         '</div>';
     });
     h += '</div>';
