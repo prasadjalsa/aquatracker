@@ -2945,19 +2945,24 @@ function do_topup_reservoir(id) {
   var total = reservoir_total_ml(r);
   var ferts_map = {};
   (d.ferts||[]).forEach(function(f){ ferts_map[f.id] = f.name; });
-  // Build recipe ratio rows — show proportions as percentages
+  // Compute GCD of all amounts to show simplified ratio
+  var all_amounts = (r.ingredients||[]).map(function(ing){ return ing.concentrate_ml; });
+  if (r.water_ml) all_amounts.push(r.water_ml);
+  function gcd(a, b) { a = Math.round(a * 10); b = Math.round(b * 10); while (b) { var t = b; b = a % b; a = t; } return a / 10; }
+  var g = all_amounts.reduce(gcd) || 1;
+  // Build recipe ratio rows
   var recipe_rows = (r.ingredients||[]).map(function(ing){
     var nm = ferts_map[ing.fert_id] || '?';
-    var pct = total > 0 ? Math.round(ing.concentrate_ml / total * 100) : 0;
+    var parts = Math.round(ing.concentrate_ml / g * 10) / 10;
     return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0">' +
            '<span>' + esc(nm) + '</span>' +
-           '<span style="font-weight:600">' + ing.concentrate_ml + ' ml <span style="font-weight:400;color:var(--muted)">(' + pct + '%)</span></span></div>';
+           '<span style="font-weight:600">' + parts + ' part' + (parts === 1 ? '' : 's') + '</span></div>';
   }).join('');
   if (r.water_ml) {
-    var water_pct = total > 0 ? Math.round(r.water_ml / total * 100) : 0;
+    var water_parts = Math.round(r.water_ml / g * 10) / 10;
     recipe_rows += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0;color:var(--muted)">' +
                    '<span>Water (dilution)</span>' +
-                   '<span style="font-weight:600">' + r.water_ml + ' ml <span style="font-weight:400">(' + water_pct + '%)</span></span></div>';
+                   '<span style="font-weight:600">' + water_parts + ' part' + (water_parts === 1 ? '' : 's') + '</span></div>';
   }
   var h = '<div class="card"><div class="ctitle">Top Up — ' + esc(r.name) + '</div>' +
     '<p style="font-size:13px;color:var(--muted);margin-bottom:10px">Currently <strong>' + cur + ' ml</strong> remaining.</p>' +
