@@ -2759,11 +2759,14 @@ function check_reservoir_auto_dose() {
     if (cur_min < r.timer_min) return r;
     if (!Array.isArray(d.maint_log)) d.maint_log = [];
     var dose = r.daily_dose_ml || 0;
+    var days_since = day_diff(today, r.snapshot_date || today);
+    var cur_rem = Math.max(0, Math.round(((r.snapshot_ml || 0) - days_since * dose) * 10) / 10);
+    var new_snapshot = Math.max(0, Math.round((cur_rem - dose) * 10) / 10);
     d.maint_log.push({id:gid(), tank_id:tid, task_id:null,
       task_name:'Auto-dosed: ' + r.name, task_type:'Fertilizer', date:today,
       notes:(dose ? dose + ' ml dispensed by pump' : 'Automated pump dose')});
     changed = true;
-    return Object.assign({}, r, {last_auto_dosed_date:today});
+    return Object.assign({}, r, {last_auto_dosed_date:today, snapshot_ml: new_snapshot, snapshot_date: today});
   });
   if (changed) sv(d);
 }
@@ -2979,13 +2982,13 @@ function upd_topup_preview() {
   var v = parseFloat(inp.value) || 0;
   var tot = parseFloat(inp.dataset.tot) || 0;
   var cur = parseFloat(inp.dataset.cur) || 0;
-  var after = Math.min(tot, cur + v);
+  var after = Math.round((cur + v) * 10) / 10;
   lbl.textContent = after + ' ml after top up';
 }
 function sub_topup_reservoir(id, cur_ml, total_ml) {
   var added = parseFloat(document.getElementById('topup_ml').value) || 0;
   if (!added) return;
-  var after = Math.min(parseFloat(total_ml), parseFloat(cur_ml) + added);
+  var after = Math.round((parseFloat(cur_ml) + added) * 10) / 10;
   var d = ld();
   d.reservoirs = d.reservoirs.map(function(r){
     return r.id === id ? Object.assign({}, r, {snapshot_ml: Math.round(after * 10) / 10, snapshot_date: today_str()}) : r;
