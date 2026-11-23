@@ -7443,6 +7443,34 @@ function r_tools() {
   var is_cycling = !tank.cycled && cyc.phase < 4;
   var h = '';
 
+  function tk_tips_html(extra) {
+    var tips = [
+      'Wash the test tube with sample water before performing any test.',
+      'Shake the liquid reagent bottle properly before use.',
+      'Hold the dropper bottle completely vertical (upside down) when adding drops &mdash; this ensures consistent drop size.',
+      'Test the sample as soon as possible after collecting from the source.',
+      'Store the kit at room temperature in a cool, dark place when not in use.'
+    ];
+    if (extra) tips.push(extra);
+    var out = '<div style="background:#f0f8ff;border-radius:8px;padding:12px 14px;margin-bottom:14px">';
+    out += '<div style="font-size:13px;font-weight:600;margin-bottom:8px">Before you start</div>';
+    tips.forEach(function(t, i) {
+      out += '<div style="display:flex;gap:8px;font-size:13px;margin-bottom:5px">' +
+             '<span style="font-weight:700;color:var(--surf);flex-shrink:0">' + (i+1) + '.</span>' +
+             '<span>' + t + '</span></div>';
+    });
+    return out + '</div>';
+  }
+  function tk_steps_html(steps, accent) {
+    var out = '';
+    steps.forEach(function(s, i) {
+      out += '<div style="display:flex;gap:10px;margin-bottom:10px;font-size:13px">' +
+             '<div style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:' + accent + ';color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center">' + (i+1) + '</div>' +
+             '<div style="padding-top:4px">' + s + '</div></div>';
+    });
+    return out;
+  }
+
   // === Marine Test Kit Card (shown instead of BIONIX for saltwater) ===
   if (salt) {
     h += '<div class="card">';
@@ -7472,6 +7500,170 @@ function r_tools() {
            '</div>';
     });
     h += '</div>';
+
+  // === Salt Test Kit Instructions (brand/test selector) ===
+  var tk_brands_salt = [
+    {id:'salifert',      label:'Salifert',         tests:[{id:'ammonia',label:'Ammonia'},{id:'nitrite',label:'Nitrite'},{id:'nitrate',label:'Nitrate'},{id:'ph',label:'pH'},{id:'kh',label:'Alkalinity (KH)'},{id:'calcium',label:'Calcium'},{id:'magnesium',label:'Magnesium'},{id:'phosphate',label:'Phosphate'}]},
+    {id:'redsea',        label:'Red Sea',           tests:[{id:'kh',label:'Alkalinity (KH)'},{id:'calcium',label:'Calcium'},{id:'magnesium',label:'Magnesium'},{id:'nitrate',label:'Nitrate'}]},
+    {id:'api_salt',      label:'API Saltwater',     tests:[{id:'ammonia',label:'Ammonia'},{id:'nitrite',label:'Nitrite'},{id:'nitrate',label:'Nitrate'},{id:'ph',label:'pH'}]},
+    {id:'hanna',         label:'Hanna Instruments', tests:[{id:'phosphate_ulr',label:'Phosphate ULR (HI-736)'}]},
+    {id:'refractometer', label:'Refractometer',     tests:[{id:'salinity',label:'Salinity'}]},
+  ];
+  h += '<div class="card">';
+  h += '<div class="ctitle">Test Kit Instructions</div>';
+  h += '<p style="font-size:13px;color:var(--muted);margin-bottom:12px">Select your test kit brand and the test you are performing to see step-by-step instructions and reference ranges.</p>';
+  h += '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:12px">';
+  h += '<div class="fg" style="margin:0;min-width:180px">';
+  h += '<label style="font-size:12px;color:var(--muted);font-weight:600;display:block;margin-bottom:4px">Brand</label>';
+  h += '<select style="width:100%" onchange="set_tk_brand(this.value)">';
+  h += '<option value="">-- Select brand --</option>';
+  tk_brands_salt.forEach(function(b) {
+    h += '<option value="' + b.id + '"' + (tk_brand === b.id ? ' selected' : '') + '>' + b.label + '</option>';
+  });
+  h += '</select></div>';
+  var sel_brand_salt = tk_brands_salt.find(function(b){ return b.id === tk_brand; });
+  if (sel_brand_salt) {
+    h += '<div class="fg" style="margin:0;min-width:280px">';
+    h += '<label style="font-size:12px;color:var(--muted);font-weight:600;display:block;margin-bottom:4px">Test</label>';
+    h += '<select style="width:100%" onchange="set_tk_test(this.value)">';
+    h += '<option value="">-- Select test --</option>';
+    sel_brand_salt.tests.forEach(function(t) {
+      h += '<option value="' + t.id + '"' + (tk_test === t.id ? ' selected' : '') + '>' + t.label + '</option>';
+    });
+    h += '</select></div>';
+  }
+  h += '</div>';
+
+  if (tk_brand === 'salifert' && tk_test === 'ammonia') {
+    h += tk_tips_html('');
+    h += '<div style="background:#f4fff7;border-radius:8px;padding:14px;border-left:4px solid #2d8a4e;margin-bottom:14px">';
+    h += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#2d8a4e">Salifert Ammonia Procedure</div>';
+    h += tk_steps_html(['Fill the test vial with <strong>1 ml</strong> of tank water.','Add <strong>4 drops of NH4-1 Reagent</strong>. Cap and mix for 30 seconds.','Add <strong>4 drops of NH4-2 Reagent</strong>. Cap and shake for <strong>10 seconds</strong>.','Wait <strong>3 minutes</strong> for colour to fully develop.','Compare to the colour card. Result is in ppm (NH3/NH4+).'], '#2d8a4e');
+    h += '</div><div style="background:#fff3cd;border-radius:6px;padding:10px 12px;font-size:12px;color:#856404">Target: <strong>0 ppm</strong>. Any reading above 0 in an established tank means something is wrong.</div>';
+  }
+  if (tk_brand === 'salifert' && tk_test === 'nitrite') {
+    h += tk_tips_html('');
+    h += '<div style="background:#f4fff7;border-radius:8px;padding:14px;border-left:4px solid #2d8a4e;margin-bottom:14px">';
+    h += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#2d8a4e">Salifert Nitrite Procedure</div>';
+    h += tk_steps_html(['Fill the test vial with <strong>1 ml</strong> of tank water.','Add <strong>4 drops of NO2 Reagent</strong>. Cap and shake well.','Wait <strong>1 minute</strong> for colour to develop.','Compare to the colour card. Result is in ppm.'], '#2d8a4e');
+    h += '</div><div style="background:#fff3cd;border-radius:6px;padding:10px 12px;font-size:12px;color:#856404">Target: <strong>0 ppm</strong>.</div>';
+  }
+  if (tk_brand === 'salifert' && tk_test === 'nitrate') {
+    h += tk_tips_html('');
+    h += '<div style="background:#f4fff7;border-radius:8px;padding:14px;border-left:4px solid #2d8a4e;margin-bottom:14px">';
+    h += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#2d8a4e">Salifert Nitrate Procedure</div>';
+    h += tk_steps_html(['Fill the test vial with <strong>1 ml</strong> of tank water.','Add <strong>4 drops of NO3-1 Reagent</strong>. Cap and shake <strong>20 times</strong>.','Add <strong>2 drops of NO3-2 Reagent</strong>. Cap and shake <strong>20 times</strong>.','Wait <strong>3 minutes</strong> for colour to develop.','Compare to the colour card. Result is in ppm.'], '#2d8a4e');
+    h += '</div><div style="background:#fff3cd;border-radius:6px;padding:10px 12px;font-size:12px;color:#856404">' + (reef ? 'Reef target: <strong>0&ndash;5 ppm</strong>.' : 'FOWLR target: <strong>below 20 ppm</strong>.') + '</div>';
+  }
+  if (tk_brand === 'salifert' && tk_test === 'ph') {
+    h += tk_tips_html('Test at the same time each day — pH fluctuates with the light cycle.');
+    h += '<div style="background:#f4fff7;border-radius:8px;padding:14px;border-left:4px solid #2d8a4e;margin-bottom:14px">';
+    h += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#2d8a4e">Salifert pH Procedure</div>';
+    h += tk_steps_html(['Fill the test vial with <strong>2 ml</strong> of tank water.','Add <strong>4 drops of pH Reagent</strong>. Cap and shake for 5 seconds.','Compare to the colour card in natural light. Result is pH value.'], '#2d8a4e');
+    h += '</div><div style="background:#fff3cd;border-radius:6px;padding:10px 12px;font-size:12px;color:#856404">Target: <strong>8.1&ndash;8.4</strong>.</div>';
+  }
+  if (tk_brand === 'salifert' && tk_test === 'kh') {
+    h += tk_tips_html('');
+    h += '<div style="background:#f4fff7;border-radius:8px;padding:14px;border-left:4px solid #2d8a4e;margin-bottom:14px">';
+    h += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#2d8a4e">Salifert Alkalinity (KH) Procedure</div>';
+    h += tk_steps_html(['Fill the test vial with <strong>1 ml</strong> of tank water.','Add Alk Reagent <strong>one drop at a time</strong>, shaking and counting each drop.','Stop adding when the colour changes from <strong>blue to pink or red</strong>.','Count the total drops used.','Calculate: drops &times; 0.1 = meq/L &nbsp;|&nbsp; drops &times; 0.28 = dKH.'], '#2d8a4e');
+    h += '</div><div style="background:#fff3cd;border-radius:6px;padding:10px 12px;font-size:12px;color:#856404">Target: <strong>8&ndash;11 dKH</strong>. The most critical reef parameter — keep it stable above all else.</div>';
+  }
+  if (tk_brand === 'salifert' && tk_test === 'calcium') {
+    h += tk_tips_html('');
+    h += '<div style="background:#f4fff7;border-radius:8px;padding:14px;border-left:4px solid #2d8a4e;margin-bottom:14px">';
+    h += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#2d8a4e">Salifert Calcium Procedure</div>';
+    h += tk_steps_html(['Fill the test vial with <strong>1 ml</strong> of tank water.','Add <strong>1 drop of CA-1 Reagent</strong>. The solution turns blue or purple.','Add <strong>CA-2 Reagent one drop at a time</strong>, shaking after each drop.','Stop when the colour changes from <strong>blue/purple to pink</strong>.','Count drops. Each drop equals approximately <strong>25 ppm</strong> (check kit instructions for exact factor).'], '#2d8a4e');
+    h += '</div><div style="background:#fff3cd;border-radius:6px;padding:10px 12px;font-size:12px;color:#856404">Target: <strong>380&ndash;450 ppm</strong>.</div>';
+  }
+  if (tk_brand === 'salifert' && tk_test === 'magnesium') {
+    h += tk_tips_html('');
+    h += '<div style="background:#f4fff7;border-radius:8px;padding:14px;border-left:4px solid #2d8a4e;margin-bottom:14px">';
+    h += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#2d8a4e">Salifert Magnesium Procedure</div>';
+    h += tk_steps_html(['Fill the test vial with <strong>1 ml</strong> of tank water.','Add <strong>MG-1 Reagent</strong> as instructed. The solution turns orange or red.','Add <strong>MG-2 Reagent one drop at a time</strong>, shaking after each drop.','Stop when the colour changes from <strong>orange/red to blue</strong>.','Count drops and multiply by the factor in the kit instructions (typically 15 or 30 ppm per drop).'], '#2d8a4e');
+    h += '</div><div style="background:#fff3cd;border-radius:6px;padding:10px 12px;font-size:12px;color:#856404">Target: <strong>1250&ndash;1350 ppm</strong>. Low Mg prevents Ca and KH from staying in range even when dosed.</div>';
+  }
+  if (tk_brand === 'salifert' && tk_test === 'phosphate') {
+    h += tk_tips_html('');
+    h += '<div style="background:#f4fff7;border-radius:8px;padding:14px;border-left:4px solid #2d8a4e;margin-bottom:14px">';
+    h += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#2d8a4e">Salifert Phosphate Procedure</div>';
+    h += tk_steps_html(['Mix <strong>2 ml tank water</strong> and <strong>2 ml DI/RO water</strong> in the test vial.','Add <strong>4 drops of PO4-1 Reagent</strong>. Mix well.','Add <strong>1 drop of PO4-2 Reagent</strong>. Mix and wait <strong>3 minutes</strong>.','Compare to the colour card. Result is in ppm.'], '#2d8a4e');
+    h += '</div><div style="background:#fff3cd;border-radius:6px;padding:10px 12px;font-size:12px;color:#856404">' + (reef ? 'Reef target: <strong>below 0.03 ppm</strong>. For reef accuracy use Hanna ULR — standard kits cannot read below 0.1 ppm reliably.' : 'Target: <strong>below 0.5 ppm</strong>.') + '</div>';
+  }
+
+  if (tk_brand === 'redsea' && tk_test === 'kh') {
+    h += tk_tips_html('');
+    h += '<div style="background:#fff8f8;border-radius:8px;padding:14px;border-left:4px solid #c0392b;margin-bottom:14px">';
+    h += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#c0392b">Red Sea Alkalinity (KH) Procedure</div>';
+    h += tk_steps_html(['Fill the syringe with <strong>1 ml</strong> of tank water and add it to the reaction vial.','Add Reagent <strong>one drop at a time</strong>, swirling gently after each drop.','Stop when the colour changes from <strong>blue to yellow or green</strong>.','Count drops used. Calculate: drops &times; 0.36 = dKH.'], '#c0392b');
+    h += '</div><div style="background:#fff3cd;border-radius:6px;padding:10px 12px;font-size:12px;color:#856404">Target: <strong>8&ndash;11 dKH</strong>. Red Sea Pro kit resolves to 0.5 dKH per drop.</div>';
+  }
+  if (tk_brand === 'redsea' && tk_test === 'calcium') {
+    h += tk_tips_html('');
+    h += '<div style="background:#fff8f8;border-radius:8px;padding:14px;border-left:4px solid #c0392b;margin-bottom:14px">';
+    h += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#c0392b">Red Sea Calcium Procedure</div>';
+    h += tk_steps_html(['Fill the syringe with <strong>1 ml</strong> of tank water and add it to the reaction vial.','Add <strong>Reagent 1</strong>. The solution turns purple.','Add <strong>Reagent 2 one drop at a time</strong>, swirling after each drop.','Stop when the colour changes from <strong>purple to blue</strong>.','Count drops. Each drop equals <strong>20 ppm</strong> (Red Sea Pro kit).'], '#c0392b');
+    h += '</div><div style="background:#fff3cd;border-radius:6px;padding:10px 12px;font-size:12px;color:#856404">Target: <strong>380&ndash;450 ppm</strong>.</div>';
+  }
+  if (tk_brand === 'redsea' && tk_test === 'magnesium') {
+    h += tk_tips_html('');
+    h += '<div style="background:#fff8f8;border-radius:8px;padding:14px;border-left:4px solid #c0392b;margin-bottom:14px">';
+    h += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#c0392b">Red Sea Magnesium Procedure</div>';
+    h += tk_steps_html(['Mix <strong>1 ml tank water</strong> and <strong>10 ml DI/RO water</strong> in the reaction vial.','Add <strong>Reagent 1</strong>. The solution turns orange.','Add <strong>Reagent 2 one drop at a time</strong>, swirling after each drop.','Stop when the colour changes from <strong>orange to blue</strong>.','Count drops and multiply by <strong>15</strong> to get ppm.'], '#c0392b');
+    h += '</div><div style="background:#fff3cd;border-radius:6px;padding:10px 12px;font-size:12px;color:#856404">Target: <strong>1250&ndash;1350 ppm</strong>.</div>';
+  }
+  if (tk_brand === 'redsea' && tk_test === 'nitrate') {
+    h += tk_tips_html('Shake Reagent B vigorously for at least 30 seconds before adding drops.');
+    h += '<div style="background:#fff8f8;border-radius:8px;padding:14px;border-left:4px solid #c0392b;margin-bottom:14px">';
+    h += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#c0392b">Red Sea Nitrate Procedure</div>';
+    h += tk_steps_html(['Fill the test vial with <strong>5 ml</strong> of tank water.','Add <strong>Reagent A</strong> as indicated. Cap and mix.','Shake <strong>Reagent B for 30 seconds</strong>, then add as indicated. Cap and shake well.','Wait the full development time per kit instructions.','Compare to the colour card. Result is in ppm.'], '#c0392b');
+    h += '</div><div style="background:#fff3cd;border-radius:6px;padding:10px 12px;font-size:12px;color:#856404">' + (reef ? 'Reef target: <strong>0&ndash;5 ppm</strong>.' : 'FOWLR target: <strong>below 20 ppm</strong>.') + '</div>';
+  }
+
+  if (tk_brand === 'api_salt' && tk_test === 'ammonia') {
+    h += tk_tips_html('Shake Bottle 2 vigorously for at least 30 seconds before use.');
+    h += '<div style="background:#f0f4ff;border-radius:8px;padding:14px;border-left:4px solid #1a73e8;margin-bottom:14px">';
+    h += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#1a73e8">API Saltwater Ammonia Procedure</div>';
+    h += tk_steps_html(['Fill the test tube with <strong>5 ml</strong> of tank water.','Add <strong>8 drops from Bottle 1</strong>. Cap and mix.','Add <strong>8 drops from Bottle 2</strong>. Cap and mix for 5 seconds.','Wait <strong>5 minutes</strong> for colour to develop.','Compare colour to the card in direct natural light. Result is in ppm.'], '#1a73e8');
+    h += '</div><div style="background:#fff3cd;border-radius:6px;padding:10px 12px;font-size:12px;color:#856404">Target: <strong>0 ppm</strong>.</div>';
+  }
+  if (tk_brand === 'api_salt' && tk_test === 'nitrite') {
+    h += tk_tips_html('');
+    h += '<div style="background:#f0f4ff;border-radius:8px;padding:14px;border-left:4px solid #1a73e8;margin-bottom:14px">';
+    h += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#1a73e8">API Saltwater Nitrite Procedure</div>';
+    h += tk_steps_html(['Fill the test tube with <strong>5 ml</strong> of tank water.','Add <strong>5 drops of Reagent</strong>. Cap and shake for 5 seconds.','Wait <strong>5 minutes</strong> for colour to develop.','Compare colour to the card. Result is in ppm.'], '#1a73e8');
+    h += '</div><div style="background:#fff3cd;border-radius:6px;padding:10px 12px;font-size:12px;color:#856404">Target: <strong>0 ppm</strong>.</div>';
+  }
+  if (tk_brand === 'api_salt' && tk_test === 'nitrate') {
+    h += tk_tips_html('Shake Bottle 2 vigorously for at least 30 seconds — skipping this gives falsely low readings.');
+    h += '<div style="background:#f0f4ff;border-radius:8px;padding:14px;border-left:4px solid #1a73e8;margin-bottom:14px">';
+    h += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#1a73e8">API Saltwater Nitrate Procedure</div>';
+    h += tk_steps_html(['Fill the test tube with <strong>5 ml</strong> of tank water.','Add <strong>10 drops from Bottle 1</strong>. Cap and mix for 5 seconds.','<strong>Shake Bottle 2 vigorously for 30 seconds</strong>, then add <strong>10 drops</strong>. Cap and shake for 15 seconds.','Wait <strong>5 minutes</strong> for colour to develop.','Compare colour to the card. Result is in ppm.'], '#1a73e8');
+    h += '</div><div style="background:#fff3cd;border-radius:6px;padding:10px 12px;font-size:12px;color:#856404">' + (reef ? 'Reef target: <strong>0&ndash;5 ppm</strong>.' : 'FOWLR target: <strong>below 20 ppm</strong>.') + '</div>';
+  }
+  if (tk_brand === 'api_salt' && tk_test === 'ph') {
+    h += tk_tips_html('Test at the same time each day — pH fluctuates with the light cycle.');
+    h += '<div style="background:#f0f4ff;border-radius:8px;padding:14px;border-left:4px solid #1a73e8;margin-bottom:14px">';
+    h += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#1a73e8">API Saltwater pH Procedure</div>';
+    h += tk_steps_html(['Fill the test tube with <strong>5 ml</strong> of tank water.','Add <strong>3 drops of pH Reagent</strong>. Cap and mix.','Compare colour to the card in natural light. Result is pH value.'], '#1a73e8');
+    h += '</div><div style="background:#fff3cd;border-radius:6px;padding:10px 12px;font-size:12px;color:#856404">Target: <strong>8.1&ndash;8.4</strong>.</div>';
+  }
+
+  if (tk_brand === 'hanna' && tk_test === 'phosphate_ulr') {
+    h += '<div style="background:#fff8f0;border-radius:8px;padding:14px;border-left:4px solid #e67e22;margin-bottom:14px">';
+    h += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#e67e22">Hanna ULR Phosphate (HI-736) Procedure</div>';
+    h += tk_steps_html(['Turn on the meter. Fill the cuvette with <strong>10 ml of DI/RO water</strong> for the blank. Insert and press <strong>ZERO</strong> until the display shows "0.000 ppb".','Remove the cuvette. Discard the blank water. <strong>Do not wipe or dry the inside.</strong>','Add <strong>10 ml of tank water</strong> to the cuvette. Add <strong>one HI-736A reagent sachet</strong>. Swirl gently for <strong>2 minutes</strong>.','Wait <strong>10 minutes</strong> reaction time (do not skip — reaction is time-sensitive).','Insert cuvette, press <strong>READ</strong>. Result is in ppb (micrograms per litre).','Convert: divide by 1000 to get ppm. e.g. 20 ppb = 0.020 ppm.'], '#e67e22');
+    h += '</div><div style="background:#fff3cd;border-radius:6px;padding:10px 12px;font-size:12px;color:#856404">Reef target: <strong>below 30 ppb (0.03 ppm)</strong>. Standard colorimetric kits cannot read accurately below 0.1 ppm.</div>';
+  }
+
+  if (tk_brand === 'refractometer' && tk_test === 'salinity') {
+    h += '<div style="background:#f8f0ff;border-radius:8px;padding:14px;border-left:4px solid #8e44ad;margin-bottom:14px">';
+    h += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#8e44ad">Refractometer Salinity Procedure</div>';
+    h += tk_steps_html(['<strong>Calibrate first:</strong> add 1&ndash;2 drops of <strong>RO/DI water</strong> to the prism, close the daylight plate, and look through the eyepiece. Adjust the calibration screw until the boundary reads <strong>0 ppt / 1.000 SG</strong>. Wipe the prism clean.','Add <strong>1&ndash;2 drops of tank water</strong> to the prism. Close the daylight plate and wait 30 seconds.','Look through the eyepiece and read the value at the boundary between blue and white. Left scale = <strong>ppt</strong>. Right scale = <strong>SG</strong>.'], '#8e44ad');
+    h += '</div><div style="background:#fff3cd;border-radius:6px;padding:10px 12px;font-size:12px;color:#856404">Target: <strong>33&ndash;36 ppt / 1.025&ndash;1.026 SG</strong>. Calibrate monthly with RO/DI water only. Temperature affects SG readings — calibrate at room temperature.</div>';
+  }
+
+  h += '</div>';
   }
 
   // === Test Kit Instructions (freshwater — BIONIX) ===
@@ -7512,35 +7704,6 @@ function r_tools() {
     h += '</select></div>';
   }
   h += '</div>';
-
-  // Shared "before you start" tips helper
-  function tk_tips_html(extra) {
-    var tips = [
-      'Wash the test tube with sample water before performing any test.',
-      'Shake the liquid reagent bottle properly before use.',
-      'Hold the dropper bottle completely vertical (upside down) when adding drops &mdash; this ensures consistent drop size.',
-      'Test the sample as soon as possible after collecting from the source.',
-      'Store the kit at room temperature in a cool, dark place when not in use.'
-    ];
-    if (extra) tips.push(extra);
-    var out = '<div style="background:#f0f8ff;border-radius:8px;padding:12px 14px;margin-bottom:14px">';
-    out += '<div style="font-size:13px;font-weight:600;margin-bottom:8px">Before you start</div>';
-    tips.forEach(function(t, i) {
-      out += '<div style="display:flex;gap:8px;font-size:13px;margin-bottom:5px">' +
-             '<span style="font-weight:700;color:var(--surf);flex-shrink:0">' + (i+1) + '.</span>' +
-             '<span>' + t + '</span></div>';
-    });
-    return out + '</div>';
-  }
-  function tk_steps_html(steps, accent) {
-    var out = '';
-    steps.forEach(function(s, i) {
-      out += '<div style="display:flex;gap:10px;margin-bottom:10px;font-size:13px">' +
-             '<div style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:' + accent + ';color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center">' + (i+1) + '</div>' +
-             '<div style="padding-top:4px">' + s + '</div></div>';
-    });
-    return out;
-  }
 
   // BIONIX — pH
   if (tk_brand === 'bionix' && tk_test === 'ph') {
