@@ -2828,6 +2828,14 @@ function upd_res_total() {
   var daily = parseFloat(daily_inp && daily_inp.value) || 0;
   var days = daily > 0 ? Math.floor(total / daily) : '—';
   lbl.textContent = total > 0 ? '= ' + Math.round(total*10)/10 + ' ml total' + (daily > 0 ? ' — lasts ' + days + ' days' : '') : '';
+  // show after-topup preview if inside topup form
+  var topup_frm = document.getElementById('res_topup_frm');
+  var after_lbl = document.getElementById('topup_after');
+  if (topup_frm && after_lbl) {
+    var cur = parseFloat(topup_frm.dataset.cur) || 0;
+    var after = Math.round((cur + total) * 10) / 10;
+    after_lbl.textContent = total > 0 ? ('Adding ' + Math.round(total*10)/10 + ' ml — new total: ' + after + ' ml') : '';
+  }
 }
 function do_add_reservoir() {
   var d = ld(), tid = at();
@@ -2958,40 +2966,68 @@ function sub_refill_reservoir(id) {
 }
 function do_topup_reservoir(id) {
   var d = ld(), r = d.reservoirs.find(function(x){return x.id===id;}); if (!r) return;
+  var tid = r.tank_id;
+  var tank_ferts = d.ferts.filter(function(f){return f.tank_id===tid;});
+  _res_fert_opts = '<option value="">Select fertilizer</option>' +
+    tank_ferts.map(function(f){ return '<option value="' + f.id + '">' + esc(f.name) + (f.automated ? '' : ' (manual)') + '</option>'; }).join('');
   var rem = reservoir_remaining(r);
-  var cur = rem ? rem.remaining_ml : 0;
-  var tot = reservoir_total_ml(r);
-  var h = '<div class="card"><div class="ctitle">Top Up Reservoir</div>' +
-    '<p style="font-size:13px;color:var(--muted)">Current remaining: <strong>' + cur + ' ml</strong> of ' + tot + ' ml</p>' +
-    '<p style="font-size:11px;color:var(--muted);margin-top:-4px">Per-ingredient breakdown uses the original recipe ratio — adding a different mix may change actual concentrations.</p>' +
-    '<div class="fg"><label>How much are you adding?</label>' +
+  var cur = rem ? rem.remaining_ml : (r.snapshot_ml || 0);
+  var total = reservoir_total_ml(r);
+  var days_lasts = r.daily_dose_ml > 0 ? Math.floor(total / r.daily_dose_ml) : '—';
+  var h = '<div class="card"><div class="ctitle">Top Up — ' + esc(r.name) + '</div>' +
+    '<p style="font-size:13px;color:var(--muted);margin-bottom:4px">Currently <strong>' + cur + ' ml</strong> remaining. Enter the amounts you are physically adding below.</p>' +
+    '<p style="font-size:11px;color:var(--muted);margin-top:0;margin-bottom:10px">The recipe is pre-filled from the last batch — edit if your top-up mix differs.</p>' +
+    '<form id="res_topup_frm" onsubmit="event.preventDefault();sub_topup_reservoir()" data-id="' + id + '" data-cur="' + cur + '">' +
+    '<div class="fg"><label>Ingredients being added</label>' +
+    '<div id="res_ingredients" style="margin-bottom:6px"></div>' +
+    '<button type="button" class="btn bg bs" style="font-size:12px" onclick="add_res_ingredient()">+ Add ingredient</button></div>' +
+    '<div class="fg"><label>Water (dilution)</label>' +
     '<div style="display:flex;gap:8px;align-items:center">' +
-    '<input type="number" id="topup_ml" step="0.1" min="0.1" placeholder="50" style="width:80px"' +
-    ' data-tot="' + tot + '" data-cur="' + cur + '" oninput="upd_topup_preview()"> ml' +
-    ' <span id="topup_after" style="color:var(--muted);font-size:12px"></span></div></div>' +
-    '<div style="text-align:right;margin-top:12px">' +
-    '<button class="btn bg bs" onclick="cm()">Cancel</button> ' +
-    '<button class="btn bp bs" data-id="' + id + '" data-cur="' + cur + '" data-tot="' + tot + '" onclick="sub_topup_reservoir(this.dataset.id,this.dataset.cur,this.dataset.tot)">Top Up</button></div>' +
-    '</div>';
+    '<input type="number" name="res_water_ml" step="0.1" min="0" value="' + (r.water_ml||0) + '" style="width:80px" oninput="upd_res_total()"> ml' +
+    ' <span id="res_total_lbl" style="color:var(--muted);font-style:italic">= ' + total + ' ml total — lasts ' + days_lasts + ' days</span></div></div>' +
+    '<div class="fg"><label>Daily dose</label>' +
+    '<div style="display:flex;gap:8px;align-items:center">' +
+    '<input type="number" name="res_daily_ml" step="0.1" min="0.1" value="' + (r.daily_dose_ml||'') + '" required style="width:70px" oninput="upd_res_total()"> ml/day</div></div>' +
+    '<div class="fg"><label>Timer</label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+    '<input type="number" name="res_timer_sec" step="1" min="1" value="' + (r.timer_sec||'') + '" placeholder="30" style="width:70px"> seconds at' +
+    ' <select name="res_timer_min">' + mk_time_opts(r.timer_min||600) + '</select></div></div>' +
+    '<div id="topup_after" style="font-size:13px;color:var(--ok);font-weight:600;margin:8px 0 4px"></div>' +
+    '<div style="text-align:right;margin-top:8px"><button type="button" class="btn bg bs" onclick="cm()">Cancel</button> <button type="submit" class="btn bp bs">Top Up</button></div>' +
+    '</form></div>';
   om(h);
+  (r.ingredients||[]).forEach(function(ing){ add_res_ingredient(ing.fert_id, ing.concentrate_ml, false); });
+  upd_res_total();
 }
-function upd_topup_preview() {
-  var inp = document.getElementById('topup_ml');
-  var lbl = document.getElementById('topup_after');
-  if (!inp || !lbl) return;
-  var v = parseFloat(inp.value) || 0;
-  var tot = parseFloat(inp.dataset.tot) || 0;
-  var cur = parseFloat(inp.dataset.cur) || 0;
-  var after = Math.round((cur + v) * 10) / 10;
-  lbl.textContent = after + ' ml after top up';
-}
-function sub_topup_reservoir(id, cur_ml, total_ml) {
-  var added = parseFloat(document.getElementById('topup_ml').value) || 0;
-  if (!added) return;
-  var after = Math.round((parseFloat(cur_ml) + added) * 10) / 10;
+function sub_topup_reservoir() {
+  var f = document.getElementById('res_topup_frm');
+  var id = f.dataset.id;
+  var cur = parseFloat(f.dataset.cur) || 0;
   var d = ld();
+  var r_orig = d.reservoirs.find(function(x){return x.id===id;}); if (!r_orig) return;
+  var rows = document.querySelectorAll('#res_topup_frm .res_ing_row');
+  var seen = {}, ingredients = [], added_ml = 0;
+  rows.forEach(function(row){
+    var fid = row.querySelector('[name="res_ing_fert"]').value;
+    var ml = parseFloat(row.querySelector('[name="res_ing_ml"]').value) || 0;
+    if (fid && ml > 0) {
+      if (seen[fid]) { seen[fid].concentrate_ml = Math.round((seen[fid].concentrate_ml + ml) * 10) / 10; }
+      else { seen[fid] = {fert_id: fid, concentrate_ml: ml}; ingredients.push(seen[fid]); }
+      added_ml += ml;
+    }
+  });
+  var water_ml = parseFloat(f.res_water_ml.value) || 0;
+  var daily_ml = parseFloat(f.res_daily_ml.value) || 0;
+  var timer_sec = parseInt(f.res_timer_sec.value) || 0;
+  var timer_min = parseInt(f.res_timer_min.value) || 600;
+  added_ml += water_ml;
+  var new_snapshot = Math.round((cur + added_ml) * 10) / 10;
   d.reservoirs = d.reservoirs.map(function(r){
-    return r.id === id ? Object.assign({}, r, {snapshot_ml: Math.round(after * 10) / 10, snapshot_date: today_str()}) : r;
+    return r.id !== id ? r : Object.assign({}, r, {
+      ingredients: ingredients.length ? ingredients : r_orig.ingredients,
+      water_ml: water_ml, daily_dose_ml: daily_ml,
+      timer_sec: timer_sec, timer_min: timer_min,
+      snapshot_ml: new_snapshot, snapshot_date: today_str()
+    });
   });
   sv(d); cm(); r_life(); r_maint();
 }
