@@ -2034,7 +2034,7 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min
 .db-dot.connecting{background:#ff9800;animation:db-blink 1s infinite}
 @keyframes db-blink{0%,100%{opacity:1}50%{opacity:.3}}
 .tabs{display:flex;background:var(--mid);overflow-x:auto;padding:0 8px}
-.prev-bar{background:#fef3d5;border-bottom:2px solid #e8a838;padding:8px 16px;font-size:13px;color:#7a4f00;display:flex;align-items:center;gap:10px}
+.prev-bar{background:#fef3d5;border-bottom:2px solid #e8a838;padding:8px 16px;font-size:13px;color:#7a4f00;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50}
 .prev-bar strong{font-weight:700}
 .prev-bar .btn-del-prev{background:none;border:1px solid #c8870a;color:#7a4f00;border-radius:4px;padding:3px 10px;font-size:12px;cursor:pointer}
 .tab{background:none;border:none;color:rgba(255,255,255,.7);padding:13px 16px;font-size:14px;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;transition:.15s;font-family:inherit}
