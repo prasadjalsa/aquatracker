@@ -2178,7 +2178,7 @@ function sv(d) {
 function mt() { return {tanks:[], equip:[], plants:[], stock:[], tasks:[], water:[], feeding:[], ferts:[], custom_sp:{}, maint_log:[], treatment_log:[]}; }
 // Merged species lookup: built-in SP + user custom_sp
 function get_sp(d, tid) {
-  if (tid && is_salt(tid)) return Object.assign({}, _sp_salt);
+  if (tid && is_salt(tid)) return Object.assign({}, _sp_salt, d ? d.custom_sp : {});
   return Object.assign({}, _sp, d ? d.custom_sp : {});
 }
 function add_custom_sp(sp_id, name, type, tmin, tmax, pmin, pmax, gmin, gmax, size_in, min_gal, bioload, level, note, zone, activity) {
