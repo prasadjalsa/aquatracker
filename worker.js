@@ -3270,7 +3270,7 @@ function last_r(tid) { var w = get_water(tid); return w.length ? w[w.length-1] :
 
 // ===== BIOLOAD =====
 function calc_bioload(tid) {
-  var d = ld(), sp_all = get_sp(d), salt = is_salt(tid), total = 0;
+  var d = ld(), sp_all = get_sp(d, tid), salt = is_salt(tid), total = 0;
   d.stock.filter(function(x){ return x.tank_id === tid; }).forEach(function(s) {
     var sp = sp_all[s.species_id];
     // For saltwater, only fish contribute to bioload — corals and cleanup crew are excluded
@@ -3282,7 +3282,7 @@ function calc_bioload(tid) {
   return Math.round(total);
 }
 function calc_space_score(tid) {
-  var d = ld(), sp_all = get_sp(d), total = 0;
+  var d = ld(), sp_all = get_sp(d, tid), total = 0;
   d.stock.filter(function(x){ return x.tank_id === tid && !x.preview; }).forEach(function(s) {
     var sp = sp_all[s.species_id];
     if (!sp || sp.inv) return;
@@ -3296,7 +3296,7 @@ function calc_space_score(tid) {
   return Math.round(total * 10) / 10;
 }
 function get_zone_mult(tid) {
-  var d = ld(), sp_all = get_sp(d), zones = {};
+  var d = ld(), sp_all = get_sp(d, tid), zones = {};
   d.stock.filter(function(x){ return x.tank_id === tid && !x.preview; }).forEach(function(s) {
     var sp = sp_all[s.species_id]; if (!sp || sp.inv) return;
     var z = sp.zone || 'mid';
@@ -3311,7 +3311,7 @@ function calc_footprint_ratio(tid) {
   var len = tank.length_cm, wid = tank.width_cm;
   if (!len || !wid) return null;
   var fp = (len / 2.54) * (wid / 2.54);
-  var sp_all = get_sp(d), zone_demand = {surface:0, mid:0, bottom:0};
+  var sp_all = get_sp(d, tid), zone_demand = {surface:0, mid:0, bottom:0};
   d.stock.filter(function(x){ return x.tank_id === tid && !x.preview; }).forEach(function(s) {
     var sp = sp_all[s.species_id]; if (!sp || sp.inv) return;
     var sz = sp.size_in || 2;
@@ -3403,7 +3403,7 @@ function add_rec_task(type, name, freq, rdow) {
 
 // ===== RECOMMENDATIONS ENGINE =====
 function overlap(tid) {
-  var d = ld(), sp_all = get_sp(d), items = d.stock.filter(function(x){return x.tank_id===tid;});
+  var d = ld(), sp_all = get_sp(d, tid), items = d.stock.filter(function(x){return x.tank_id===tid;});
   if (!items.length) return null;
   var tmi=-Infinity,tma=Infinity,pmi=-Infinity,pma=Infinity,gmi=-Infinity,gma=Infinity,sl=[],pl_names=[];
   items.forEach(function(s) {
