@@ -3937,7 +3937,7 @@ function r_startup_picker(tid) {
     h += '<button class="btn bg" style="text-align:left;padding:10px 14px" data-sm="live_rock" onclick="save_startup_method(this.dataset.sm)">' +
          '<strong>Live Rock Cycling</strong><br><span style="font-size:12px;color:var(--muted)">Seed beneficial bacteria with cured live rock. Slower but introduces natural diversity.</span></button>';
     h += '<button class="btn bg" style="text-align:left;padding:10px 14px" data-sm="bacteria_supp" onclick="save_startup_method(this.dataset.sm)">' +
-         '<strong>Bacteria Supplement</strong><br><span style="font-size:12px;color:var(--muted)">Use bottled nitrifying bacteria (Dr. Tim\'s One &amp; Only, Microbacter7). Fastest method — often 2 weeks.</span></button>';
+         '<strong>Bacteria Supplement</strong><br><span style="font-size:12px;color:var(--muted)">Use bottled nitrifying bacteria (Dr. Tim One &amp; Only, Microbacter7). Fastest method — often 2 weeks.</span></button>';
   } else {
   h += '<button class="btn bg" style="text-align:left;padding:10px 14px" data-sm="standard" onclick="save_startup_method(this.dataset.sm)">' +
        '<strong>Standard — Nitrogen Cycle only</strong><br><span style="font-size:12px;color:var(--muted)">Fill with water, add an ammonia source and cycle. Most common approach.</span></button>';
@@ -7070,7 +7070,7 @@ function r_howto() {
     '<p style="font-size:13px;margin:0 0 10px">Same biology as freshwater — ammonia from waste converts to nitrite then nitrate. Live rock naturally seeds nitrifying bacteria and dramatically speeds the cycle.</p>' +
     bullets([
       '<strong>Fishless (recommended):</strong> add pure ammonia to 2 ppm or use a small piece of raw shrimp as the ammonia source. Remove shrimp once ammonia spikes.',
-      '<strong>Bacteria supplement:</strong> dose Microbacter7 or Dr. Tim\'s One &amp; Only to seed the cycle — reduces time to 2&ndash;3 weeks.',
+      '<strong>Bacteria supplement:</strong> dose Microbacter7 or Dr. Tim One &amp; Only to seed the cycle — reduces time to 2&ndash;3 weeks.',
       'Test NH3, NO2, and NO3 every 2 days. Log every result in this app.',
       'Cycle is complete when NH3 and NO2 drop to 0 within 24 hours of dosing, and NO3 is detectable.',
       (reef ? 'Reef target: do a large water change to bring nitrate <strong>below 5 ppm</strong> before adding corals.' : 'FOWLR target: bring nitrate below 20 ppm before adding fish.'),
