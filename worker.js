@@ -1780,7 +1780,8 @@ function get_rec_tasks_s(tid, ud) {
   return recs;
 }
 function get_disease_risks_s(tid, ud) {
-  var salt=is_salt(tid);
+  var tank_d=(ud.tanks||[]).find(function(t){return t.id===tid;});
+  var salt=!!(tank_d&&tank_d.tank_type==='salt');
   var lr=last_r_s(tid,ud);
   var ammonia=lr?lr.ammonia:null, nitrite=lr?lr.nitrite:null, temp_f=lr?lr.temp_f:null;
   var risks=[];
@@ -1837,7 +1838,7 @@ function get_plant_risks_s(tid, ud) {
 }
 function get_algae_risks_s(tid, ud) {
   var tank=(ud.tanks||[]).find(function(t){return t.id===tid;});
-  var salt = is_salt(tid);
+  var salt = !!(tank&&tank.tank_type==='salt');
   var light_h=get_light_hours_s(tid,ud), co2=get_co2_info_s(tid,ud);
   var lr=last_r_s(tid,ud);
   var nitrate=lr?lr.nitrate:null, ammonia=lr?lr.ammonia:null, nitrite=lr?lr.nitrite:null;
