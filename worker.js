@@ -2034,7 +2034,7 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min
 .db-dot.connecting{background:#ff9800;animation:db-blink 1s infinite}
 @keyframes db-blink{0%,100%{opacity:1}50%{opacity:.3}}
 .tabs{display:flex;background:var(--mid);overflow-x:auto;padding:0 8px}
-.prev-bar{background:#fef3d5;border-bottom:2px solid #e8a838;padding:8px 16px;font-size:13px;color:#7a4f00;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50}
+.prev-bar{background:#fef3d5;border-bottom:2px solid #e8a838;padding:8px 16px;font-size:13px;color:#7a4f00;display:flex;align-items:center;gap:10px;position:fixed;top:calc(54px + env(safe-area-inset-top));left:0;right:0;z-index:50}
 .prev-bar strong{font-weight:700}
 .prev-bar .btn-del-prev{background:none;border:1px solid #c8870a;color:#7a4f00;border-radius:4px;padding:3px 10px;font-size:12px;cursor:pointer}
 .tab{background:none;border:none;color:rgba(255,255,255,.7);padding:13px 16px;font-size:14px;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;transition:.15s;font-family:inherit}
@@ -2138,6 +2138,7 @@ tr:hover td{background:#f9fbfc}
   &#x1F9EA; <strong>Preview Tank</strong> &mdash; This tank is for testing only and is excluded from exports.
   <button class="btn-del-prev" onclick="do_del_preview()">Delete Preview</button>
 </div>
+<div id="prev_bar_spacer" style="display:none;height:38px"></div>
 
 <div id="p-dash"  class="panel on"></div>
 <div id="p-life"  class="panel"></div>
@@ -6218,10 +6219,13 @@ function sub_add_tank(e) {
 // ===== PREVIEW TANK =====
 function upd_prev_bar() {
   var bar = document.getElementById('prev_bar');
+  var spacer = document.getElementById('prev_bar_spacer');
   if (!bar) return;
   var d = ld(), tid = at();
   var t = d.tanks.find(function(x){ return x.id === tid; });
-  bar.style.display = (t && t.preview) ? '' : 'none';
+  var show = !!(t && t.preview);
+  bar.style.display = show ? '' : 'none';
+  if (spacer) spacer.style.display = show ? '' : 'none';
 }
 
 function copy_tank_data(src_id, dst_id) {
