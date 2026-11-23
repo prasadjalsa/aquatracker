@@ -423,6 +423,229 @@ _act_low.forEach(function(k){  if(SP[k]) SP[k].activity='low'; });
 _territorial.forEach(function(k){ if(SP[k]) SP[k].territorial=true; });
 Object.keys(SP).forEach(function(k){ if(!SP[k].activity) SP[k].activity='medium'; });
 
+// ===== SALTWATER SPECIES DATABASE =====
+var SP_SALT = {
+  // --- Clownfish ---
+  ocellaris_clownfish:      {name:'Ocellaris Clownfish',      tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:3.5,min_gal:20, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'The classic clownfish. Hardy and peaceful. Forms a bond with bubble tip anemones. Great first saltwater fish.'},
+  percula_clownfish:         {name:'Percula Clownfish',         tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:3,  min_gal:20, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'True percula. Slightly smaller and more orange than ocellaris. Pairs well with bubble tip anemone. Very popular reef fish.'},
+  black_ocellaris_clownfish: {name:'Black Ocellaris Clownfish', tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:3.5,min_gal:20, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Black and white color morph of the ocellaris. Same care requirements. Striking contrast in a reef tank.'},
+  maroon_clownfish:          {name:'Maroon Clownfish',          tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:6,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Largest clownfish. Deep maroon with white stripes. Aggressive and territorial. Can host in various anemones. Keep one per tank.'},
+  tomato_clownfish:          {name:'Tomato Clownfish',          tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:5,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Hardy and bold. Single white bar behind the eye. Good beginner fish. Can be aggressive as an adult.'},
+  cinnamon_clownfish:        {name:'Cinnamon Clownfish',        tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:4,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Rusty red-brown coloration. Single white bar. Similar temperament to tomato clownfish. Hardy and adaptable.'},
+  // --- Tangs ---
+  blue_tang:                 {name:'Blue Tang',                 tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:4,size_in:12, min_gal:100,level:'Intermediate', reef_safe:true,  salt:true,type:'fish',  note:'Vibrant blue with yellow tail. Very popular but needs at least 100 gallons. Ich-prone during acclimation. Active swimmer.'},
+  yellow_tang:               {name:'Yellow Tang',               tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:3,size_in:8,  min_gal:75, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Bright yellow. One of the most popular saltwater fish. Hardy and active. Grazes on algae. Keep one per tank.'},
+  sailfin_tang:              {name:'Sailfin Tang',              tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:4,size_in:15, min_gal:125,level:'Intermediate', reef_safe:true,  salt:true,type:'fish',  note:'Dramatic tall dorsal fin. Grows large. Needs a very long tank for swimming. Grazes heavily on algae.'},
+  purple_tang:               {name:'Purple Tang',               tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:3,size_in:10, min_gal:100,level:'Intermediate', reef_safe:true,  salt:true,type:'fish',  note:'Deep purple body with yellow tail and fins. Aggressive toward other tangs. Keep one tang per tank unless very large setup.'},
+  tomini_tang:               {name:'Tomini Tang',               tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:3,size_in:6,  min_gal:70, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Smaller tang with orange-tipped dorsal fin. Less aggressive than other tangs. Good algae grazer for medium tanks.'},
+  kole_tang:                 {name:'Kole Tang',                 tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:3,size_in:7,  min_gal:70, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Brown with yellow spots. Excellent algae and film algae grazer. Less territorial than many tangs. Good for mid-size tanks.'},
+  convict_tang:              {name:'Convict Tang',              tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:3,size_in:8,  min_gal:100,level:'Intermediate', reef_safe:true,  salt:true,type:'fish',  note:'White with black vertical stripes. Schools naturally. Active swimmer. Needs a long tank. Good algae grazer.'},
+  achilles_tang:             {name:'Achilles Tang',             tmin:75,tmax:80,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:4,size_in:10, min_gal:100,level:'Advanced',     reef_safe:true,  salt:true,type:'fish',  note:'Stunning black body with orange teardrop spot. Demands pristine water and very high flow. Ich-prone. Expert fish.'},
+  powder_blue_tang:          {name:'Powder Blue Tang',          tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:4,size_in:9,  min_gal:100,level:'Intermediate', reef_safe:true,  salt:true,type:'fish',  note:'Powder blue body with yellow dorsal. Very susceptible to ich. Needs excellent water quality and high flow. Quarantine recommended.'},
+  powder_brown_tang:         {name:'Powder Brown Tang',         tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:4,size_in:9,  min_gal:100,level:'Intermediate', reef_safe:true,  salt:true,type:'fish',  note:'Brown body with white cheek patch and blue highlights. Similar care to powder blue. Needs quality water and swim room.'},
+  naso_tang:                 {name:'Naso Tang',                 tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:5,size_in:18, min_gal:150,level:'Intermediate', reef_safe:true,  salt:true,type:'fish',  note:'Large and fast swimmer. Horn develops with age. Grazes macroalgae. Needs a very large tank. Generally peaceful toward other fish.'},
+  blonde_naso_tang:          {name:'Blonde Naso Tang',          tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:5,size_in:18, min_gal:150,level:'Intermediate', reef_safe:true,  salt:true,type:'fish',  note:'Color variant of the naso tang with blonde highlights. Same care requirements. Grows very large and needs a big tank.'},
+  // --- Angelfish ---
+  coral_beauty:              {name:'Coral Beauty Angelfish',    tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:4,  min_gal:70, level:'Intermediate', reef_safe:'with_caution',salt:true,type:'fish',  note:'Purple with orange flanks. May nip at LPS corals and clam mantles. Usually reef-safe with ample space. Hardy and colorful.'},
+  flame_angelfish:           {name:'Flame Angelfish',           tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:4,  min_gal:70, level:'Intermediate', reef_safe:'with_caution',salt:true,type:'fish',  note:'Brilliant orange-red with black stripes and blue highlights. May nip at corals. Active swimmer. Very striking in a reef.'},
+  lemon_peel_angelfish:      {name:'Lemon Peel Angelfish',      tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:5,  min_gal:70, level:'Intermediate', reef_safe:'with_caution',salt:true,type:'fish',  note:'Bright yellow with blue eye ring. Known coral nipper. Best in FOWLR. Can work in reef with well-fed specimens and plenty of LPS.'},
+  cherub_pygmy_angelfish:    {name:'Cherub Pygmy Angelfish',    tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:3,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Tiny deep blue angel with orange face. Smallest of the pygmy angels. Generally reef-safe. Good for smaller tanks.'},
+  bicolor_angelfish:         {name:'Bicolor Angelfish',         tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:5,  min_gal:70, level:'Intermediate', reef_safe:'with_caution',salt:true,type:'fish',  note:'Front half yellow, rear half blue-purple. Can be finicky eater. May nip at corals. Needs hiding spots and varied diet.'},
+  emperor_angelfish:         {name:'Emperor Angelfish',         tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:4,size_in:15, min_gal:180,level:'Advanced',     reef_safe:false, salt:true,type:'fish',  note:'Spectacular adult coloration. Juveniles look entirely different. FOWLR only — will eat corals and invertebrates. Needs a very large tank.'},
+  koran_angelfish:           {name:'Koran Angelfish',           tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:4,size_in:15, min_gal:180,level:'Advanced',     reef_safe:false, salt:true,type:'fish',  note:'Large and striking. FOWLR only. Eats corals and invertebrates. Beautiful adult coloration with intricate patterns. Expert fish.'},
+  french_angelfish:          {name:'French Angelfish',          tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:4,size_in:15, min_gal:180,level:'Advanced',     reef_safe:false, salt:true,type:'fish',  note:'Dark body with yellow-edged scales. Grows to 15 inches. FOWLR only. Eats sponges, corals and invertebrates in the wild.'},
+  // --- Gobies ---
+  firefish_goby:             {name:'Firefish Goby',             tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:3,  min_gal:20, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'White body with striking red-orange tail. Peaceful and shy. Prone to jumping — needs a lid. Hides in rock crevices.'},
+  purple_firefish_goby:      {name:'Purple Firefish Goby',      tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:3,  min_gal:20, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'White with purple-to-red posterior. Stunning and peaceful. Jumper. Best kept in pairs or species tanks for best behavior.'},
+  yellow_watchman_goby:      {name:'Yellow Watchman Goby',      tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:4,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Yellow with blue spots. Forms a symbiotic burrow partnership with pistol shrimp. Fun behavior to observe. Bottom dweller.'},
+  tiger_watchman_goby:       {name:'Tiger Watchman Goby',       tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:5,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Gray and orange mottled pattern. Partners with pistol shrimp. Active sand sifter. Needs a sand bed.'},
+  clown_goby:                {name:'Clown Goby',                tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:1.5,min_gal:10, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Tiny and colorful. Various color morphs. Often perches on SPS corals. Very small so may be eaten by large fish. Good nano tank fish.'},
+  neon_goby:                 {name:'Neon Goby',                 tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:2,  min_gal:10, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Electric blue stripe. Natural cleaner fish — removes parasites from larger fish. Very peaceful. Great for nano reefs.'},
+  citron_goby:               {name:'Citron Goby',               tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:2.5,min_gal:20, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Yellow-green with orange markings. Peaceful and undemanding. Perches on rocks and corals. Good in a reef tank.'},
+  wheeler_goby:              {name:'Wheeler Goby',              tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:3,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Partners with pistol shrimp. Gray with orange and blue markings. Peaceful sand-sifting goby. Needs a sand substrate.'},
+  yasha_haze_goby:           {name:'Yasha Haze Goby',           tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:2.5,min_gal:20, level:'Intermediate', reef_safe:true,  salt:true,type:'fish',  note:'White with orange spots and elaborate fin filaments. Pairs with pistol shrimp. Shy and can jump. Lid required.'},
+  black_ray_shrimp_goby:     {name:'Black Ray Shrimp Goby',     tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:4,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'White with striking black dots. Shares burrow with pistol shrimp. Very peaceful. Sand substrate required.'},
+  dracula_goby:              {name:'Dracula Goby',              tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:3,  min_gal:20, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Red-orange with spotted pattern. Pairs with pistol shrimp. Active and peaceful. Nice pop of color in a reef tank.'},
+  rainfordi_goby:            {name:'Rainfordi Goby',            tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:2.5,min_gal:30, level:'Intermediate', reef_safe:true,  salt:true,type:'fish',  note:'Green with orange stripes. Grazes microalgae from sand. Needs a healthy sand bed with microorganisms. Can starve in bare-bottom tanks.'},
+  // --- Wrasses ---
+  six_line_wrasse:           {name:'Six Line Wrasse',           tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:3,  min_gal:30, level:'Beginner',     reef_safe:'with_caution',salt:true,type:'fish',  note:'Purple and orange with 6 blue lines. Active and bold. Can harass small peaceful fish as it matures. Great at hunting flatworms.'},
+  yellow_coris_wrasse:       {name:'Yellow Coris Wrasse',       tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:5,  min_gal:50, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Bright yellow. Reef-safe and hunts bristle worms and pyramidellid snails. Buries in sand to sleep. Needs a sandbed.'},
+  melanurus_wrasse:          {name:'Melanurus Wrasse',          tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:5,  min_gal:50, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Multicolored with green, orange and blue. Excellent flatworm and fireworm eater. Buries in sand. Reef-safe with most inverts.'},
+  carpenter_wrasse:          {name:'Carpenter Wrasse',          tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:5,  min_gal:50, level:'Intermediate', reef_safe:true,  salt:true,type:'fish',  note:'Pink with brilliant blue-green scale highlights. Active and peaceful. Reef-safe. May eat small ornamental shrimp.'},
+  dragon_wrasse:             {name:'Dragon Wrasse',             tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:12, min_gal:100,level:'Advanced',     reef_safe:'with_caution',salt:true,type:'fish',  note:'Dramatic juvenile with long flowing fins. Adults are entirely different. Grows large and becomes aggressive. FOWLR preferred.'},
+  leopard_wrasse:            {name:'Leopard Wrasse',            tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:5,  min_gal:50, level:'Advanced',     reef_safe:true,  salt:true,type:'fish',  note:'Intricate spotted pattern. Can be difficult to acclimate. Picky eater initially. Buries in sand. Needs a deep sand bed.'},
+  mystery_wrasse:            {name:'Mystery Wrasse',            tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:4,  min_gal:50, level:'Intermediate', reef_safe:true,  salt:true,type:'fish',  note:'Purple with yellow lines. Semi-aggressive. Can coexist in reef but may nip at other small fish. Secure lid recommended.'},
+  fairy_wrasse:              {name:'Fairy Wrasse',              tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:3,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Various vibrant colors depending on species. Peaceful and reef-safe. Males display intensely. Active swimmer near rockwork.'},
+  canary_wrasse:             {name:'Canary Wrasse',             tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:5,  min_gal:50, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'All-yellow wrasse. Peaceful and active. Eats small crustaceans and worms. May eat ornamental shrimp. Good reef addition otherwise.'},
+  lubbock_wrasse:            {name:'Lubbock Wrasse',            tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:3,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Purple and orange. Very peaceful and colorful. Good reef fish. Active but non-aggressive toward tank mates.'},
+  // --- Blennies ---
+  tailspot_blenny:           {name:'Tailspot Blenny',           tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:2,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Small blenny with black spot at tail base. Grazes algae. Perches on rocks. Peaceful and undemanding. Great nano reef fish.'},
+  lawnmower_blenny:          {name:'Lawnmower Blenny',          tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:5,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Excellent algae grazer. Mows down film and hair algae. Comical appearance. May nip at LPS if starved of algae. Provide supplemental feeding.'},
+  bicolor_blenny:            {name:'Bicolor Blenny',            tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:4,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Front blue, rear orange. Bright and active. Good algae grazer. Perches in rock holes. Very peaceful reef inhabitant.'},
+  midas_blenny:              {name:'Midas Blenny',              tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:5,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Golden yellow. Spends time in midwater unlike most blennies. Mimics anthias swimming style. Peaceful and colorful.'},
+  sailfin_blenny:            {name:'Sailfin Blenny',            tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:5,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Dramatic tall dorsal and anal fins. Perches on rockwork. Active and interesting behavior. Grazes algae.'},
+  algae_blenny:              {name:'Algae Blenny',              tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:4,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Brown and mottled to blend with rockwork. Voracious algae grazer. Useful cleanup crew member. Very hardy.'},
+  black_combtooth_blenny:    {name:'Black Combtooth Blenny',    tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:4,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Dark mottled coloration. Blends into rockwork. Grazes algae. Active and bold for a blenny.'},
+  striped_blenny:            {name:'Striped Blenny',            tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:3.5,min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Dark horizontal stripes. Curious and active. Good algae grazer. Hardy and undemanding.'},
+  // --- Cardinalfish ---
+  bangaii_cardinalfish:      {name:'Bangaii Cardinalfish',      tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:3,  min_gal:20, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Dramatic black and white striped pattern. Can be a slow eater. Keep with non-aggressive fish. Pairs breed readily in captivity.'},
+  pajama_cardinalfish:       {name:'Pajama Cardinalfish',       tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:3,  min_gal:20, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Polka-dotted rear half, orange front. Peaceful and slow-moving. Groups of 3+ look spectacular. Easy care.'},
+  threadfin_cardinalfish:    {name:'Threadfin Cardinalfish',    tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:2.5,min_gal:20, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Elongated fin rays. Very peaceful. Best kept in groups. Hides in coral branches during the day.'},
+  spotted_cardinalfish:      {name:'Spotted Cardinalfish',      tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:2.5,min_gal:20, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Red with white spots. Very peaceful. Active at dusk. Great reef fish that harms nothing.'},
+  // --- Chromis / Damsels ---
+  green_chromis:             {name:'Green Chromis',             tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:3,  min_gal:50, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Electric green-blue. Schools in the upper water column. Keep in groups of 5+. Very active and peaceful. Great schooling fish.'},
+  blue_reef_chromis:         {name:'Blue/Green Chromis',        tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:3,  min_gal:50, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Blue-green iridescent. Active schooling fish. Peaceful. Groups of 5+ are ideal. Adds movement to the upper tank.'},
+  domino_damsel:             {name:'Domino Damsel',             tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:5,  min_gal:50, level:'Beginner',     reef_safe:'with_caution',salt:true,type:'fish',  note:'Black with white spots as juvenile — spots fade with age. Juveniles are cute but adults become very aggressive. Use with caution.'},
+  blue_damsel:               {name:'Blue Damsel',               tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:3,  min_gal:30, level:'Beginner',     reef_safe:'with_caution',salt:true,type:'fish',  note:'Electric blue. Very hardy. Often used for cycling but can become a bully. Remove before adding more peaceful fish.'},
+  yellowtail_damsel:         {name:'Yellowtail Damsel',         tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:3,  min_gal:30, level:'Beginner',     reef_safe:'with_caution',salt:true,type:'fish',  note:'Blue body with yellow tail. Less aggressive than many damsels. Hardy and colorful but can still be territorial.'},
+  threestripe_damsel:        {name:'Three-Stripe Damsel',       tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:3.5,min_gal:50, level:'Beginner',     reef_safe:'with_caution',salt:true,type:'fish',  note:'White with black vertical bars. Very aggressive and territorial despite small size. Can prevent other fish from eating.'},
+  azure_damsel:              {name:'Azure Damsel',              tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:3,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Blue and yellow two-tone. One of the more peaceful damsels. Reef-safe. Good beginner fish.'},
+  talbot_damsel:             {name:'Talbot Damsel',             tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:3,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Purple-pink coloration. Relatively peaceful for a damsel. Good in groups or with other non-aggressive fish.'},
+  // --- Dottybacks ---
+  neon_dottyback:            {name:'Neon Dottyback',            tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:3,  min_gal:20, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Purple/orange bicolor. Hardy and bold. Can be aggressive toward similar-looking fish. Territorial around its cave.'},
+  orchid_dottyback:          {name:'Orchid Dottyback',          tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:3,  min_gal:20, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Solid purple. Hardy and reef-safe. Can harass small peaceful fish. Add last or use distraction techniques.'},
+  strawberry_dottyback:      {name:'Strawberry Dottyback',      tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:3,  min_gal:20, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Solid magenta-pink. Very vibrant. Territorial but generally manageable. Add to tank before peaceful fish for best results.'},
+  splendid_dottyback:        {name:'Splendid Dottyback',        tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:3,  min_gal:20, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Electric blue with yellow tail. Reef-safe. Territorial — keep one per tank. Very colorful and active.'},
+  // --- Hawkfish ---
+  flame_hawkfish:            {name:'Flame Hawkfish',            tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:4,  min_gal:30, level:'Beginner',     reef_safe:'with_caution',salt:true,type:'fish',  note:'Brilliant red with black saddle. Perches on rocks and coral. Will eat small shrimp and ornamental crustaceans. Avoid with cleaner shrimp.'},
+  longnose_hawkfish:         {name:'Longnose Hawkfish',         tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:5,  min_gal:30, level:'Intermediate', reef_safe:'with_caution',salt:true,type:'fish',  note:'Red and white checked pattern with elongated snout. Perches in gorgonians and sea fans. Will eat small shrimp.'},
+  arc_eye_hawkfish:          {name:'Arc-Eye Hawkfish',          tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:5,  min_gal:50, level:'Intermediate', reef_safe:'with_caution',salt:true,type:'fish',  note:'Brown with distinctive arc-eye pattern. Ambush predator. Will eat small shrimp and crabs. Interesting perching behavior.'},
+  // --- Triggers ---
+  clown_triggerfish:         {name:'Clown Triggerfish',         tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:5,size_in:20, min_gal:300,level:'Advanced',     reef_safe:false, salt:true,type:'fish',  note:'Dramatic but destructive. Eats all invertebrates and may attack other fish and even its owner. FOWLR with large robust fish only.', incompat:{all_inverts:'Clown Trigger eats all invertebrates.'}},
+  niger_triggerfish:         {name:'Niger Triggerfish',         tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:4,size_in:12, min_gal:150,level:'Intermediate', reef_safe:'with_caution',salt:true,type:'fish',  note:'Purple-blue with red-orange teeth. Less aggressive than other triggers. May eat inverts but sometimes reef-safe. Unpredictable.'},
+  bluechin_triggerfish:      {name:'Bluechin Triggerfish',      tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:3,size_in:9,  min_gal:100,level:'Intermediate', reef_safe:'with_caution',salt:true,type:'fish',  note:'Blue chin patch on males. One of the more peaceful triggers. May still eat inverts. Needs a large tank.'},
+  crosshatch_triggerfish:    {name:'Crosshatch Triggerfish',    tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:3,size_in:12, min_gal:150,level:'Advanced',     reef_safe:'with_caution',salt:true,type:'fish',  note:'Spectacular grid pattern on flanks. One of the most beautiful triggers. Relatively peaceful. May nibble inverts occasionally.'},
+  // --- Puffers ---
+  porcupine_puffer:          {name:'Porcupine Puffer',          tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:5,size_in:12, min_gal:100,level:'Intermediate', reef_safe:false, salt:true,type:'fish',  note:'Spiny and charismatic. Inflates when threatened. Eats all invertebrates and corals. FOWLR only. Very interactive with owners.'},
+  dogface_puffer:            {name:'Dogface Puffer',            tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:5,size_in:13, min_gal:100,level:'Intermediate', reef_safe:false, salt:true,type:'fish',  note:'Large eyes and dog-like face. Very personable. Eats all invertebrates and corals. FOWLR only. Very interactive and friendly.'},
+  valentini_puffer:          {name:'Valentini Puffer',          tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:4,  min_gal:50, level:'Intermediate', reef_safe:'with_caution',salt:true,type:'fish',  note:'Small and strikingly patterned. May nip at corals and inverts. Some are kept in reefs with minimal damage but results vary.'},
+  // --- Butterflyfish ---
+  copper_banded_butterfly:   {name:'Copperband Butterflyfish',  tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:8,  min_gal:70, level:'Advanced',     reef_safe:'with_caution',salt:true,type:'fish',  note:'Copper bands and long snout. Can eat aiptasia (pest anemones). Often refuses prepared food. Expert fish. May nip at small polyp corals.'},
+  raccoon_butterfly:         {name:'Raccoon Butterflyfish',     tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:3,size_in:8,  min_gal:100,level:'Intermediate', reef_safe:false, salt:true,type:'fish',  note:'Black mask and yellow-orange body. FOWLR only — eats corals and invertebrates. Good for a large FOWLR community.'},
+  longnose_butterfly:        {name:'Longnose Butterflyfish',    tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:9,  min_gal:70, level:'Intermediate', reef_safe:'with_caution',salt:true,type:'fish',  note:'Long pointy snout to pick at rock crevices. Sometimes kept in reefs. May eat small polyps and tube worms. FOWLR preferred.'},
+  threadfin_butterfly:       {name:'Threadfin Butterflyfish',   tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:9,  min_gal:100,level:'Advanced',     reef_safe:false, salt:true,type:'fish',  note:'Spectacular fin extensions. FOWLR only. Eats corals. Sensitive fish that requires expert care and excellent water quality.'},
+  pearlscale_butterfly:      {name:'Pearlscale Butterflyfish',  tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:3,size_in:6,  min_gal:70, level:'Intermediate', reef_safe:false, salt:true,type:'fish',  note:'Pearl-pattern scaling. FOWLR only — eats corals and tube worms. Hardy once established.'},
+  // --- Dragonets ---
+  mandarin_dragonet:         {name:'Mandarin Dragonet',         tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:3,  min_gal:30, level:'Advanced',     reef_safe:true,  salt:true,type:'fish',  note:'Psychedelic blue-green pattern. Almost exclusively eats live copepods. Needs a mature tank with a healthy copepod population. Very delicate.'},
+  spotted_dragonet:          {name:'Spotted Dragonet',          tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:3,  min_gal:30, level:'Advanced',     reef_safe:true,  salt:true,type:'fish',  note:'Spotted variant dragonet. Requires live copepods. Very similar to mandarin in care. Expert care needed.'},
+  // --- Rabbitfish ---
+  foxface_rabbitfish:        {name:'Foxface Rabbitfish',        tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:4,size_in:10, min_gal:100,level:'Intermediate', reef_safe:'with_caution',salt:true,type:'fish',  note:'Yellow with striking black and white face. Venomous spines — handle with care. Grazes algae. May nip at soft corals if hungry.'},
+  magnificent_foxface:       {name:'Magnificent Foxface',       tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:4,size_in:9,  min_gal:100,level:'Intermediate', reef_safe:'with_caution',salt:true,type:'fish',  note:'Similar to foxface with more elaborate markings. Venomous spines. Good algae grazer. FOWLR is safer to avoid coral nipping.'},
+  // --- Others ---
+  seahorse:                  {name:'Seahorse',                  tmin:70,tmax:76,pmin:8.1,pmax:8.3,gmin:33,gmax:35,bioload:1,size_in:6,  min_gal:30, level:'Advanced',     reef_safe:true,  salt:true,type:'fish',  note:'Requires a calm species tank. Cannot compete with active fish for food. Needs live or frozen mysis shrimp twice daily. Pairs bond for life.'},
+  pipefish:                  {name:'Pipefish',                  tmin:70,tmax:76,pmin:8.1,pmax:8.3,gmin:33,gmax:35,bioload:1,size_in:7,  min_gal:30, level:'Advanced',     reef_safe:true,  salt:true,type:'fish',  note:'Long and slender relative of seahorse. Same care needs. Needs live food or frozen mysis. Keep with other slow, peaceful tank mates only.'},
+  flamefish:                 {name:'Flamefish',                 tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:3,  min_gal:20, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Bright red with long tail filaments. Very peaceful. Best kept in pairs or small groups. Great for small reef tanks.'},
+  royal_dottyback:           {name:'Royal Dottyback',           tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:3,  min_gal:20, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Purple and yellow bicolor. Similar to orchid dottyback. Territorial. Add before smaller peaceful species.'},
+  chalk_bass:                {name:'Chalk Bass',                tmin:70,tmax:80,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:3,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Purple and orange bands. Hardy and adaptable. Tolerates slightly cooler water. Can be kept in small groups.'},
+  blackcap_basslet:          {name:'Blackcap Basslet',          tmin:72,tmax:80,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:3.5,min_gal:30, level:'Intermediate', reef_safe:true,  salt:true,type:'fish',  note:'Purple body with black cap. From deep water. Needs cooler temps and may be shy. Can coexist in a reef tank.'},
+  assessor_basslet:          {name:'Assessor Basslet',          tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:2.5,min_gal:20, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Blue or yellow forms. Swims upside down near cave ceilings. Very peaceful and reef-safe. Fascinating behavior.'},
+  swissguard_basslet:        {name:'Swiss Guard Basslet',       tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:2.5,min_gal:20, level:'Beginner',     reef_safe:true,  salt:true,type:'fish',  note:'Red and yellow striped. Very small and peaceful. Great for nano reefs. Swims near rockwork.'},
+  helfrichi_firefish:        {name:'Helfrich Firefish',         tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:3,  min_gal:20, level:'Intermediate', reef_safe:true,  salt:true,type:'fish',  note:'Purple and yellow. Rarer and more valuable than common firefish. Same care — shy, jumper, needs a lid. Stunning fish.'},
+  // ===== CORALS =====
+  // --- LPS ---
+  torch_coral:               {name:'Torch Coral',               tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:0,size_in:6,  min_gal:30, level:'Beginner',     reef_safe:'with_caution',salt:true,type:'coral', note:'Long flowing polyps. Needs medium flow — not too strong. Sweeper tentacles can sting neighboring corals. Space 6+ inches from others.'},
+  hammer_coral:              {name:'Hammer Coral',              tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:0,size_in:6,  min_gal:30, level:'Beginner',     reef_safe:'with_caution',salt:true,type:'coral', note:'Hammer-shaped tips. Sweeper tentacles at night sting neighbors. Place with ample space. Very popular LPS. Medium light and flow.'},
+  frogspawn_coral:           {name:'Frogspawn Coral',           tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:0,size_in:6,  min_gal:30, level:'Beginner',     reef_safe:'with_caution',salt:true,type:'coral', note:'Branching form of Euphyllia. Similar care to hammer. Sweeper tentacles at night. Can sting Torch and Hammer — keep apart.'},
+  hammer_wall_coral:         {name:'Hammer Wall Coral',         tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:0,size_in:8,  min_gal:50, level:'Beginner',     reef_safe:'with_caution',salt:true,type:'coral', note:'Wall (non-branching) form of hammer coral. Same sweeper tentacle care. Grows wide rather than tall. Statement piece in a reef.'},
+  bubble_coral:              {name:'Bubble Coral',              tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:0,size_in:5,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'coral', note:'Large water-filled bubbles during the day. Deflates at night. Low to medium flow — high flow damages bubbles. Easy care.'},
+  open_brain_coral:          {name:'Open Brain Coral',          tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:0,size_in:8,  min_gal:50, level:'Beginner',     reef_safe:true,  salt:true,type:'coral', note:'Wavy, maze-like surface in many colors. Place on sand or rubble, not on hard rock. Target-feed with meaty foods. Very rewarding.'},
+  lobophyllia_brain_coral:   {name:'Brain Coral (Lobophyllia)', tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:0,size_in:6,  min_gal:50, level:'Beginner',     reef_safe:true,  salt:true,type:'coral', note:'Hard plate coral with deep valleys. Low to medium light and flow. Hardy LPS. Benefits from target feeding meaty foods.'},
+  elegance_coral:            {name:'Elegance Coral',            tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:0,size_in:8,  min_gal:50, level:'Intermediate', reef_safe:true,  salt:true,type:'coral', note:'Long flowing polyps like a torch. Place on sand or fine rubble. Sensitive to placement. Clownfish may host in it.'},
+  candy_cane_coral:          {name:'Candy Cane Coral',          tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:0,size_in:4,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'coral', note:'Branching LPS with candy-cane green and white tips. Hardy and forgiving. Medium light and flow. Grows relatively quickly for an LPS.'},
+  duncan_coral:              {name:'Duncan Coral',              tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:0,size_in:4,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'coral', note:'Branching coral with large puffy polyps. Easy beginner coral. Medium light and low flow. Responds well to target feeding.'},
+  blastomussa:               {name:'Blastomussa',               tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:0,size_in:4,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'coral', note:'Large disc polyps in many colors. Very easy care. Low to medium light and low flow. Great beginner LPS.'},
+  chalice_coral:             {name:'Chalice Coral',             tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:0,size_in:5,  min_gal:50, level:'Intermediate', reef_safe:true,  salt:true,type:'coral', note:'Plating LPS with intricate color patterns. Can sting nearby corals with sweepers. Low to medium light. Very collectable.'},
+  micromussa:                {name:'Micromussa',                tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:0,size_in:3,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'coral', note:'Formerly classified as Acanthastrea lordhowensis. Very popular and colorful. Easy care. Low to medium light and flow.'},
+  acan_coral:                {name:'Acan Coral',                tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:0,size_in:4,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'coral', note:'Colorful plating coral. Very easy care. Low to medium light and flow. Benefits from target feeding meaty foods. Fast grower.'},
+  plate_coral:               {name:'Plate Coral',               tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:0,size_in:8,  min_gal:50, level:'Intermediate', reef_safe:true,  salt:true,type:'coral', note:'Free-living disc coral placed on sand. Needs to be righted if flipped. Feeds nocturnally. Can move short distances. Medium care.'},
+  scroll_coral:              {name:'Scroll Coral (Turbinaria)',  tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:0,size_in:6,  min_gal:50, level:'Intermediate', reef_safe:true,  salt:true,type:'coral', note:'Plating scroll-shaped coral. Hardy. Low to medium light. Tolerant of varying water flow. Interesting architectural form.'},
+  // --- SPS ---
+  acropora:                  {name:'Acropora (SPS)',             tmin:76,tmax:82,pmin:8.2,pmax:8.4,gmin:34,gmax:36,bioload:0,size_in:12, min_gal:75, level:'Advanced',     reef_safe:true,  salt:true,type:'coral', note:'Branching SPS. Pristine water required — zero ammonia, nitrate < 5 ppm, strong flow, intense light. Stony coral for experienced reef keepers.'},
+  montipora:                 {name:'Montipora (SPS)',            tmin:76,tmax:82,pmin:8.2,pmax:8.4,gmin:34,gmax:36,bioload:0,size_in:8,  min_gal:50, level:'Intermediate', reef_safe:true,  salt:true,type:'coral', note:'Plating or encrusting SPS. More forgiving than Acropora. Good beginner SPS. Needs strong light and moderate flow.'},
+  stylophora:                {name:'Stylophora (SPS)',           tmin:76,tmax:82,pmin:8.2,pmax:8.4,gmin:34,gmax:36,bioload:0,size_in:6,  min_gal:50, level:'Intermediate', reef_safe:true,  salt:true,type:'coral', note:'Branching SPS with stubby branches. Fast grower. Good for beginners transitioning to SPS. High light and flow needed.'},
+  pocillopora:               {name:'Pocillopora (SPS)',          tmin:76,tmax:82,pmin:8.2,pmax:8.4,gmin:34,gmax:36,bioload:0,size_in:6,  min_gal:50, level:'Intermediate', reef_safe:true,  salt:true,type:'coral', note:'Branching SPS. Hardy starter SPS coral. Can host small gobies. High light and moderate-high flow.'},
+  seriatopora:               {name:'Seriatopora (SPS)',          tmin:76,tmax:82,pmin:8.2,pmax:8.4,gmin:34,gmax:36,bioload:0,size_in:5,  min_gal:50, level:'Advanced',     reef_safe:true,  salt:true,type:'coral', note:'Bird nest coral with thin branching. Fast grower but sensitive to parameter swings. Needs high flow and strong light.'},
+  porites:                   {name:'Porites (SPS)',              tmin:76,tmax:82,pmin:8.2,pmax:8.4,gmin:34,gmax:36,bioload:0,size_in:6,  min_gal:50, level:'Intermediate', reef_safe:true,  salt:true,type:'coral', note:'Massive or branching SPS. Very hardy and tolerant of moderate conditions. Grows slowly. Good transitional SPS coral.'},
+  pavona:                    {name:'Pavona (SPS)',               tmin:76,tmax:82,pmin:8.2,pmax:8.4,gmin:34,gmax:36,bioload:0,size_in:6,  min_gal:50, level:'Intermediate', reef_safe:true,  salt:true,type:'coral', note:'Plating or branching SPS. Unusual star-shaped corallites. Hardy intermediate SPS. Moderate light and flow.'},
+  anacropora:                {name:'Anacropora (SPS)',           tmin:76,tmax:82,pmin:8.2,pmax:8.4,gmin:34,gmax:36,bioload:0,size_in:6,  min_gal:50, level:'Advanced',     reef_safe:true,  salt:true,type:'coral', note:'Thin branching SPS similar to Acropora. Fast growing with minimal polyp extension. Expert level care. Needs pristine conditions.'},
+  psammocora:                {name:'Psammocora (SPS)',           tmin:76,tmax:82,pmin:8.2,pmax:8.4,gmin:34,gmax:36,bioload:0,size_in:5,  min_gal:50, level:'Intermediate', reef_safe:true,  salt:true,type:'coral', note:'Encrusting to plating SPS. More tolerant than other SPS. Good transition coral. Moderate light and flow.'},
+  // --- Soft Corals ---
+  mushroom_coral:            {name:'Mushroom Coral',             tmin:75,tmax:82,pmin:8.0,pmax:8.4,gmin:32,gmax:36,bioload:0,size_in:3,  min_gal:10, level:'Beginner',     reef_safe:true,  salt:true,type:'coral', note:'Disc-shaped soft coral. Extremely hardy. Very low light and flow. Can spread quickly. Ideal first coral for new reef keepers.'},
+  ricordea_mushroom:         {name:'Ricordea Mushroom',          tmin:75,tmax:82,pmin:8.0,pmax:8.4,gmin:32,gmax:36,bioload:0,size_in:3,  min_gal:10, level:'Beginner',     reef_safe:true,  salt:true,type:'coral', note:'Pimply-textured mushroom in vivid colors. Low to medium light and flow. Very popular and colorful. Easy beginner coral.'},
+  yuma_mushroom:             {name:'Yuma Mushroom',              tmin:75,tmax:82,pmin:8.0,pmax:8.4,gmin:32,gmax:36,bioload:0,size_in:3,  min_gal:10, level:'Beginner',     reef_safe:true,  salt:true,type:'coral', note:'Textured mushroom with radial pattern. Similar to ricordea. Very easy care. Can command high prices for unusual colors.'},
+  leather_coral:             {name:'Leather Coral',              tmin:75,tmax:82,pmin:8.0,pmax:8.4,gmin:32,gmax:36,bioload:0,size_in:8,  min_gal:50, level:'Beginner',     reef_safe:'with_caution',salt:true,type:'coral', note:'Large leathery soft coral. Releases chemicals that can inhibit SPS growth. Normal in tanks with good water flow and carbon. Easy care.'},
+  devils_hand_coral:         {name:'Devils Hand Coral',          tmin:75,tmax:82,pmin:8.0,pmax:8.4,gmin:32,gmax:36,bioload:0,size_in:8,  min_gal:50, level:'Beginner',     reef_safe:true,  salt:true,type:'coral', note:'Lobed leather coral. Distinctive hand shape when open. Very hardy. Medium light and flow. Can grow large and sway in flow.'},
+  star_polyps:               {name:'Green Star Polyps',          tmin:75,tmax:82,pmin:8.0,pmax:8.4,gmin:32,gmax:36,bioload:0,size_in:4,  min_gal:10, level:'Beginner',     reef_safe:true,  salt:true,type:'coral', note:'Brilliant neon green. Encrusts surfaces rapidly. Very fast grower — may overgrow neighboring corals. Easy care. Needs pruning.'},
+  kenya_tree_coral:          {name:'Kenya Tree Coral',           tmin:75,tmax:82,pmin:8.0,pmax:8.4,gmin:32,gmax:36,bioload:0,size_in:6,  min_gal:20, level:'Beginner',     reef_safe:true,  salt:true,type:'coral', note:'Branching soft coral. Extremely hardy and fast growing. Drops branches to propagate. Good starter coral but can take over.'},
+  cauliflower_soft_coral:    {name:'Cauliflower Soft Coral',     tmin:75,tmax:82,pmin:8.0,pmax:8.4,gmin:32,gmax:36,bioload:0,size_in:5,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'coral', note:'Branching soft coral with granular texture. Easy care. Medium flow. Gets brown without enough light. Fairly fast grower.'},
+  clove_polyp:               {name:'Clove Polyp',                tmin:75,tmax:82,pmin:8.0,pmax:8.4,gmin:32,gmax:36,bioload:0,size_in:3,  min_gal:10, level:'Beginner',     reef_safe:true,  salt:true,type:'coral', note:'Tiny feathery polyps on a rubbery mat. Encrusts rock quickly. Easy care. Can spread aggressively. Very popular beginner coral.'},
+  pulsing_xenia:             {name:'Pulsing Xenia',              tmin:75,tmax:82,pmin:8.0,pmax:8.4,gmin:32,gmax:36,bioload:0,size_in:4,  min_gal:10, level:'Beginner',     reef_safe:true,  salt:true,type:'coral', note:'Hypnotic pulsing motion. Very easy care. Fast spreader — may need pruning. Thrives in slightly elevated nutrients.'},
+  colt_coral:                {name:'Colt Coral',                 tmin:75,tmax:82,pmin:8.0,pmax:8.4,gmin:32,gmax:36,bioload:0,size_in:6,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'coral', note:'Rubbery branching soft coral. Very hardy. Releases irritants when stressed — run carbon and ensure good flow. Easy beginner coral.'},
+  zoanthids:                 {name:'Zoanthids',                  tmin:75,tmax:82,pmin:8.0,pmax:8.4,gmin:32,gmax:36,bioload:0,size_in:3,  min_gal:10, level:'Beginner',     reef_safe:true,  salt:true,type:'coral', note:'Colorful button polyps. Huge variety of colors. Caution: some contain palytoxin — do not handle with open wounds or allow to splash near eyes.'},
+  palythoa:                  {name:'Palythoa',                   tmin:75,tmax:82,pmin:8.0,pmax:8.4,gmin:32,gmax:36,bioload:0,size_in:3,  min_gal:10, level:'Beginner',     reef_safe:true,  salt:true,type:'coral', note:'Large button polyps, cousins of zoanthids. Can contain palytoxin — same cautions apply. Very hardy and easy to grow.'},
+  encrusting_gorgonian:      {name:'Encrusting Gorgonian',       tmin:75,tmax:82,pmin:8.0,pmax:8.4,gmin:32,gmax:36,bioload:0,size_in:4,  min_gal:30, level:'Intermediate', reef_safe:true,  salt:true,type:'coral', note:'Encrusts rock in purple-pink matrix. Photosynthetic. Moderate light and flow. Interesting texture. Less demanding than branching gorgonians.'},
+  purple_plume_gorgonian:    {name:'Purple Plume Gorgonian',     tmin:75,tmax:82,pmin:8.0,pmax:8.4,gmin:32,gmax:36,bioload:0,size_in:8,  min_gal:50, level:'Advanced',     reef_safe:true,  salt:true,type:'coral', note:'Non-photosynthetic. Requires heavy target feeding with phytoplankton and copepods daily. Difficult care but visually spectacular.'},
+  // --- Anemones ---
+  bubble_tip_anemone:        {name:'Bubble Tip Anemone',         tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:0,size_in:12, min_gal:30, level:'Intermediate', reef_safe:'with_caution',salt:true,type:'coral', note:'Natural host for clownfish. Can sting and kill nearby corals if it wanders. Established tank required. Needs good light and feeding.'},
+  long_tentacle_anemone:     {name:'Long Tentacle Anemone',      tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:0,size_in:14, min_gal:50, level:'Advanced',     reef_safe:'with_caution',salt:true,type:'coral', note:'Lives in sand substrate. Very long stinging tentacles. Can be hosted by clownfish. Difficult to keep — needs established tank.'},
+  carpet_anemone:            {name:'Carpet Anemone',             tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:0,size_in:24, min_gal:100,level:'Advanced',     reef_safe:false, salt:true,type:'coral', note:'Extremely powerful sting. Will kill fish that swim into it. Giant and demanding. Expert keepers only. Not truly reef-safe.'},
+  // --- Other ---
+  sea_fan:                   {name:'Sea Fan',                    tmin:75,tmax:80,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:0,size_in:12, min_gal:70, level:'Advanced',     reef_safe:true,  salt:true,type:'coral', note:'Non-photosynthetic branching gorgonian. Needs daily target feeding with zooplankton and phytoplankton. High water flow required.'},
+  trumpet_coral:             {name:'Trumpet Coral (Caulastrea)', tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:0,size_in:4,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'coral', note:'Branching LPS with round polyp openings. Very hardy. Low to medium light and flow. Good starter LPS. Benefits from feeding.'},
+  // ===== INVERTEBRATES =====
+  // --- Shrimp ---
+  scarlet_cleaner_shrimp:    {name:'Scarlet Skunk Cleaner Shrimp',tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:2.5,min_gal:10, level:'Beginner', reef_safe:true,  salt:true,type:'invert', inv:true, note:'Sets up a cleaning station where fish queue to have parasites removed. Very peaceful. Vulnerable to copper medications. Keep in pairs.'},
+  blood_shrimp:              {name:'Blood Fire Shrimp',          tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:2,  min_gal:10, level:'Beginner',     reef_safe:true,  salt:true,type:'invert', inv:true, note:'Deep red with white spots and long white antennae. Shy but stunning. Hides in dark spots. Very sensitive to copper treatments.'},
+  peppermint_shrimp:         {name:'Peppermint Shrimp',          tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:1.5,min_gal:10, level:'Beginner',     reef_safe:true,  salt:true,type:'invert', inv:true, note:'Clear with red stripes. Prized for eating aiptasia pest anemones. Peaceful. Hides in crevices. Can occasionally nip at polyp corals when hungry.'},
+  pistol_shrimp:             {name:'Pistol Shrimp',              tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:2,  min_gal:20, level:'Beginner',     reef_safe:true,  salt:true,type:'invert', inv:true, note:'Forms a remarkable symbiotic burrow partnership with watchman gobies. Digs burrows and maintains them. Clicking sound is harmless.'},
+  harlequin_shrimp:          {name:'Harlequin Shrimp',           tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:2,  min_gal:10, level:'Intermediate', reef_safe:'with_caution',salt:true,type:'invert', inv:true, note:'Stunning white with colorful spots. Feeds exclusively on living starfish — requires a steady supply of sacrificial starfish to survive.'},
+  sexy_shrimp:               {name:'Sexy Shrimp',                tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:0.75,min_gal:10, level:'Beginner',    reef_safe:true,  salt:true,type:'invert', inv:true, note:'Tiny orange shrimp with white spots. Constantly bobs back and forth. Often found with anemones. Very peaceful nano reef shrimp.'},
+  camelback_shrimp:          {name:'Camelback Shrimp',           tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:2,  min_gal:10, level:'Beginner',     reef_safe:'with_caution',salt:true,type:'invert', inv:true, note:'Humpbacked profile. May nip at soft polyp corals if hungry. Keep well-fed. Generally peaceful. Active at night.'},
+  banded_coral_shrimp:       {name:'Banded Coral Shrimp',        tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:2.5,min_gal:10, level:'Beginner',     reef_safe:'with_caution',salt:true,type:'invert', inv:true, note:'Red and white banded. Pairs are territorial to each other. Keep one or mated pair only. May nip at small slow-moving fish.'},
+  mantis_shrimp:             {name:'Mantis Shrimp',              tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:2,size_in:7,  min_gal:30, level:'Advanced',     reef_safe:false, salt:true,type:'invert', inv:true, note:'Fascinating but destructive. Smashers crack aquarium glass; spearers skewer fish. Species tank only. Never mix with other animals.'},
+  ghost_shrimp_salt:         {name:'Ghost Shrimp (Marine)',      tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:1.5,min_gal:10, level:'Beginner',     reef_safe:true,  salt:true,type:'invert', inv:true, note:'Clear with orange markings. Used as feeders or as part of CUC. Cheap and easy to source. Short lifespan in captivity.'},
+  // --- Crabs ---
+  emerald_crab:              {name:'Emerald Mithrax Crab',       tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:2,  min_gal:20, level:'Beginner',     reef_safe:true,  salt:true,type:'invert', inv:true, note:'Green mottled crab. Prized for eating bubble algae (Valonia). Generally reef-safe. Keep one per 25 gallons.'},
+  blue_leg_hermit:           {name:'Blue Leg Hermit Crab',       tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:0.5,min_gal:5,  level:'Beginner',     reef_safe:true,  salt:true,type:'invert', inv:true, cuc:true, note:'Essential cleanup crew. Eats algae and detritus. Keep multiple empty shells to prevent stealing from other hermits.'},
+  scarlet_hermit:            {name:'Scarlet Reef Hermit Crab',   tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:1,  min_gal:5,  level:'Beginner',     reef_safe:true,  salt:true,type:'invert', inv:true, cuc:true, note:'Bright red legs. CUC essential. Excellent algae and detritus eater. Provides extra shell options for other hermits.'},
+  halloween_hermit:          {name:'Halloween Hermit Crab',      tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:1.5,min_gal:5,  level:'Beginner',     reef_safe:true,  salt:true,type:'invert', inv:true, cuc:true, note:'Orange and white banded legs. CUC. Active scavenger. Attractive and functional cleanup crew member.'},
+  electric_orange_hermit:    {name:'Electric Orange Hermit',     tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:1,  min_gal:5,  level:'Beginner',     reef_safe:true,  salt:true,type:'invert', inv:true, cuc:true, note:'Brilliant orange legs and antennae. CUC. Active and colorful cleanup crew addition. Easy care.'},
+  sally_lightfoot_crab:      {name:'Sally Lightfoot Crab',       tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:3,  min_gal:30, level:'Beginner',     reef_safe:'with_caution',salt:true,type:'invert', inv:true, note:'Interesting pattern. Fast and agile. Can become aggressive with age and may catch sleeping fish. Monitor behavior as it grows.'},
+  porcelain_anemone_crab:    {name:'Porcelain Anemone Crab',     tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:1,  min_gal:10, level:'Beginner',     reef_safe:true,  salt:true,type:'invert', inv:true, note:'Lives with anemones. Fan-like claws sweep plankton. Peaceful and interesting. Often sold in pairs. Very reef-safe.'},
+  pom_pom_crab:              {name:'Pom Pom Crab',               tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:1,  min_gal:10, level:'Beginner',     reef_safe:true,  salt:true,type:'invert', inv:true, note:'Carries small anemones in each claw for defense — looks like it holds pom-poms. Fascinating and peaceful. Nano reef favorite.'},
+  arrow_crab:                {name:'Arrow Crab',                 tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:3,  min_gal:30, level:'Beginner',     reef_safe:'with_caution',salt:true,type:'invert', inv:true, note:'Long triangular body and spidery legs. Eats bristle worms. May catch and eat small slow fish like seahorses. Generally reef-safe.'},
+  horseshoe_crab:            {name:'Horseshoe Crab',             tmin:70,tmax:80,pmin:8.0,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:6,  min_gal:50, level:'Intermediate', reef_safe:true,  salt:true,type:'invert', inv:true, note:'Ancient living fossil. Requires deep sand to burrow. Sand sifter. Can flip over and get trapped — righted by other tank inhabitants.'},
+  // --- Snails ---
+  turbo_snail:               {name:'Turbo Snail',                tmin:72,tmax:80,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:2,  min_gal:5,  level:'Beginner',     reef_safe:true,  salt:true,type:'invert', inv:true, cuc:true, note:'Powerhouse algae grazer. Can knock over coral frags if too many are kept. Prefers cooler water. Add 1 per 5 gallons for heavy algae.'},
+  nassarius_snail:           {name:'Nassarius Snail',            tmin:72,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:0.5,min_gal:5,  level:'Beginner',     reef_safe:true,  salt:true,type:'invert', inv:true, cuc:true, note:'Buries in sand and emerges rapidly when food hits the water. Excellent sandbed scavenger. Essential CUC for sandbed tanks.'},
+  astrea_snail:              {name:'Astrea Snail',               tmin:72,tmax:80,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:0.75,min_gal:5, level:'Beginner',     reef_safe:true,  salt:true,type:'invert', inv:true, cuc:true, note:'Star-shaped shell. Good algae grazer on glass and rocks. Cannot right itself if flipped — may need manual assistance.'},
+  trochus_snail:             {name:'Trochus Snail',              tmin:72,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:1,  min_gal:5,  level:'Beginner',     reef_safe:true,  salt:true,type:'invert', inv:true, cuc:true, note:'Cone-shaped shell. Can right itself when flipped unlike astrea. Good grazer. Reproduces in captivity. Recommended CUC member.'},
+  cerith_snail:              {name:'Cerith Snail',               tmin:72,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:1,  min_gal:5,  level:'Beginner',     reef_safe:true,  salt:true,type:'invert', inv:true, cuc:true, note:'Long spiral shell. Excellent at cleaning sand surface and detritus. Very active. Reproduces in captivity. Great versatile CUC.'},
+  nerite_snail_salt:         {name:'Nerite Snail (Marine)',      tmin:72,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:0.75,min_gal:5, level:'Beginner',     reef_safe:true,  salt:true,type:'invert', inv:true, cuc:true, note:'Patterned shell. Excellent film algae grazer on glass and surfaces. Some breed in saltwater. Good CUC.'},
+  margarita_snail:           {name:'Margarita Snail',            tmin:65,tmax:76,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:0.75,min_gal:5, level:'Beginner',     reef_safe:true,  salt:true,type:'invert', inv:true, cuc:true, note:'Best in cooler tanks. Excellent algae grazer. Will not thrive at high temperatures. Good for systems under 76 F.'},
+  fighting_conch:            {name:'Fighting Conch',             tmin:72,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:3,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'invert', inv:true, cuc:true, note:'Large and active sand-sifter. Grazes detritus and algae from the sand bed. Peaceful despite the name. Good for sandbed maintenance.'},
+  tiger_conch:               {name:'Tiger Conch',                tmin:72,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:3,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'invert', inv:true, cuc:true, note:'Tiger-striped shell. Sand-sifter and detritus eater. Similar to fighting conch. Good sand bed cleanup crew member.'},
+  // --- Echinoderms ---
+  tuxedo_urchin:             {name:'Tuxedo Urchin',              tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:3,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'invert', inv:true, note:'Blue with black spines arranged in a tuxedo pattern. Excellent algae grazer. Carries debris as camouflage. Reef-safe and interesting.'},
+  longspine_urchin:          {name:'Long-Spine Urchin',          tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:6,  min_gal:50, level:'Beginner',     reef_safe:true,  salt:true,type:'invert', inv:true, note:'Dramatic long black spines. Spines are sharp — place carefully. Voracious algae grazer. Needs ample space and food.'},
+  shortspine_urchin:         {name:'Short-Spine Urchin',         tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:3,  min_gal:20, level:'Beginner',     reef_safe:true,  salt:true,type:'invert', inv:true, note:'Short dense spines. Less hazardous than long-spine urchin. Good algae control. Interesting behavior as it carries shells and coral rubble.'},
+  sand_sifting_star:         {name:'Sand Sifting Starfish',      tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:6,  min_gal:50, level:'Intermediate', reef_safe:'with_caution',salt:true,type:'invert', inv:true, note:'Excellent sandbed cleaner but depletes beneficial microfauna populations over time. Best in large established tanks with deep sand beds.'},
+  brittle_star:              {name:'Brittle Starfish',           tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:6,  min_gal:20, level:'Beginner',     reef_safe:true,  salt:true,type:'invert', inv:true, cuc:true, note:'Hides in rocks during the day, forages at night. Great scavenger and CUC. Regenerates arms when damaged. Reef-safe.'},
+  chocolate_chip_star:       {name:'Chocolate Chip Starfish',    tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:7,  min_gal:50, level:'Beginner',     reef_safe:false, salt:true,type:'invert', inv:true, note:'Pretty but very destructive in reef tanks. Eats corals, anemones and clams. FOWLR only. Very popular but misrepresented as reef-safe.'},
+  serpent_star:              {name:'Serpent Starfish',           tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:8,  min_gal:30, level:'Beginner',     reef_safe:true,  salt:true,type:'invert', inv:true, cuc:true, note:'Long smooth arms. Active scavenger and detritus eater. More active than brittle stars. Good CUC in a reef tank.'},
+  blue_linkia_star:          {name:'Blue Linkia Starfish',       tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:10, min_gal:75, level:'Advanced',     reef_safe:true,  salt:true,type:'invert', inv:true, note:'Vibrant blue. Very delicate — requires slow acclimation and pristine water. Can starve in tanks without sufficient microbial life. Expert care.'},
+  sea_cucumber:              {name:'Sea Cucumber',               tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:1,size_in:12, min_gal:50, level:'Intermediate', reef_safe:'with_caution',salt:true,type:'invert', inv:true, note:'Sand sifter and detritus eater. If stressed, it can eviscerate and release toxins (holothurin) that kill all tank inhabitants. Handle with great care.'},
+  // --- Clams & Bivalves ---
+  maxima_clam:               {name:'Maxima Clam',                tmin:75,tmax:82,pmin:8.2,pmax:8.4,gmin:34,gmax:36,bioload:0,size_in:12, min_gal:50, level:'Intermediate', reef_safe:true,  salt:true,type:'invert', inv:true, note:'Vibrant mantle in blue, gold or purple. Needs very strong lighting and excellent water quality. Requires calcium and alkalinity supplementation.'},
+  squamosa_clam:             {name:'Squamosa Clam',              tmin:75,tmax:82,pmin:8.2,pmax:8.4,gmin:34,gmax:36,bioload:0,size_in:16, min_gal:70, level:'Intermediate', reef_safe:true,  salt:true,type:'invert', inv:true, note:'Scalloped shell edges. More forgiving than maxima — tolerates lower light. Good beginner clam. Grows large.'},
+  derasa_clam:               {name:'Derasa Clam',                tmin:75,tmax:82,pmin:8.2,pmax:8.4,gmin:34,gmax:36,bioload:0,size_in:20, min_gal:100,level:'Intermediate', reef_safe:true,  salt:true,type:'invert', inv:true, note:'Smooth shell edges. Very large and fast growing. Most tolerant of the Tridacna clams. Best suited for larger reef tanks.'},
+  flame_scallop:             {name:'Flame Scallop',              tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:0,size_in:3,  min_gal:30, level:'Advanced',     reef_safe:true,  salt:true,type:'invert', inv:true, note:'Vivid red mantle. Non-photosynthetic filter feeder. Needs phytoplankton and zooplankton target feeding. Short lifespan in many systems.'},
+  // --- Worms & Others ---
+  feather_duster:            {name:'Feather Duster Worm',        tmin:72,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:0,size_in:4,  min_gal:10, level:'Beginner',     reef_safe:true,  salt:true,type:'invert', inv:true, note:'Feathery crown fans in and out. Filter feeder. Retreats into tube when disturbed. Reef-safe and interesting. No special care needed.'},
+  christmas_tree_worm:       {name:'Christmas Tree Worm',        tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:0,size_in:1.5,min_gal:30, level:'Intermediate', reef_safe:true,  salt:true,type:'invert', inv:true, note:'Lives within stony coral (usually Porites). Double spiral crown in vivid colors. Very sensitive to water quality. Beautiful addition to a reef.'},
+  tube_worm:                 {name:'Tube Worm (Protula)',        tmin:75,tmax:82,pmin:8.1,pmax:8.4,gmin:33,gmax:36,bioload:0,size_in:3,  min_gal:10, level:'Beginner',     reef_safe:true,  salt:true,type:'invert', inv:true, note:'Builds a calcium carbonate tube attached to rock. Extends feathery gills to filter feed. Reef-safe. Needs plankton for feeding.'}
+};
+
 // Breeding behaviour — assigned post-definition to keep SP entries readable
 var SP_BREEDS = {
   guppy:             {breeds:'Easy',     fry_fate:'eaten',   breed_note:'Livebearer — drops fry every 4-6 weeks. Fry eaten in community tanks unless separated.', breed_cond:{pair:true,ratio:'1M:2F'}},
@@ -1865,6 +2088,7 @@ tr:hover td{background:#f9fbfc}
   <span class="logo">&#x1F420; AquaTracker</span>
   <div class="nav-r">
     <select id="t_sel" title="Switch active tank"></select>
+    <span id="tank_type_badge" style="font-size:11px;white-space:nowrap"></span>
     <button class="btn bg bs" onclick="do_add_tank()">+ Tank</button>
     <button class="btn bg bs" onclick="do_add_preview()">&#x1F9EA; Preview</button>
     <span id="sync_ind" style="font-size:11px;color:rgba(255,255,255,.6);white-space:nowrap"></span>
@@ -1953,7 +2177,10 @@ function sv(d) {
 }
 function mt() { return {tanks:[], equip:[], plants:[], stock:[], tasks:[], water:[], feeding:[], ferts:[], custom_sp:{}, maint_log:[], treatment_log:[]}; }
 // Merged species lookup: built-in SP + user custom_sp
-function get_sp(d) { return Object.assign({}, _sp, d ? d.custom_sp : {}); }
+function get_sp(d, tid) {
+  if (tid && is_salt(tid)) return Object.assign({}, SP_SALT);
+  return Object.assign({}, _sp, d ? d.custom_sp : {});
+}
 function add_custom_sp(sp_id, name, type, tmin, tmax, pmin, pmax, gmin, gmax, size_in, min_gal, bioload, level, note, zone, activity) {
   var d = ld();
   d.custom_sp[sp_id] = {name:name, type:type||'Fish', tmin:parseFloat(tmin)||72, tmax:parseFloat(tmax)||82,
@@ -2031,7 +2258,7 @@ function fl_lbl() { return get_pref().vol === 'L' ? 'LPH' : 'GPH'; }
 function inp_fl(v) { var n = parseFloat(v) || 0; return get_pref().vol === 'L' ? Math.round(n / 3.78541) : n; }
 
 // ===== TANKS =====
-function add_tank(name, gal, setup, notes, rt_min, rt_max, len_cm, wid_cm, ht_cm) {
+function add_tank(name, gal, setup, notes, rt_min, rt_max, len_cm, wid_cm, ht_cm, tank_type, salt_subtype) {
   var d = ld(), g = parseFloat(gal) || 0;
   var t = {id:gid(), name:name, gallons:g, liters:g2l(g), setup_date:setup, notes:notes||'',
            room_tmin: rt_min ? parseFloat(rt_min) : null,
@@ -2039,10 +2266,12 @@ function add_tank(name, gal, setup, notes, rt_min, rt_max, len_cm, wid_cm, ht_cm
            length_cm: len_cm ? parseFloat(len_cm) : null,
            width_cm:  wid_cm ? parseFloat(wid_cm) : null,
            height_cm: ht_cm  ? parseFloat(ht_cm)  : null,
+           tank_type: tank_type || 'fresh',
+           salt_subtype: salt_subtype || 'fowlr',
            substrate_liters: 0};
   d.tanks.push(t); sv(d); sat(t.id); return t.id;
 }
-function upd_tank(id, name, gal, setup, notes, rt_min, rt_max, show_feed_log, len_cm, wid_cm, ht_cm) {
+function upd_tank(id, name, gal, setup, notes, rt_min, rt_max, show_feed_log, len_cm, wid_cm, ht_cm, tank_type, salt_subtype) {
   var d = ld(), g = parseFloat(gal) || 0;
   d.tanks = d.tanks.map(function(t) {
     if (t.id !== id) return t;
@@ -2053,7 +2282,9 @@ function upd_tank(id, name, gal, setup, notes, rt_min, rt_max, show_feed_log, le
       show_feed_log: !!show_feed_log,
       length_cm: len_cm ? parseFloat(len_cm) : null,
       width_cm:  wid_cm ? parseFloat(wid_cm) : null,
-      height_cm: ht_cm  ? parseFloat(ht_cm)  : null
+      height_cm: ht_cm  ? parseFloat(ht_cm)  : null,
+      tank_type: tank_type || t.tank_type || 'fresh',
+      salt_subtype: salt_subtype || t.salt_subtype || 'fowlr'
     });
   });
   sv(d);
@@ -2167,7 +2398,8 @@ function cycle_status(tid) {
   var last = entries[entries.length - 1];
   var nh3 = last.ammonia, no2 = last.nitrite, no3 = last.nitrate;
   if (nh3 === null && no2 === null) return {phase:0, pct:10, label:'Monitoring', color:'#9ca3af', test_freq:3, desc:'Log ammonia and nitrite readings to track cycle progress.'};
-  if (nh3 !== null && nh3 <= 0.25 && no2 !== null && no2 <= 0.25 && no3 !== null && no3 > 0) return {phase:4, pct:100, label:'Cycle complete!', color:'#3ab87a', test_freq:null, desc:'NH3 and NO2 are at 0 ppm, nitrate detected. Your tank is ready. Add fish slowly — 2-3 at a time, wait 1-2 weeks between additions.'};
+  var reef_note = is_reef(tid) ? ' Reef target: nitrate below 5 ppm before adding corals.' : '';
+  if (nh3 !== null && nh3 <= 0.25 && no2 !== null && no2 <= 0.25 && no3 !== null && no3 > 0) return {phase:4, pct:100, label:'Cycle complete!', color:'#3ab87a', test_freq:null, desc:'NH3 and NO2 are at 0 ppm, nitrate detected. Your tank is ready. Add fish slowly — 2-3 at a time, wait 1-2 weeks between additions.' + reef_note};
   // Pattern: NO2 spike seen in any prior entry, now both NH3 and NO2 are back to safe levels
   var prior = entries.slice(0, entries.length - 1);
   var had_no2_spike = prior.some(function(e){ return e.nitrite !== null && e.nitrite > 0; });
@@ -2175,7 +2407,7 @@ function cycle_status(tid) {
   var no2_clear = no2 !== null && no2 <= 0.25;
   // If NH3 was ever elevated, require it to be logged and resolved; if never tested, don't block on it
   var nh3_clear = had_nh3_spike ? (nh3 !== null && nh3 <= 0.25) : true;
-  if (had_no2_spike && no2_clear && nh3_clear) return {phase:4, pct:100, label:'Cycle complete!', color:'#3ab87a', test_freq:null, desc:'Nitrite spike detected in your history and now resolved — this is the classic cycle pattern. Test and log nitrate to confirm it is building up. Do a 30-50% water change before adding your first fish.'};
+  if (had_no2_spike && no2_clear && nh3_clear) return {phase:4, pct:100, label:'Cycle complete!', color:'#3ab87a', test_freq:null, desc:'Nitrite spike detected in your history and now resolved — this is the classic cycle pattern. Test and log nitrate to confirm it is building up. Do a 30-50% water change before adding your first fish.' + reef_note};
   if (nh3 !== null && nh3 <= 0.5 && no2 !== null && no2 > 0) return {phase:3, pct:75, label:'Almost there', color:'#e8a838', test_freq:2, desc:'Ammonia is falling and nitrite-eating bacteria are multiplying. Keep testing every 2-3 days. 1-2 more weeks typically.'};
   if (no2 !== null && no2 > 0) return {phase:2, pct:50, label:'Nitrite spike', color:'#e05252', test_freq:2, desc:'Ammonia-eating bacteria are established. Nitrite-eating bacteria are growing now. Both are still toxic — do not add fish. Avoid large water changes.'};
   if (nh3 !== null && nh3 > 0) return {phase:1, pct:25, label:'Ammonia spike', color:'#e8a838', test_freq:2, desc:'Beneficial bacteria are starting to colonise the filter. This is normal. Do NOT do water changes yet. Test every 2-3 days and wait.'};
@@ -2404,6 +2636,10 @@ function upd_fert_name(sel) {
   var nm = document.querySelector('[name="fert_name"]');
   if (fp && nm) nm.value = fp.name;
 }
+function upd_salt_fert_name(sel) {
+  var nm = document.querySelector('[name="fert_name"]');
+  if (nm) nm.value = sel.value;
+}
 // Returns notify_min (minutes since midnight) from a task, handling old notify_hour format
 function get_notify_min(t) {
   if (t && t.notify_min != null) return t.notify_min;
@@ -2422,17 +2658,32 @@ function mk_time_opts(cur_min) {
   return opts;
 }
 function do_add_fert() {
-  var opts = Object.keys(_fert).map(function(k) {
-    return '<option value="' + k + '">' + _fert[k].name + '</option>';
-  }).join('');
-  om('<div class="mtitle">Add Fertilizer</div>' +
-    '<form id="fert_frm" onsubmit="event.preventDefault();sub_fert()">' +
-    fg('Preset', '<select name="fert_preset" onchange="upd_fert_name(this)">' + opts + '</select>') +
-    fg('Name', '<input type="text" name="fert_name" value="' + esc(_fert[Object.keys(_fert)[0]].name) + '" required>') +
-    fg('Notes', '<input type="text" name="fert_notes" placeholder="Optional">') +
-    '<div class="fg"><label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">' +
-    '<input type="checkbox" name="auto_enabled" style="width:16px;height:16px"> Automated — use in dosing reservoir</label></div>' +
-    '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Add Fertilizer</button></div>' +
+  var tid = at(), salt = is_salt(tid);
+  var lbl = salt ? 'Additive' : 'Fertilizer';
+  var frm_id = 'fert_frm';
+  var inner = '';
+  if (salt) {
+    var salt_types = ['Calcium (Two-Part A)','Alkalinity / Buffer (Two-Part B)','Magnesium','Kalkwasser','Trace Elements','Amino Acids','Coral Food','Probiotic Bacteria','Nitrifying Bacteria','GFO (Phosphate Remover)','Activated Carbon','Reef Salt','Iodine','Strontium','Potassium','Custom Additive'];
+    var salt_opts = salt_types.map(function(t){ return '<option value="' + t + '">' + t + '</option>'; }).join('');
+    inner = '<om-row>' + fg('Type', '<select name="fert_preset" onchange="upd_salt_fert_name(this)">' + salt_opts + '</select>') + '</om-row>' +
+      fg('Name', '<input type="text" name="fert_name" value="' + esc(salt_types[0]) + '" required>') +
+      fg('Notes', '<input type="text" name="fert_notes" placeholder="Brand, dose notes (optional)">') +
+      '<div class="fg"><label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">' +
+      '<input type="checkbox" name="auto_enabled" style="width:16px;height:16px"> Automated — use in dosing reservoir</label></div>';
+  } else {
+    var opts = Object.keys(_fert).map(function(k) {
+      return '<option value="' + k + '">' + _fert[k].name + '</option>';
+    }).join('');
+    inner = fg('Preset', '<select name="fert_preset" onchange="upd_fert_name(this)">' + opts + '</select>') +
+      fg('Name', '<input type="text" name="fert_name" value="' + esc(_fert[Object.keys(_fert)[0]].name) + '" required>') +
+      fg('Notes', '<input type="text" name="fert_notes" placeholder="Optional">') +
+      '<div class="fg"><label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">' +
+      '<input type="checkbox" name="auto_enabled" style="width:16px;height:16px"> Automated — use in dosing reservoir</label></div>';
+  }
+  om('<div class="mtitle">Add ' + lbl + '</div>' +
+    '<form id="' + frm_id + '" onsubmit="event.preventDefault();sub_fert()">' +
+    inner +
+    '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Add ' + lbl + '</button></div>' +
     '</form>');
 }
 function sub_fert() {
@@ -2908,9 +3159,11 @@ function show_cal_day(ds) {
   el.innerHTML = h;
 }
 function do_add_mlog() {
-  var type_opts = ['Water Change','Filter Clean','Gravel Vac','Glass Wipe','Fertilizer','Pruning','Water Test','Equipment Service','Other']
+  var tid = at(), salt = is_salt(tid);
+  var fert_type = salt ? 'Additive' : 'Fertilizer';
+  var type_opts = ['Water Change','Filter Clean','Gravel Vac','Glass Wipe',fert_type,'Pruning','Water Test','Equipment Service','Other']
     .map(function(o){ return '<option>' + o + '</option>'; }).join('');
-  var d = ld(), tid = at();
+  var d = ld();
   var tank_res = (d.reservoirs||[]).filter(function(r){ return r.tank_id === tid && r.daily_dose_ml; });
   var fert_wrap = '';
   if (tank_res.length) {
@@ -2928,7 +3181,7 @@ function do_add_mlog() {
   om('<div class="mtitle">Log Activity</div>' +
     '<form onsubmit="sub_add_mlog(event)">' +
     '<div class="frow">' +
-    fg('Type', '<select name="type" onchange="tog_mlog_fert(this.value)">' + type_opts + '</select>') +
+    fg('Type', '<select name="type" onchange="tog_mlog_fert(this.value,\'' + fert_type + '\')">' + type_opts + '</select>') +
     fg('Activity', '<input type="text" id="mlog_act_name" name="name" placeholder="e.g. 30% water change" required>') +
     '</div><div class="frow">' +
     fg('Date', '<input type="date" name="date" value="' + today_str() + '" required>') +
@@ -2938,10 +3191,11 @@ function do_add_mlog() {
     '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Save Log</button></div>' +
     '</form>');
 }
-function tog_mlog_fert(val) {
+function tog_mlog_fert(val, fert_type) {
+  var ft = fert_type || 'Fertilizer';
   var wrap = document.getElementById('mlog_fert_wrap');
-  if (wrap) wrap.style.display = val === 'Fertilizer' ? '' : 'none';
-  if (val !== 'Fertilizer') {
+  if (wrap) wrap.style.display = val === ft ? '' : 'none';
+  if (val !== ft) {
     var sel = document.getElementById('mlog_res_sel');
     if (sel) sel.value = '';
     var amt_wrap = document.getElementById('mlog_res_amt_wrap');
@@ -2989,9 +3243,9 @@ function sub_add_mlog(e) {
 }
 
 // ===== WATER LOG =====
-function add_water(tid, date, tf, nh3, no2, no3, ph, gh, notes, ca, mg, phosphate, tds, kh, co2_on) {
+function add_water(tid, date, tf, nh3, no2, no3, ph, gh, notes, ca, mg, phosphate, tds, kh, co2_on, salinity) {
   var d = ld();
-  d.water.push({id:gid(), tank_id:tid, date:date, temp_f:pn(tf), ammonia:pn(nh3), nitrite:pn(no2), nitrate:pn(no3), ph:pn(ph), gh:pn(gh), notes:notes||'', calcium:pn(ca), magnesium:pn(mg), phosphate:pn(phosphate), tds:pn(tds), kh:kh!=null?pn(kh):null, co2_on:co2_on===true?true:null});
+  d.water.push({id:gid(), tank_id:tid, date:date, temp_f:pn(tf), ammonia:pn(nh3), nitrite:pn(no2), nitrate:pn(no3), ph:pn(ph), gh:pn(gh), notes:notes||'', calcium:pn(ca), magnesium:pn(mg), phosphate:pn(phosphate), tds:pn(tds), kh:kh!=null?pn(kh):null, co2_on:co2_on===true?true:null, salinity:pn(salinity)});
   sv(d);
 }
 function del_water(id) {
@@ -3005,11 +3259,14 @@ function last_r(tid) { var w = get_water(tid); return w.length ? w[w.length-1] :
 
 // ===== BIOLOAD =====
 function calc_bioload(tid) {
-  var d = ld(), sp_all = get_sp(d), total = 0;
+  var d = ld(), sp_all = get_sp(d), salt = is_salt(tid), total = 0;
   d.stock.filter(function(x){ return x.tank_id === tid; }).forEach(function(s) {
     var sp = sp_all[s.species_id];
-    // Invertebrates (shrimps, snails) produce ~30% of the waste fish do at equivalent size
-    if (sp) total += (sp.bioload || 2) * s.qty * (sp.inv ? 0.3 : 1);
+    // For saltwater, only fish contribute to bioload — corals and cleanup crew are excluded
+    if (sp) {
+      if (salt && (sp.type === 'coral' || (sp.type === 'invert' && sp.cuc))) return;
+      total += (sp.bioload || 2) * s.qty * (sp.inv ? 0.3 : 1);
+    }
   });
   return Math.round(total);
 }
@@ -3108,6 +3365,23 @@ function get_co2_info(tid) {
   var cfg = co2[0].config || {};
   return {type: cfg.co2_type || 'CO2', hours: cfg.hours || 0, bps: cfg.bps || 0};
 }
+function get_tank_type(tid) {
+  var d = ld(), t = d.tanks.find(function(x){ return x.id === tid; });
+  return (t && t.tank_type) || 'fresh';
+}
+function is_salt(tid) { return get_tank_type(tid) === 'salt'; }
+function is_reef(tid) {
+  if (!is_salt(tid)) return false;
+  var d = ld(), t = d.tanks.find(function(x){ return x.id === tid; });
+  return t && t.salt_subtype === 'reef';
+}
+function sg_to_ppt(sg) { return Math.round((sg - 1) * 1025.9 * 10) / 10; }
+function ppt_to_sg(ppt) { return Math.round((ppt / 1025.9 + 1) * 10000) / 10000; }
+function get_salt_sp() { return Object.assign({}, SP_SALT); }
+function get_equip_types(tid) {
+  if (is_salt(tid)) return ['Protein Skimmer','Filter','Heater','Light','Powerhead / Wave Maker','ATO (Auto Top-Off)','Sump','Refugium','Dosing Pump','UV Sterilizer','Thermometer','Other'];
+  return ['Filter','Heater','Light','CO2 System','CO2 Drop Checker','Pump','Substrate','Thermometer','Other'];
+}
 
 function add_rec_task(type, name, freq, rdow) {
   var dow = null;
@@ -3139,15 +3413,16 @@ function overlap(tid) {
   return {sl:sl, pl_names:pl_names, temp:{min:tmi,max:tma,ok:tmi<=tma}, ph:{min:pmi,max:pma,ok:pmi<=pma}, gh:{min:gmi,max:gma,ok:gmi<=gma}, all_ok:param_ok&&beh_ok};
 }
 // Returns species in sl whose individual range is violated by raw for the given key
-function find_affected(sl, k, raw) {
-  var out = [], seen = {};
+function find_affected(sl, k, raw, tid) {
+  var out = [], seen = {}, salt = is_salt(tid || at());
   if (!sl || !sl.length || raw === null || raw === undefined) return out;
   sl.forEach(function(sp) {
     if (seen[sp.sid]) return;
     var lo, hi;
     if (k === 'temp_f') { lo = sp.tmin; hi = sp.tmax; }
     else if (k === 'ph')  { lo = sp.pmin; hi = sp.pmax; }
-    else if (k === 'gh')  { lo = sp.gmin; hi = sp.gmax; }
+    else if (k === 'gh' && !salt)  { lo = sp.gmin; hi = sp.gmax; }
+    else if (k === 'salinity' && salt) { lo = sp.gmin; hi = sp.gmax; }
     else return;
     if (raw > hi)       { seen[sp.sid] = 1; out.push({name: sp.name, dir: 'max', val: k === 'temp_f' ? d_t(hi) : hi}); }
     else if (raw < lo)  { seen[sp.sid] = 1; out.push({name: sp.name, dir: 'min', val: k === 'temp_f' ? d_t(lo) : lo}); }
@@ -3163,13 +3438,13 @@ function behavior_incompat(sid_a, sp_a, sid_b, sp_b) {
   if (sp_b.eats_fish && sp_a.type !== 'Turtle') return sp_b.name + ' eats fish — cannot be kept with ' + sp_a.name + '.';
   return null;
 }
-function bad_pairs(sl) {
-  var c = [];
+function bad_pairs(sl, tid) {
+  var c = [], salt = is_salt(tid || at());
   for (var i=0; i<sl.length; i++) for (var j=i+1; j<sl.length; j++) {
     var a=sl[i], b=sl[j], ps=[], beh=null;
     if (Math.max(a.tmin,b.tmin)>Math.min(a.tmax,b.tmax)) ps.push('Temperature');
     if (Math.max(a.pmin,b.pmin)>Math.min(a.pmax,b.pmax)) ps.push('pH');
-    if (Math.max(a.gmin,b.gmin)>Math.min(a.gmax,b.gmax)) ps.push('Hardness');
+    if (Math.max(a.gmin,b.gmin)>Math.min(a.gmax,b.gmax)) ps.push(salt ? 'Salinity' : 'Hardness');
     beh = behavior_incompat(a.sid, a, b.sid, b);
     if (ps.length || beh) c.push({a:a.name, b:b.name, ps:ps, beh:beh});
   }
@@ -3198,7 +3473,7 @@ function draw_chart(tid, param) {
   if (ch_inst) { ch_inst.destroy(); ch_inst = null; }
   var cv = document.getElementById('wc');
   if (!cv || entries.length < 2) return;
-  var lmap = {temp_f:'Temperature (' + t_lbl() + ')', ammonia:'Ammonia TAN (ppm)', nitrite:'Nitrite (ppm)', nitrate:'Nitrate (ppm)', ph:'pH', gh:'Hardness (GH)', uia:'Ammonia UIA (ppm)'};
+  var lmap = {temp_f:'Temperature (' + t_lbl() + ')', ammonia:'Ammonia TAN (ppm)', nitrite:'Nitrite (ppm)', nitrate:'Nitrate (ppm)', ph:'pH', gh:'Hardness (GH)', uia:'Ammonia UIA (ppm)', salinity:'Salinity (ppt)'};
 
   // Reference lines: {v, color, label}
   var temp_refs = [];
@@ -3651,16 +3926,26 @@ function r_startup_picker(tid) {
   var tank = d.tanks.find(function(t){ return t.id === tid; }); if (!tank) return '';
   var age = Math.floor((Date.now() - new Date(tank.setup_date + 'T00:00:00').getTime()) / 86400000);
   if (age > 60 || tank.cycled || tank.startup_method || tank.startup_done) return '';
+  var salt = is_salt(tid);
   var h = '<div class="card" style="border-left:4px solid #4db8d4">';
   h += '<div class="ctitle">Choose Your Startup Method</div>';
   h += '<p style="font-size:13px;line-height:1.5;margin-bottom:10px">How do you plan to start this aquarium? Each method has different steps to track. You can change this at any time.</p>';
   h += '<div style="display:flex;flex-direction:column;gap:8px">';
+  if (salt) {
+    h += '<button class="btn bg" style="text-align:left;padding:10px 14px" data-sm="standard" onclick="save_startup_method(this.dataset.sm)">' +
+         '<strong>Fishless Cycling</strong><br><span style="font-size:12px;color:var(--muted)">Add ammonia source, cycle without fish. Safest and most controllable method for saltwater.</span></button>';
+    h += '<button class="btn bg" style="text-align:left;padding:10px 14px" data-sm="live_rock" onclick="save_startup_method(this.dataset.sm)">' +
+         '<strong>Live Rock Cycling</strong><br><span style="font-size:12px;color:var(--muted)">Seed beneficial bacteria with cured live rock. Slower but introduces natural diversity.</span></button>';
+    h += '<button class="btn bg" style="text-align:left;padding:10px 14px" data-sm="bacteria_supp" onclick="save_startup_method(this.dataset.sm)">' +
+         '<strong>Bacteria Supplement</strong><br><span style="font-size:12px;color:var(--muted)">Use bottled nitrifying bacteria (Dr. Tim\'s One &amp; Only, Microbacter7). Fastest method — often 2 weeks.</span></button>';
+  } else {
   h += '<button class="btn bg" style="text-align:left;padding:10px 14px" data-sm="standard" onclick="save_startup_method(this.dataset.sm)">' +
        '<strong>Standard — Nitrogen Cycle only</strong><br><span style="font-size:12px;color:var(--muted)">Fill with water, add an ammonia source and cycle. Most common approach.</span></button>';
   h += '<button class="btn bg" style="text-align:left;padding:10px 14px" data-sm="dark" onclick="save_startup_method(this.dataset.sm)">' +
        '<strong>Dark Start Method</strong><br><span style="font-size:12px;color:var(--muted)">Run the tank in complete darkness for 3-4 weeks before introducing light. Best for preventing early algae outbreaks in planted tanks.</span></button>';
   h += '<button class="btn bg" style="text-align:left;padding:10px 14px" data-sm="dry" onclick="save_startup_method(this.dataset.sm)">' +
        '<strong>Dry Start Method</strong><br><span style="font-size:12px;color:var(--muted)">Grow plants emersed (out of water) for 4-6 weeks before flooding. Gives plants a strong root system before any fish are added.</span></button>';
+  }
   h += '</div></div>';
   return h;
 }
@@ -3914,10 +4199,27 @@ function r_setup_card(tid) {
 }
 
 // ===== TANK SELECTOR =====
+function upd_tank_badge() {
+  var badge = document.getElementById('tank_type_badge');
+  if (!badge) return;
+  var tid = at();
+  if (!tid) { badge.innerHTML = ''; return; }
+  var d = ld(), tank = d.tanks.find(function(t){ return t.id === tid; });
+  if (!tank) { badge.innerHTML = ''; return; }
+  var salt = (tank.tank_type || 'fresh') === 'salt';
+  if (!salt) {
+    badge.innerHTML = '<span style="background:#14b8a6;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">Fresh</span>';
+  } else {
+    var sub = tank.salt_subtype === 'reef' ? 'Reef' : 'FOWLR';
+    var sub_col = tank.salt_subtype === 'reef' ? '#8b5cf6' : '#64748b';
+    badge.innerHTML = '<span style="background:#0ea5e9;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">Salt</span> ' +
+                      '<span style="background:' + sub_col + ';color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">' + sub + '</span>';
+  }
+}
 function build_sel() {
   var d = ld(), sel = document.getElementById('t_sel'), cur = at();
   sel.innerHTML = '';
-  if (!d.tanks.length) { sel.innerHTML = '<option value="">No tanks yet</option>'; return; }
+  if (!d.tanks.length) { sel.innerHTML = '<option value="">No tanks yet</option>'; upd_tank_badge(); return; }
   d.tanks.forEach(function(t) {
     var o = document.createElement('option');
     var label = (t.preview ? '[Preview] ' : '') + t.name + ' (' + d_v(t.gallons) + ' ' + v_lbl() + ')';
@@ -3925,6 +4227,7 @@ function build_sel() {
     if (t.id === cur) o.selected = true;
     sel.appendChild(o);
   });
+  upd_tank_badge();
 }
 
 // ===== TAB SWITCHER =====
@@ -3942,6 +4245,7 @@ async function r_dash() {
   var tid = at(), d = ld(), el = document.getElementById('p-dash');
   var tank = d.tanks.find(function(t){ return t.id === tid; });
   if (!tank) { el.innerHTML = no_tank(); return; }
+  var salt = is_salt(tid), reef = is_reef(tid);
   var has_therm = d.equip.some(function(e){ return e.tank_id === tid && e.type === 'Thermometer'; });
   var has_fish = d.stock.filter(function(s){ return s.tank_id === tid && !s.preview; }).length > 0;
   var cyc_dash = cycle_status(tid);
@@ -4105,6 +4409,19 @@ async function r_dash() {
   if (lr) {
     var ps = [];
     if (has_therm) ps.push({k:'temp_f', l:'Temperature', u:t_lbl(), mn:rng&&rng.temp.ok?d_t(rng.temp.min):null, mx:rng&&rng.temp.ok?d_t(rng.temp.max):null, tox:false, conv:d_t});
+    if (salt) {
+      ps.push(
+        {k:'salinity',  l:'Salinity',         u:'ppt', mn:33,  mx:36,  tox:false, conv:null},
+        {k:'ammonia',   l:'Ammonia',          u:'ppm', mn:0,   mx:0,   tox:true,  conv:null},
+        {k:'nitrite',   l:'Nitrite',          u:'ppm', mn:0,   mx:0,   tox:true,  conv:null},
+        {k:'nitrate',   l:'Nitrate',          u:'ppm', mn:0,   mx:reef?5:20, tox:false, conv:null},
+        {k:'ph',        l:'pH',               u:'',    mn:8.1, mx:8.4, tox:false, conv:null},
+        {k:'kh',        l:'Alkalinity (KH)',  u:'dKH', mn:8,   mx:11,  tox:false, conv:null}
+      );
+      if (lr.calcium !== null && lr.calcium !== undefined)   ps.push({k:'calcium',   l:'Calcium',   u:'ppm', mn:380, mx:450,  tox:false, conv:null});
+      if (lr.magnesium !== null && lr.magnesium !== undefined) ps.push({k:'magnesium', l:'Magnesium', u:'ppm', mn:1250,mx:1350, tox:false, conv:null});
+      if (lr.phosphate !== null && lr.phosphate !== undefined) ps.push({k:'phosphate', l:'Phosphate', u:'ppm', mn:0,   mx:reef?0.03:0.5, tox:false, conv:null});
+    } else {
     ps.push(
       {k:'ammonia',   l:'Ammonia',          u:'ppm', mn:0,  mx:0,  tox:true,  conv:null},
       {k:'nitrite',   l:'Nitrite',          u:'ppm', mn:0,  mx:0,  tox:true,  conv:null},
@@ -4117,6 +4434,7 @@ async function r_dash() {
     if (lr.calcium !== null && lr.calcium !== undefined) {
       ps.push({k:'calcium',   l:'Calcium (Ca)',   u:'ppm', mn:20, mx:60, tox:false, conv:null});
       ps.push({k:'magnesium', l:'Magnesium (Mg)', u:'ppm', mn:5,  mx:20, tox:false, conv:null});
+    }
     }
     h += '<div class="tw"><table><tr><th>Parameter</th><th>Reading</th><th>Safe Range</th><th>Status</th></tr>';
     ps.forEach(function(p) {
@@ -4185,6 +4503,8 @@ function r_life() {
   if (!d.tanks.find(function(t){return t.id===tid;})) { el.innerHTML = no_tank(); return; }
   check_reservoir_auto_dose();
   d = ld();
+  var salt = is_salt(tid);
+  var fert_label = salt ? 'Additives' : 'Fertilizers';
   var eq = d.equip.filter(function(x){return x.tank_id===tid;});
   var pl = d.plants.filter(function(x){return x.tank_id===tid;});
   var sk = d.stock.filter(function(x){return x.tank_id===tid;});
@@ -4219,37 +4539,39 @@ function r_life() {
   } else h += '<p class="emsg">No equipment added yet.</p>';
   h += '</div>';
 
-  h += '<div class="card"><div class="ctitle">Plants <button class="btn bp bs" onclick="do_add_plant()">+ Add</button></div>';
-  if (pl.length) {
-    h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">' +
-      '<input type="text" id="pl_list_q" placeholder="Search plants..." oninput="filter_pl_list()" style="flex:1;min-width:120px;padding:5px 8px;border:1px solid #ccd5de;border-radius:4px;font-size:12px">' +
-      '<select id="pl_list_pos" onchange="filter_pl_list()" style="width:auto">' +
-      '<option value="">All positions</option><option value="Foreground">Foreground</option><option value="Midground">Midground</option><option value="Background">Background</option><option value="Floating">Floating</option><option value="Emersed">Emersed</option>' +
-      '</select></div>';
-    h += '<div class="tw"><table id="pl_list_tbl"><tr><th>Plant</th><th>Qty</th><th>Position</th><th>Light</th><th>CO2</th><th>Added</th><th>Notes</th><th></th></tr>';
-    pl.forEach(function(p) {
-      var pd = _pl[p.plant_id];
-      var light_txt = pd ? pd.light : '-';
-      var co2_txt = pd ? (pd.co2 ? '<span style="color:var(--warn);font-weight:700">Yes</span>' : 'No') : '-';
-      var pos_txt = pd ? (_group_pos[pd.group] || '') : '';
-      var pos_color = pos_txt === 'Foreground' ? 'var(--ok)' : pos_txt === 'Background' ? 'var(--deep)' : pos_txt === 'Floating' ? '#4db8d4' : pos_txt === 'Emersed' ? 'var(--muted)' : 'var(--mid)';
-      h += '<tr data-pname="' + esc((p.name||'').toLowerCase()) + '" data-ppos="' + esc(pos_txt) + '">' +
-           '<td><strong>' + esc(p.name) + '</strong>' + (pd ? '<br><small style="color:var(--muted)">' + pd.diff + '</small>' : '') + '</td>' +
-           '<td>' + p.qty + '</td>' +
-           '<td>' + (pos_txt ? '<span style="color:' + pos_color + ';font-weight:600;font-size:11px">' + pos_txt + '</span>' : '-') + '</td>' +
-           '<td>' + light_txt + '</td><td>' + co2_txt + '</td>' +
-           '<td>' + p.added_date + '</td><td>' + esc(p.notes) + '</td>' +
-           '<td style="white-space:nowrap"><button class="btn bg bs" data-id="' + p.id + '" onclick="do_edit_plant(this.dataset.id)">Edit</button> <button class="btn bd bs" data-id="' + p.id + '" onclick="del_plant(this.dataset.id);r_life()">&#x2715;</button></td></tr>';
-    });
-    h += '</table></div>';
-  } else h += '<p class="emsg">No plants added yet.</p>';
-  h += '</div>';
+  if (!salt) {
+    h += '<div class="card"><div class="ctitle">Plants <button class="btn bp bs" onclick="do_add_plant()">+ Add</button></div>';
+    if (pl.length) {
+      h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">' +
+        '<input type="text" id="pl_list_q" placeholder="Search plants..." oninput="filter_pl_list()" style="flex:1;min-width:120px;padding:5px 8px;border:1px solid #ccd5de;border-radius:4px;font-size:12px">' +
+        '<select id="pl_list_pos" onchange="filter_pl_list()" style="width:auto">' +
+        '<option value="">All positions</option><option value="Foreground">Foreground</option><option value="Midground">Midground</option><option value="Background">Background</option><option value="Floating">Floating</option><option value="Emersed">Emersed</option>' +
+        '</select></div>';
+      h += '<div class="tw"><table id="pl_list_tbl"><tr><th>Plant</th><th>Qty</th><th>Position</th><th>Light</th><th>CO2</th><th>Added</th><th>Notes</th><th></th></tr>';
+      pl.forEach(function(p) {
+        var pd = _pl[p.plant_id];
+        var light_txt = pd ? pd.light : '-';
+        var co2_txt = pd ? (pd.co2 ? '<span style="color:var(--warn);font-weight:700">Yes</span>' : 'No') : '-';
+        var pos_txt = pd ? (_group_pos[pd.group] || '') : '';
+        var pos_color = pos_txt === 'Foreground' ? 'var(--ok)' : pos_txt === 'Background' ? 'var(--deep)' : pos_txt === 'Floating' ? '#4db8d4' : pos_txt === 'Emersed' ? 'var(--muted)' : 'var(--mid)';
+        h += '<tr data-pname="' + esc((p.name||'').toLowerCase()) + '" data-ppos="' + esc(pos_txt) + '">' +
+             '<td><strong>' + esc(p.name) + '</strong>' + (pd ? '<br><small style="color:var(--muted)">' + pd.diff + '</small>' : '') + '</td>' +
+             '<td>' + p.qty + '</td>' +
+             '<td>' + (pos_txt ? '<span style="color:' + pos_color + ';font-weight:600;font-size:11px">' + pos_txt + '</span>' : '-') + '</td>' +
+             '<td>' + light_txt + '</td><td>' + co2_txt + '</td>' +
+             '<td>' + p.added_date + '</td><td>' + esc(p.notes) + '</td>' +
+             '<td style="white-space:nowrap"><button class="btn bg bs" data-id="' + p.id + '" onclick="do_edit_plant(this.dataset.id)">Edit</button> <button class="btn bd bs" data-id="' + p.id + '" onclick="del_plant(this.dataset.id);r_life()">&#x2715;</button></td></tr>';
+      });
+      h += '</table></div>';
+    } else h += '<p class="emsg">No plants added yet.</p>';
+    h += '</div>';
+  }
 
   var fr = d.ferts.filter(function(x){return x.tank_id===tid;});
   h += '<div class="card"><div class="ctitle">Livestock <button class="btn bp bs" onclick="do_add_stock()">+ Add</button></div>';
   if (sk.length) {
     var tank_life = d.tanks.find(function(t){ return t.id === tid; });
-    var sp_all_life = get_sp(d);
+    var sp_all_life = get_sp(d, tid);
     var small_tank_warns = [];
     sk.forEach(function(s) {
       var sp = sp_all_life[s.species_id];
@@ -4283,7 +4605,7 @@ function r_life() {
   } else h += '<p class="emsg">No livestock added yet.</p>';
   h += '</div>';
 
-  h += '<div class="card"><div class="ctitle">Fertilizers <button class="btn bp bs" onclick="do_add_fert()">+ Add</button> <button class="btn bp bs" onclick="do_add_reservoir()">+ Add Reservoir</button></div>';
+  h += '<div class="card"><div class="ctitle">' + fert_label + ' <button class="btn bp bs" onclick="do_add_fert()">+ Add</button> <button class="btn bp bs" onclick="do_add_reservoir()">+ Add Reservoir</button></div>';
   if (fr.length) {
     h += '<div class="tw"><table><tr><th>Name</th><th>Notes</th><th></th></tr>';
     fr.forEach(function(f) {
@@ -4293,7 +4615,7 @@ function r_life() {
            '<td style="white-space:nowrap"><button class="btn bg bs" data-id="' + f.id + '" onclick="do_edit_fert(this.dataset.id)">Edit</button> <button class="btn bd bs" data-id="' + f.id + '" onclick="del_fert(this.dataset.id)">&#x2715;</button></td></tr>';
     });
     h += '</table></div>';
-  } else h += '<p class="emsg">No fertilizers added. Add one to get dosing reminders in the Recommended Schedule.</p>';
+  } else h += '<p class="emsg">No ' + fert_label.toLowerCase() + ' added. Add one to get dosing reminders in the Recommended Schedule.</p>';
 
   // Dosing Reservoirs — grouped inside the Fertilizers card
   var res_list = d.reservoirs.filter(function(x){return x.tank_id===tid;});
@@ -4318,46 +4640,80 @@ function r_life() {
 }
 
 // ===== WATER LOG =====
-function wlog_cls(key, val) {
+function wlog_cls(key, val, tid) {
   if (val === null || val === undefined || val === '') return '';
   val = parseFloat(val);
+  var salt = is_salt(tid || at()), reef = is_reef(tid || at());
+  if (key === 'salinity')
+    return val >= 33 && val <= 36 ? 'var(--ok)' : val >= 30 && val <= 38 ? 'var(--warn)' : 'var(--danger)';
   if (key === 'ammonia' || key === 'nitrite')
     return val === 0 ? 'var(--ok)' : val <= 0.25 ? 'var(--warn)' : 'var(--danger)';
   if (key === 'uia')
     return val === 0 ? 'var(--ok)' : val < 0.05 ? 'var(--warn)' : 'var(--danger)';
-  if (key === 'nitrate')
+  if (key === 'nitrate') {
+    if (salt) return reef ? (val <= 5 ? 'var(--ok)' : val <= 10 ? 'var(--warn)' : 'var(--danger)') : (val <= 20 ? 'var(--ok)' : val <= 40 ? 'var(--warn)' : 'var(--danger)');
     return val <= 20 ? 'var(--ok)' : val <= 40 ? 'var(--warn)' : 'var(--danger)';
-  if (key === 'ph')
+  }
+  if (key === 'ph') {
+    if (salt) return val >= 8.1 && val <= 8.4 ? 'var(--ok)' : val >= 8.0 && val <= 8.5 ? 'var(--warn)' : 'var(--danger)';
     return val >= 6.5 && val <= 7.5 ? 'var(--ok)' : val >= 6.0 && val <= 8.0 ? 'var(--warn)' : 'var(--danger)';
-  if (key === 'gh')
+  }
+  if (key === 'gh') {
+    if (salt) return '';
     return val >= 72 && val <= 215 ? 'var(--ok)' : val >= 36 && val <= 268 ? 'var(--warn)' : 'var(--danger)';
-  if (key === 'calcium')
+  }
+  if (key === 'calcium') {
+    if (salt) return val >= 380 && val <= 450 ? 'var(--ok)' : val >= 350 && val <= 500 ? 'var(--warn)' : 'var(--danger)';
     return val >= 20 && val <= 60 ? 'var(--ok)' : val >= 10 && val <= 80 ? 'var(--warn)' : 'var(--danger)';
-  if (key === 'magnesium')
+  }
+  if (key === 'magnesium') {
+    if (salt) return val >= 1250 && val <= 1350 ? 'var(--ok)' : val >= 1150 && val <= 1500 ? 'var(--warn)' : 'var(--danger)';
     return val >= 5 && val <= 20 ? 'var(--ok)' : val >= 2 && val <= 30 ? 'var(--warn)' : 'var(--danger)';
-  if (key === 'kh')
+  }
+  if (key === 'kh') {
+    if (salt) return val >= 8 && val <= 11 ? 'var(--ok)' : val >= 7 && val <= 13 ? 'var(--warn)' : 'var(--danger)';
     return val < 1 ? 'var(--danger)' : val < 3 ? 'var(--warn)' : val <= 8 ? 'var(--ok)' : val <= 12 ? 'var(--warn)' : 'var(--danger)';
+  }
+  if (key === 'phosphate') {
+    if (salt && reef) return val <= 0.03 ? 'var(--ok)' : val <= 0.1 ? 'var(--warn)' : 'var(--danger)';
+    if (salt) return val <= 0.5 ? 'var(--ok)' : val <= 1.0 ? 'var(--warn)' : 'var(--danger)';
+  }
   return '';
 }
-function wlog_lbl(key, val) {
+function wlog_lbl(key, val, tid) {
   if (val === null || val === undefined || val === '') return '&mdash;';
   val = parseFloat(val);
+  var salt = is_salt(tid || at()), reef = is_reef(tid || at());
+  if (key === 'salinity')
+    return val < 30 ? 'Too low' : val < 33 ? 'Low' : val <= 36 ? 'Ideal' : val <= 38 ? 'High' : 'Too high';
   if (key === 'ammonia' || key === 'nitrite')
     return val === 0 ? 'Safe' : val <= 0.25 ? 'Trace' : 'Toxic';
   if (key === 'uia')
     return val === 0 ? 'Safe' : val < 0.05 ? 'Caution' : 'Toxic';
-  if (key === 'nitrate')
+  if (key === 'nitrate') {
+    if (salt && reef) return val <= 5 ? 'Reef OK' : val <= 10 ? 'Elevated' : 'Too high';
     return val <= 20 ? 'Good' : val <= 40 ? 'High' : 'Danger';
-  if (key === 'ph')
+  }
+  if (key === 'ph') {
+    if (salt) return val < 8.0 ? 'Too low' : val < 8.1 ? 'Slightly low' : val <= 8.4 ? 'Ideal' : val <= 8.5 ? 'Slightly high' : 'Too high';
     return val < 6.0 ? 'Too acidic' : val <= 6.5 ? 'Slightly low' : val <= 7.5 ? 'Ideal' : val <= 8.0 ? 'Slightly high' : 'Too high';
-  if (key === 'gh')
+  }
+  if (key === 'gh') {
+    if (salt) return 'N/A';
     return val < 36 ? 'Too soft' : val <= 72 ? 'Soft' : val <= 215 ? 'Good' : val <= 268 ? 'Hard' : 'Very hard';
-  if (key === 'calcium')
+  }
+  if (key === 'calcium') {
+    if (salt) return val < 350 ? 'Low' : val < 380 ? 'Slightly low' : val <= 450 ? 'Good' : val <= 500 ? 'Slightly high' : 'High';
     return val < 10 ? 'Low' : val <= 20 ? 'Slightly low' : val <= 60 ? 'Good' : val <= 80 ? 'Slightly high' : 'High';
-  if (key === 'magnesium')
+  }
+  if (key === 'magnesium') {
+    if (salt) return val < 1150 ? 'Low' : val < 1250 ? 'Slightly low' : val <= 1350 ? 'Good' : val <= 1500 ? 'Slightly high' : 'High';
     return val < 2 ? 'Low' : val <= 5 ? 'Slightly low' : val <= 20 ? 'Good' : val <= 30 ? 'Slightly high' : 'High';
-  if (key === 'kh')
+  }
+  if (key === 'kh') {
+    if (salt) return val < 7 ? 'Too low' : val < 8 ? 'Low' : val <= 11 ? 'Good' : val <= 13 ? 'High' : 'Too high';
     return val < 1 ? 'Critical' : val < 3 ? 'Low' : val <= 8 ? 'Good' : val <= 12 ? 'High' : 'Very high';
+  }
   return '';
 }
 function wlog_arrow(cur, prev) {
@@ -4366,10 +4722,10 @@ function wlog_arrow(cur, prev) {
   if (Math.abs(diff) < 0.001) return '';
   return diff > 0 ? ' <span style="color:var(--muted);font-size:10px">&#x2191;</span>' : ' <span style="color:var(--muted);font-size:10px">&#x2193;</span>';
 }
-function wlog_cell(key, val, prev_val) {
+function wlog_cell(key, val, prev_val, tid) {
   if (val === null || val === undefined || val === '') return '<td>&mdash;</td>';
-  var col = wlog_cls(key, val);
-  var lbl = wlog_lbl(key, val);
+  var col = wlog_cls(key, val, tid);
+  var lbl = wlog_lbl(key, val, tid);
   var arr = wlog_arrow(val, prev_val);
   var style = col ? 'color:' + col + ';font-weight:600' : '';
   return '<td style="' + style + '">' + val + arr + '<br><span style="font-size:10px;font-weight:400;color:var(--muted)">' + lbl + '</span></td>';
@@ -4377,8 +4733,9 @@ function wlog_cell(key, val, prev_val) {
 function r_wlog() {
   var tid = at(), d = ld(), el = document.getElementById('p-wlog');
   if (!d.tanks.find(function(t){return t.id===tid;})) { el.innerHTML = no_tank(); return; }
+  var salt = is_salt(tid), reef = is_reef(tid);
   var has_therm = d.equip.some(function(e){ return e.tank_id === tid && e.type === 'Thermometer'; });
-  var has_co2_eq = d.equip.some(function(e){ return e.tank_id === tid && e.type === 'CO2 System'; });
+  var has_co2_eq = !salt && d.equip.some(function(e){ return e.tank_id === tid && e.type === 'CO2 System'; });
   var prev_r = last_r(tid);
   var last_gh_val = prev_r ? prev_r.gh : null;
   var last_gh_ppm = last_gh_val !== null ? Math.round(last_gh_val * 17.9 * 10) / 10 : null;
@@ -4395,42 +4752,46 @@ function r_wlog() {
     '<div class="frow">' +
     fgh('Date', '<input type="date" name="date" value="' + td + '" required>', '') +
     (has_therm ? fgh('Temperature (' + t_lbl() + ')', '<input type="number" name="tf" step="0.1" placeholder="e.g. ' + (get_pref().temp === 'C' ? '24' : '76') + '">', 'Stable temp is as important as the number itself.') : '') +
+    (salt ? fgh('Salinity', '<div style="display:flex;gap:6px;align-items:center"><input type="number" name="salinity_val" step="0.1" placeholder="35" style="flex:1"><select name="salinity_unit" style="width:70px"><option value="ppt">ppt</option><option value="sg">SG</option></select></div>', 'Target: 33&ndash;36 ppt (1.022&ndash;1.026 SG). Top off with RODI water only &mdash; never add dry salt during top-off.') : '') +
     fgh('Ammonia TAN (ppm)', '<input type="number" name="nh3" step="0.01" placeholder="e.g. 0">', 'Enter TAN from the colour card. Target: 0 ppm. UIA (toxic fraction) is calculated automatically from TAN + pH + temperature.') +
     fgh('Nitrite (ppm)', '<input type="number" name="no2" step="0.01" placeholder="e.g. 0">', 'Target: 0 ppm. Toxic even at 0.25 ppm. Spikes during cycling.') +
     '</div><div class="frow">' +
-    fgh('Nitrate (ppm)', '<input type="number" name="no3" step="0.1" placeholder="e.g. 10">', 'Keep below 20 ppm. Reduced by regular water changes.') +
-    fgh('pH', '<input type="number" name="ph" step="0.01" placeholder="e.g. 7.0">', 'Stability matters more than exact value. Avoid sudden changes.') +
-    fgh('Hardness GH (ppm)', '<input type="number" name="gh" step="1"' + (last_gh_ppm !== null ? ' value="' + last_gh_ppm + '"' : ' placeholder="e.g. 143"') + '>', gh_hint) +
-    fgh('Carbonate Hardness KH (ppm)', '<input type="number" name="kh" step="1" placeholder="e.g. 107">', 'BIONIX: B drops &times; 25 = ppm (Total Alkalinity). Converted to dKH automatically. Ideal: 3&ndash;8 dKH (54&ndash;143 ppm).') +
+    fgh('Nitrate (ppm)', '<input type="number" name="no3" step="0.1" placeholder="e.g. ' + (salt ? (reef ? '2' : '10') + '">', (reef ? 'Reef target: &lt; 5 ppm. Elevated nitrate stresses corals.' : 'FOWLR target: &lt; 20 ppm.') : '10">', 'Keep below 20 ppm. Reduced by regular water changes.')) +
+    fgh('pH', '<input type="number" name="ph" step="0.01" placeholder="e.g. ' + (salt ? '8.2' : '7.0') + '">', (salt ? 'Target: 8.1&ndash;8.4. Stability matters most. RODI top-offs help maintain pH.' : 'Stability matters more than exact value. Avoid sudden changes.')) +
+    (!salt ? fgh('Hardness GH (ppm)', '<input type="number" name="gh" step="1"' + (last_gh_ppm !== null ? ' value="' + last_gh_ppm + '"' : ' placeholder="e.g. 143"') + '>', gh_hint) : '') +
+    fgh('Carbonate Hardness KH (ppm)', '<input type="number" name="kh" step="1" placeholder="e.g. ' + (salt ? '160' : '107') + '">', (salt ? 'Marine alkalinity. BIONIX: B drops &times; 25 = ppm. Target: 8&ndash;11 dKH (143&ndash;196 ppm).' : 'BIONIX: B drops &times; 25 = ppm (Total Alkalinity). Converted to dKH automatically. Ideal: 3&ndash;8 dKH (54&ndash;143 ppm).')) +
     fgh('Notes', '<input type="text" name="notes" placeholder="Optional notes">', '') +
     '</div>' +
     '<div style="margin:8px 0 10px">' +
     '<button id="wlog_adv_btn" type="button" class="btn bg bs" style="font-size:12px" onclick="tog_wlog_adv()">' +
-    (wlog_adv ? '&#x25BC;' : '&#x25B6;') + ' Advanced Parameters (Ca, Mg, Phosphate, TDS &mdash; optional)</button>' +
+    (wlog_adv ? '&#x25BC;' : '&#x25B6;') + (salt ? ' Advanced Parameters (Ca, Mg, Phosphate, TDS)' : ' Advanced Parameters (Ca, Mg, Phosphate, TDS &mdash; optional)') + '</button>' +
     '</div>' +
     '<div id="wlog_ca_mg_wrap" style="display:' + (wlog_adv ? '' : 'none') + ';margin-bottom:10px">' +
     '<div class="frow">' +
-    fgh('Calcium (ppm)', '<input type="number" name="ca" step="0.1" placeholder="e.g. 40">', 'Ideal: 20&ndash;60 ppm. Test with BIONIX or similar Ca/Mg kit.') +
-    fgh('Magnesium (ppm)', '<input type="number" name="mg" step="0.1" placeholder="e.g. 10">', 'Ideal: 5&ndash;20 ppm. Ca:Mg ratio should be 3:1 to 5:1.') +
+    fgh((salt ? 'Calcium (ppm)' : 'Calcium (ppm)'), '<input type="number" name="ca" step="0.1" placeholder="e.g. ' + (salt ? '420' : '40') + '">', (salt ? 'Target: 380&ndash;450 ppm. Drives coral skeleton growth.' : 'Ideal: 20&ndash;60 ppm. Test with BIONIX or similar Ca/Mg kit.')) +
+    fgh('Magnesium (ppm)', '<input type="number" name="mg" step="0.1" placeholder="e.g. ' + (salt ? '1300' : '10') + '">', (salt ? 'Target: 1250&ndash;1350 ppm. High Mg stabilises alkalinity.' : 'Ideal: 5&ndash;20 ppm. Ca:Mg ratio should be 3:1 to 5:1.')) +
     '</div>' +
     '<div class="frow">' +
-    fgh('Phosphate PO4 (ppm)', '<input type="number" name="phosphate" step="0.01" placeholder="e.g. 0.5">', 'Ideal: 0.5&ndash;2 ppm for planted tanks. Very low (&lt;0.2 ppm) triggers green spot algae.') +
-    fgh('TDS (ppm)', '<input type="number" name="tds" step="1" placeholder="e.g. 150">', 'Crystal/caridina shrimp: 100&ndash;200 ppm. General community: 150&ndash;400 ppm.') +
+    fgh('Phosphate PO4 (ppm)', '<input type="number" name="phosphate" step="0.01" placeholder="e.g. ' + (salt ? '0.02' : '0.5') + '">', (salt ? (reef ? 'Reef target: &lt; 0.03 ppm (Hanna ULR checker recommended). Elevated PO4 bleaches corals.' : 'FOWLR target: &lt; 0.5 ppm.') : 'Ideal: 0.5&ndash;2 ppm for planted tanks. Very low (&lt;0.2 ppm) triggers green spot algae.')) +
+    fgh('TDS (ppm)', '<input type="number" name="tds" step="1" placeholder="e.g. ' + (salt ? '35000' : '150') + '">', (salt ? 'Optional. TDS in saltwater is very high &mdash; use refractometer or digital probe for salinity instead.' : 'Crystal/caridina shrimp: 100&ndash;200 ppm. General community: 150&ndash;400 ppm.')) +
     '</div></div>' +
     '<button type="submit" class="btn bp">Save Reading</button></form></div>';
   var entries = get_water(tid);
   if (entries.length >= 2) {
     h += '<div class="card"><div class="ctitle" style="gap:10px">Trend ' +
       '<select id="cpsel" onchange="draw_chart(at(),this.value)">' +
+      (salt ? '<option value="salinity">Salinity (ppt)</option>' : '') +
       (has_therm ? '<option value="temp_f">Temperature</option>' : '') +
       '<option value="ammonia">Ammonia TAN</option>' +
       '<option value="uia">Ammonia UIA</option>' +
       '<option value="nitrite">Nitrite</option><option value="nitrate">Nitrate</option>' +
-      '<option value="ph">pH</option><option value="gh">Hardness</option>' +
+      '<option value="ph">pH</option>' +
+      (!salt ? '<option value="gh">Hardness</option>' : '') +
       '</select></div><div class="chart-wrap"><canvas id="wc"></canvas></div></div>';
   }
   if (entries.length) {
     var sorted = entries.slice().reverse();
+    var has_salinity = salt && entries.some(function(e){ return e.salinity !== null && e.salinity !== undefined; });
     var has_ca_mg = entries.some(function(e){ return e.calcium !== null && e.calcium !== undefined; });
     var has_phosphate = entries.some(function(e){ return e.phosphate !== null && e.phosphate !== undefined; });
     var has_tds = entries.some(function(e){ return e.tds !== null && e.tds !== undefined; });
@@ -4439,30 +4800,40 @@ function r_wlog() {
     h += '<div class="card"><div class="ctitle" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">History' +
       '<button class="btn bg bs" style="font-size:12px" onclick="export_wlog_csv(at())">&#x2193; Export CSV</button>' +
       '</div><div class="tw"><table>' +
-      '<tr><th>Date</th>' + (has_therm ? '<th>Temp ' + t_lbl() + '</th>' : '') + '<th>NH3 TAN</th>' + (has_uia ? '<th>UIA</th>' : '') + '<th>NO2 (ppm)</th><th>NO3 (ppm)</th><th>pH</th><th>GH (dGH)</th><th>GH (ppm)</th>' +
-      (has_kh ? '<th>KH (dKH)</th><th>KH (ppm)</th>' : '') +
+      '<tr><th>Date</th>' + (has_therm ? '<th>Temp ' + t_lbl() + '</th>' : '') +
+      (has_salinity ? '<th>Salinity</th>' : '') +
+      '<th>NH3 TAN</th>' + (has_uia ? '<th>UIA</th>' : '') + '<th>NO2 (ppm)</th><th>NO3 (ppm)</th><th>pH</th>' +
+      (!salt ? '<th>GH (dGH)</th><th>GH (ppm)</th>' : '') +
+      (has_kh ? '<th>KH (' + (salt ? 'dKH' : 'dKH') + ')</th><th>KH (ppm)</th>' : '') +
       (has_ca_mg ? '<th>Ca (ppm)</th><th>Mg (ppm)</th>' : '') +
       (has_phosphate ? '<th>PO4 (ppm)</th>' : '') +
       (has_tds ? '<th>TDS (ppm)</th>' : '') +
       '<th>Notes</th><th></th></tr>';
     sorted.slice(0, 30).forEach(function(e, i) {
       var prev = sorted[i + 1];
-      var td = d_t(e.temp_f);
+      var td2 = d_t(e.temp_f);
       var pt = prev ? d_t(prev.temp_f) : null;
-      var t_arr = wlog_arrow(td, pt);
-      var t_disp = td !== null ? td + t_arr : '&mdash;';
+      var t_arr = wlog_arrow(td2, pt);
+      var t_disp = td2 !== null ? td2 + t_arr : '&mdash;';
+      var sal_disp = '';
+      if (has_salinity) {
+        var sval = e.salinity;
+        var ssg = sval != null ? ppt_to_sg(sval) : null;
+        sal_disp = sval != null ? ('<td>' + sval + ' ppt' + (ssg ? '<br><span style="font-size:10px;color:var(--muted)">' + ssg + ' SG</span>' : '') + '</td>') : '<td>&mdash;</td>';
+      }
       h += '<tr><td>' + e.date + '</td>' +
            (has_therm ? '<td>' + t_disp + '</td>' : '') +
-           wlog_cell('ammonia', e.ammonia, prev ? prev.ammonia : null) +
+           (has_salinity ? sal_disp : '') +
+           wlog_cell('ammonia', e.ammonia, prev ? prev.ammonia : null, tid) +
            (has_uia ? mk_uia_cell(e.ammonia, e.ph, e.temp_f, prev ? prev.ammonia : null, prev ? prev.ph : null, prev ? prev.temp_f : null) : '') +
-           wlog_cell('nitrite', e.nitrite, prev ? prev.nitrite : null) +
-           wlog_cell('nitrate', e.nitrate, prev ? prev.nitrate : null) +
-           wlog_cell('ph', e.ph, prev ? prev.ph : null) +
-           wlog_cell('gh', e.gh, prev ? prev.gh : null) +
-           wlog_cell('gh', e.gh != null ? Math.round(e.gh * 17.9) : null, prev && prev.gh != null ? Math.round(prev.gh * 17.9) : null) +
-           (has_kh ? wlog_cell('kh', e.kh, prev ? prev.kh : null) +
+           wlog_cell('nitrite', e.nitrite, prev ? prev.nitrite : null, tid) +
+           wlog_cell('nitrate', e.nitrate, prev ? prev.nitrate : null, tid) +
+           wlog_cell('ph', e.ph, prev ? prev.ph : null, tid) +
+           (!salt ? wlog_cell('gh', e.gh, prev ? prev.gh : null, tid) : '') +
+           (!salt ? wlog_cell('gh', e.gh != null ? Math.round(e.gh * 17.9) : null, prev && prev.gh != null ? Math.round(prev.gh * 17.9) : null, tid) : '') +
+           (has_kh ? wlog_cell('kh', e.kh, prev ? prev.kh : null, tid) +
                      '<td>' + (e.kh != null ? Math.round(e.kh * 17.86) + wlog_arrow(e.kh, prev ? prev.kh : null) : '&mdash;') + '</td>' : '') +
-           (has_ca_mg ? wlog_cell('calcium', e.calcium, prev ? prev.calcium : null) + wlog_cell('magnesium', e.magnesium, prev ? prev.magnesium : null) : '') +
+           (has_ca_mg ? wlog_cell('calcium', e.calcium, prev ? prev.calcium : null, tid) + wlog_cell('magnesium', e.magnesium, prev ? prev.magnesium : null, tid) : '') +
            (has_phosphate ? '<td>' + (e.phosphate !== null && e.phosphate !== undefined ? e.phosphate + wlog_arrow(e.phosphate, prev ? prev.phosphate : null) : '&mdash;') + '</td>' : '') +
            (has_tds ? '<td>' + (e.tds !== null && e.tds !== undefined ? e.tds + wlog_arrow(e.tds, prev ? prev.tds : null) : '&mdash;') + '</td>' : '') +
            '<td>' + esc(e.notes) + '</td>' +
@@ -4476,23 +4847,43 @@ function r_wlog() {
       h += '<p style="font-size:11px;color:var(--muted);margin:6px 0 0"><sup>*25</sup> Temperature not logged &mdash; UIA calculated using 25&deg;C default. Add a Thermometer under Equipment &amp; Life for accurate values.</p>';
     }
     h += '</div>';
-    h += '<div class="card"><div class="ctitle">Ideal Ranges</div>' +
-      '<div class="tw"><table>' +
-      '<tr><th>Parameter</th><th style="color:var(--ok)">&#x2713; Ideal</th><th style="color:var(--warn)">&#x26A0; Caution</th><th style="color:var(--danger)">&#x2717; Danger</th></tr>' +
-      '<tr><td>Ammonia TAN (NH3+NH4)</td><td>0 ppm</td><td>0.01&ndash;0.25 ppm</td><td>&gt; 0.25 ppm</td></tr>' +
-      '<tr><td>Ammonia UIA (toxic fraction)</td><td>0 ppm</td><td>0.01&ndash;0.05 ppm</td><td>&gt; 0.05 ppm</td></tr>' +
-      '<tr><td>Nitrite (NO2)</td><td>0 ppm</td><td>0.01&ndash;0.25 ppm</td><td>&gt; 0.25 ppm</td></tr>' +
-      '<tr><td>Nitrate (NO3)</td><td>0&ndash;20 ppm</td><td>21&ndash;40 ppm</td><td>&gt; 40 ppm</td></tr>' +
-      '<tr><td>pH</td><td>6.5&ndash;7.5</td><td>6.0&ndash;6.4 or 7.6&ndash;8.0</td><td>&lt; 6.0 or &gt; 8.0</td></tr>' +
-      '<tr><td>Hardness (GH)</td><td>71&ndash;215 ppm (4&ndash;12 dGH)</td><td>36&ndash;70 or 216&ndash;268 ppm</td><td>&lt; 36 or &gt; 268 ppm</td></tr>' +
-      '<tr><td>Carbonate Hardness (KH)</td><td>54&ndash;143 ppm (3&ndash;8 dKH)</td><td>18&ndash;53 or 144&ndash;268 ppm</td><td>&lt; 18 ppm (&lt; 1 dKH) &mdash; pH crash risk</td></tr>' +
-      '<tr><td>Calcium (Ca)</td><td>20&ndash;60 ppm</td><td>10&ndash;19 or 61&ndash;80 ppm</td><td>&lt; 10 or &gt; 80 ppm</td></tr>' +
-      '<tr><td>Magnesium (Mg)</td><td>5&ndash;20 ppm</td><td>2&ndash;4 or 21&ndash;30 ppm</td><td>&lt; 2 or &gt; 30 ppm</td></tr>' +
-      '<tr><td>Ca:Mg ratio</td><td>3:1 to 5:1</td><td>2:1 to 6:1</td><td>&lt; 2:1 or &gt; 6:1</td></tr>' +
-      '</table></div>' +
-      '<p style="font-size:12px;color:var(--muted);margin:8px 0 0">Temperature ideal range depends on your fish species &mdash; check the Compatibility tab. ' +
-      'Calcium &amp; Magnesium ranges are for planted tanks and shrimp; fish-only tanks only need GH.</p>' +
-      '</div>';
+    if (salt) {
+      h += '<div class="card"><div class="ctitle">Saltwater Ideal Ranges</div>' +
+        '<div class="tw"><table>' +
+        '<tr><th>Parameter</th><th style="color:var(--ok)">&#x2713; Ideal</th><th style="color:var(--warn)">&#x26A0; Caution</th><th style="color:var(--danger)">&#x2717; Danger</th></tr>' +
+        '<tr><td>Salinity</td><td>33&ndash;36 ppt (1.022&ndash;1.026 SG)</td><td>30&ndash;33 or 36&ndash;38 ppt</td><td>&lt; 30 or &gt; 38 ppt</td></tr>' +
+        '<tr><td>Ammonia TAN</td><td>0 ppm</td><td>0.01&ndash;0.25 ppm</td><td>&gt; 0.25 ppm</td></tr>' +
+        '<tr><td>Nitrite (NO2)</td><td>0 ppm</td><td>0.01&ndash;0.25 ppm</td><td>&gt; 0.25 ppm</td></tr>' +
+        (reef ? '<tr><td>Nitrate (NO3) &mdash; Reef</td><td>0&ndash;5 ppm</td><td>5&ndash;10 ppm</td><td>&gt; 10 ppm</td></tr>' :
+                '<tr><td>Nitrate (NO3) &mdash; FOWLR</td><td>0&ndash;20 ppm</td><td>21&ndash;40 ppm</td><td>&gt; 40 ppm</td></tr>') +
+        '<tr><td>pH</td><td>8.1&ndash;8.4</td><td>8.0&ndash;8.1 or 8.4&ndash;8.5</td><td>&lt; 8.0 or &gt; 8.5</td></tr>' +
+        '<tr><td>Alkalinity (KH)</td><td>8&ndash;11 dKH (143&ndash;196 ppm)</td><td>7&ndash;8 or 11&ndash;13 dKH</td><td>&lt; 7 or &gt; 13 dKH</td></tr>' +
+        '<tr><td>Calcium (Ca)</td><td>380&ndash;450 ppm</td><td>350&ndash;380 or 450&ndash;500 ppm</td><td>&lt; 350 or &gt; 500 ppm</td></tr>' +
+        '<tr><td>Magnesium (Mg)</td><td>1250&ndash;1350 ppm</td><td>1150&ndash;1250 or 1350&ndash;1500 ppm</td><td>&lt; 1150 or &gt; 1500 ppm</td></tr>' +
+        (reef ? '<tr><td>Phosphate (PO4) &mdash; Reef</td><td>&lt; 0.03 ppm</td><td>0.03&ndash;0.1 ppm</td><td>&gt; 0.1 ppm</td></tr>' :
+                '<tr><td>Phosphate (PO4) &mdash; FOWLR</td><td>&lt; 0.5 ppm</td><td>0.5&ndash;1.0 ppm</td><td>&gt; 1.0 ppm</td></tr>') +
+        '</table></div>' +
+        '<p style="font-size:12px;color:var(--muted);margin:8px 0 0">Salinity measured with a calibrated refractometer or digital probe. Ca/Alk/Mg are critical for reef tanks &mdash; test at least weekly and supplement as needed.</p>' +
+        '</div>';
+    } else {
+      h += '<div class="card"><div class="ctitle">Ideal Ranges</div>' +
+        '<div class="tw"><table>' +
+        '<tr><th>Parameter</th><th style="color:var(--ok)">&#x2713; Ideal</th><th style="color:var(--warn)">&#x26A0; Caution</th><th style="color:var(--danger)">&#x2717; Danger</th></tr>' +
+        '<tr><td>Ammonia TAN (NH3+NH4)</td><td>0 ppm</td><td>0.01&ndash;0.25 ppm</td><td>&gt; 0.25 ppm</td></tr>' +
+        '<tr><td>Ammonia UIA (toxic fraction)</td><td>0 ppm</td><td>0.01&ndash;0.05 ppm</td><td>&gt; 0.05 ppm</td></tr>' +
+        '<tr><td>Nitrite (NO2)</td><td>0 ppm</td><td>0.01&ndash;0.25 ppm</td><td>&gt; 0.25 ppm</td></tr>' +
+        '<tr><td>Nitrate (NO3)</td><td>0&ndash;20 ppm</td><td>21&ndash;40 ppm</td><td>&gt; 40 ppm</td></tr>' +
+        '<tr><td>pH</td><td>6.5&ndash;7.5</td><td>6.0&ndash;6.4 or 7.6&ndash;8.0</td><td>&lt; 6.0 or &gt; 8.0</td></tr>' +
+        '<tr><td>Hardness (GH)</td><td>71&ndash;215 ppm (4&ndash;12 dGH)</td><td>36&ndash;70 or 216&ndash;268 ppm</td><td>&lt; 36 or &gt; 268 ppm</td></tr>' +
+        '<tr><td>Carbonate Hardness (KH)</td><td>54&ndash;143 ppm (3&ndash;8 dKH)</td><td>18&ndash;53 or 144&ndash;268 ppm</td><td>&lt; 18 ppm (&lt; 1 dKH) &mdash; pH crash risk</td></tr>' +
+        '<tr><td>Calcium (Ca)</td><td>20&ndash;60 ppm</td><td>10&ndash;19 or 61&ndash;80 ppm</td><td>&lt; 10 or &gt; 80 ppm</td></tr>' +
+        '<tr><td>Magnesium (Mg)</td><td>5&ndash;20 ppm</td><td>2&ndash;4 or 21&ndash;30 ppm</td><td>&lt; 2 or &gt; 30 ppm</td></tr>' +
+        '<tr><td>Ca:Mg ratio</td><td>3:1 to 5:1</td><td>2:1 to 6:1</td><td>&lt; 2:1 or &gt; 6:1</td></tr>' +
+        '</table></div>' +
+        '<p style="font-size:12px;color:var(--muted);margin:8px 0 0">Temperature ideal range depends on your fish species &mdash; check the Compatibility tab. ' +
+        'Calcium &amp; Magnesium ranges are for planted tanks and shrimp; fish-only tanks only need GH.</p>' +
+        '</div>';
+    }
   }
   var tank_wlog = d.tanks.find(function(t){ return t.id === tid; });
   if (tank_wlog && tank_wlog.show_feed_log) {
@@ -4602,13 +4993,19 @@ function tog_wlog_adv() {
 }
 function sub_water(e) {
   e.preventDefault(); var f = e.target, tid = at();
+  var salt = is_salt(tid);
   var ca = f.ca ? f.ca.value : '';
   var mg = f.mg ? f.mg.value : '';
-  var gh_ppm = f.gh ? pn(f.gh.value) : null;
+  var gh_ppm = (!salt && f.gh) ? pn(f.gh.value) : null;
   var gh_dgh = gh_ppm !== null ? Math.round(gh_ppm / 17.9 * 100) / 100 : '';
   var kh_ppm = f.kh && f.kh.value !== '' ? pn(f.kh.value) : null;
   var kh_dkh = kh_ppm !== null ? Math.round(kh_ppm / 17.86 * 100) / 100 : null;
-  add_water(tid, f.date.value, f.tf ? inp_t(f.tf.value) : null, f.nh3.value, f.no2.value, f.no3.value, f.ph.value, gh_dgh, f.notes.value, ca, mg, f.phosphate ? f.phosphate.value : '', f.tds ? f.tds.value : '', kh_dkh, f.co2_on ? f.co2_on.checked : null);
+  var salinity_ppt = null;
+  if (salt && f.salinity_val && f.salinity_val.value !== '') {
+    var sal_v = pn(f.salinity_val.value);
+    salinity_ppt = (f.salinity_unit && f.salinity_unit.value === 'sg') ? sg_to_ppt(sal_v) : sal_v;
+  }
+  add_water(tid, f.date.value, f.tf ? inp_t(f.tf.value) : null, f.nh3.value, f.no2.value, f.no3.value, f.ph.value, gh_dgh, f.notes.value, ca, mg, f.phosphate ? f.phosphate.value : '', f.tds ? f.tds.value : '', kh_dkh, f.co2_on ? f.co2_on.checked : null, salinity_ppt);
   r_wlog();
 }
 function do_edit_water(id) {
@@ -4616,12 +5013,14 @@ function do_edit_water(id) {
   var e = d.water.find(function(x){ return x.id === id; });
   if (!e) return;
   var tid = e.tank_id;
+  var salt = is_salt(tid);
   var has_therm = d.equip.some(function(eq){ return eq.tank_id === tid && eq.type === 'Thermometer'; });
   var gh_ppm_val = e.gh != null ? Math.round(e.gh * 17.9) : '';
   var kh_ppm_val = e.kh != null ? Math.round(e.kh * 17.86) : '';
   var temp_disp  = e.temp_f != null ? d_t(e.temp_f) : '';
   var fv = function(v){ return v != null ? v : ''; };
-  var has_co2_eq_e = d.equip.some(function(eq){ return eq.tank_id === tid && eq.type === 'CO2 System'; });
+  var has_co2_eq_e = !salt && d.equip.some(function(eq){ return eq.tank_id === tid && eq.type === 'CO2 System'; });
+  var sal_ppt_val = e.salinity != null ? e.salinity : '';
   om('<div class="mtitle">Edit Water Reading</div>' +
     '<form data-eid="' + id + '" onsubmit="sub_edit_water(event,this.dataset.eid)">' +
     (has_co2_eq_e ? '<div style="background:#e8f4fb;border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:13px">' +
@@ -4631,12 +5030,13 @@ function do_edit_water(id) {
     '<div class="frow">' +
     fgh('Date', '<input type="date" name="date" value="' + e.date + '" required>', '') +
     (has_therm ? fgh('Temperature (' + t_lbl() + ')', '<input type="number" name="tf" step="0.1" value="' + temp_disp + '">', '') : '') +
+    (salt ? fgh('Salinity (ppt)', '<input type="number" name="salinity_val" step="0.1" value="' + sal_ppt_val + '">', 'Stored in ppt. Convert SG to ppt manually if needed.') : '') +
     fgh('Ammonia TAN (ppm)', '<input type="number" name="nh3" step="0.01" value="' + fv(e.ammonia) + '">', '') +
     fgh('Nitrite (ppm)',     '<input type="number" name="no2" step="0.01" value="' + fv(e.nitrite) + '">', '') +
     '</div><div class="frow">' +
     fgh('Nitrate (ppm)', '<input type="number" name="no3" step="0.1"  value="' + fv(e.nitrate) + '">', '') +
     fgh('pH',            '<input type="number" name="ph"  step="0.01" value="' + fv(e.ph) + '">', '') +
-    fgh('Hardness GH (ppm)', '<input type="number" name="gh" step="1" value="' + gh_ppm_val + '">', 'Value in ppm — converted to dGH on save') +
+    (!salt ? fgh('Hardness GH (ppm)', '<input type="number" name="gh" step="1" value="' + gh_ppm_val + '">', 'Value in ppm — converted to dGH on save') : '') +
     fgh('Carbonate Hardness KH (ppm)', '<input type="number" name="kh" step="1" value="' + kh_ppm_val + '">', 'Value in ppm — converted to dKH on save') +
     fgh('Phosphate PO4 (ppm)', '<input type="number" name="phosphate" step="0.01" value="' + fv(e.phosphate) + '">', 'Optional') +
     fgh('TDS (ppm)', '<input type="number" name="tds" step="1" value="' + fv(e.tds) + '">', 'Optional') +
@@ -4656,11 +5056,16 @@ function sub_edit_water(e, id) {
   for (var i = 0; i < d.water.length; i++) { if (d.water[i].id === id) { idx = i; break; } }
   if (idx === -1) return;
   var tid = d.water[idx].tank_id;
+  var salt = is_salt(tid);
   var has_therm = d.equip.some(function(eq){ return eq.tank_id === tid && eq.type === 'Thermometer'; });
-  var gh_ppm = f.gh && f.gh.value !== '' ? pn(f.gh.value) : null;
+  var gh_ppm = (!salt && f.gh && f.gh.value !== '') ? pn(f.gh.value) : null;
   var gh_dgh = gh_ppm !== null ? Math.round(gh_ppm / 17.9 * 100) / 100 : null;
   var kh_ppm_e = f.kh && f.kh.value !== '' ? pn(f.kh.value) : null;
   var kh_dkh_e = kh_ppm_e !== null ? Math.round(kh_ppm_e / 17.86 * 100) / 100 : null;
+  var salinity_ppt = null;
+  if (salt && f.salinity_val && f.salinity_val.value !== '') {
+    salinity_ppt = pn(f.salinity_val.value);
+  }
   d.water[idx] = {
     id: id, tank_id: tid,
     date:      f.date.value,
@@ -4676,7 +5081,8 @@ function sub_edit_water(e, id) {
     magnesium: f.mg && f.mg.value !== '' ? pn(f.mg.value) : null,
     phosphate: f.phosphate && f.phosphate.value !== '' ? pn(f.phosphate.value) : null,
     tds:       f.tds && f.tds.value !== '' ? pn(f.tds.value) : null,
-    co2_on:    f.co2_on ? (f.co2_on.checked ? true : null) : null
+    co2_on:    f.co2_on ? (f.co2_on.checked ? true : null) : null,
+    salinity:  salinity_ppt
   };
   sv(d); cm(); r_wlog(); r_dash();
 }
@@ -4686,6 +5092,7 @@ async function r_maint() {
   var tid = at(), d = ld(), el = document.getElementById('p-maint');
   if (!d.tanks.find(function(t){return t.id===tid;})) { el.innerHTML = no_tank(); return; }
   var td = today_str();
+  var salt = is_salt(tid);
   check_reservoir_auto_dose();
   d = ld(); // reload in case auto-dose just wrote new log entries
   var existing_types = d.tasks.filter(function(x){ return x.tank_id === tid; }).map(function(t){ return t.type; });
@@ -4780,7 +5187,7 @@ async function r_maint() {
   if (auto_res.length) {
     var now_ad = new Date();
     var cur_min_ad = now_ad.getHours() * 60 + now_ad.getMinutes();
-    h += '<div class="card"><div class="ctitle">Automated Dosing</div>';
+    h += '<div class="card"><div class="ctitle">' + (salt ? 'Automated Additive Dosing' : 'Automated Dosing') + '</div>';
     auto_res.forEach(function(r) {
       var dosed = r.last_auto_dosed_date === td;
       var hh_a = r.timer_min != null ? Math.floor(r.timer_min/60) : null;
@@ -5125,6 +5532,7 @@ async function r_recs() {
   if (!d.tanks.find(function(t){return t.id===tid;})) { el.innerHTML = no_tank(); return; }
   check_reservoir_auto_dose();
   d = ld();
+  var salt = is_salt(tid), reef = is_reef(tid);
   var tank = d.tanks.find(function(t){ return t.id === tid; });
   var pl_in_tank = d.plants.filter(function(x){ return x.tank_id === tid; });
   var sk = d.stock.filter(function(x){return x.tank_id===tid;});
@@ -5219,7 +5627,7 @@ async function r_recs() {
   var needs_high_light = pl_in_tank.some(function(p){ return _pl[p.plant_id] && _pl[p.plant_id].light === 'High'; });
   var needs_med_light  = !needs_high_light && pl_in_tank.some(function(p){ return _pl[p.plant_id] && _pl[p.plant_id].light === 'Medium'; });
   var heater_needed;
-  var sp_all_recs = get_sp(d);
+  var sp_all_recs = get_sp(d, tid);
   if (tank && tank.room_tmin != null) {
     heater_needed = sk.length === 0 ? tank.room_tmin < 72 : sk.some(function(s){ var sp = sp_all_recs[s.species_id]; return sp && tank.room_tmin < sp.tmin; });
   } else {
@@ -5273,7 +5681,8 @@ async function r_recs() {
     h += '<span style="color:var(--muted)">No light configured.</span>';
   }
   h += '</div>';
-  // CO2 row
+  // CO2 row — freshwater only
+  if (!salt) {
   h += '<div style="font-size:13px">';
   h += '<div style="display:flex;align-items:center;gap:8px">';
   h += '<span style="font-weight:600;min-width:50px">CO2:</span>';
@@ -5368,6 +5777,30 @@ async function r_recs() {
     }
     h += '</div>';
   }
+  } // end !salt CO2 section
+  // Saltwater equipment checks
+  if (salt) {
+    var skimmer_eq = d.equip.find(function(x){ return x.tank_id===tid && x.type==='Protein Skimmer'; });
+    var ato_eq = d.equip.find(function(x){ return x.tank_id===tid && x.type==='ATO (Auto Top-Off)'; });
+    var ph_eq = d.equip.find(function(x){ return x.tank_id===tid && (x.type==='Powerhead / Wave Maker'); });
+    h += '<div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px">';
+    h += '<span style="font-weight:600;min-width:80px">Protein Skimmer:</span>';
+    if (skimmer_eq) h += pill_lbl('pok', 'Added');
+    else h += '<span style="color:var(--danger)">No protein skimmer &mdash; required for all saltwater tanks.</span> ' + pill_lbl('pdanger', 'Missing');
+    h += '</div>';
+    h += '<div style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:13px">';
+    h += '<span style="font-weight:600;min-width:80px">ATO:</span>';
+    if (ato_eq) h += pill_lbl('pok', 'Added');
+    else h += '<span style="color:var(--warn)">No ATO &mdash; evaporation raises salinity. Consider adding one.</span> ' + pill_lbl('pwarn', 'Recommended');
+    h += '</div>';
+    if (reef) {
+      h += '<div style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:13px">';
+      h += '<span style="font-weight:600;min-width:80px">Powerhead:</span>';
+      if (ph_eq) h += pill_lbl('pok', 'Added');
+      else h += '<span style="color:var(--warn)">Reef tanks need 20&ndash;50&times; flow for coral health.</span> ' + pill_lbl('pwarn', 'Recommended');
+      h += '</div>';
+    }
+  }
   // Heater row
   var heater_w = get_heater_watts(tid);
   var rec_w = tank ? Math.ceil(tank.gallons * 5) : 0;
@@ -5392,10 +5825,10 @@ async function r_recs() {
     }
   }
   h += '</div></div>';
-  // Fertilizer Reservoirs card — dosing reservoirs with daily breakdown
+  // Fertilizer / Additive Reservoirs card — dosing reservoirs with daily breakdown
   var tank_res_r = (d.reservoirs||[]).filter(function(r){return r.tank_id===tid && r.daily_dose_ml;});
   if (tank_res_r.length) {
-    h += '<div class="card"><div class="ctitle">Fertilizer Reservoirs</div>';
+    h += '<div class="card"><div class="ctitle">' + (salt ? 'Additive Dosing Reservoirs' : 'Fertilizer Reservoirs') + '</div>';
     tank_res_r.forEach(function(r) {
       var total = reservoir_total_ml(r);
       var rem = reservoir_remaining(r);
@@ -5428,7 +5861,7 @@ async function r_recs() {
   }
   if (!sk.length) {
     h += '<div class="card"><div class="empty-s"><h2>No Livestock Added</h2>' +
-      '<p>Add fish or shrimp in the Equipment &amp; Life tab to see parameter recommendations.</p></div></div>';
+      '<p>Add fish' + (salt ? ', corals, or invertebrates' : ' or shrimp') + ' in the Equipment &amp; Life tab to see parameter recommendations.</p></div></div>';
     el.innerHTML = h; return;
   }
 
@@ -5437,7 +5870,7 @@ async function r_recs() {
     h += '<div class="cok">&#x2713; All species in this tank are compatible</div>';
   } else {
     h += '<div class="cwarn">&#x26A0; Compatibility issue detected</div>';
-    var pairs = bad_pairs(rng.sl);
+    var pairs = bad_pairs(rng.sl, tid);
     if (pairs.length) {
       h += '<div class="card"><div class="ctitle" style="color:var(--danger)">Incompatible Pairs</div>' +
            '<ul style="padding-left:18px;font-size:13px;line-height:1.9">';
@@ -5451,21 +5884,39 @@ async function r_recs() {
     }
   }
 
-  var plant_temp_note = (rng.pl_names && rng.pl_names.length) ? ' (includes plants: ' + rng.pl_names.join(', ') + ')' : '';
+  var plant_temp_note = (!salt && rng.pl_names && rng.pl_names.length) ? ' (includes plants: ' + rng.pl_names.join(', ') + ')' : '';
   h += '<div class="card"><div class="ctitle">Recommended Water Parameters</div>' +
     (plant_temp_note ? '<p style="font-size:12px;color:var(--muted);margin:0 0 8px">Temperature range accounts for fish and plants in this tank' + plant_temp_note + '.</p>' : '') +
     '<div class="tw"><table><tr><th>Parameter</th><th>Safe Range</th><th>Current Reading</th><th>Status</th><th>Notes</th></tr>';
-  var rp = [
-    {l:'Temperature', u:t_lbl(), mn:rng.temp.ok?d_t(rng.temp.min):null, mx:rng.temp.ok?d_t(rng.temp.max):null, k:'temp_f', tox:false, conv:d_t},
-    {l:'Ammonia',     u:'ppm', mn:0, mx:0, k:'ammonia', tox:true,  conv:null},
-    {l:'Nitrite',     u:'ppm', mn:0, mx:0, k:'nitrite', tox:true,  conv:null},
-    {l:'Nitrate',     u:'ppm', mn:0, mx:20, k:'nitrate', tox:false, conv:null},
-    {l:'pH',          u:'',    mn:rng.ph.ok?rng.ph.min:null, mx:rng.ph.ok?rng.ph.max:null, k:'ph', tox:false, conv:null},
-    {l:'Hardness (GH)',u:'dGH',mn:rng.gh.ok?rng.gh.min:null, mx:rng.gh.ok?rng.gh.max:null, k:'gh', tox:false, conv:null},
-    {l:'Carbonate Hardness (KH)', u:'dKH', mn:3, mx:8, k:'kh', tox:false, conv:null}
-  ];
-  if (lr && lr.tds != null)       rp.push({l:'TDS',            u:'ppm', mn:100, mx:400, k:'tds',       tox:false, conv:null});
-  if (lr && lr.phosphate != null) rp.push({l:'Phosphate (PO4)',u:'ppm', mn:0.5, mx:2,   k:'phosphate', tox:false, conv:null});
+  var rp;
+  if (salt) {
+    var no3_mn = 0, no3_mx = reef ? 5 : 20;
+    var po4_mx = reef ? 0.03 : 0.5;
+    rp = [
+      {l:'Temperature', u:t_lbl(), mn:rng.temp.ok?d_t(rng.temp.min):null, mx:rng.temp.ok?d_t(rng.temp.max):null, k:'temp_f', tox:false, conv:d_t},
+      {l:'Salinity',    u:'ppt',  mn:33, mx:36,   k:'salinity', tox:false, conv:null},
+      {l:'Ammonia',     u:'ppm',  mn:0,  mx:0,    k:'ammonia',  tox:true,  conv:null},
+      {l:'Nitrite',     u:'ppm',  mn:0,  mx:0,    k:'nitrite',  tox:true,  conv:null},
+      {l:'Nitrate',     u:'ppm',  mn:no3_mn, mx:no3_mx, k:'nitrate', tox:false, conv:null, hint: reef ? 'Reef: keep below 5 ppm for coral health' : 'FOWLR: keep below 20 ppm'},
+      {l:'pH',          u:'',     mn:8.1, mx:8.4,  k:'ph', tox:false, conv:null},
+      {l:'Alkalinity (KH)', u:'dKH', mn:8, mx:11, k:'kh',       tox:false, conv:null},
+      {l:'Calcium',     u:'ppm',  mn:380, mx:450,  k:'calcium',  tox:false, conv:null},
+      {l:'Magnesium',   u:'ppm',  mn:1250,mx:1350, k:'magnesium',tox:false, conv:null},
+      {l:'Phosphate',   u:'ppm',  mn:0,  mx:po4_mx, k:'phosphate', tox:false, conv:null, hint: reef ? 'Reef: keep below 0.03 ppm' : 'FOWLR: keep below 0.5 ppm'}
+    ];
+  } else {
+    rp = [
+      {l:'Temperature', u:t_lbl(), mn:rng.temp.ok?d_t(rng.temp.min):null, mx:rng.temp.ok?d_t(rng.temp.max):null, k:'temp_f', tox:false, conv:d_t},
+      {l:'Ammonia',     u:'ppm', mn:0, mx:0, k:'ammonia', tox:true,  conv:null},
+      {l:'Nitrite',     u:'ppm', mn:0, mx:0, k:'nitrite', tox:true,  conv:null},
+      {l:'Nitrate',     u:'ppm', mn:0, mx:20, k:'nitrate', tox:false, conv:null},
+      {l:'pH',          u:'',    mn:rng.ph.ok?rng.ph.min:null, mx:rng.ph.ok?rng.ph.max:null, k:'ph', tox:false, conv:null},
+      {l:'Hardness (GH)',u:'dGH',mn:rng.gh.ok?rng.gh.min:null, mx:rng.gh.ok?rng.gh.max:null, k:'gh', tox:false, conv:null},
+      {l:'Carbonate Hardness (KH)', u:'dKH', mn:3, mx:8, k:'kh', tox:false, conv:null}
+    ];
+    if (lr && lr.tds != null)       rp.push({l:'TDS',            u:'ppm', mn:100, mx:400, k:'tds',       tox:false, conv:null});
+    if (lr && lr.phosphate != null) rp.push({l:'Phosphate (PO4)',u:'ppm', mn:0.5, mx:2,   k:'phosphate', tox:false, conv:null});
+  }
   rp.forEach(function(p) {
     var raw = lr ? lr[p.k] : null, cur = (p.conv && raw !== null) ? p.conv(raw) : raw;
     var mn_chk = p.k === 'temp_f' ? (rng.temp.ok?rng.temp.min:null) : p.mn;
@@ -5477,8 +5928,7 @@ async function r_recs() {
     var cyc_active_recs = tank && !tank.cycled && cyc_recs && cyc_recs.phase >= 1 && cyc_recs.phase < 4;
     if (cyc_active_recs && (p.k === 'ammonia' || p.k === 'nitrite') && c !== 'muted') {
       c = 'ok';
-      var note_style = 'color:var(--muted)';
-      h += '<tr><td>' + p.l + '</td><td>' + rt + '</td><td>' + (cur !== null ? cur + (p.u?' '+p.u:'') : '—') + '</td>' +
+      h += '<tr><td>' + p.l + (p.hint ? '<br><span style="font-size:10px;color:var(--muted)">' + p.hint + '</span>' : '') + '</td><td>' + rt + '</td><td>' + (cur !== null ? cur + (p.u?' '+p.u:'') : '—') + '</td>' +
            '<td><span class="pill pmuted" title="Normal during nitrogen cycle">Cycling</span></td>' +
            '<td style="font-size:12px;color:var(--muted)">Normal during nitrogen cycle — no action needed.</td></tr>';
       return;
@@ -5505,15 +5955,21 @@ async function r_recs() {
         note = raw < 100 ? 'Low — may indicate very soft/pure water. Fine for some shrimp but most fish need higher mineral content.' :
                raw > 400 ? 'High — consider more frequent water changes or mixing in RO water.' : '';
       } else if (p.k === 'phosphate') {
-        note = raw < 0.2 ? 'Very low — can trigger green spot algae on leaves and glass.' :
+        note = salt ? (raw > po4_mx ? (reef ? 'Too high for reef — target below 0.03 ppm. Use GFO or water changes.' : 'High — may fuel algae. Increase water changes.') : '') :
+               raw < 0.2 ? 'Very low — can trigger green spot algae on leaves and glass.' :
                raw > 2 ? 'High — may fuel algae growth. Increase water change frequency.' : '';
+      } else if (p.k === 'salinity') {
+        note = raw < 30 ? 'Critically low — fish are stressed. Top up with pre-mixed saltwater immediately.' :
+               raw < 33 ? 'Low — target 33–36 ppt for most marine fish.' :
+               raw > 38 ? 'Very high — dilute with RODI water (never fresh tap water).' :
+               raw > 36 ? 'Slightly high — top off with RODI water only to lower salinity gradually.' : '';
       }
     } else if (c === 'muted') {
       note = 'No reading logged yet.';
     }
     // Append which specific livestock species are out of range
     if (!p.tox && c !== 'ok' && c !== 'muted' && raw !== null && rng && rng.sl) {
-      var aff = find_affected(rng.sl, p.k, raw);
+      var aff = find_affected(rng.sl, p.k, raw, tid);
       if (aff.length) {
         var aff_str = aff.map(function(a) {
           return a.name + ' (' + (a.dir === 'max' ? 'max' : 'min') + ' ' + a.val + (p.u ? ' ' + p.u : '') + ')';
@@ -5522,24 +5978,37 @@ async function r_recs() {
       }
     }
     var note_style = c === 'danger' ? 'color:var(--danger)' : c === 'warn' ? 'color:var(--warn)' : 'color:var(--muted)';
-    h += '<tr><td>' + p.l + '</td><td>' + rt + '</td><td>' + (cur !== null ? cur + (p.u?' '+p.u:'') : '—') + '</td><td>' + pill(c) + '</td>' +
+    h += '<tr><td>' + p.l + (p.hint ? '<br><span style="font-size:10px;color:var(--muted)">' + p.hint + '</span>' : '') + '</td><td>' + rt + '</td><td>' + (cur !== null ? cur + (p.u?' '+p.u:'') : '—') + '</td><td>' + pill(c) + '</td>' +
          '<td style="font-size:12px;' + note_style + '">' + note + '</td></tr>';
   });
   h += '</table></div></div>';
 
   h += '<div class="card"><div class="ctitle">Per-Species Requirements</div>' +
-    '<div class="tw"><table style="font-size:11px"><tr><th>Species</th><th>Level</th><th>Size</th><th>Min Tank</th><th>Temp (' + t_lbl() + ')</th><th>pH</th><th>GH</th><th>Bioload</th><th>M:F Ratio</th><th>Breeding</th><th>Notes</th></tr>';
+    '<div class="tw"><table style="font-size:11px"><tr><th>Species</th><th>Level</th><th>Size</th><th>Min Tank</th><th>Temp (' + t_lbl() + ')</th><th>pH</th>' +
+    (salt ? '<th>Salinity (ppt)</th><th>Reef Safe</th>' : '<th>GH</th>') +
+    '<th>Bioload</th>' + (salt ? '' : '<th>M:F Ratio</th><th>Breeding</th>') + '<th>Notes</th></tr>';
   rng.sl.forEach(function(sp) {
     var bl_lbl = sp.bioload <= 1 ? 'VLow' : sp.bioload <= 2 ? 'Low' : sp.bioload <= 3 ? 'Med' : sp.bioload <= 4 ? 'High' : 'VHigh';
     var bl_inv_note = sp.inv ? '<br><span style="font-size:10px;color:var(--muted)">×0.3 inv.</span>' : '';
+    var cuc_note = sp.cuc ? '<br><span style="font-size:10px;color:var(--ok)">CUC — no bioload</span>' : '';
     var lvl_color = sp.level === 'Advanced' ? 'var(--danger)' : sp.level === 'Intermediate' ? 'var(--warn)' : 'var(--ok)';
     var tank_warn = tank && sp.min_gal && tank.gallons < sp.min_gal;
-    // Gender Ratio column
-    var ratio_cell = sp.breeds === false ? '<span style="color:var(--muted);font-size:11px">Can&#39;t breed</span>' :
+    var reef_safe_cell = '';
+    if (salt) {
+      var rs = sp.reef_safe;
+      if (rs === true)              reef_safe_cell = '<span style="color:var(--ok);font-weight:700">Yes</span>';
+      else if (rs === false)        reef_safe_cell = '<span style="color:var(--danger);font-weight:700">No</span>';
+      else if (rs === 'with_caution') reef_safe_cell = '<span style="color:var(--warn);font-weight:700">Caution</span>';
+      else                          reef_safe_cell = '<span style="color:var(--muted)">—</span>';
+    }
+    // Gender Ratio and Breeding columns (freshwater only)
+    var ratio_cell = '', breed_cell = '';
+    if (!salt) {
+    ratio_cell = sp.breeds === false ? '<span style="color:var(--muted);font-size:11px">Can&#39;t breed</span>' :
       (sp.breed_cond && sp.breed_cond.ratio) ? '<span style="font-weight:700">' + sp.breed_cond.ratio + '</span>' :
       sp.breeds ? '<span style="color:var(--muted)">Any</span>' : '<span style="color:var(--muted)">—</span>';
     // Breeding column — water-aware
-    var breed_cell = '<span style="color:var(--muted)">—</span>';
+    breed_cell = '<span style="color:var(--muted)">—</span>';
     if (sp.breeds === false) {
       breed_cell = '<span style="color:var(--muted);font-size:12px">No</span>';
       if (sp.breed_note) breed_cell += '<br><span style="font-size:11px;color:var(--muted)" title="' + esc(sp.breed_note) + '">' + esc(sp.breed_note.length > 45 ? sp.breed_note.slice(0,45)+'…' : sp.breed_note) + '</span>';
@@ -5552,8 +6021,8 @@ async function r_recs() {
         : '';
       var ratio_warn = '';
       if (sp.breed_cond && sp.breed_cond.ratio && m_cnt > 0 && f_cnt > 0) {
-        var rp = sp.breed_cond.ratio.match(/(\d+)M:(\d+)F/);
-        if (rp && (m_cnt * parseInt(rp[2]) !== f_cnt * parseInt(rp[1]))) {
+        var rp2 = sp.breed_cond.ratio.match(/(\d+)M:(\d+)F/);
+        if (rp2 && (m_cnt * parseInt(rp2[2]) !== f_cnt * parseInt(rp2[1]))) {
           ratio_warn = '<div style="color:var(--warn);font-size:11px">Ratio ' + m_cnt + 'M:' + f_cnt + 'F &mdash; rec. ' + sp.breed_cond.ratio + '</div>';
         }
       }
@@ -5581,6 +6050,7 @@ async function r_recs() {
         breed_cell += '<br><span style="font-size:11px;color:' + ff_color + '">' + ff_lbl + '</span>';
       }
     }
+    } // end !salt breeding block
     var sp_note_short = sp.note ? (sp.note.length > 38 ? sp.note.slice(0, 38) + '…' : sp.note) : '';
     h += '<tr><td><strong>' + esc(sp.name) + '</strong></td>' +
          '<td style="color:' + lvl_color + ';font-weight:700">' + (sp.level || 'Beginner') + '</td>' +
@@ -5588,15 +6058,15 @@ async function r_recs() {
          '<td style="white-space:nowrap' + (tank_warn ? ';color:var(--danger);font-weight:700' : '') + '">' + (sp.min_gal ? d_v(sp.min_gal) + ' ' + v_lbl() : '-') + (tank_warn ? ' &#x26A0;' : '') + '</td>' +
          '<td style="white-space:nowrap">' + d_t(sp.tmin) + '-' + d_t(sp.tmax) + '</td>' +
          '<td style="white-space:nowrap">' + sp.pmin + '-' + sp.pmax + '</td>' +
-         '<td style="white-space:nowrap">' + sp.gmin + '-' + sp.gmax + '</td>' +
-         '<td style="white-space:nowrap">' + bl_lbl + bl_inv_note + '</td>' +
-         '<td style="white-space:nowrap">' + ratio_cell + '</td>' +
-         '<td>' + breed_cell + '</td>' +
+         (salt ? '<td style="white-space:nowrap">' + sp.gmin + '–' + sp.gmax + '</td><td>' + reef_safe_cell + '</td>'
+               : '<td style="white-space:nowrap">' + sp.gmin + '-' + sp.gmax + '</td>') +
+         '<td style="white-space:nowrap">' + bl_lbl + bl_inv_note + cuc_note + '</td>' +
+         (salt ? '' : '<td style="white-space:nowrap">' + ratio_cell + '</td><td>' + breed_cell + '</td>') +
          '<td style="color:var(--muted)" title="' + esc(sp.note) + '">' + esc(sp_note_short) + '</td></tr>';
   });
   h += '</table></div></div>';
 
-  if (pl_in_tank.length) {
+  if (!salt && pl_in_tank.length) {
     var fish_tmin = rng.temp.ok ? rng.temp.min : null;
     var fish_tmax = rng.temp.ok ? rng.temp.max : null;
     h += '<div class="card"><div class="ctitle">Plant Requirements</div>';
@@ -5661,11 +6131,19 @@ function om(h) { document.getElementById('mb').innerHTML = h; document.getElemen
 function cm() { document.getElementById('ov').classList.remove('on'); }
 
 // ===== TANK MODALS =====
+function upd_tank_type_ui(sel) {
+  var row = document.getElementById('salt_subtype_row');
+  if (row) row.style.display = sel.value === 'salt' ? '' : 'none';
+}
 function do_add_tank() {
   var td = today_str();
   om('<div class="mtitle">Add Tank</div>' +
     '<form onsubmit="sub_add_tank(event)">' +
     fg('Tank Name', '<input type="text" name="name" placeholder="e.g. Living Room 20G" required>') +
+    fg('Tank Type', '<select name="tank_type" onchange="upd_tank_type_ui(this)" style="width:100%"><option value="fresh">Freshwater</option><option value="salt">Saltwater</option></select>') +
+    '<div id="salt_subtype_row" style="display:none">' +
+    fg('Saltwater Type', '<select name="salt_subtype" style="width:100%"><option value="fowlr">FOWLR (Fish-Only With Live Rock)</option><option value="reef">Reef Tank</option></select>') +
+    '</div>' +
     '<div class="frow">' + vol_flds('', '') + '</div>' +
     fg('Setup Date', '<input type="date" name="setup" value="' + td + '" required>') +
     '<div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:2px">Room Temperature — without any heater (' + t_lbl() + ')</div>' +
@@ -5690,7 +6168,7 @@ function sub_add_tank(e) {
   var lit = parseFloat(f.lit.value) || 0;
   var gal = parseFloat(f.gal.value) || 0;
   if (get_pref().vol === 'L' && lit) gal = lit / 3.78541;
-  add_tank(f.name.value, gal, f.setup.value, f.notes.value, inp_t(f.room_tmin.value), inp_t(f.room_tmax.value), f.length_cm.value, f.width_cm.value, f.height_cm.value);
+  add_tank(f.name.value, gal, f.setup.value, f.notes.value, inp_t(f.room_tmin.value), inp_t(f.room_tmax.value), f.length_cm.value, f.width_cm.value, f.height_cm.value, f.tank_type.value, f.salt_subtype ? f.salt_subtype.value : 'fowlr');
   cm(); init();
 }
 
@@ -5787,9 +6265,14 @@ function do_del_preview() {
 }
 function do_edit_tank() {
   var t = ld().tanks.find(function(x){ return x.id === at(); }); if (!t) return;
+  var tt = t.tank_type || 'fresh', st = t.salt_subtype || 'fowlr';
   om('<div class="mtitle">Edit Tank</div>' +
     '<form onsubmit="sub_edit_tank(event)">' +
     fg('Tank Name', '<input type="text" name="name" value="' + esc(t.name) + '" required>') +
+    fg('Tank Type', '<select name="tank_type" onchange="upd_tank_type_ui(this)" style="width:100%"><option value="fresh"' + (tt==='fresh'?' selected':'') + '>Freshwater</option><option value="salt"' + (tt==='salt'?' selected':'') + '>Saltwater</option></select>') +
+    '<div id="salt_subtype_row" style="display:' + (tt==='salt'?'':'none') + '">' +
+    fg('Saltwater Type', '<select name="salt_subtype" style="width:100%"><option value="fowlr"' + (st==='fowlr'?' selected':'') + '>FOWLR (Fish-Only With Live Rock)</option><option value="reef"' + (st==='reef'?' selected':'') + '>Reef Tank</option></select>') +
+    '</div>' +
     '<div class="frow">' + vol_flds(t.gallons, t.liters) + '</div>' +
     fg('Setup Date', '<input type="date" name="setup" value="' + t.setup_date + '" required>') +
     '<div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:2px">Room Temperature — without any heater (' + t_lbl() + ')</div>' +
@@ -5816,7 +6299,7 @@ function sub_edit_tank(e) {
   var lit = parseFloat(f.lit.value) || 0;
   var gal = parseFloat(f.gal.value) || 0;
   if (get_pref().vol === 'L' && lit) gal = lit / 3.78541;
-  upd_tank(at(), f.name.value, gal, f.setup.value, f.notes.value, inp_t(f.room_tmin.value), inp_t(f.room_tmax.value), f.show_feed_log.checked, f.length_cm.value, f.width_cm.value, f.height_cm.value);
+  upd_tank(at(), f.name.value, gal, f.setup.value, f.notes.value, inp_t(f.room_tmin.value), inp_t(f.room_tmax.value), f.show_feed_log.checked, f.length_cm.value, f.width_cm.value, f.height_cm.value, f.tank_type.value, f.salt_subtype ? f.salt_subtype.value : 'fowlr');
   cm(); init();
 }
 function do_del_tank() {
@@ -5829,20 +6312,22 @@ function do_del_tank() {
 // ===== EQUIPMENT MODALS =====
 function upd_equip_form(sel) {
   var t = sel.value;
-  var ld_div = document.getElementById('eq_light_cfg');
-  var fi_div = document.getElementById('eq_filter_cfg');
-  var co_div = document.getElementById('eq_co2_cfg');
-  var he_div = document.getElementById('eq_heater_cfg');
-  var su_div = document.getElementById('eq_substrate_cfg');
-  var dc_div = document.getElementById('eq_dc_cfg');
-  if (ld_div) ld_div.style.display = t === 'Light' ? 'block' : 'none';
-  if (fi_div) fi_div.style.display = t === 'Filter' ? 'block' : 'none';
-  if (co_div) co_div.style.display = t === 'CO2 System' ? 'block' : 'none';
-  if (he_div) he_div.style.display = t === 'Heater' ? 'block' : 'none';
-  if (su_div) su_div.style.display = t === 'Substrate' ? 'block' : 'none';
-  if (dc_div) dc_div.style.display = t === 'CO2 Drop Checker' ? 'block' : 'none';
+  var ids = ['eq_light_cfg','eq_filter_cfg','eq_co2_cfg','eq_heater_cfg','eq_substrate_cfg','eq_dc_cfg','eq_skimmer_cfg','eq_ato_cfg','eq_powerhead_cfg','eq_dosing_cfg','eq_uv_cfg','eq_svc_cfg'];
+  ids.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  var show = {
+    'Light': 'eq_light_cfg', 'Filter': 'eq_filter_cfg', 'CO2 System': 'eq_co2_cfg',
+    'Heater': 'eq_heater_cfg', 'Substrate': 'eq_substrate_cfg', 'CO2 Drop Checker': 'eq_dc_cfg',
+    'Protein Skimmer': 'eq_skimmer_cfg', 'ATO (Auto Top-Off)': 'eq_ato_cfg',
+    'Powerhead / Wave Maker': 'eq_powerhead_cfg', 'Dosing Pump': 'eq_dosing_cfg',
+    'UV Sterilizer': 'eq_uv_cfg'
+  };
+  if (show[t]) { var el2 = document.getElementById(show[t]); if (el2) el2.style.display = 'block'; }
+  var svc_types = ['Filter','Heater','Light','CO2 System','Protein Skimmer','UV Sterilizer'];
   var sv_div = document.getElementById('eq_svc_cfg');
-  if (sv_div) sv_div.style.display = ['Filter','Heater','Light','CO2 System'].indexOf(t) !== -1 ? 'block' : 'none';
+  if (sv_div) sv_div.style.display = svc_types.indexOf(t) !== -1 ? 'block' : 'none';
 }
 
 function build_equip_cfg_html(type, cfg) {
@@ -5910,11 +6395,41 @@ function build_equip_cfg_html(type, cfg) {
     fg('Solution', '<select name="dc_solution"><option' + (c.dc_solution==='4 dKH Reference'?' selected':'') + '>4 dKH Reference</option><option' + (c.dc_solution==='Tap Water'?' selected':'') + '>Tap Water</option></select>', 'Use 4 dKH reference water for accurate readings') +
     fg('Current Reading', '<select name="dc_color"><option value="">Not checked</option><option value="Blue"' + (c.dc_color==='Blue'?' selected':'') + '>Blue — CO2 too low</option><option value="Green"' + (c.dc_color==='Green'?' selected':'') + '>Green — CO2 ideal</option><option value="Yellow"' + (c.dc_color==='Yellow'?' selected':'') + '>Yellow — CO2 too high</option></select>') +
     '</div></div>' +
-  '<div id="eq_svc_cfg" style="display:' + (['Filter','Heater','Light','CO2 System'].indexOf(type) !== -1 ? 'block' : 'none') + '">' +
+  '<div id="eq_svc_cfg" style="display:' + (['Filter','Heater','Light','CO2 System','Protein Skimmer','UV Sterilizer'].indexOf(type) !== -1 ? 'block' : 'none') + '">' +
   '<div class="cfg-sep"></div><div style="font-size:12px;font-weight:600;color:var(--mid);margin-bottom:6px">Service Reminder</div>' +
   '<div class="frow">' +
   fg('Service every (days)', '<input type="number" name="svc_interval" min="1" placeholder="e.g. 14" value="' + (c.svc_interval || '') + '">', 'How often this equipment needs cleaning or servicing') +
   fg('Last serviced', '<input type="date" name="svc_last" value="' + (c.svc_last || '') + '">') +
+  '</div></div>' +
+  '<div id="eq_skimmer_cfg" style="display:' + (type==='Protein Skimmer'?'block':'none') + '">' +
+  '<div class="cfg-sep"></div><div style="font-size:12px;font-weight:600;color:var(--mid);margin-bottom:6px">Protein Skimmer Settings</div>' +
+  '<div class="frow">' +
+  fg('Rated Volume (gal)', '<input type="number" name="skimmer_vol" value="' + (c.skimmer_vol||'') + '" placeholder="e.g. 100" min="0">') +
+  fg('Style', '<select name="skimmer_style"><option' + (c.skimmer_style==='Hang-On'?' selected':'') + '>Hang-On</option><option' + (c.skimmer_style==='In-Sump'?' selected':'') + '>In-Sump</option><option' + (c.skimmer_style==='Needle Wheel'?' selected':'') + '>Needle Wheel</option><option' + (c.skimmer_style==='Venturi'?' selected':'') + '>Venturi</option></select>') +
+  '</div></div>' +
+  '<div id="eq_ato_cfg" style="display:' + (type==='ATO (Auto Top-Off)'?'block':'none') + '">' +
+  '<div class="cfg-sep"></div><div style="font-size:12px;font-weight:600;color:var(--mid);margin-bottom:6px">ATO Settings</div>' +
+  '<div class="frow">' +
+  fg('Reservoir Capacity (L)', '<input type="number" name="ato_res_l" value="' + (c.ato_res_l||'') + '" placeholder="e.g. 10" min="0" step="0.5">') +
+  fg('Top-off Rate (ml/day)', '<input type="number" name="ato_rate_ml" value="' + (c.ato_rate_ml||'') + '" placeholder="e.g. 200" min="0">') +
+  '</div></div>' +
+  '<div id="eq_powerhead_cfg" style="display:' + (type==='Powerhead / Wave Maker'?'block':'none') + '">' +
+  '<div class="cfg-sep"></div><div style="font-size:12px;font-weight:600;color:var(--mid);margin-bottom:6px">Powerhead Settings</div>' +
+  '<div class="frow">' +
+  fg('Flow Rate (' + fl_lbl() + ')', '<input type="number" name="powerhead_gph" value="' + (c.powerhead_gph ? d_fl(c.powerhead_gph) : '') + '" placeholder="e.g. ' + d_fl(500) + '" min="0">') +
+  fg('Mode', '<select name="powerhead_mode"><option' + (c.powerhead_mode==='Constant'?' selected':'') + '>Constant</option><option' + (c.powerhead_mode==='Wave'?' selected':'') + '>Wave</option><option' + (c.powerhead_mode==='Pulse'?' selected':'') + '>Pulse</option></select>') +
+  '</div></div>' +
+  '<div id="eq_dosing_cfg" style="display:' + (type==='Dosing Pump'?'block':'none') + '">' +
+  '<div class="cfg-sep"></div><div style="font-size:12px;font-weight:600;color:var(--mid);margin-bottom:6px">Dosing Pump Settings</div>' +
+  '<div class="frow">' +
+  fg('Channels', '<input type="number" name="dosing_channels" value="' + (c.dosing_channels||'') + '" placeholder="e.g. 2" min="1" max="8">') +
+  fg('Dose per channel (ml/day)', '<input type="number" name="dosing_ml_day" value="' + (c.dosing_ml_day||'') + '" placeholder="e.g. 10" min="0" step="0.5">') +
+  '</div></div>' +
+  '<div id="eq_uv_cfg" style="display:' + (type==='UV Sterilizer'?'block':'none') + '">' +
+  '<div class="cfg-sep"></div><div style="font-size:12px;font-weight:600;color:var(--mid);margin-bottom:6px">UV Sterilizer Settings</div>' +
+  '<div class="frow">' +
+  fg('Wattage (W)', '<input type="number" name="uv_watts" value="' + (c.uv_watts||'') + '" placeholder="e.g. 18" min="0">') +
+  fg('Flow Rate (' + fl_lbl() + ')', '<input type="number" name="uv_gph" value="' + (c.uv_gph ? d_fl(c.uv_gph) : '') + '" placeholder="e.g. ' + d_fl(100) + '" min="0">') +
   '</div></div>';
 }
 
@@ -5943,7 +6458,6 @@ function read_equip_cfg(f) {
     cfg.co2_refill_date = f.co2_refill_date.value || null;
     cfg.co2_wp_val = f.co2_wp_val.value ? parseFloat(f.co2_wp_val.value) : null;
     cfg.co2_wp_unit = f.co2_wp_unit.value || 'bar';
-    // store normalised bar value for threshold checks
     cfg.co2_working_bar = cfg.co2_wp_val != null ? (cfg.co2_wp_unit === 'PSI' ? cfg.co2_wp_val / 14.504 : cfg.co2_wp_unit === 'MPa' ? cfg.co2_wp_val * 10 : cfg.co2_wp_val) : null;
   } else if (t === 'Heater') {
     cfg.watts = parseFloat(f.heater_watts.value) || 0;
@@ -5953,6 +6467,21 @@ function read_equip_cfg(f) {
   } else if (t === 'CO2 Drop Checker') {
     cfg.dc_solution = f.dc_solution.value;
     cfg.dc_color = f.dc_color.value;
+  } else if (t === 'Protein Skimmer') {
+    cfg.skimmer_vol = parseFloat(f.skimmer_vol.value) || 0;
+    cfg.skimmer_style = f.skimmer_style.value;
+  } else if (t === 'ATO (Auto Top-Off)') {
+    cfg.ato_res_l = parseFloat(f.ato_res_l.value) || 0;
+    cfg.ato_rate_ml = parseFloat(f.ato_rate_ml.value) || 0;
+  } else if (t === 'Powerhead / Wave Maker') {
+    cfg.powerhead_gph = inp_fl(f.powerhead_gph.value);
+    cfg.powerhead_mode = f.powerhead_mode.value;
+  } else if (t === 'Dosing Pump') {
+    cfg.dosing_channels = parseInt(f.dosing_channels.value) || 1;
+    cfg.dosing_ml_day = parseFloat(f.dosing_ml_day.value) || 0;
+  } else if (t === 'UV Sterilizer') {
+    cfg.uv_watts = parseFloat(f.uv_watts.value) || 0;
+    cfg.uv_gph = inp_fl(f.uv_gph.value);
   }
   var svc_i = f.svc_interval ? (parseInt(f.svc_interval.value) || 0) : 0;
   var svc_l = f.svc_last ? f.svc_last.value : '';
@@ -5980,7 +6509,8 @@ function calc_plant_score(tid) {
 }
 
 function do_add_equip() {
-  var type_opts = '<option>Filter</option><option>Heater</option><option>Light</option><option>CO2 System</option><option>CO2 Drop Checker</option><option>Pump</option><option>Substrate</option><option>Thermometer</option><option>Other</option>';
+  var type_list = get_equip_types(at());
+  var type_opts = type_list.map(function(t){ return '<option>' + t + '</option>'; }).join('');
   om('<div class="mtitle">Add Equipment</div>' +
     '<form onsubmit="sub_add_equip(event)">' +
     '<div class="frow">' +
@@ -5990,7 +6520,7 @@ function do_add_equip() {
     fg('Brand', '<input type="text" name="brand" placeholder="e.g. Fluval">') +
     fg('Notes', '<input type="text" name="notes" placeholder="Optional">') +
     '</div>' +
-    build_equip_cfg_html('Filter', {}) +
+    build_equip_cfg_html(type_list[0], {}) +
     '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Add</button></div>' +
     '</form>');
 }
@@ -6186,10 +6716,11 @@ function upd_gender_qty() {
   }
 }
 function upd_stock_compat(sel) {
-  var sid = sel.value, d = ld(), tid = at(), sp_all = get_sp(d);
+  var sid = sel.value, d = ld(), tid = at(), salt = is_salt(tid), reef = is_reef(tid);
+  var sp_all = get_sp(d, tid);
   var result_el = document.getElementById('stk_compat');
   var custom_el = document.getElementById('stk_custom_fields');
-  if (custom_el) custom_el.style.display = (sid === '_custom') ? 'block' : 'none';
+  if (custom_el) custom_el.style.display = (sid === '_custom' && !salt) ? 'block' : 'none';
   var gender_row_el = document.getElementById('stk_gender_row');
   if (gender_row_el) gender_row_el.style.display = (sid === '_custom' || (sp_all[sid] && sp_all[sid].breeds)) ? '' : 'none';
   if (!result_el) return;
@@ -6203,6 +6734,18 @@ function upd_stock_compat(sel) {
     if (new_sp.hard_reason) {
       parts.push('<div style="color:' + lc + ';font-size:12px;margin-top:2px">' + esc(new_sp.hard_reason) + '</div>');
     }
+  }
+
+  // Reef-safe check for salt tanks
+  if (salt && new_sp.reef_safe === false) {
+    parts.push('<div style="color:var(--danger);font-size:12px;font-weight:700;margin-top:2px">&#x1F6AB; Not reef safe — will eat corals and invertebrates. FOWLR only.</div>');
+  } else if (salt && new_sp.reef_safe === 'with_caution') {
+    parts.push('<div style="color:var(--warn);font-size:12px;font-weight:700;margin-top:2px">&#x26A0; Reef safe with caution — may nip corals or eat invertebrates. Monitor closely.</div>');
+  }
+
+  // Coral requires reef tank
+  if (salt && new_sp.type === 'coral' && !reef) {
+    parts.push('<div style="color:var(--warn);font-size:12px;font-weight:700;margin-top:2px">&#x1FAB8; Corals require a Reef tank setup. This is a FOWLR tank.</div>');
   }
 
   // M:F ratio guidance
@@ -6245,7 +6788,7 @@ function upd_stock_compat(sel) {
   // Compatibility with existing stock
   var existing = d.stock.filter(function(s){ return s.tank_id === tid; });
   if (!existing.length) {
-    parts.push('<div style="color:var(--muted);font-size:12px">First fish — no compatibility check needed.</div>');
+    parts.push('<div style="color:var(--muted);font-size:12px">First livestock — no compatibility check needed.</div>');
   } else {
     var conflicts = [];
     existing.forEach(function(s) {
@@ -6253,7 +6796,7 @@ function upd_stock_compat(sel) {
       var iss = [], beh_reason = null;
       if (Math.max(new_sp.tmin,sp.tmin) > Math.min(new_sp.tmax,sp.tmax)) iss.push('temp');
       if (Math.max(new_sp.pmin,sp.pmin) > Math.min(new_sp.pmax,sp.pmax)) iss.push('pH');
-      if (Math.max(new_sp.gmin,sp.gmin) > Math.min(new_sp.gmax,sp.gmax)) iss.push('hardness');
+      if (Math.max(new_sp.gmin,sp.gmin) > Math.min(new_sp.gmax,sp.gmax)) iss.push(salt ? 'salinity' : 'hardness');
       beh_reason = behavior_incompat(sid, new_sp, s.species_id, sp);
       if (iss.length || beh_reason) conflicts.push({name: sp.name, params: iss, beh: beh_reason});
     });
@@ -6295,22 +6838,43 @@ function upd_stock_compat(sel) {
   result_el.innerHTML = parts.join('');
 }
 function build_stock_opts(level_filter, heater_filter, type_filter, search) {
-  var d = ld(), sp_all = get_sp(d);
-  var tank = d.tanks.find(function(t){ return t.id === at(); });
+  var d = ld(), tid = at(), salt = is_salt(tid), reef = is_reef(tid);
+  var sp_all = get_sp(d, tid);
+  var tank = d.tanks.find(function(t){ return t.id === tid; });
   var rt_min = tank && tank.room_tmin != null ? tank.room_tmin : null;
   var q = search ? search.toLowerCase() : '';
-  var opts = Object.keys(sp_all)
+  var filtered = Object.keys(sp_all)
     .filter(function(k) {
       var sp = sp_all[k];
       if (!q && level_filter && level_filter !== 'All' && sp.level !== level_filter) return false;
-      if (rt_min != null && heater_filter === 'no_heater' && rt_min < sp.tmin) return false;
-      if (rt_min != null && heater_filter === 'heater_req' && rt_min >= sp.tmin) return false;
-      if (type_filter && type_filter !== 'All' && sp.type !== type_filter) return false;
+      if (!salt && rt_min != null && heater_filter === 'no_heater' && rt_min < sp.tmin) return false;
+      if (!salt && rt_min != null && heater_filter === 'heater_req' && rt_min >= sp.tmin) return false;
+      if (type_filter && type_filter !== 'All') {
+        if (salt) {
+          if (sp.type !== type_filter.toLowerCase()) return false;
+        } else {
+          if (sp.type !== type_filter) return false;
+        }
+      }
       if (q && sp.name.toLowerCase().indexOf(q) === -1) return false;
       return true;
     })
-    .sort(function(a,b){ return sp_all[a].name.localeCompare(sp_all[b].name); })
-    .map(function(k) {
+    .sort(function(a,b){ return sp_all[a].name.localeCompare(sp_all[b].name); });
+  if (salt) {
+    var fish_opts = filtered.filter(function(k){ return sp_all[k].type === 'fish'; });
+    var coral_opts = filtered.filter(function(k){ return sp_all[k].type === 'coral'; });
+    var invert_opts = filtered.filter(function(k){ return sp_all[k].type === 'invert'; });
+    function mk_opt(k) {
+      var sp = sp_all[k];
+      var rs = sp.reef_safe === true ? ' \xB7 reef safe' : sp.reef_safe === false ? ' \xB7 FOWLR only' : ' \xB7 w/caution';
+      var lvl = sp.level === 'Intermediate' ? ' ★★' : sp.level === 'Advanced' ? ' ★★★' : '';
+      return '<option value="' + k + '">' + sp.name + ' (' + rs + lvl + ')</option>';
+    }
+    return (fish_opts.length ? '<optgroup label="Fish">' + fish_opts.map(mk_opt).join('') + '</optgroup>' : '') +
+           (coral_opts.length ? '<optgroup label="Corals">' + coral_opts.map(mk_opt).join('') + '</optgroup>' : '') +
+           (invert_opts.length ? '<optgroup label="Invertebrates">' + invert_opts.map(mk_opt).join('') + '</optgroup>' : '');
+  }
+  var opts = filtered.map(function(k) {
       var sp = sp_all[k], bl = sp.bioload, bl_lbl = bl <= 1 ? 'Low' : bl <= 3 ? 'Med' : 'High';
       var lvl = sp.level === 'Intermediate' ? ' ★★' : sp.level === 'Advanced' ? ' ★★★' : '';
       var heat_tag = rt_min != null ? (rt_min >= sp.tmin ? ' \xB7 no heater' : ' \xB7 heater') : '';
@@ -6360,12 +6924,9 @@ function do_add_stock() {
     '<label style="font-size:12px;color:var(--muted);font-weight:600">Filter:</label>' +
     '<input type="text" id="sp_search" placeholder="Search species..." oninput="filter_stock_all()" style="flex:1;min-width:120px;padding:5px 8px;border:1px solid #ccd5de;border-radius:4px;font-size:12px">' +
     '<select id="sp_type_filter" onchange="filter_stock_all()" style="width:auto">' +
-    '<option value="All">All types</option>' +
-    '<option value="Fish">Fish</option>' +
-    '<option value="Shrimp">Shrimp</option>' +
-    '<option value="Snail">Snail</option>' +
-    '<option value="Turtle">Turtle</option>' +
-    '<option value="Amphibian">Amphibian</option>' +
+    (is_salt(at()) ?
+      '<option value="All">All types</option><option value="fish">Fish</option><option value="coral">Corals</option><option value="invert">Invertebrates</option>' :
+      '<option value="All">All types</option><option value="Fish">Fish</option><option value="Shrimp">Shrimp</option><option value="Snail">Snail</option><option value="Turtle">Turtle</option><option value="Amphibian">Amphibian</option>') +
     '</select>' +
     '<select name="level_f" onchange="filter_stock_level(this)" style="width:auto">' +
     '<option value="All" selected>All levels</option>' +
@@ -6442,16 +7003,17 @@ function sub_add_stock(e) {
 function r_howto() {
   var el = document.getElementById('p-howto');
   if (!el) return;
+  var salt = is_salt(at()), reef = is_reef(at());
   var h = '';
 
   // ── PART 1 header ──
   h += '<div style="background:linear-gradient(135deg,var(--deep),var(--mid));color:#fff;border-radius:10px;padding:20px 22px;margin-bottom:18px">' +
-       '<div style="font-size:18px;font-weight:700;margin-bottom:4px">Part 1 &mdash; Starting and Running a Freshwater Aquarium</div>' +
+       '<div style="font-size:18px;font-weight:700;margin-bottom:4px">Part 1 &mdash; Starting and Running a ' + (salt ? 'Saltwater' : 'Freshwater') + ' Aquarium</div>' +
        '<div style="font-size:13px;opacity:.85">The right order matters. Follow these five stages and your tank will thrive from day one.</div>' +
        '</div>';
 
   // ── Step tracker bar ──
-  var stage_labels = ['Setup','Nitrogen Cycle','Cleaner Crew','Add Fish','Routine Care'];
+  var stage_labels = salt ? ['Setup','Nitrogen Cycle','Cleaner Crew','Add Fish','Routine Care'] : ['Setup','Nitrogen Cycle','Cleaner Crew','Add Fish','Routine Care'];
   h += '<div style="display:flex;gap:0;margin-bottom:20px;border-radius:8px;overflow:hidden">';
   stage_labels.forEach(function(s, i) {
     var bg = ['#1a6b8a','#4db8d4','#e8a838','#3ab87a','#6b7280'][i];
@@ -6488,6 +7050,114 @@ function r_howto() {
     return '<div style="background:#eaf8f1;border-left:3px solid var(--ok);border-radius:0 6px 6px 0;padding:8px 12px;margin-top:10px;font-size:12px;color:#1a5c3a;font-weight:600">&#x2705; ' + txt + '</div>';
   }
 
+  if (salt) {
+  // ── SALTWATER STAGES ──
+  h += step(1, '#1a6b8a', '&#x1F4E6;', 'Tank Setup', 'Day 1 — before any water goes in',
+    bullets([
+      'Rinse the tank, substrate, and all decorations with <strong>clean water only</strong> — never soap',
+      'Add substrate: fine sand (1&ndash;2 inches) for natural look, or bare bottom for easier cleaning',
+      'Place live rock (1&ndash;1.5 lbs per gallon) for filtration and biological surface area',
+      'Fill with <strong>RODI water</strong> (reverse osmosis deionized) — never tap water for saltwater tanks',
+      'Mix reef salt to <strong>1.025 SG (35 ppt)</strong> and let dissolve fully before turning on equipment',
+      'Install protein skimmer, return pump, heater, and lights',
+      'Set heater to 77&ndash;78°F (25&ndash;26°C) and let temperature stabilise for 24 hours',
+    ]) +
+    warn_box('Never use tap water in a saltwater tank. Chlorine and phosphates from tap water stress marine life and fuel algae. Always use RODI water.') +
+    tip_box('Allow the saltwater to mix for at least 24 hours with a powerhead running before testing salinity. Salt needs time to fully dissolve and equilibrate.')
+  );
+
+  h += step(2, '#4db8d4', '&#x1F9EA;', 'The Nitrogen Cycle', 'Weeks 2&ndash;8 — the most important phase',
+    '<p style="font-size:13px;margin:0 0 10px">Same biology as freshwater — ammonia from waste converts to nitrite then nitrate. Live rock naturally seeds nitrifying bacteria and dramatically speeds the cycle.</p>' +
+    bullets([
+      '<strong>Fishless (recommended):</strong> add pure ammonia to 2 ppm or use a small piece of raw shrimp as the ammonia source. Remove shrimp once ammonia spikes.',
+      '<strong>Bacteria supplement:</strong> dose Microbacter7 or Dr. Tim\'s One &amp; Only to seed the cycle — reduces time to 2&ndash;3 weeks.',
+      'Test NH3, NO2, and NO3 every 2 days. Log every result in this app.',
+      'Cycle is complete when NH3 and NO2 drop to 0 within 24 hours of dosing, and NO3 is detectable.',
+      (reef ? 'Reef target: do a large water change to bring nitrate <strong>below 5 ppm</strong> before adding corals.' : 'FOWLR target: bring nitrate below 20 ppm before adding fish.'),
+    ]) +
+    warn_box('Never do large water changes during the cycle — you wash away the bacteria you are growing. Only intervene if ammonia exceeds 4 ppm.') +
+    tip_box('Cycle completes faster at 78°F with live rock. Seed with cured live rock from a healthy established tank for a 1-week cycle.')
+  );
+
+  h += step(3, '#e8a838', '&#x1F40C;', 'Introduce the Cleaner Crew', 'After the cycle is complete',
+    '<p style="font-size:13px;margin:0 0 10px">A <strong>clean-up crew (CUC)</strong> is essential in saltwater tanks. They consume algae, detritus, leftover food, and cyano, keeping the substrate and glass clean.</p>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">' +
+    [
+      ['&#x1F40C;','Turbo Snails','Heavy-duty glass scrapers. 1 per 5 gal.'],
+      ['&#x1F40C;','Nassarius Snails','Sand sifters. Bury during the day, emerge to scavenge.'],
+      ['&#x1F9A0;','Hermit Crabs','Blue or scarlet leg. Keep shell supply available.'],
+      ['&#x1F990;','Cleaner Shrimp','Removes parasites from fish. Hardy and peaceful.'],
+      ['&#x1F422;','Trochus Snail','Can right themselves (unlike Astrea). Great glass cleaners.'],
+    ].map(function(e){
+      return '<div style="background:#f5f8fb;border-radius:6px;padding:8px 10px;font-size:12px">' +
+             '<div style="font-size:18px">' + e[0] + '</div>' +
+             '<div style="font-weight:600">' + e[1] + '</div>' +
+             '<div style="color:var(--muted);margin-top:2px">' + e[2] + '</div></div>';
+    }).join('') +
+    '</div>' +
+    bullets([
+      'Add CUC animals 1&ndash;2 at a time before any fish',
+      'Drip acclimate all new additions for 30&ndash;45 minutes — salinity shock is lethal',
+      'Wait 1 week before adding any fish',
+    ]) +
+    tip_box('A good CUC combination: 1 turbo snail + 2 nassarius snails + 1 hermit crab per 10 gallons as a starting ratio.')
+  );
+
+  h += step(4, '#3ab87a', '&#x1F420;', 'Introduce Your Fish', '1&ndash;2 weeks after the cleaner crew',
+    '<p style="font-size:13px;margin:0 0 10px">Marine fish are far more sensitive to sudden salinity and temperature changes than freshwater fish. Drip acclimation is not optional.</p>' +
+    bullets([
+      '<strong>Drip acclimation:</strong> place fish in a bucket with their bag water. Use airline tubing to drip tank water at 2&ndash;3 drops per second for 45&ndash;60 minutes before netting them in.',
+      '<strong>Add 1&ndash;2 fish at a time</strong> maximum — even large tanks can only handle slow stocking.',
+      '<strong>FOWLR:</strong> start with hardy fish (clownfish, damsels, chromis) and wait 2 weeks between additions.',
+      (reef ? '<strong>Reef:</strong> add peaceful fish first (clownfish, gobies, cardinals). Avoid fish that nip corals (some angelfish, butterflies) until the reef is established.' : ''),
+      'Quarantine new fish in a separate tank for 2&ndash;4 weeks to prevent disease spread.',
+      'Test NH3 and NO2 48 hours after each addition to confirm the cycle is holding.',
+    ].filter(function(x){ return !!x; })) +
+    warn_box('Never pour pet store bag water into your tank. Bag water from pet stores may contain ich, velvet, or other pathogens. Net the fish out.') +
+    ok_box('Use the Recommendations tab to check that all your species are compatible before you buy.')
+  );
+
+  h += step(5, '#6b7280', '&#x1F504;', 'Routine Maintenance', 'Ongoing — what keeps a reef healthy long-term',
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+    [
+      ['Every 2&ndash;3 days','#4db8d4','&#x1F9EA; Test salinity (refractometer)<br>&#x1F9EA; Test NH3, NO2, NO3, pH<br>&#x1F4CA; Log all readings in this app'],
+      ['Weekly','#1a6b8a','&#x1F4A7; 10&ndash;15% water change with fresh salt mix<br>&#x1FAE7; Clean glass &mdash; coralline algae can be scraped<br>&#x1F9F9; Check skimmer cup &mdash; empty as needed'],
+      ['Twice a week (reef)','#8b5cf6','&#x1F9EA; Test KH, Calcium, Magnesium<br>&#x1F4CA; Log all three in this app<br>&#x1F4A1; Adjust two-part dosing if off target'],
+      ['Monthly','#e8a838','&#x1F4A7; Top-off water: use RODI only (no salt)<br>&#x1F321; Check heater &mdash; accurate temp is critical<br>&#x1F9C0; Inspect return pump and powerhead for buildup'],
+    ].map(function(s){
+      return '<div style="border:1px solid ' + s[1] + '44;border-radius:8px;padding:12px">' +
+             '<div style="font-weight:700;color:' + s[1] + ';font-size:13px;margin-bottom:8px">' + s[0] + '</div>' +
+             '<div style="font-size:12px;line-height:1.8">' + s[2] + '</div></div>';
+    }).join('') +
+    '</div>' +
+    warn_box('Always top off with RODI water only — never salt water. Evaporation removes water but leaves salt behind. Adding salt water during top-off raises salinity continuously.') +
+    tip_box('The biggest maintenance mistake in saltwater is inconsistent alkalinity (KH). Swings of more than 0.5 dKH per day stress or kill corals. Dose daily or use an auto-doser.')
+  );
+
+  // ── Reef Supplementation bonus card ──
+  if (reef) {
+  h += '<div class="card" style="margin-bottom:14px">';
+  h += '<div style="font-size:15px;font-weight:700;margin-bottom:10px">&#x1F9EA; Reef Supplementation &mdash; Ca / KH / Mg Dosing <span style="background:#8b5cf6;color:#fff;border-radius:4px;font-size:11px;padding:2px 7px;font-weight:600;margin-left:6px;vertical-align:middle">Reef</span></div>';
+  h += '<p style="font-size:13px;margin:0 0 10px">Corals consume calcium (Ca), alkalinity (KH), and magnesium (Mg) continuously. Depletion is slow at first, then accelerates as coral mass grows. Test all three weekly and dose to maintain:</p>';
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">';
+  h += '<div style="background:#e0f2fe;border-radius:6px;padding:10px"><div style="font-weight:700;font-size:13px;color:#0369a1">Calcium (Ca)</div><div style="font-size:12px;color:var(--muted);margin-top:3px">380&ndash;450 ppm target<br>Builds coral skeleton</div></div>';
+  h += '<div style="background:#ede9fe;border-radius:6px;padding:10px"><div style="font-weight:700;font-size:13px;color:#7c3aed">Alkalinity (KH)</div><div style="font-size:12px;color:var(--muted);margin-top:3px">8&ndash;11 dKH target<br>Buffers pH, builds skeleton</div></div>';
+  h += '<div style="background:#ecfdf5;border-radius:6px;padding:10px"><div style="font-weight:700;font-size:13px;color:#065f46">Magnesium (Mg)</div><div style="font-size:12px;color:var(--muted);margin-top:3px">1250&ndash;1350 ppm target<br>Stabilises Ca and KH</div></div>';
+  h += '</div>';
+  h += '<p style="font-size:13px;font-weight:600;margin:0 0 6px">Two-part dosing (most common method)</p>';
+  h += bullets([
+    '<strong>Part A</strong> (calcium chloride) and <strong>Part B</strong> (sodium bicarbonate) are dosed daily in equal amounts',
+    'Set up an auto-doser or add manually at the same time each day for consistent levels',
+    'Adjust dose weekly based on test results — never raise by more than 0.5 dKH or 20 ppm Ca per day',
+    'Use the Additives section in Equipment &amp; Life to track your two-part reservoirs',
+  ]);
+  h += warn_box('Never dose Ca and KH at the same time in a concentrated form — they react and precipitate. Separate by at least 30 minutes or dilute heavily before dosing.');
+  h += tip_box('Kalkwasser (calcium hydroxide) is a classic all-in-one method: it replenishes both Ca and KH while also precipitating phosphate. Add it to your ATO reservoir for passive daily dosing.');
+  h += '</div>';
+  }
+
+  } else {
+  // ── FRESHWATER STAGES ──
   // Step 1: Setup
   h += step(1, '#1a6b8a', '&#x1F4E6;', 'Tank Setup', 'Day 1 — before any water goes in',
     bullets([
@@ -6539,8 +7209,7 @@ function r_howto() {
       ['&#x1F990;','Cherry Shrimp','Scavengers. Eat biofilm and algae off plants.'],
       ['&#x1F41F;','Corydoras','Bottom cleaners. Work the substrate.'],
       ['&#x1F990;','Amano Shrimp','Strong algae eaters, especially hair algae.'],
-      ['&#x1F40C;','Nerite Snail','1 snail per 5 gal is a good starting ratio.'],
-    ].slice(0,5).map(function(e){
+    ].map(function(e){
       return '<div style="background:#f5f8fb;border-radius:6px;padding:8px 10px;font-size:12px">' +
              '<div style="font-size:18px">' + e[0] + '</div>' +
              '<div style="font-weight:600">' + e[1] + '</div>' +
@@ -6613,6 +7282,7 @@ function r_howto() {
   h += warn_box('A pH drop of more than 0.3 units overnight usually means CO2 is running too high or the drop checker fluid has lost accuracy and needs replacing.');
   h += tip_box('Wait 2&ndash;4 hours after adjusting BPS before reading the drop checker again &mdash; CO2 takes time to reach a stable level in the water.');
   h += '</div>';
+  } // end freshwater
 
   // ── PART 2 header ──
   h += '<div style="background:linear-gradient(135deg,#1a5c3a,#3ab87a);color:#fff;border-radius:10px;padding:20px 22px;margin:24px 0 18px">' +
@@ -6725,11 +7395,44 @@ function r_tools() {
   if (!el) return;
   var tank = d.tanks.find(function(t){ return t.id === tid; });
   if (!tank) { el.innerHTML = '<p class="emsg">Add a tank first to see toolkit guidance.</p>'; return; }
+  var salt = is_salt(tid), reef = is_reef(tid);
   var cyc = cycle_status(tid);
   var is_cycling = !tank.cycled && cyc.phase < 4;
   var h = '';
 
-  // === Test Kit Instructions ===
+  // === Marine Test Kit Card (shown instead of BIONIX for saltwater) ===
+  if (salt) {
+    h += '<div class="card">';
+    h += '<div class="ctitle">Marine Test Kit Guide</div>';
+    h += '<p style="font-size:13px;color:var(--muted);margin-bottom:12px">Saltwater parameters require dedicated marine test kits. Here is what to use and what to target.</p>';
+    var marine_tests = [
+      {icon:'&#x1F321;', name:'Salinity', brands:'Refractometer (calibrate with RODI at 0 SG)', target:'33&ndash;36 ppt / 1.025&ndash;1.026 SG', how:'Fill sample well with tank water. Read at the boundary line. Calibrate monthly with RODI water (should read 0 / 1.000).', note:reef?'Stability matters more than the exact value. Sudden swings stress corals.':''},
+      {icon:'&#x1F9EA;', name:'Ammonia', brands:'API Saltwater Ammonia or Salifert', target:'0 ppm', how:'Follow brand instructions — standard colorimetric test. Swirl vigorously.', note:''},
+      {icon:'&#x1F9EA;', name:'Nitrite', brands:'API Saltwater or Salifert', target:'0 ppm', how:'Standard colorimetric test. Wait full development time (5 min).', note:''},
+      {icon:'&#x1F9EA;', name:'Nitrate', brands:'API Saltwater Nitrate or Red Sea', target:(reef?'0&ndash;5 ppm (reef)':'0&ndash;20 ppm (FOWLR)'), how:'Shake Reagent B vigorously for 30+ seconds before use — this is critical for accurate results.', note:reef?'High nitrate (above 10 ppm) stresses SPS corals. Weekly water changes keep it in check.':''},
+      {icon:'&#x1F9EA;', name:'pH', brands:'API Saltwater or Red Sea (colorimetric)', target:'8.1&ndash;8.4', how:'Standard colorimetric test. Test at the same time each day — pH fluctuates with the light cycle.', note:''},
+      {icon:'&#x1F9EA;', name:'Alkalinity (KH)', brands:'Red Sea Alk Pro or Salifert KH', target:'8&ndash;11 dKH', how:'Titration test. Add reagent drop by drop until color changes. Count drops and multiply per instructions. Red Sea gives result in dKH and meq/L.', note:reef?'The most important reef parameter. Test twice weekly and dose to maintain a stable value.':''},
+      {icon:'&#x1F9EA;', name:'Calcium', brands:'Red Sea Calcium Pro or Salifert', target:'380&ndash;450 ppm', how:'EDTA titration — add reagent drop by drop, count drops, multiply. Salifert: purple → colorless. Red Sea: blue → pink.', note:''},
+      {icon:'&#x1F9EA;', name:'Magnesium', brands:'Red Sea Magnesium Pro or Salifert', target:'1250&ndash;1350 ppm', how:'Two-reagent titration. Follow brand instructions carefully — Mg tests take longer than Ca.', note:'Low Mg prevents Ca and KH from staying in range, even when dosed correctly.'},
+      {icon:'&#x1F4B2;', name:'Phosphate (PO4)', brands:'Hanna ULR Phosphate Checker (HI-736) or Salifert', target:(reef?'Below 0.03 ppm (reef)':'Below 0.5 ppm'), how:'Hanna: mix reagent sachet in cuvette, zero meter with blank, read result. Far more accurate than colorimetric kits at reef levels.', note:reef?'Hanna ULR is essential for reef — standard kits cannot read below 0.1 ppm accurately.':''},
+    ];
+    marine_tests.forEach(function(t) {
+      h += '<div style="border:1px solid #dde;border-radius:8px;padding:12px;margin-bottom:10px">' +
+           '<div style="display:flex;gap:8px;align-items:baseline;margin-bottom:6px">' +
+           '<span style="font-size:18px">' + t.icon + '</span>' +
+           '<div><strong style="font-size:14px">' + t.name + '</strong>' +
+           '<span style="font-size:12px;color:var(--muted);margin-left:8px">' + t.brands + '</span></div>' +
+           '<span style="margin-left:auto;font-size:12px;font-weight:700;color:var(--ok)">' + t.target + '</span>' +
+           '</div>' +
+           '<div style="font-size:13px;color:var(--text);margin-bottom:4px">' + t.how + '</div>' +
+           (t.note ? '<div style="font-size:12px;color:var(--warn);margin-top:4px">&#x26A0; ' + t.note + '</div>' : '') +
+           '</div>';
+    });
+    h += '</div>';
+  }
+
+  // === Test Kit Instructions (freshwater — BIONIX) ===
+  if (!salt) {
   var tk_brands = [
     {id:'bionix', label:'BIONIX', tests:[
       {id:'ph',       label:'pH'},
@@ -7010,6 +7713,7 @@ function r_tools() {
   }
 
   h += '</div>'; // end Test Kit card
+  } // end !salt
 
   // === Calculators ===
   var last_w = (d.water||[]).filter(function(x){return x.tank_id===tid;}).sort(function(a,b){return b.date.localeCompare(a.date);})[0];
@@ -7354,7 +8058,7 @@ function init() {
   });
 }
 
-document.getElementById('t_sel').addEventListener('change', function() { sat(this.value); render_tab(); });
+document.getElementById('t_sel').addEventListener('change', function() { sat(this.value); upd_tank_badge(); render_tab(); });
 document.querySelectorAll('.tab').forEach(function(btn) {
   btn.addEventListener('click', function() {
     document.querySelectorAll('.tab').forEach(function(b){ b.classList.remove('on'); });
