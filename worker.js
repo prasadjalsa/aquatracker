@@ -1491,6 +1491,11 @@ function get_param_alerts_s(tid, ud) {
     var dt=function(f){return Math.round((f-32)*5/9*10)/10;};
     alerts.push({param:'Temperature',level:'warn',msg:'Temperature changed '+Math.abs(dt(last.temp_f)-dt(prev.temp_f)).toFixed(1)+'°C between tests ('+dt(prev.temp_f)+' → '+dt(last.temp_f)+'°C). Rapid swings cause stress and disease.'});
   }
+  var salt_tank=tank&&(tank.tank_type||'fresh')==='salt';
+  if(salt_tank&&last.salinity!==null&&last.salinity!==undefined){
+    if(last.salinity<30||last.salinity>38) alerts.push({param:'Salinity',level:'danger',msg:'Salinity is '+last.salinity+' ppt — critically out of range (safe: 33-36 ppt). Correct slowly: top off with RODI water to lower, or add pre-mixed salt water to raise. Never change salinity by more than 1-2 ppt per day.'});
+    else if(last.salinity<33||last.salinity>36) alerts.push({param:'Salinity',level:'warn',msg:'Salinity is '+last.salinity+' ppt — outside the ideal range of 33-36 ppt. Top off with RODI water only to lower; add pre-mixed salt water to raise. Adjust gradually.'});
+  }
   return alerts;
 }
 function get_water_recs_s(lr, tid, ud) {
@@ -1613,6 +1618,8 @@ function get_water_recs_s(lr, tid, ud) {
 function get_rec_tasks_s(tid, ud) {
   var tank=(ud.tanks||[]).find(function(t){return t.id===tid;});
   if(!tank) return [];
+  var salt=(tank.tank_type||'fresh')==='salt';
+  var reef=salt&&tank.salt_subtype==='reef';
   var pl_count=(ud.plants||[]).filter(function(x){return x.tank_id===tid;}).length;
   var filter_mult=get_filter_mult_s(tid,ud);
   var cur_bl=calc_bioload_s(tid,ud);
@@ -1639,14 +1646,25 @@ function get_rec_tasks_s(tid, ud) {
   if(is_cycling) recs.push({type:'Water Test',name:'Cycle Monitoring Test',freq:cyc_stat.test_freq,why:'Tank is cycling — test NH3, NO2, NO3 every '+cyc_stat.test_freq+' days until both read 0 ppm with detectable nitrate'});
   else recs.push({type:'Water Test',name:'Water Parameter Test',freq:wt_freq,why:'Test NH3, NO2, NO3 and pH to catch issues early'});
   recs.push({type:'Glass Wipe',name:'Glass and Algae Clean',freq:7,why:'Weekly wipe prevents algae from taking hold'});
-  recs.push({type:'Gravel Vac',name:'Gravel Vacuum',freq:14,why:'Removes waste and detritus from substrate'});
-  if(pl_count>0) recs.push({type:'Pruning',name:'Plant Trim and Maintenance',freq:14,why:'Trim overgrowth and remove dead or yellowing leaves'});
-  var co2_pres=(ud.equip||[]).filter(function(x){return x.tank_id===tid&&x.type==='CO2 System'&&x.config&&x.config.co2_type&&x.config.co2_type.indexOf('Pressurized')!==-1;});
-  if(co2_pres.length) recs.push({type:'Other',name:'CO2 Bottle Level Check',freq:30,why:'Monthly check prevents unexpected CO2 loss mid-day'});
-  var co2_inj=(ud.equip||[]).filter(function(x){return x.tank_id===tid&&x.type==='CO2 System'&&x.config&&x.config.co2_type&&x.config.co2_type.indexOf('Liquid')===-1;});
-  if(co2_inj.length){
-    recs.push({type:'Other',name:'Drop Checker Fluid Change',freq:14,why:'Reference solution loses accuracy after 1-2 weeks. Replace with fresh 4 dKH water and indicator drops.'});
-    recs.push({type:'Other',name:'CO2 Diffuser Clean',freq:30,why:'Calcium deposits block the ceramic membrane and reduce bubble output. Soak in diluted white vinegar for 30 minutes.'});
+  if(!salt) recs.push({type:'Gravel Vac',name:'Gravel Vacuum',freq:14,why:'Removes waste and detritus from substrate'});
+  if(!salt&&pl_count>0) recs.push({type:'Pruning',name:'Plant Trim and Maintenance',freq:14,why:'Trim overgrowth and remove dead or yellowing leaves'});
+  if(!salt){
+    var co2_pres=(ud.equip||[]).filter(function(x){return x.tank_id===tid&&x.type==='CO2 System'&&x.config&&x.config.co2_type&&x.config.co2_type.indexOf('Pressurized')!==-1;});
+    if(co2_pres.length) recs.push({type:'Other',name:'CO2 Bottle Level Check',freq:30,why:'Monthly check prevents unexpected CO2 loss mid-day'});
+    var co2_inj=(ud.equip||[]).filter(function(x){return x.tank_id===tid&&x.type==='CO2 System'&&x.config&&x.config.co2_type&&x.config.co2_type.indexOf('Liquid')===-1;});
+    if(co2_inj.length){
+      recs.push({type:'Other',name:'Drop Checker Fluid Change',freq:14,why:'Reference solution loses accuracy after 1-2 weeks. Replace with fresh 4 dKH water and indicator drops.'});
+      recs.push({type:'Other',name:'CO2 Diffuser Clean',freq:30,why:'Calcium deposits block the ceramic membrane and reduce bubble output. Soak in diluted white vinegar for 30 minutes.'});
+    }
+  }
+  if(salt){
+    recs.push({type:'Water Test',name:'Salinity Check',freq:3,why:'Evaporation raises salinity. Top off with RODI water only — never salt water.'});
+    if(reef){
+      recs.push({type:'Water Test',name:'Alkalinity (KH) Test',freq:3,why:'Corals consume alkalinity daily. Keep at 8-11 dKH for healthy coral growth.'});
+      recs.push({type:'Water Test',name:'Calcium Test',freq:7,why:'Corals and coralline algae consume calcium. Keep at 380-450 ppm.'});
+    }
+    var has_skimmer_r=(ud.equip||[]).some(function(x){return x.tank_id===tid&&x.type==='Protein Skimmer';});
+    if(has_skimmer_r) recs.push({type:'Equipment Service',name:'Protein Skimmer Cup Clean',freq:7,why:'Skimmate fills the collection cup weekly. Empty and rinse to maintain skimming efficiency.'});
   }
   return recs;
 }
@@ -3172,7 +3190,7 @@ function show_cal_day(ds) {
 function do_add_mlog() {
   var tid = at(), salt = is_salt(tid);
   var fert_type = salt ? 'Additive' : 'Fertilizer';
-  var type_opts = ['Water Change','Filter Clean','Gravel Vac','Glass Wipe',fert_type,'Pruning','Water Test','Equipment Service','Other']
+  var type_opts = (salt ? ['Water Change','Filter Clean','Glass Wipe',fert_type,'Water Test','Equipment Service','Other'] : ['Water Change','Filter Clean','Gravel Vac','Glass Wipe',fert_type,'Pruning','Water Test','Equipment Service','Other'])
     .map(function(o){ return '<option>' + o + '</option>'; }).join('');
   var d = ld();
   var tank_res = (d.reservoirs||[]).filter(function(r){ return r.tank_id === tid && r.daily_dose_ml; });
@@ -4102,10 +4120,12 @@ function r_setup_card(tid) {
   var age = Math.floor((Date.now() - new Date(tank.setup_date + 'T00:00:00').getTime()) / 86400000);
   if (age > 90) return '';
   var chk = tank.setup_chk || {};
-  var has_filter = d.equip.some(function(e){ return e.tank_id === tid && e.type === 'Filter'; });
-  var has_heater = d.equip.some(function(e){ return e.tank_id === tid && e.type === 'Heater'; });
-  var has_co2    = d.equip.some(function(e){ return e.tank_id === tid && e.type === 'CO2 System'; });
-  var has_test   = d.water.some(function(w){ return w.tank_id === tid; });
+  var salt = is_salt(tid);
+  var has_filter  = d.equip.some(function(e){ return e.tank_id === tid && e.type === 'Filter'; });
+  var has_heater  = d.equip.some(function(e){ return e.tank_id === tid && e.type === 'Heater'; });
+  var has_co2     = d.equip.some(function(e){ return e.tank_id === tid && e.type === 'CO2 System'; });
+  var has_skimmer = d.equip.some(function(e){ return e.tank_id === tid && e.type === 'Protein Skimmer'; });
+  var has_test    = d.water.some(function(w){ return w.tank_id === tid; });
   var cyc = cycle_status(tid);
   var cycle_started = chk.cycle_src || (cyc.phase >= 1);
   var stock_in_tank = d.stock.filter(function(s){ return s.tank_id === tid; });
@@ -4114,10 +4134,10 @@ function r_setup_card(tid) {
     // Room temp known: heater needed only if room min is below any fish's minimum temp
     needs_heater = stock_in_tank.length === 0
       ? tank.room_tmin < 72
-      : stock_in_tank.some(function(s){ var sp = get_sp(d)[s.species_id]; return sp && tank.room_tmin < sp.tmin; });
+      : stock_in_tank.some(function(s){ var sp = get_sp(d, tid)[s.species_id]; return sp && tank.room_tmin < sp.tmin; });
   } else if (stock_in_tank.length > 0) {
     // Room temp unknown but fish present: heater needed if any fish requires warm water
-    needs_heater = stock_in_tank.some(function(s){ var sp = get_sp(d)[s.species_id]; return sp && sp.tmin >= 70; });
+    needs_heater = stock_in_tank.some(function(s){ var sp = get_sp(d, tid)[s.species_id]; return sp && sp.tmin >= 70; });
   } else {
     // No fish, no room temp — can't determine yet, skip the heater item
     needs_heater = false;
@@ -4131,7 +4151,21 @@ function r_setup_card(tid) {
   var method = tank.startup_method || 'standard';
   var items;
 
-  if (method === 'dark') {
+  if (salt) {
+    items = [
+      {key:'rodi',      auto:false, done:chk.rodi||false,       label:'RODI or RO water sourced (never use tap water directly)'},
+      {key:'saltmix',   auto:false, done:chk.saltmix||false,    label:'Salt mix purchased (Instant Ocean, Red Sea Coral Pro, etc.)'},
+      {key:'refracto',  auto:false, done:chk.refracto||false,   label:'Refractometer or digital salinity meter purchased and calibrated'},
+      {key:'_filter',   auto:true,  done:has_filter,             label:'Filter or sump installed and running'},
+      {key:'_skimmer',  auto:true,  done:has_skimmer,            label:'Protein skimmer installed'},
+      needs_heater && {key:'_heater', auto:true, done:has_heater, label:heater_label},
+      {key:'_tested',   auto:true,  done:has_test,               label:'First water test logged (salinity, NH3, NO2, NO3)'},
+      {key:'cycle_src', auto:false, done:cycle_started,          label:'Ammonia source added to start the nitrogen cycle'},
+      {key:'_cycled',   auto:true,  done:cyc.phase===4||tank.cycled||false, label:'Tank fully cycled — NH3 and NO2 both at 0 ppm'},
+      (cyc.phase===4||tank.cycled) && {key:'post_wc', auto:false, done:chk.post_wc||false, label:'25-30% water change done — flush nitrates before adding first livestock'}
+    ].filter(Boolean);
+
+  } else if (method === 'dark') {
     items = [
       {key:'rinsed',      auto:false, done:chk.rinsed||false,      label:'Tank, substrate, and decorations rinsed with no soap'},
       {key:'dechlo',      auto:false, done:chk.dechlo||false,      label:'Water dechlorinator purchased (Prime, Stress Coat, etc.)'},
