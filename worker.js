@@ -1324,7 +1324,7 @@ var FOOD_INFO = {
 };
 
 async function handle_ref_all(request, env) {
-  return json_r({sp:SP, pl:PL, group_pos:GROUP_POS, fert:FERT,
+  return json_r({sp:SP, sp_salt:SP_SALT, pl:PL, group_pos:GROUP_POS, fert:FERT,
     algae:ALGAE_DATA, dis:DISEASE_DATA, pldis:PLANT_DISEASE_DATA,
     diet:DIET_MAP, food:FOOD_INFO});
 }
@@ -2134,11 +2134,11 @@ tr:hover td{background:#f9fbfc}
 </div>
 
 <script>
-var _sp = {}, _pl = {}, _group_pos = {}, _fert = {}, _algae = {}, _dis = {}, _pldis = {}, _diet = {}, _food = {};
+var _sp = {}, _sp_salt = {}, _pl = {}, _group_pos = {}, _fert = {}, _algae = {}, _dis = {}, _pldis = {}, _diet = {}, _food = {};
 async function load_ref_data() {
   var r = await fetch('/api/ref/all');
   var d = await r.json();
-  _sp = d.sp; _pl = d.pl; _group_pos = d.group_pos;
+  _sp = d.sp; _sp_salt = d.sp_salt || {}; _pl = d.pl; _group_pos = d.group_pos;
   _fert = d.fert; _algae = d.algae; _dis = d.dis;
   _pldis = d.pldis; _diet = d.diet; _food = d.food;
 }
@@ -2178,7 +2178,7 @@ function sv(d) {
 function mt() { return {tanks:[], equip:[], plants:[], stock:[], tasks:[], water:[], feeding:[], ferts:[], custom_sp:{}, maint_log:[], treatment_log:[]}; }
 // Merged species lookup: built-in SP + user custom_sp
 function get_sp(d, tid) {
-  if (tid && is_salt(tid)) return Object.assign({}, SP_SALT);
+  if (tid && is_salt(tid)) return Object.assign({}, _sp_salt);
   return Object.assign({}, _sp, d ? d.custom_sp : {});
 }
 function add_custom_sp(sp_id, name, type, tmin, tmax, pmin, pmax, gmin, gmax, size_in, min_gal, bioload, level, note, zone, activity) {
@@ -3380,7 +3380,7 @@ function is_reef(tid) {
 }
 function sg_to_ppt(sg) { return Math.round((sg - 1) * 1025.9 * 10) / 10; }
 function ppt_to_sg(ppt) { return Math.round((ppt / 1025.9 + 1) * 10000) / 10000; }
-function get_salt_sp() { return Object.assign({}, SP_SALT); }
+function get_salt_sp() { return Object.assign({}, _sp_salt); }
 function get_equip_types(tid) {
   if (is_salt(tid)) return ['Protein Skimmer','Filter','Heater','Light','Powerhead / Wave Maker','ATO (Auto Top-Off)','Sump','Refugium','Dosing Pump','UV Sterilizer','Thermometer','Other'];
   return ['Filter','Heater','Light','CO2 System','CO2 Drop Checker','Pump','Substrate','Thermometer','Other'];
