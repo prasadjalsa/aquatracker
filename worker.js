@@ -2945,18 +2945,20 @@ function do_topup_reservoir(id) {
   var total = reservoir_total_ml(r);
   var ferts_map = {};
   (d.ferts||[]).forEach(function(f){ ferts_map[f.id] = f.name; });
-  // Build recipe reference rows
+  // Build recipe ratio rows — show proportions as percentages
   var recipe_rows = (r.ingredients||[]).map(function(ing){
     var nm = ferts_map[ing.fert_id] || '?';
+    var pct = total > 0 ? Math.round(ing.concentrate_ml / total * 100) : 0;
     return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0">' +
-           '<span>' + esc(nm) + '</span><span style="font-weight:600">' + ing.concentrate_ml + ' ml</span></div>';
+           '<span>' + esc(nm) + '</span>' +
+           '<span style="font-weight:600">' + ing.concentrate_ml + ' ml <span style="font-weight:400;color:var(--muted)">(' + pct + '%)</span></span></div>';
   }).join('');
   if (r.water_ml) {
+    var water_pct = total > 0 ? Math.round(r.water_ml / total * 100) : 0;
     recipe_rows += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0;color:var(--muted)">' +
-                   '<span>Water (dilution)</span><span style="font-weight:600">' + r.water_ml + ' ml</span></div>';
+                   '<span>Water (dilution)</span>' +
+                   '<span style="font-weight:600">' + r.water_ml + ' ml <span style="font-weight:400">(' + water_pct + '%)</span></span></div>';
   }
-  recipe_rows += '<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-top:1px solid #e8edf2;margin-top:3px;color:var(--muted)">' +
-                 '<span>One batch total</span><span>' + total + ' ml — lasts ' + (r.daily_dose_ml > 0 ? Math.floor(total / r.daily_dose_ml) + ' days' : '—') + '</span></div>';
   var h = '<div class="card"><div class="ctitle">Top Up — ' + esc(r.name) + '</div>' +
     '<p style="font-size:13px;color:var(--muted);margin-bottom:10px">Currently <strong>' + cur + ' ml</strong> remaining.</p>' +
     '<div style="background:#f5f8fb;border-radius:6px;padding:10px 12px;margin-bottom:14px">' +
