@@ -3181,7 +3181,7 @@ function do_add_mlog() {
   om('<div class="mtitle">Log Activity</div>' +
     '<form onsubmit="sub_add_mlog(event)">' +
     '<div class="frow">' +
-    fg('Type', '<select name="type" onchange="tog_mlog_fert(this.value,\'' + fert_type + '\')">' + type_opts + '</select>') +
+    fg('Type', '<select name="type" data-ftype="' + fert_type + '" onchange="tog_mlog_fert(this.value,this.dataset.ftype)">' + type_opts + '</select>') +
     fg('Activity', '<input type="text" id="mlog_act_name" name="name" placeholder="e.g. 30% water change" required>') +
     '</div><div class="frow">' +
     fg('Date', '<input type="date" name="date" value="' + today_str() + '" required>') +
