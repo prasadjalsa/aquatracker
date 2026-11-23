@@ -8289,6 +8289,7 @@ function diag_wiz_set(bh, fh) {
   document.getElementById('diag_wiz_foot').innerHTML = fh;
 }
 function diag_step1() {
+  var salt = is_salt(at());
   var h = '<p style="font-size:13px;color:var(--muted);margin:0 0 14px">What would you like to diagnose?</p>';
   h += '<div style="display:flex;flex-direction:column;gap:10px">';
   h += '<button class="btn" onclick="diag_alg_list()" style="background:#eef8f0;border:2px solid #3ab87a;border-radius:12px;padding:16px;text-align:left;cursor:pointer">' +
@@ -8299,10 +8300,12 @@ function diag_step1() {
        '<div style="font-size:22px;margin-bottom:4px">&#x1F41F;</div>' +
        '<div style="font-size:15px;font-weight:700;color:var(--deep)">Fish Disease</div>' +
        '<div style="font-size:12px;color:var(--muted);margin-top:2px">Identify the disease and get treatment steps</div></button>';
-  h += '<button class="btn" onclick="diag_plant_list()" style="background:#f0f7f0;border:2px solid #5aab6a;border-radius:12px;padding:16px;text-align:left;cursor:pointer">' +
-       '<div style="font-size:22px;margin-bottom:4px">&#x1F331;</div>' +
-       '<div style="font-size:15px;font-weight:700;color:var(--deep)">Plant Issue</div>' +
-       '<div style="font-size:12px;color:var(--muted);margin-top:2px">Diagnose yellowing, holes, melting and other plant problems</div></button>';
+  if (!salt) {
+    h += '<button class="btn" onclick="diag_plant_list()" style="background:#f0f7f0;border:2px solid #5aab6a;border-radius:12px;padding:16px;text-align:left;cursor:pointer">' +
+         '<div style="font-size:22px;margin-bottom:4px">&#x1F331;</div>' +
+         '<div style="font-size:15px;font-weight:700;color:var(--deep)">Plant Issue</div>' +
+         '<div style="font-size:12px;color:var(--muted);margin-top:2px">Diagnose yellowing, holes, melting and other plant problems</div></button>';
+  }
   h += '</div>';
   diag_wiz_set(h, '');
 }
@@ -8528,6 +8531,7 @@ function rec_step1() {
   var d = ld(), tid = at();
   var tank = d.tanks.find(function(t){ return t.id === tid; });
   if (!tank) { rec_wiz_set('<p style="font-size:13px;color:var(--muted)">Add a tank first.</p>', ''); return; }
+  var salt = is_salt(tid), reef = is_reef(tid);
   var water = d.water.filter(function(e){ return e.tank_id === tid; }).sort(function(a,b){ return a.date < b.date ? -1 : 1; });
   var lw = water.length ? water[water.length - 1] : null;
   var h = '<div style="font-size:13px;font-weight:700;color:var(--deep);margin-bottom:12px">&#x1F4CB; ' + esc(tank.name) + ' &mdash; ' + Math.round(d_v(tank.gallons)) + ' ' + v_lbl() + '</div>';
@@ -8545,10 +8549,14 @@ function rec_step1() {
     var nh3 = lw.ammonia, no2 = lw.nitrite, no3 = lw.nitrate;
     if (nh3 != null) { var nh3s = nh3 > 1 ? 'danger' : nh3 > 0 ? 'warn' : 'ok'; if (nh3s === 'danger') has_danger = true; else if (nh3s === 'warn') has_warn = true; rows += p_row('Ammonia', nh3, 'ppm', nh3s, nh3 > 1 ? 'Dangerous &mdash; do not add stock' : 'Detectable &mdash; water change first'); }
     if (no2 != null) { var no2s = no2 > 1 ? 'danger' : no2 > 0 ? 'warn' : 'ok'; if (no2s === 'danger') has_danger = true; else if (no2s === 'warn') has_warn = true; rows += p_row('Nitrite', no2, 'ppm', no2s, no2 > 1 ? 'Dangerous &mdash; do not add stock' : 'Detectable &mdash; water change first'); }
-    if (no3 != null) { var no3s = no3 > 40 ? 'danger' : no3 > 20 ? 'warn' : 'ok'; if (no3s === 'danger') has_danger = true; else if (no3s === 'warn') has_warn = true; rows += p_row('Nitrate', no3, 'ppm', no3s, no3 > 40 ? 'Very high &mdash; water change before adding stock' : 'Elevated &mdash; partial water change recommended'); }
+    if (no3 != null) { var no3_lim = reef ? 5 : (salt ? 20 : 40); var no3_wlim = reef ? 2 : (salt ? 10 : 20); var no3s = no3 > no3_lim ? 'danger' : no3 > no3_wlim ? 'warn' : 'ok'; if (no3s === 'danger') has_danger = true; else if (no3s === 'warn') has_warn = true; rows += p_row('Nitrate', no3, 'ppm', no3s, no3 > no3_lim ? 'Very high &mdash; water change before adding stock' : 'Elevated &mdash; partial water change recommended'); }
     if (lw.ph     != null) rows += p_row('pH',          lw.ph,          '',      'ok', '');
     if (lw.temp_f != null) rows += p_row('Temperature', d_t(lw.temp_f), t_lbl(), 'ok', '');
-    if (lw.gh     != null) rows += p_row('GH',          lw.gh + ' dGH', '(' + Math.round(lw.gh * 17.9) + ' ppm)', 'ok', '');
+    if (salt) {
+      if (lw.salinity != null) { var sals = lw.salinity < 30 || lw.salinity > 38 ? 'danger' : lw.salinity < 33 || lw.salinity > 36 ? 'warn' : 'ok'; if (sals === 'danger') has_danger = true; else if (sals === 'warn') has_warn = true; rows += p_row('Salinity', lw.salinity, 'ppt', sals, sals === 'danger' ? 'Critically out of range (safe 33-36 ppt)' : 'Outside ideal range (target 33-36 ppt)'); }
+    } else {
+      if (lw.gh != null) rows += p_row('GH', lw.gh + ' dGH', '(' + Math.round(lw.gh * 17.9) + ' ppm)', 'ok', '');
+    }
     if (rows) h += '<div style="margin-bottom:12px">' + rows + '</div>';
     if (has_danger)
       h += '<div style="background:#fde8e8;border-left:3px solid var(--danger);padding:10px 12px;border-radius:0 6px 6px 0;font-size:13px;color:#a01818;font-weight:600;margin-bottom:14px">&#x274C; Fix dangerous parameters before adding any stock.</div>';
@@ -8560,23 +8568,43 @@ function rec_step1() {
   rec_wiz_set(h, '<button class="btn bp" style="flex:1" onclick="rec_step2()">Choose what to add &#x25B6;</button>');
 }
 function rec_step2() {
+  var d = ld(), tid = at();
+  var salt = is_salt(tid);
   var h = '<p style="font-size:13px;color:var(--muted);margin:0 0 14px">Tick the types you are interested in, then tap Find Matches.</p>';
-  h += '<div style="font-size:13px;font-weight:700;color:var(--deep);margin-bottom:8px">&#x1F41F; Livestock</div>';
-  h += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">By Tank Type</div>';
-  var ls_tank_type = ['Peaceful Community','Semi-Aggressive','Aggressive / Specialist'];
-  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">';
-  ls_tank_type.forEach(function(c){ h += '<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;cursor:pointer;background:#fafafa"><input type="checkbox" data-cat="ls" value="' + esc(c) + '" style="width:16px;height:16px;flex-shrink:0"> ' + esc(c) + '</label>'; });
-  h += '</div>';
-  h += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">By Role</div>';
-  var ls_role = ['Schooling Fish','Bottom Dwellers','Algae Eaters','Shrimp','Snails','Crayfish','Livebearers','Centerpiece Fish'];
-  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:16px">';
-  ls_role.forEach(function(c){ h += '<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;cursor:pointer;background:#fafafa"><input type="checkbox" data-cat="ls" value="' + esc(c) + '" style="width:16px;height:16px;flex-shrink:0"> ' + esc(c) + '</label>'; });
-  h += '</div>';
-  h += '<div style="font-size:13px;font-weight:700;color:var(--deep);margin-bottom:8px">&#x1F33F; Plants</div>';
-  var pl_cats = ['Easy / No CO2','Background & Stem','Foreground & Carpet','Floating','Emersed / Riparian'];
-  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">';
-  pl_cats.forEach(function(c){ h += '<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;cursor:pointer;background:#fafafa"><input type="checkbox" data-cat="pl" value="' + esc(c) + '" style="width:16px;height:16px;flex-shrink:0"> ' + esc(c) + '</label>'; });
-  h += '</div>';
+  if (salt) {
+    h += '<div style="font-size:13px;font-weight:700;color:var(--deep);margin-bottom:8px">&#x1F41F; Fish</div>';
+    var salt_fish_role = ['Clownfish','Tangs','Gobies','Wrasses','Blennies','Cardinalfish','Damsels & Chromis','Angelfish'];
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:16px">';
+    salt_fish_role.forEach(function(c){ h += '<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;cursor:pointer;background:#fafafa"><input type="checkbox" data-cat="ls" value="' + esc(c) + '" style="width:16px;height:16px;flex-shrink:0"> ' + esc(c) + '</label>'; });
+    h += '</div>';
+    h += '<div style="font-size:13px;font-weight:700;color:var(--deep);margin-bottom:8px">&#x1FAB8; Corals &amp; Anemones</div>';
+    var salt_corals = ['Corals (LPS)','Corals (SPS)','Soft Corals','Anemones'];
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:16px">';
+    salt_corals.forEach(function(c){ h += '<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;cursor:pointer;background:#fafafa"><input type="checkbox" data-cat="ls" value="' + esc(c) + '" style="width:16px;height:16px;flex-shrink:0"> ' + esc(c) + '</label>'; });
+    h += '</div>';
+    h += '<div style="font-size:13px;font-weight:700;color:var(--deep);margin-bottom:8px">&#x1F990; Invertebrates</div>';
+    var salt_inverts = ['Shrimp','Clean Up Crew','Invertebrates'];
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">';
+    salt_inverts.forEach(function(c){ h += '<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;cursor:pointer;background:#fafafa"><input type="checkbox" data-cat="ls" value="' + esc(c) + '" style="width:16px;height:16px;flex-shrink:0"> ' + esc(c) + '</label>'; });
+    h += '</div>';
+  } else {
+    h += '<div style="font-size:13px;font-weight:700;color:var(--deep);margin-bottom:8px">&#x1F41F; Livestock</div>';
+    h += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">By Tank Type</div>';
+    var ls_tank_type = ['Peaceful Community','Semi-Aggressive','Aggressive / Specialist'];
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">';
+    ls_tank_type.forEach(function(c){ h += '<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;cursor:pointer;background:#fafafa"><input type="checkbox" data-cat="ls" value="' + esc(c) + '" style="width:16px;height:16px;flex-shrink:0"> ' + esc(c) + '</label>'; });
+    h += '</div>';
+    h += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">By Role</div>';
+    var ls_role = ['Schooling Fish','Bottom Dwellers','Algae Eaters','Shrimp','Snails','Crayfish','Livebearers','Centerpiece Fish'];
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:16px">';
+    ls_role.forEach(function(c){ h += '<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;cursor:pointer;background:#fafafa"><input type="checkbox" data-cat="ls" value="' + esc(c) + '" style="width:16px;height:16px;flex-shrink:0"> ' + esc(c) + '</label>'; });
+    h += '</div>';
+    h += '<div style="font-size:13px;font-weight:700;color:var(--deep);margin-bottom:8px">&#x1F33F; Plants</div>';
+    var pl_cats = ['Easy / No CO2','Background & Stem','Foreground & Carpet','Floating','Emersed / Riparian'];
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">';
+    pl_cats.forEach(function(c){ h += '<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;cursor:pointer;background:#fafafa"><input type="checkbox" data-cat="pl" value="' + esc(c) + '" style="width:16px;height:16px;flex-shrink:0"> ' + esc(c) + '</label>'; });
+    h += '</div>';
+  }
   rec_wiz_set(h, '<button class="btn bg bs" style="flex:1" onclick="rec_step1()">&#x25C4; Back</button><button class="btn bp" style="flex:2" onclick="rec_find_matches()">Find Matches &#x1F50D;</button>');
 }
 function rec_find_matches() {
@@ -8596,7 +8624,8 @@ function rec_find_matches() {
   if (!tank) return;
   var water = d.water.filter(function(e){ return e.tank_id === tid; }).sort(function(a,b){ return a.date < b.date ? -1 : 1; });
   var lw = water.length ? water[water.length - 1] : null;
-  var last_t = lw ? lw.temp_f : null, last_ph = lw ? lw.ph : null, last_gh = lw ? lw.gh : null;
+  var salt = is_salt(tid), reef = is_reef(tid);
+  var last_t = lw ? lw.temp_f : null, last_ph = lw ? lw.ph : null, last_gh = lw ? lw.gh : null, last_sal = lw ? lw.salinity : null;
   var cur_sk = d.stock.filter(function(s){ return s.tank_id === tid; }).map(function(s){ return s.species_id; });
   var cur_pl = d.plants.filter(function(p){ return p.tank_id === tid; }).map(function(p){ return p.plant_id; });
   var lights = d.equip.filter(function(x){ return x.tank_id === tid && x.type === 'Light' && x.config; });
@@ -8604,7 +8633,7 @@ function rec_find_matches() {
   var lrank = {Low:1, Medium:2, High:3};
   var light_lv = total_w >= 50 ? 'High' : total_w >= 25 ? 'Medium' : 'Low';
   var has_co2 = d.equip.some(function(x){ return x.tank_id === tid && x.type === 'CO2 System'; });
-  var sp_all = get_sp(d);
+  var sp_all = get_sp(d, tid);
   var LS_GRP = {
     'Peaceful Community':    ['neon_tetra','cardinal_tetra','rummy_nose_tetra','lemon_tetra','glowlight_tetra','ember_tetra','harlequin_rasbora','chili_rasbora','celestial_pearl_danio','zebra_danio','pearl_danio','medaka','blue_medaka','white_medaka','koi_medaka','boesemani_rainbow','neon_rainbowfish','red_cherry_barb','clown_killifish','guppy','molly','platy','swordtail','endlers_livebearer','white_cloud_minnow','honey_gourami','sparkling_gourami','pearl_gourami','african_dwarf_frog','corydoras','panda_corydoras','pygmy_corydoras','hillstream_loach','kuhli_loach','otocinclus','cherry_shrimp','amano_shrimp','ghost_shrimp','crystal_shrimp','blue_velvet_shrimp','snowball_shrimp','bamboo_shrimp','nerite_snail','mystery_snail','ramshorn_snail','trumpet_snail','black_neon_tetra','pristella_tetra','silvertip_tetra','peppered_corydoras','sterbai_corydoras','moonlight_gourami','thick_lipped_gourami','odessa_barb','giant_danio','filament_barb','malabar_danio','checker_barb','black_ruby_barb','roseline_shark','indian_glass_fish','zebra_nerite','horned_nerite','red_racer_nerite','rabbit_snail','black_devil_snail','pagoda_snail','spike_apple_snail','trapdoor_snail','bladder_snail','pond_snail','ivory_mystery','gold_mystery','chocolate_rabbit_snail','winged_nerite'],
     'Semi-Aggressive':       ['betta','dwarf_gourami','blue_gourami','red_tail_shark','dwarf_puffer','black_skirt_tetra','serpae_tetra','congo_tetra','rosy_barb','tiger_barb','scarlet_badis','siamese_algae_eater','flying_fox','bristlenose_pleco','yoyo_loach','clown_loach','ram_cichlid','bolivian_ram','electric_blue_ram','firemouth_cichlid','assassin_snail','paradise_fish','kissing_gourami','tinfoil_barb','giant_gourami','giant_apple_snail'],
@@ -8618,7 +8647,24 @@ function rec_find_matches() {
     'Livebearers':           ['guppy','molly','platy','swordtail','endlers_livebearer','white_cloud_minnow'],
     'Centerpiece Fish':      ['betta','honey_gourami','dwarf_gourami','sparkling_gourami','pearl_gourami','blue_gourami','angelfish','discus','dwarf_puffer','red_tail_shark','african_dwarf_frog','paradise_fish','moonlight_gourami','kissing_gourami','thick_lipped_gourami','giant_gourami'],
   };
-  var T_CAU = 4, P_CAU = 0.5, G_CAU = 2;
+  var LS_GRP_SALT = {
+    'Clownfish':         ['ocellaris_clownfish','percula_clownfish','black_ocellaris_clownfish','maroon_clownfish','tomato_clownfish','cinnamon_clownfish'],
+    'Tangs':             ['blue_tang','yellow_tang','sailfin_tang','purple_tang','tomini_tang','kole_tang','convict_tang','achilles_tang','powder_blue_tang','powder_brown_tang','naso_tang','blonde_naso_tang'],
+    'Angelfish':         ['coral_beauty','flame_angelfish','lemon_peel_angelfish','cherub_pygmy_angelfish','bicolor_angelfish','emperor_angelfish','koran_angelfish','french_angelfish'],
+    'Gobies':            ['firefish_goby','purple_firefish_goby','yellow_watchman_goby','tiger_watchman_goby','clown_goby','neon_goby','citron_goby','wheeler_goby','yasha_haze_goby','black_ray_shrimp_goby','dracula_goby','rainfordi_goby'],
+    'Wrasses':           ['six_line_wrasse','yellow_coris_wrasse','melanurus_wrasse','carpenter_wrasse','dragon_wrasse','leopard_wrasse','mystery_wrasse','fairy_wrasse','canary_wrasse','lubbock_wrasse'],
+    'Blennies':          ['tailspot_blenny','lawnmower_blenny','bicolor_blenny','midas_blenny','sailfin_blenny','algae_blenny','black_combtooth_blenny','striped_blenny'],
+    'Cardinalfish':      ['bangaii_cardinalfish','pajama_cardinalfish','threadfin_cardinalfish','spotted_cardinalfish'],
+    'Damsels & Chromis': ['green_chromis','blue_reef_chromis','domino_damsel','blue_damsel','yellowtail_damsel','threestripe_damsel','azure_damsel','talbot_damsel'],
+    'Corals (LPS)':      ['torch_coral','hammer_coral','frogspawn_coral','hammer_wall_coral','bubble_coral','open_brain_coral','lobophyllia_brain_coral','elegance_coral','candy_cane_coral','duncan_coral','blastomussa','chalice_coral','micromussa','acan_coral','plate_coral','scroll_coral'],
+    'Corals (SPS)':      ['acropora','montipora','stylophora','pocillopora','seriatopora','porites','pavona','anacropora','psammocora'],
+    'Soft Corals':       ['mushroom_coral','ricordea_mushroom','yuma_mushroom','leather_coral','devils_hand_coral','star_polyps','kenya_tree_coral','cauliflower_soft_coral','clove_polyp','pulsing_xenia','colt_coral','zoanthids','palythoa','encrusting_gorgonian','purple_plume_gorgonian'],
+    'Anemones':          ['bubble_tip_anemone','long_tentacle_anemone','carpet_anemone'],
+    'Shrimp':            ['scarlet_cleaner_shrimp','blood_shrimp','peppermint_shrimp','pistol_shrimp','harlequin_shrimp','sexy_shrimp','camelback_shrimp','banded_coral_shrimp','ghost_shrimp'],
+    'Clean Up Crew':     ['emerald_crab','blue_leg_hermit','scarlet_hermit','halloween_hermit','electric_orange_hermit','turbo_snail','nassarius_snail','astrea_snail','trochus_snail','cerith_snail','nerite_snail','margarita_snail','fighting_conch','tiger_conch','brittle_star','serpent_star','sea_cucumber','sand_sifting_star'],
+    'Invertebrates':     ['mantis_shrimp','sally_lightfoot_crab','porcelain_anemone_crab','pom_pom_crab','arrow_crab','horseshoe_crab','tuxedo_urchin','longspine_urchin','shortspine_urchin','blue_linkia_star','maxima_clam','squamosa_clam','derasa_clam','flame_scallop','feather_duster','christmas_tree_worm','tube_worm'],
+  };
+  var T_CAU = 4, P_CAU = 0.5, G_CAU = 2, S_CAU = 2;
   function chk_ls(key) {
     var sp = sp_all[key];
     if (!sp || cur_sk.indexOf(key) !== -1) return null;
@@ -8632,9 +8678,19 @@ function rec_find_matches() {
       if (last_ph < sp.pmin - P_CAU || last_ph > sp.pmax + P_CAU) inc.push('pH ' + last_ph + ' outside range (' + sp.pmin + '&ndash;' + sp.pmax + ')');
       else if (last_ph < sp.pmin || last_ph > sp.pmax) cau.push('pH ' + last_ph + ' borderline (ideal ' + sp.pmin + '&ndash;' + sp.pmax + ')');
     }
-    if (last_gh !== null) {
-      if (last_gh < sp.gmin - G_CAU || last_gh > sp.gmax + G_CAU) inc.push('GH ' + last_gh + ' dGH outside range (' + sp.gmin + '&ndash;' + sp.gmax + ' dGH)');
-      else if (last_gh < sp.gmin || last_gh > sp.gmax) cau.push('GH ' + last_gh + ' dGH borderline (ideal ' + sp.gmin + '&ndash;' + sp.gmax + ' dGH)');
+    if (salt) {
+      if (last_sal !== null) {
+        if (last_sal < sp.gmin - S_CAU || last_sal > sp.gmax + S_CAU) inc.push('Salinity ' + last_sal + ' ppt outside range (' + sp.gmin + '&ndash;' + sp.gmax + ' ppt)');
+        else if (last_sal < sp.gmin || last_sal > sp.gmax) cau.push('Salinity ' + last_sal + ' ppt borderline (ideal ' + sp.gmin + '&ndash;' + sp.gmax + ' ppt)');
+      }
+      if (reef && sp.reef_safe === false) inc.push('Not reef safe &mdash; will harm corals or invertebrates');
+      else if (reef && sp.reef_safe === 'with_caution') cau.push('Reef safe with caution &mdash; may nip at corals');
+      if (!reef && sp.type === 'coral') inc.push('Corals require a reef tank setup');
+    } else {
+      if (last_gh !== null) {
+        if (last_gh < sp.gmin - G_CAU || last_gh > sp.gmax + G_CAU) inc.push('GH ' + last_gh + ' dGH outside range (' + sp.gmin + '&ndash;' + sp.gmax + ' dGH)');
+        else if (last_gh < sp.gmin || last_gh > sp.gmax) cau.push('GH ' + last_gh + ' dGH borderline (ideal ' + sp.gmin + '&ndash;' + sp.gmax + ' dGH)');
+      }
     }
     cur_sk.forEach(function(ek) {
       var es = sp_all[ek];
@@ -8676,9 +8732,11 @@ function rec_find_matches() {
     return h + '</div>';
   }
   var h = '';
-  checked_ls.forEach(function(cat) { h += r_sec(cat, '&#x1F41F;', (LS_GRP[cat]||[]).map(chk_ls).filter(Boolean).filter(function(r){ return r.inc.length === 0; })); });
-  var PL_CAT_MAP = {
-    'Easy / No CO2':      ['Anubias','Bucephalandra','Java Fern','Mosses','Cryptocoryne'],
+  var ls_grp_active = salt ? LS_GRP_SALT : LS_GRP;
+  checked_ls.forEach(function(cat) { h += r_sec(cat, '&#x1F41F;', (ls_grp_active[cat]||[]).map(chk_ls).filter(Boolean).filter(function(r){ return r.inc.length === 0; })); });
+  if (!salt) {
+    var PL_CAT_MAP = {
+      'Easy / No CO2':      ['Anubias','Bucephalandra','Java Fern','Mosses','Cryptocoryne'],
     'Background & Stem':  ['Swords & Rosettes','Stem Plants'],
     'Foreground & Carpet':['Foreground & Carpet'],
     'Floating':           ['Floating'],
@@ -8688,6 +8746,7 @@ function rec_find_matches() {
     var groups = PL_CAT_MAP[cat] || [cat];
     h += r_sec(cat, '&#x1F33F;', Object.keys(_pl).filter(function(k){ return groups.indexOf(_pl[k].group) !== -1; }).map(chk_pl).filter(Boolean).filter(function(r){ return r.inc.length === 0; }));
   });
+  }
   if (!h) h = '<p style="font-size:13px;color:var(--muted);text-align:center;padding:24px 0">No options found for these categories.</p>';
   rec_wiz_set(h, '<button class="btn bg bs" style="flex:1" onclick="rec_step2()">&#x25C4; Back</button><button class="btn bp" style="flex:1" onclick="close_rec_wizard()">Done &#x2713;</button>');
 }
