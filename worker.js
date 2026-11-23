@@ -752,8 +752,16 @@ var SP_BREEDS = {
   andrao_snakehead:  {breeds:'Moderate', fry_fate:'guarded', breed_note:'Pair spawns near the surface. Male guards eggs.', breed_cond:{pair:true,ratio:'1M:1F'}},
   bengal_danio:      {breeds:'Easy',     fry_fate:'eaten',   breed_note:'Prolific egg scatterer. Spawns readily. Fry eaten in community tanks — separate tank needed to raise them.'},
   slender_rasbora:   {breeds:'Moderate', fry_fate:'eaten',   breed_note:'Egg scatterer in fine plants. Fry eaten in community tanks.'},
+  // ===== MARINE SPECIES =====
+  ocellaris_clownfish: {breeds:'Moderate', fry_fate:'guarded', breed_note:'Pairs bond for life. Spawn on a flat rock or tile near the anemone. Male guards and fans the orange egg clutch (~100-200 eggs). Larvae hatch after ~8 days and need rotifers as first food. Tank-bred pairs spawn reliably once settled.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  percula_clownfish:   {breeds:'Moderate', fry_fate:'guarded', breed_note:'Identical breeding behaviour to Ocellaris. Pairs spawn on flat rock. Male guards egg clutch. Larvae need rotifers. Very rewarding to breed in a home reef.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  maroon_clownfish:    {breeds:'Moderate', fry_fate:'guarded', breed_note:'The female is significantly larger and dominant — she will attack the male if stressed. Pair needs to be matched young. Clutches can exceed 1,000 eggs. Male guards the nest obsessively. Tank-bred pairs are more reliably compatible than wild-caught pairs.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  bangaii_cardinalfish:{breeds:'Easy',     fry_fate:'guarded', breed_note:'One of the easiest marine fish to breed. Male is a mouthbrooder — he holds the fertilised eggs and fry in his mouth for ~3 weeks, fasting the whole time. Fry emerge large enough to eat baby brine shrimp immediately. No special larvae phase needed.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  neon_dottyback:      {breeds:'Moderate', fry_fate:'guarded', breed_note:'Pair spawns in a PVC tube or small cave. Male guards the egg mass. Larvae are tiny and challenging to raise — need rotifers initially. Captive-bred specimens are more docile than wild-caught.', breed_cond:{pair:true,ratio:'1M:1F'}},
+  orchid_dottyback:    {breeds:'Moderate', fry_fate:'guarded', breed_note:'Same breeding pattern as Neon Dottyback. Pair spawns in a tube or cave. Male guards eggs. Larvae need rotifers. Worth attempting in a dedicated breeding setup.', breed_cond:{pair:true,ratio:'1M:1F'}},
 };
 Object.keys(SP_BREEDS).forEach(function(k){ if(SP[k]) Object.assign(SP[k], SP_BREEDS[k]); });
+Object.keys(SP_BREEDS).forEach(function(k){ if(SP_SALT[k]) Object.assign(SP_SALT[k], SP_BREEDS[k]); });
 
 // Species that definitively cannot breed in freshwater — shown explicitly in Breeding column
 ['nerite_snail','zebra_nerite','horned_nerite','red_racer_nerite','winged_nerite'].forEach(function(k){
@@ -929,7 +937,9 @@ var FERT = {
 };
 
 var ALGAE_DATA = {
+  // type:'fresh' = freshwater only, type:'salt' = saltwater only, type:'both' = applies to both
   brown_diatom: {
+    type:'both',
     name: 'Brown Diatom Algae',
     appearance: 'Brown or rust-coloured dusty coating on glass, substrate, decorations and leaves.',
     causes: ['New tank (most common in first 3 months)', 'Low light — diatoms thrive where green algae cannot', 'High silicate from tap water or new substrate', 'Too few plants to compete for nutrients'],
@@ -939,6 +949,7 @@ var ALGAE_DATA = {
     img: 'https://cdn.shopify.com/s/files/1/0230/7266/9773/files/Diatoms_Nate_B.jpg?v=1751606902'
   },
   green_spot: {
+    type:'fresh',
     name: 'Green Spot Algae (GSA)',
     appearance: 'Hard, dark green circular spots on slow-growing plant leaves and glass. Very difficult to scrape off.',
     causes: ['Low phosphate (PO4 below 1 ppm) — counterintuitively, GSA thrives when phosphate is too low', 'Bright light without enough nutrients', 'CO2 fluctuation or too little CO2 for the light level'],
@@ -948,6 +959,7 @@ var ALGAE_DATA = {
     img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRZTtvrxsaS2GaIXBik1vrIb9QUM2sCopAwu99TzHMR7A&s=10'
   },
   bba: {
+    type:'fresh',
     name: 'Black Beard Algae (BBA)',
     appearance: 'Dark grey or black tufts of short hair on plant edges, hardscape, and equipment. Feels rough to the touch.',
     causes: ['CO2 fluctuation — the most common cause. Levels that rise and fall trigger BBA', 'Low or inconsistent CO2 in a well-lit tank', 'Uneven flow creating dead spots', 'Ammonium spike'],
@@ -957,6 +969,7 @@ var ALGAE_DATA = {
     img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSMgpXYGfjH5boFV5Hq55r_CFpF2vdRjNSeTDUtSmT90g&s=10'
   },
   hair_algae: {
+    type:'both',
     name: 'Hair / Thread Algae',
     appearance: 'Long, bright or dark green filaments. Looks like wet hair or cotton wool on plants, substrate and decor.',
     causes: ['Excess light duration (over 8 h without CO2)', 'High nutrients — especially nitrate above 20 ppm', 'Insufficient plant mass to consume nutrients', 'Poor or inconsistent CO2'],
@@ -966,6 +979,7 @@ var ALGAE_DATA = {
     img: 'https://cdn.shopify.com/s/files/1/0561/9308/9617/files/hair-algae.png?v=1782749084'
   },
   cyanobacteria: {
+    type:'fresh',
     name: 'Blue-Green Algae (Cyanobacteria)',
     appearance: 'Slimy blue-green, dark green, or reddish-black sheets that smother substrate, plants and decor. Smells musty.',
     causes: ['High organic waste — overfeeding or infrequent water changes', 'Poor circulation and dead spots', 'Very low nitrate (below 5 ppm) — cyanobacteria can fix nitrogen from the air', 'New tank with unstable nutrient balance'],
@@ -975,6 +989,7 @@ var ALGAE_DATA = {
     img: 'https://aquascapinglove.com/wp-content/uploads/2019/10/blue-green-aquarium-algae-smear.jpg'
   },
   green_dust: {
+    type:'fresh',
     name: 'Green Dust Algae (GDA)',
     appearance: 'Thin, hazy green film on glass that looks like green dust or a dirty smear. Wipes off easily but returns quickly.',
     causes: ['Excess light duration', 'New tank with unstable water chemistry', 'Low silicate (different mechanism from GSA)'],
@@ -984,6 +999,7 @@ var ALGAE_DATA = {
     img: 'https://preview.redd.it/green-dust-algae-v0-s74bk5961oag1.jpg?width=640&crop=smart&auto=webp&s=bf8fed7d5d0e7dffeac64f322ac72973e2386142'
   },
   staghorn: {
+    type:'fresh',
     name: 'Staghorn Algae',
     appearance: 'Grey or blue-grey branching tufts, like tiny antlers. Appears on plant edges, equipment, and hardscape. Feels rough.',
     causes: ['Very similar to BBA — CO2 fluctuation is the primary cause', 'Low CO2 with moderate to high light', 'Ammonium spikes from overfeeding or decomposing plant matter'],
@@ -993,6 +1009,7 @@ var ALGAE_DATA = {
     img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSiaz9x9zTIJk53xoao6_O_0numyC1KvtFO7HBkF3ojzI-Fqzuu48v_dC4&s=10'
   },
   fuzz_algae: {
+    type:'fresh',
     name: 'Fuzz Algae',
     appearance: 'Short, soft green fuzz covering plant leaves, hardscape, and substrate. Looks like a fine green beard. Usually 2-10 mm long.',
     causes: ['Moderate excess of nutrients — common in young planted tanks finding their balance', 'Inconsistent fertilisation', 'Moderate light with low plant mass'],
@@ -1000,10 +1017,53 @@ var ALGAE_DATA = {
     prevention: 'Fuzz algae is a sign of a tank finding its balance. A thriving plant mass and a few shrimp or otocinclus will keep it in check.',
     search: 'fuzz+algae+aquarium+plants',
     img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSeu61mjWRvSr_wWgqnwygPxqvHtTM1DUaFvX-7msJ9w4GWEW0bAdUv73s&s=10'
+  },
+  // ===== SALTWATER ALGAE =====
+  reef_cyano: {
+    type:'salt',
+    name: 'Red Slime Algae (Cyanobacteria)',
+    appearance: 'Slimy red, purple, or dark maroon sheets blanketing the sandbed, rocks, and corals. Leaves a reddish film when disturbed.',
+    causes: ['Low flow — dead spots are the number one cause in reef tanks', 'High nutrients — elevated nitrate and phosphate from overfeeding or insufficient skimming', 'New reef tank with unstable nutrient cycling', 'Poor gas exchange and low oxygen'],
+    fix: ['Increase flow — aim for 20-40x tank volume turnover per hour with powerheads', 'Manual removal: syphon it off during water changes (skim the surface off the sandbed)', 'Reduce feeding and check skimmer is producing wet skim', '3-day blackout in a pinch — cover the tank completely', 'Chemi-Clean (or similar oxygen-based product) is an effective last resort — follow dosage carefully and have extra aeration running'],
+    prevention: 'Good flow, consistent feeding, and an effective protein skimmer prevent cyano. Keep nitrate under 20 ppm (reef: under 5 ppm).',
+    search: 'red+slime+algae+cyanobacteria+reef+tank',
+    img: 'https://reefedition.com/wp-content/uploads/2020/03/cyano-on-sand-bed.jpg'
+  },
+  dinoflagellates: {
+    type:'salt',
+    name: 'Dinoflagellates (Dinos)',
+    appearance: 'Golden-brown or rust-coloured slimy strands with tiny bubbles attached. Blankets the sandbed and rocks. Often has a distinctive sweet or musty smell.',
+    causes: ['Ultra-low nutrients — dinos thrive when nitrate is near 0 and phosphate is undetectable', 'Common in new reef tanks (first 2-4 months) that are run too lean', 'Poor biodiversity in the sandbed — insufficient microfauna', 'Insufficient flow in certain areas'],
+    fix: ['Raise nutrients deliberately — dinos hate a healthy nutrient level. Target nitrate 2-5 ppm and phosphate 0.03-0.05 ppm', 'Manual removal: syphon or blow off with a turkey baster during each water change', '3-day complete lights-out — dinos are photosynthetic and cannot survive extended darkness', 'Increase biodiversity: add copepods, amphipods, and a healthy sandbed', 'Be patient — dino outbreaks in new tanks often self-resolve within 2-3 months as the tank matures'],
+    prevention: 'Avoid running ultra-low nutrients in a new tank. Build biodiversity before cutting nutrients.',
+    search: 'dinoflagellates+dinos+reef+tank+saltwater',
+    img: 'https://i.redd.it/fwk0m5rnynf71.jpg'
+  },
+  bryopsis: {
+    type:'salt',
+    name: 'Bryopsis (Feather Algae)',
+    appearance: 'Dense, bright green feathery or fern-like tufts growing from rocks and surfaces. Looks like tiny pine trees. Very difficult to pull out — fragments regrow.',
+    causes: ['Nutrient imbalance — commonly linked to low magnesium relative to other parameters', 'Fragments introduced on live rock or coral frags', 'Inadequate herbivore population'],
+    fix: ['Raise magnesium to 1400-1500 ppm — high Mg is the most reliable fix for bryopsis. Use magnesium chloride or a two-part Mg supplement', 'Manual removal with gloves — pull out as much as possible (wear gloves as some people react to it)', 'Emerald mithrax crabs (1 per 20 gallons) eat bryopsis actively', 'Vibrant (probiotic liquid) has been effective for many reef keepers — dose weekly', 'Aggressive manual removal combined with Mg elevation usually resolves it within 4-6 weeks'],
+    prevention: 'Dip all coral frags and live rock before adding to the tank. Maintain Mg above 1300 ppm.',
+    search: 'bryopsis+feather+algae+reef+tank+remove',
+    img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSBPMN1J0jxLJVCCd7-sJ0Rn4TXdC_QHvKJRUz0GA&s=10'
+  },
+  reef_gha: {
+    type:'salt',
+    name: 'Green Hair Algae (Reef)',
+    appearance: 'Dense, bright or olive-green filaments covering rocks, the sandbed, and coral bases. Can form thick mats if left unchecked.',
+    causes: ['Elevated nitrate (above 10 ppm for reef) or phosphate (above 0.1 ppm)', 'Insufficient herbivore population', 'Excess light or lighting duration over 10 hours', 'Inadequate nutrient export — skimmer not pulling enough'],
+    fix: ['Increase herbivores: turbo snails, urchins, lawnmower blenny, and tangs (yellow tang or kole tang are excellent GHA grazers)', 'Manual removal: pull and scrape off as much as possible — do not let it go to seed', 'Review feeding — reduce amount or frequency if nutrients are high', 'Check skimmer output: aim for wet skim to export more dissolved organics', 'Reduce light duration to 8-9 hours during the outbreak'],
+    prevention: 'A healthy CUC with turbo snails and a tang will prevent most GHA in a stable reef. Keep nitrate under 10 ppm.',
+    search: 'green+hair+algae+reef+tank+saltwater',
+    img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ2XZrYwYWP9uyJHJJDVa4tAjOFSRU9Y5kqpIw&s=10'
   }
 };
 var DISEASE_DATA = {
+  // type:'fresh' = freshwater only, type:'salt' = saltwater only, type:'both' = applies to both
   ich: {
+    type:'fresh',
     name: 'Ich (White Spot)',
     symptom_tag: 'Tiny white salt-like spots on body and fins',
     symptoms: ['White spots resembling grains of salt on fins and body', 'Fish flashing or scratching against surfaces', 'Clamped fins, lethargy, loss of appetite', 'Spots may disappear and reappear as the parasite cycles'],
@@ -1013,6 +1073,7 @@ var DISEASE_DATA = {
     search: 'ich+white+spot+disease+fish'
   },
   velvet: {
+    type:'fresh',
     name: 'Velvet (Gold Dust Disease)',
     symptom_tag: 'Fine gold or rust-coloured dust on body, clamped fins',
     symptoms: ['Fine gold, yellow or rust-coloured dust visible on skin — use a torch in a dark room', 'Clamped fins, rapid gill movement, scratching', 'Fish may appear to shimmer or glitter', 'Lethargy and loss of appetite'],
@@ -1022,6 +1083,7 @@ var DISEASE_DATA = {
     search: 'velvet+disease+oodinium+fish'
   },
   fin_rot: {
+    type:'both',
     name: 'Fin Rot',
     symptom_tag: 'Frayed, ragged, or dissolving fins',
     symptoms: ['Fins look tattered, frayed or have white edges', 'Fins may appear shorter over time as they dissolve', 'Red or inflamed base of fins in severe cases', 'Tail or fins may look semi-transparent'],
@@ -1031,6 +1093,7 @@ var DISEASE_DATA = {
     search: 'fin+rot+bacterial+infection+fish'
   },
   dropsy: {
+    type:'both',
     name: 'Dropsy',
     symptom_tag: 'Severe bloating, raised pinecone-like scales',
     symptoms: ['Severely bloated abdomen', 'Scales sticking out like a pinecone when viewed from above', 'Lethargic, hiding, loss of appetite', 'Possible ulcers or sores'],
@@ -1040,6 +1103,7 @@ var DISEASE_DATA = {
     search: 'dropsy+pinecone+disease+fish'
   },
   columnaris: {
+    type:'both',
     name: 'Columnaris (Mouth Fungus / Saddleback)',
     symptom_tag: 'White/grey patches near mouth or body — often mistaken for fungus',
     symptoms: ['White or grey-yellow lesions around the mouth, gills, or along the body', 'May look like fungus but is actually bacterial', 'Gills may look pale or brown, fish gasping at surface', '"Saddleback" lesion across the back is common in severe cases', 'Rapid progression — fish can die within 24-48 hours'],
@@ -1049,6 +1113,7 @@ var DISEASE_DATA = {
     search: 'columnaris+mouth+fungus+fish+disease'
   },
   swim_bladder: {
+    type:'both',
     name: 'Swim Bladder Disorder',
     symptom_tag: 'Swimming sideways, upside down, or unable to rise/sink',
     symptoms: ['Fish floats to the surface involuntarily', 'Fish sinks to the bottom and cannot swim up', 'Fish swims at a tilted or sideways angle', 'Distended abdomen in some cases'],
@@ -1058,6 +1123,7 @@ var DISEASE_DATA = {
     search: 'swim+bladder+disorder+fish+treatment'
   },
   popeye: {
+    type:'both',
     name: 'Pop-eye (Exophthalmia)',
     symptom_tag: 'One or both eyes bulging outward',
     symptoms: ['One eye (unilateral) or both eyes (bilateral) visibly protruding', 'Cloudy or damaged eye surface in severe cases', 'Fish may still eat and swim normally in mild cases', 'Bilateral pop-eye is usually more serious than one eye alone'],
@@ -1067,6 +1133,7 @@ var DISEASE_DATA = {
     search: 'pop+eye+exophthalmia+fish+treatment'
   },
   hith: {
+    type:'both',
     name: 'Hole in the Head (HITH)',
     symptom_tag: 'Pits or eroded holes on head and lateral line',
     symptoms: ['Small pits or cavities on the head and along the lateral line', 'Pits may release white, stringy mucus', 'Most common in cichlids (oscars, discus, severums) and large catfish', 'Fish may still eat and behave normally in early stages'],
@@ -1076,6 +1143,7 @@ var DISEASE_DATA = {
     search: 'hole+in+the+head+HITH+cichlid+disease'
   },
   flukes: {
+    type:'both',
     name: 'Flukes (Gill & Skin Flukes)',
     symptom_tag: 'Flashing and scratching, excess mucus, rapid gilling',
     symptoms: ['Fish scratching or flashing (rubbing) against surfaces repeatedly', 'Rapid gill movement or gasping at surface', 'Excess mucus on body — cloudy or slimy appearance', 'Redness or inflammation around gills', 'Clamped fins'],
@@ -1085,6 +1153,7 @@ var DISEASE_DATA = {
     search: 'gill+flukes+skin+flukes+fish+treatment'
   },
   anchor_worm: {
+    type:'both',
     name: 'Anchor Worm (Lernaea)',
     symptom_tag: 'Visible worm-like parasites attached to body or fins',
     symptoms: ['Thin, white or green thread-like worms visibly attached to the skin, fins, or gill cover', 'Red, inflamed attachment sites', 'Fish may flash or rub against surfaces', 'Ulcers or sores at attachment points'],
@@ -1094,6 +1163,7 @@ var DISEASE_DATA = {
     search: 'anchor+worm+lernaea+fish+treatment'
   },
   saprolegnia: {
+    type:'fresh',
     name: 'Fungal Infection (Saprolegnia)',
     symptom_tag: 'White cotton-wool tufts on body, fins, or wounds',
     symptoms: ['Fluffy white or grey cotton-like growth on skin, fins, mouth, or eyes', 'Usually appears on an existing wound, ulcer, or site of injury', 'Affected area may appear red or raw underneath the growth', 'Fish may become lethargic and stop eating'],
@@ -1103,6 +1173,7 @@ var DISEASE_DATA = {
     search: 'saprolegnia+fungal+infection+fish+cotton+wool'
   },
   aeromonas: {
+    type:'both',
     name: 'Bacterial Ulcer (Aeromonas / Red Sores)',
     symptom_tag: 'Red open sores, ulcers, or bleeding patches on body',
     symptoms: ['Red, open sores or ulcers on the body or fins', 'Reddening around the base of fins, vent, or belly', 'Haemorrhaging (bleeding) under the skin', 'Fish may appear bloated or lethargic', 'Scale loss around the ulcer site'],
@@ -1112,6 +1183,7 @@ var DISEASE_DATA = {
     search: 'aeromonas+bacterial+ulcer+red+sores+fish'
   },
   trichodina: {
+    type:'fresh',
     name: 'Trichodina (Protozoan Parasite)',
     symptom_tag: 'Flashing, excess slime, grey haze on skin or gills',
     symptoms: ['Fish rubbing or scratching against tank walls, substrate, or decorations (flashing)', 'Excess mucus — body looks cloudy or has a grey-white haze', 'Clamped fins, rapid gill movement', 'Loss of appetite and lethargy', 'Looks similar to velvet but without the gold-dust shimmer'],
@@ -1121,6 +1193,7 @@ var DISEASE_DATA = {
     search: 'trichodina+fish+parasite+flashing+slime'
   },
   fish_tb: {
+    type:'both',
     name: 'Fish Tuberculosis (Wasting Disease)',
     symptom_tag: 'Gradual wasting, curved spine, hollow belly — no response to treatment',
     symptoms: ['Progressive weight loss despite eating normally', 'Hollow or sunken belly', 'Curved or kinked spine (lordosis/scoliosis)', 'Pale colour, fin erosion, raised scales', 'Fish declines slowly over weeks or months — does not respond to standard treatments'],
@@ -1128,6 +1201,37 @@ var DISEASE_DATA = {
     treatment: ['There is no effective treatment — infected fish should be humanely euthanised to prevent spread', 'Remove and euthanise affected fish promptly', 'Do a full tank disinfection: drain, clean all surfaces with a dilute bleach solution (1:10), rinse thoroughly, and re-cycle before restocking', 'Note: Mycobacterium marinum can cause skin granulomas in humans — wear gloves when handling tank water if you have cuts'],
     prevention: 'Buy fish from reputable sources. Quarantine all new fish. Avoid buying visibly thin or lethargic fish.',
     search: 'fish+tuberculosis+mycobacterium+wasting+disease+aquarium'
+  },
+  // ===== SALTWATER DISEASES =====
+  marine_ich: {
+    type:'salt',
+    name: 'Marine Ich (Cryptocaryon)',
+    symptom_tag: 'Tiny white salt-like spots on body and fins',
+    symptoms: ['White spots like grains of salt on fins and body — identical appearance to freshwater ich but a completely different parasite', 'Fish flashing or rubbing against rocks', 'Rapid breathing, clamped fins, lethargy', 'Spots may disappear and reappear as the parasite cycles through its life stage'],
+    causes: 'Cryptocaryon irritans — a ciliate protozoan specific to saltwater fish. Triggered by stress, new fish additions, or temperature swings.',
+    treatment: ['CRITICAL: Do NOT use malachite green or freshwater ich treatments — they do not work on Cryptocaryon and will harm marine inverts', 'Move all fish to a quarantine tank (QT) — the main tank must remain fish-free for at least 6-8 weeks to break the parasite life cycle (tomonts need a fish host to survive)', 'Copper treatment in QT: Seachem Cupramine is the most reliable — dose to 0.5 ppm and maintain for 30 days. Test copper level daily with a copper test kit.', 'Alternative — Hyposalinity: lower QT salinity to 1.009 SG (15 ppt) over 48 hours, hold for 4-6 weeks. Do NOT do this in the main tank — it will kill corals and most inverts.', 'Heat treatment (up to 30°C/86°F) can help as a supportive measure but is not curative on its own for marine ich'],
+    prevention: 'Quarantine ALL new fish in a fish-only QT for 6 weeks before adding to the display tank. This is the only reliable prevention.',
+    search: 'marine+ich+cryptocaryon+saltwater+fish+treatment'
+  },
+  marine_velvet: {
+    type:'salt',
+    name: 'Marine Velvet (Amyloodinium)',
+    symptom_tag: 'Fine gold or rust dust on body, rapid gilling — spreads in days',
+    symptoms: ['Fine gold, rust, or yellow dust on skin — most visible on the head and near the gills', 'Extremely rapid gill movement, gasping at the surface', 'Fish rubs against rocks', 'Lethargy, refusal to eat', 'Can kill fish within 2-5 days if untreated — far faster than marine ich'],
+    causes: 'Amyloodinium ocellatum — a highly contagious dinoflagellate parasite. Even more virulent than marine ich. Can wipe out an entire tank rapidly.',
+    treatment: ['Act immediately — marine velvet kills fast', 'Remove ALL fish to a quarantine tank. The display tank must be fish-free for at least 4-6 weeks', 'Copper treatment (Seachem Cupramine at 0.5 ppm) is the most effective treatment — maintain for the full 30-day course', 'Dim or cover the QT — Amyloodinium is photosynthetic; darkness slows reproduction', 'Do NOT use freshwater dips as a sole treatment — they provide temporary relief but do not cure the infection', 'Increase oxygenation in the QT — velvet causes severe gill damage'],
+    prevention: 'Quarantine all new fish for 6 weeks. Velvet is so fast-killing that prevention is essential — once it appears in a display tank, all fish are at risk.',
+    search: 'marine+velvet+amyloodinium+saltwater+fish+treatment'
+  },
+  brooklynella: {
+    type:'salt',
+    name: 'Brooklynella (Clownfish Disease)',
+    symptom_tag: 'Grey mucus shedding, rapid gilling, lethargy — mainly in clownfish',
+    symptoms: ['Grey or white mucus or tissue sloughing off the body', 'Rapid, laboured breathing', 'Fish hangs near the surface or at the top of the tank', 'Lethargy, refusal to eat', 'Most common in clownfish, but can affect other reef fish', 'Progression is very rapid — fish can die within 24-48 hours without treatment'],
+    causes: 'Brooklynella hostilis — a ciliate protozoan that damages the gills and skin. Much more common in clownfish than other species. Often introduced on wild-caught clownfish.',
+    treatment: ['Act within hours — Brooklynella is extremely fast-killing', 'Formalin bath: the most effective immediate treatment. Use 37% formalin at 1 ml per 4.5 L of water for a 60-minute bath, with heavy aeration. Observe fish closely and remove immediately if they show extreme distress.', 'Formalin + malachite green (Formalite, Rid-Ich Plus) can be used in a bare-bottom QT for a 14-day treatment course', 'Move fish to a clean QT immediately — good water quality is essential', 'The main tank should be fish-free for 4 weeks to clear the parasite'],
+    prevention: 'Quarantine all new clownfish for at least 4 weeks. Buy captive-bred clownfish where possible — they are less likely to carry Brooklynella than wild-caught fish.',
+    search: 'brooklynella+clownfish+disease+saltwater+treatment'
   }
 };
 
@@ -1642,7 +1746,9 @@ function get_rec_tasks_s(tid, ud) {
   if(fp_ratio!==null&&fp_ratio>1) recs.push({type:'Stocking',name:'Footprint overloaded — fish need more floor/swim area',freq:0,why:'Zone footprint ratio is '+Math.round(fp_ratio*100)+'%. Some zones are physically too crowded for the fish you have.'});
   var wc_freq=stock_ratio>=0.8?3:stock_ratio>=0.5?7:14;
   var wc_why=stock_ratio>=0.8?'High stocking density - frequent changes critical':stock_ratio>=0.5?'Weekly changes maintain water quality':'Light stocking - bi-weekly is fine';
+  if(salt) wc_why+=' — Pre-mix replacement water to 1.025 SG (35 ppt) using RODI water and salt mix. Never add dry salt directly to the display tank.';
   recs.push({type:'Water Change',name:'25% Water Change',freq:wc_freq,why:wc_why});
+  if(salt) recs.push({type:'Top-Off',name:'ATO / Salinity Top-Off Check',freq:3,why:'Evaporation raises salinity — top off with RODI water only (never saltwater) every 2-3 days or use an ATO.'});
   var fc_freq=stock_ratio>=0.7?14:30;
   recs.push({type:'Filter Clean',name:'Filter Media Rinse',freq:fc_freq,why:'Rinse in tank water (not tap) to preserve beneficial bacteria'});
   var wt_freq=stock_ratio>=0.7?7:14;
@@ -1674,6 +1780,7 @@ function get_rec_tasks_s(tid, ud) {
   return recs;
 }
 function get_disease_risks_s(tid, ud) {
+  var salt=is_salt(tid);
   var lr=last_r_s(tid,ud);
   var ammonia=lr?lr.ammonia:null, nitrite=lr?lr.nitrite:null, temp_f=lr?lr.temp_f:null;
   var risks=[];
@@ -1685,16 +1792,28 @@ function get_disease_risks_s(tid, ud) {
   if(temp_f!==null&&parseFloat(temp_f)>82){
     var tc=Math.round((parseFloat(temp_f)-32)*5/9);
     risks.push({id:'columnaris',reason:'Temperature '+tc+'°C — columnaris is most aggressive above 28°C'});
-    risks.push({id:'velvet',reason:'Warm water speeds up velvet parasite life cycle'});
+    if(salt){
+      risks.push({id:'marine_velvet',reason:'Warm water speeds up marine velvet (Amyloodinium) life cycle'});
+    } else {
+      risks.push({id:'velvet',reason:'Warm water speeds up velvet parasite life cycle'});
+    }
   }
   var cutoff_ms=new Date().getTime()-14*86400000;
   var cutoff_str=new Date(cutoff_ms).toISOString().slice(0,10);
   var new_stock=(ud.stock||[]).filter(function(s){return s.tank_id===tid&&s.added_date&&s.added_date>=cutoff_str;});
   if(new_stock.length){
-    risks.push({id:'ich',reason:'New fish added in the last 14 days — ich is the most common introduction'});
-    risks.push({id:'flukes',reason:'New fish may carry gill or skin flukes from the shop'});
-    risks.push({id:'trichodina',reason:'Trichodina is very common in fish from Indian shops and farms'});
-    risks.push({id:'velvet',reason:'Velvet can be introduced via new fish; spreads very fast'});
+    if(salt){
+      risks.push({id:'marine_ich',reason:'New fish added in the last 14 days — Cryptocaryon (marine ich) is the most common introduction'});
+      risks.push({id:'marine_velvet',reason:'Marine velvet can be introduced via new fish; spreads extremely fast'});
+      risks.push({id:'flukes',reason:'New fish may carry gill or skin flukes'});
+      var has_clown=new_stock.some(function(s){return s.sp_id&&(s.sp_id.indexOf('clown')!==-1||s.sp_id==='maroon_clownfish');});
+      if(has_clown) risks.push({id:'brooklynella',reason:'New clownfish added — Brooklynella mainly affects clownfish'});
+    } else {
+      risks.push({id:'ich',reason:'New fish added in the last 14 days — ich is the most common introduction'});
+      risks.push({id:'flukes',reason:'New fish may carry gill or skin flukes from the shop'});
+      risks.push({id:'trichodina',reason:'Trichodina is very common in fish from Indian shops and farms'});
+      risks.push({id:'velvet',reason:'Velvet can be introduced via new fish; spreads very fast'});
+    }
   }
   var seen={},unique=[];
   risks.forEach(function(r){if(!seen[r.id]){seen[r.id]=true;unique.push(r);}});
@@ -1718,28 +1837,40 @@ function get_plant_risks_s(tid, ud) {
 }
 function get_algae_risks_s(tid, ud) {
   var tank=(ud.tanks||[]).find(function(t){return t.id===tid;});
+  var salt = is_salt(tid);
   var light_h=get_light_hours_s(tid,ud), co2=get_co2_info_s(tid,ud);
   var lr=last_r_s(tid,ud);
   var nitrate=lr?lr.nitrate:null, ammonia=lr?lr.ammonia:null, nitrite=lr?lr.nitrite:null;
-  var temp_f=lr?lr.temp_f:null, phosphate=lr?lr.phosphate:null;
+  var temp_f=lr?lr.temp_f:null, phosphate=lr?lr.phosphate:null, salinity=lr?lr.salinity:null;
   var has_plants=(ud.plants||[]).filter(function(p){return p.tank_id===tid;}).length>0;
   var filters=(ud.equip||[]).filter(function(x){return x.tank_id===tid&&x.type==='Filter'&&x.config&&x.config.flow_gph>0;});
   var total_gph=0; filters.forEach(function(f){total_gph+=(f.config.flow_gph||0);});
   var turnover=(tank&&tank.gallons&&total_gph)?total_gph/tank.gallons:null;
   var risks=[];
-  if(tank&&tank.setup_date){
-    var age_days=Math.floor((new Date().getTime()-new Date(tank.setup_date+'T00:00:00').getTime())/86400000);
-    if(age_days<90) risks.push({id:'brown_diatom',reason:'Tank under 3 months old (age: '+age_days+' days)'});
+  var age_days=null;
+  if(tank&&tank.setup_date) age_days=Math.floor((new Date().getTime()-new Date(tank.setup_date+'T00:00:00').getTime())/86400000);
+  if(salt) {
+    // Saltwater algae risks
+    if(age_days!==null&&age_days<90) risks.push({id:'brown_diatom',reason:'New saltwater tank (age: '+age_days+' days) — diatom bloom is normal'});
+    if((ammonia!==null&&ammonia>0)||(nitrite!==null&&nitrite>0)) risks.push({id:'brown_diatom',reason:'Ammonia/nitrite detected — tank still cycling'});
+    if(turnover!==null&&turnover<20) risks.push({id:'reef_cyano',reason:'Low flow ('+Math.round(turnover)+'x turnover) — dead spots favour red slime'});
+    if(nitrate!==null&&nitrate>10) risks.push({id:'reef_gha',reason:'Elevated nitrate ('+nitrate+' ppm) — promotes hair algae growth'});
+    if(nitrate!==null&&nitrate>5) risks.push({id:'reef_cyano',reason:'High nutrients — nitrate '+nitrate+' ppm'});
+    if(age_days!==null&&age_days<60&&(nitrate===null||nitrate<2)) risks.push({id:'dinoflagellates',reason:'New tank with ultra-low nutrients — prime conditions for dinos'});
+    if(phosphate!==null&&phosphate>0.1) risks.push({id:'reef_gha',reason:'Elevated phosphate ('+phosphate+' ppm) favours algae growth'});
+  } else {
+    // Freshwater algae risks
+    if(age_days!==null&&age_days<90) risks.push({id:'brown_diatom',reason:'Tank under 3 months old (age: '+age_days+' days)'});
+    if((ammonia!==null&&ammonia>0)||(nitrite!==null&&nitrite>0)) risks.push({id:'brown_diatom',reason:'Ammonia/nitrite detected — tank may still be cycling'});
+    if(light_h>=8&&!co2){risks.push({id:'hair_algae',reason:'High light ('+light_h+' h/day) without CO2'});risks.push({id:'green_spot',reason:'High light ('+light_h+' h/day) without CO2'});}
+    if(phosphate!==null&&phosphate<0.2) risks.push({id:'green_spot',reason:'Very low phosphate ('+phosphate+' ppm) — main trigger for GSA'});
+    if(light_h>0&&light_h<6) risks.push({id:'bba',reason:'Low light ('+light_h+' h/day) encourages BBA'});
+    if(co2&&light_h>=8){risks.push({id:'bba',reason:'CO2 fluctuation risk with high-light setup'});risks.push({id:'staghorn',reason:'CO2 fluctuation risk with high-light setup'});}
+    if(nitrate!==null&&nitrate>20){risks.push({id:'hair_algae',reason:'Elevated nitrate ('+nitrate+' ppm)'});risks.push({id:'cyanobacteria',reason:'High nutrients — nitrate '+nitrate+' ppm'});}
+    if(temp_f!==null&&temp_f>82){var tc=Math.round((temp_f-32)*5/9);risks.push({id:'cyanobacteria',reason:'High temperature ('+tc+'°C) — cyanobacteria thrives in warm water'});}
+    if(turnover!==null&&turnover<4) risks.push({id:'cyanobacteria',reason:'Low filter turnover ('+turnover.toFixed(1)+'x/hr) — poor flow favours cyanobacteria'});
+    if(!has_plants) risks.push({id:'cyanobacteria',reason:'No plants to compete for nutrients'});
   }
-  if((ammonia!==null&&ammonia>0)||(nitrite!==null&&nitrite>0)) risks.push({id:'brown_diatom',reason:'Ammonia/nitrite detected — tank may still be cycling'});
-  if(light_h>=8&&!co2){risks.push({id:'hair_algae',reason:'High light ('+light_h+' h/day) without CO2'});risks.push({id:'green_spot',reason:'High light ('+light_h+' h/day) without CO2'});}
-  if(phosphate!==null&&phosphate<0.2) risks.push({id:'green_spot',reason:'Very low phosphate ('+phosphate+' ppm) — main trigger for GSA'});
-  if(light_h>0&&light_h<6) risks.push({id:'bba',reason:'Low light ('+light_h+' h/day) encourages BBA'});
-  if(co2&&light_h>=8){risks.push({id:'bba',reason:'CO2 fluctuation risk with high-light setup'});risks.push({id:'staghorn',reason:'CO2 fluctuation risk with high-light setup'});}
-  if(nitrate!==null&&nitrate>20){risks.push({id:'hair_algae',reason:'Elevated nitrate ('+nitrate+' ppm)'});risks.push({id:'cyanobacteria',reason:'High nutrients — nitrate '+nitrate+' ppm'});}
-  if(temp_f!==null&&temp_f>82){var tc=Math.round((temp_f-32)*5/9);risks.push({id:'cyanobacteria',reason:'High temperature ('+tc+'°C) — cyanobacteria thrives in warm water'});}
-  if(turnover!==null&&turnover<4) risks.push({id:'cyanobacteria',reason:'Low filter turnover ('+turnover.toFixed(1)+'x/hr) — poor flow favours cyanobacteria'});
-  if(!has_plants) risks.push({id:'cyanobacteria',reason:'No plants to compete for nutrients'});
   var seen={},unique=[];
   risks.forEach(function(r){if(!seen[r.id]){seen[r.id]=true;unique.push(r);}});
   return unique;
@@ -3522,11 +3653,12 @@ function draw_chart(tid, param) {
   var all_refs = {
     ammonia: [{v:0.25, color:'#e8a838', label:'Caution (0.25 ppm)'}, {v:0.5, color:'#e05252', label:'Danger (0.5 ppm)'}],
     nitrite: [{v:0.25, color:'#e8a838', label:'Caution (0.25 ppm)'}, {v:0.5, color:'#e05252', label:'Danger (0.5 ppm)'}],
-    nitrate: [{v:20,   color:'#3ab87a', label:'Ideal max (20 ppm)'}, {v:40, color:'#e8a838', label:'Caution max (40 ppm)'}],
+    nitrate: is_reef(tid) ? [{v:5, color:'#3ab87a', label:'Reef ideal max (5 ppm)'}, {v:10, color:'#e8a838', label:'Reef caution max (10 ppm)'}] : [{v:20, color:'#3ab87a', label:'Ideal max (20 ppm)'}, {v:40, color:'#e8a838', label:'Caution max (40 ppm)'}],
     ph:      [{v:6.5,  color:'#3ab87a', label:'Ideal min (6.5)'}, {v:7.5, color:'#3ab87a', label:'Ideal max (7.5)'}, {v:6.0, color:'#e8a838', label:'Caution min (6.0)'}, {v:8.0, color:'#e8a838', label:'Caution max (8.0)'}],
     gh:      [{v:4,    color:'#3ab87a', label:'Ideal min (4 dGH)'}, {v:12, color:'#3ab87a', label:'Ideal max (12 dGH)'}, {v:2, color:'#e8a838', label:'Caution min (2 dGH)'}, {v:15, color:'#e8a838', label:'Caution max (15 dGH)'}],
     temp_f:  temp_refs,
-    uia:     [{v:0.02, color:'#e8a838', label:'Caution (0.02 ppm)'}, {v:0.05, color:'#e05252', label:'Danger (0.05 ppm)'}]
+    uia:     [{v:0.02, color:'#e8a838', label:'Caution (0.02 ppm)'}, {v:0.05, color:'#e05252', label:'Danger (0.05 ppm)'}],
+    salinity: [{v:33, color:'#3ab87a', label:'Ideal min (33 ppt)'}, {v:36, color:'#3ab87a', label:'Ideal max (36 ppt)'}, {v:30, color:'#e8a838', label:'Caution min (30 ppt)'}, {v:38, color:'#e05252', label:'Danger high (38 ppt)'}]
   };
 
   var refs = all_refs[param] || [];
@@ -8336,8 +8468,11 @@ async function diag_alg_list() {
     h += '</div>';
   }
   h += '<div style="font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">All algae types</div>';
+  var salt_tank = is_salt(tid);
   Object.keys(_algae).forEach(function(id){
     var ad = _algae[id];
+    if (salt_tank && ad.type === 'fresh') return;
+    if (!salt_tank && ad.type === 'salt') return;
     h += '<div data-aid="' + id + '" onclick="diag_alg_detail(this.dataset.aid)" style="padding:10px 12px;border:1px solid #e8ecf0;border-radius:8px;margin-bottom:6px;cursor:pointer">' +
          '<div style="font-size:13px;font-weight:600;color:var(--deep)">' + esc(ad.name) + '</div>' +
          '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + esc(ad.appearance) + '</div></div>';
@@ -8391,8 +8526,11 @@ async function diag_dis_list() {
     h += '</div>';
   }
   h += '<div style="font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">All diseases</div>';
+  var salt_tank = is_salt(tid);
   Object.keys(_dis).forEach(function(id){
     var dd = _dis[id];
+    if (salt_tank && dd.type === 'fresh') return;
+    if (!salt_tank && dd.type === 'salt') return;
     h += '<div data-did="' + id + '" onclick="diag_dis_detail(this.dataset.did)" style="padding:10px 12px;border:1px solid #e8ecf0;border-radius:8px;margin-bottom:6px;cursor:pointer">' +
          '<div style="font-size:13px;font-weight:600;color:var(--deep)">' + esc(dd.name) + '</div>' +
          '<div style="font-size:11px;color:var(--muted);margin-top:2px;font-style:italic">' + esc(dd.symptom_tag) + '</div></div>';
