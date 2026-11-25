@@ -3433,24 +3433,36 @@ function calc_res_add() {
 
   var rem = reservoir_remaining(r);
   var remaining_ml = rem ? rem.remaining_ml : (r.snapshot_ml || reservoir_total_ml(r));
+  var full_total = reservoir_total_ml(r);
 
   var days_left = remaining_ml / old_dose;
   var add_now = Math.round(new_dose * days_left * 10) / 10;
   var new_total_now = Math.round((remaining_ml + add_now) * 10) / 10;
   var new_daily = Math.round((old_dose + new_dose) * 10) / 10;
 
-  // Simplify ratio using GCD
-  function gcd(a, b) { a = Math.round(a * 10); b = Math.round(b * 10); while (b) { var t = b; b = a % b; a = t; } return a / 10; }
-  var g = gcd(old_dose, new_dose);
-  var ratio_existing = Math.round(old_dose / g * 10) / 10;
-  var ratio_new = Math.round(new_dose / g * 10) / 10;
+  // Per-dose breakdown of existing reservoir
+  var conc_total = (r.ingredients || []).reduce(function(s, x){ return s + (x.concentrate_ml || 0); }, 0);
+  var water_total = r.water_ml || 0;
+  var conc_per_dose  = full_total > 0 ? Math.round(old_dose * (conc_total  / full_total) * 100) / 100 : 0;
+  var water_per_dose = full_total > 0 ? Math.round(old_dose * (water_total / full_total) * 100) / 100 : 0;
+
+  // Simplify ratio across all three components using GCD
+  function gcd(a, b) { a = Math.round(a * 100); b = Math.round(b * 100); while (b) { var t = b; b = a % b; a = t; } return a / 100; }
+  var parts = [conc_per_dose, water_per_dose, new_dose].filter(function(x){ return x > 0; });
+  var g = parts.reduce(gcd) || 1;
+  var r_conc  = Math.round(conc_per_dose  / g * 100) / 100;
+  var r_water = Math.round(water_per_dose / g * 100) / 100;
+  var r_new   = Math.round(new_dose       / g * 100) / 100;
+
+  var ratio_str = r_conc + ' : ' + r_water + ' : ' + r_new;
+  var ratio_lbl = 'concentrate : water : ' + esc(fert.name);
 
   out.innerHTML = '<div style="background:var(--bg2);border-radius:6px;padding:12px;font-size:13px;line-height:1.9">' +
     'Add <strong>' + add_now + ' ml</strong> of ' + esc(fert.name) + ' to the reservoir<br>' +
     '<span style="color:var(--muted)">' + remaining_ml + ' ml &divide; ' + old_dose + ' ml/day = ' + Math.round(days_left) + ' days &times; ' + new_dose + ' ml/day</span><br>' +
     'New volume: <strong>' + new_total_now + ' ml</strong><br>' +
     'Update daily dose to: <strong>' + new_daily + ' ml/day</strong><br><br>' +
-    '<span style="color:var(--muted)">Future recipe ratio — existing : ' + esc(fert.name) + ' = <strong>' + ratio_existing + ' : ' + ratio_new + '</strong></span>' +
+    '<span style="color:var(--muted)">Future recipe ratio (' + ratio_lbl + ') = <strong>' + ratio_str + '</strong></span>' +
     '</div>';
 }
 
