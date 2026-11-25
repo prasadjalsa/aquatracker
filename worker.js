@@ -3305,6 +3305,201 @@ function sub_topup_reservoir() {
   });
   sv(d); cm(); r_life(); r_maint();
 }
+// ===== RESERVOIR CALCULATOR =====
+var _calc_fert_opts = '';
+var _calc_row_n = 0;
+
+function do_reservoir_calc(id) {
+  var d = ld(), tid = at();
+  var tank_ferts = d.ferts.filter(function(f){ return f.tank_id === tid; });
+  _calc_fert_opts = '<option value="">-- select --</option>' +
+    tank_ferts.map(function(f){ return '<option value="' + f.id + '">' + esc(f.name) + '</option>'; }).join('');
+  _calc_row_n = 0;
+
+  var res_opts = (d.reservoirs || []).filter(function(r){ return r.tank_id === tid; })
+    .map(function(r){
+      return '<option value="' + r.id + '"' + (r.id === id ? ' selected' : '') + '>' + esc(r.name) + '</option>';
+    }).join('');
+
+  var mode_add = !!id;
+  var h = '<div class="card"><div class="ctitle">Reservoir Calculator</div>' +
+    '<div style="display:flex;gap:16px;margin-bottom:14px">' +
+    '<label style="display:flex;align-items:center;gap:6px;cursor:pointer">' +
+    '<input type="radio" name="calc_mode" value="add" onchange="upd_calc_mode()"' + (mode_add ? ' checked' : '') + '> Add to existing</label>' +
+    '<label style="display:flex;align-items:center;gap:6px;cursor:pointer">' +
+    '<input type="radio" name="calc_mode" value="new" onchange="upd_calc_mode()"' + (!mode_add ? ' checked' : '') + '> New recipe</label>' +
+    '</div>' +
+
+    // --- Add to existing ---
+    '<div id="calc_add_sec" style="' + (!mode_add ? 'display:none' : '') + '">' +
+    '<div class="fg"><label>Reservoir</label>' +
+    '<select id="calc_res_sel" onchange="upd_calc_res_info()">' + res_opts + '</select></div>' +
+    '<div id="calc_res_info" style="font-size:12px;color:var(--muted);margin:-8px 0 10px;line-height:1.6"></div>' +
+    '<div class="fg"><label>New fertilizer</label>' +
+    '<select id="calc_new_fert">' + _calc_fert_opts + '</select></div>' +
+    '<div class="fg"><label>Ratio</label>' +
+    '<div style="display:flex;align-items:center;gap:8px">' +
+    '<input type="number" id="calc_ratio" step="0.1" min="0.01" value="1" style="width:70px"> x primary ingredient' +
+    '</div><div style="font-size:12px;color:var(--muted);margin-top:4px">0.5 = half as much; 2 = double</div></div>' +
+    '<div style="margin-bottom:12px"><button type="button" class="btn bp bs" onclick="calc_res_add()">Calculate</button></div>' +
+    '<div id="calc_add_result"></div>' +
+    '</div>' +
+
+    // --- New recipe ---
+    '<div id="calc_new_sec" style="' + (mode_add ? 'display:none' : '') + '">' +
+    '<div class="fg"><label>Ingredients</label>' +
+    '<div id="calc_new_rows" style="margin-bottom:8px"></div>' +
+    '<button type="button" class="btn bg bs" style="font-size:12px" onclick="add_calc_row()">+ Add ingredient</button></div>' +
+    '<div class="fg"><label>Water</label>' +
+    '<div style="display:flex;align-items:center;gap:8px">' +
+    '<input type="number" id="calc_water_parts" step="0.1" min="0" value="2" style="width:70px"> parts</div></div>' +
+    '<div class="fg"><label>Target total volume</label>' +
+    '<div style="display:flex;align-items:center;gap:8px">' +
+    '<input type="number" id="calc_target_ml" step="1" min="1" placeholder="90" style="width:80px"> ml</div></div>' +
+    '<div style="margin-bottom:12px"><button type="button" class="btn bp bs" onclick="calc_res_new()">Calculate</button></div>' +
+    '<div id="calc_new_result"></div>' +
+    '</div>' +
+
+    '<div style="text-align:right;margin-top:12px"><button type="button" class="btn bg bs" onclick="cm()">Close</button></div>' +
+    '</div>';
+  om(h);
+
+  if (!mode_add) {
+    add_calc_row();
+  } else {
+    upd_calc_res_info();
+  }
+}
+
+function upd_calc_mode() {
+  var mode = document.querySelector('[name="calc_mode"]:checked');
+  if (!mode) return;
+  var is_add = mode.value === 'add';
+  document.getElementById('calc_add_sec').style.display = is_add ? '' : 'none';
+  document.getElementById('calc_new_sec').style.display = is_add ? 'none' : '';
+}
+
+function upd_calc_res_info() {
+  var sel = document.getElementById('calc_res_sel');
+  var el = document.getElementById('calc_res_info');
+  if (!sel || !el) return;
+  var id = sel.value;
+  if (!id) { el.innerHTML = ''; return; }
+  var d = ld();
+  var r = d.reservoirs.find(function(x){ return x.id === id; });
+  if (!r) return;
+  var total = reservoir_total_ml(r);
+  var doses = r.daily_dose_ml > 0 ? Math.floor(total / r.daily_dose_ml) : '—';
+  var parts = (r.ingredients || []).map(function(ing){
+    var f = d.ferts.find(function(x){ return x.id === ing.fert_id; });
+    return (f ? esc(f.name) : '?') + ': ' + ing.concentrate_ml + ' ml';
+  });
+  if (r.water_ml) parts.push('Water: ' + r.water_ml + ' ml');
+  el.innerHTML = parts.join(' &nbsp;+&nbsp; ') + ' = ' + total + ' ml &nbsp;|&nbsp; ' + (r.daily_dose_ml || '?') + ' ml/dose &nbsp;|&nbsp; ' + doses + ' doses';
+}
+
+function add_calc_row() {
+  _calc_row_n++;
+  var row = document.createElement('div');
+  row.className = 'calc_ing_row';
+  row.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:6px';
+  row.innerHTML = '<select style="flex:1">' + _calc_fert_opts + '</select>' +
+    '<input type="number" value="1" min="0.01" step="0.1" style="width:60px"> parts' +
+    '<button type="button" class="btn bd bs" style="font-size:11px;padding:3px 7px" onclick="this.parentNode.remove()">&#x2715;</button>';
+  document.getElementById('calc_new_rows').appendChild(row);
+}
+
+function calc_res_add() {
+  var d = ld();
+  var res_id = document.getElementById('calc_res_sel').value;
+  var fert_id = document.getElementById('calc_new_fert').value;
+  var ratio = parseFloat(document.getElementById('calc_ratio').value) || 0;
+  var out = document.getElementById('calc_add_result');
+  if (!out) return;
+
+  if (!res_id || !fert_id || ratio <= 0) {
+    out.innerHTML = '<p style="color:var(--red);font-size:13px">Fill in all fields.</p>';
+    return;
+  }
+  var r = d.reservoirs.find(function(x){ return x.id === res_id; });
+  var fert = d.ferts.find(function(x){ return x.id === fert_id; });
+  if (!r || !fert) return;
+
+  var base = (r.ingredients || []).reduce(function(a, b){
+    return (a.concentrate_ml || 0) >= (b.concentrate_ml || 0) ? a : b;
+  }, {concentrate_ml: 0});
+  var base_ml = base.concentrate_ml || 0;
+  if (!base_ml) {
+    out.innerHTML = '<p style="color:var(--red);font-size:13px">No base ingredient found.</p>';
+    return;
+  }
+  var base_fert = d.ferts.find(function(x){ return x.id === base.fert_id; });
+  var base_name = base_fert ? base_fert.name : 'primary ingredient';
+  var old_total = reservoir_total_ml(r);
+  var old_dose = r.daily_dose_ml || 0;
+  var old_doses = old_dose > 0 ? old_total / old_dose : 0;
+  var add_ml = Math.round(base_ml * ratio * 10) / 10;
+  var new_total = Math.round((old_total + add_ml) * 10) / 10;
+  var new_dose = old_doses > 0 ? Math.round(new_total / old_doses * 10) / 10 : old_dose;
+
+  out.innerHTML = '<div style="background:var(--bg2);border-radius:6px;padding:12px;font-size:13px;line-height:1.8">' +
+    'Add <strong>' + add_ml + ' ml</strong> of <strong>' + esc(fert.name) + '</strong> to the reservoir<br>' +
+    '<span style="color:var(--muted)">Ratio ' + ratio + '× ' + esc(base_name) + ' (' + base_ml + ' ml base)</span><br>' +
+    'New reservoir total: <strong>' + new_total + ' ml</strong><br>' +
+    'Update dose to: <strong>' + new_dose + ' ml/day</strong>' +
+    (old_dose && old_dose !== new_dose ? ' <span style="color:var(--muted)">(was ' + old_dose + ' ml)</span>' : '') + '<br>' +
+    (old_doses > 0 ? '<span style="color:var(--muted)">Doses unchanged: ' + Math.round(old_doses) + '</span>' : '') +
+    '</div>';
+}
+
+function calc_res_new() {
+  var water_parts = parseFloat(document.getElementById('calc_water_parts').value) || 0;
+  var target_ml = parseFloat(document.getElementById('calc_target_ml').value) || 0;
+  var out = document.getElementById('calc_new_result');
+  if (!out) return;
+
+  if (target_ml <= 0) {
+    out.innerHTML = '<p style="color:var(--red);font-size:13px">Enter a target volume.</p>';
+    return;
+  }
+  var d = ld();
+  var rows = document.querySelectorAll('#calc_new_rows .calc_ing_row');
+  var ingredients = [];
+  rows.forEach(function(row){
+    var sel = row.querySelector('select');
+    var inp = row.querySelector('input');
+    var fid = sel ? sel.value : '';
+    var parts = inp ? (parseFloat(inp.value) || 0) : 0;
+    if (fid && parts > 0) {
+      var f = d.ferts.find(function(x){ return x.id === fid; });
+      ingredients.push({name: f ? f.name : 'Unknown', parts: parts});
+    }
+  });
+
+  if (!ingredients.length) {
+    out.innerHTML = '<p style="color:var(--red);font-size:13px">Add at least one ingredient.</p>';
+    return;
+  }
+  var total_parts = ingredients.reduce(function(s, x){ return s + x.parts; }, 0) + water_parts;
+  var rows_html = ingredients.map(function(ing){
+    var ml = Math.round(target_ml * (ing.parts / total_parts) * 10) / 10;
+    return '<tr><td style="padding:4px 8px 4px 0">' + esc(ing.name) + '</td>' +
+      '<td style="padding:4px 8px;color:var(--muted)">' + ing.parts + ' parts</td>' +
+      '<td style="padding:4px 0;font-weight:600">' + ml + ' ml</td></tr>';
+  });
+  if (water_parts > 0) {
+    var water_ml = Math.round(target_ml * (water_parts / total_parts) * 10) / 10;
+    rows_html.push('<tr><td style="padding:4px 8px 4px 0">Water</td>' +
+      '<td style="padding:4px 8px;color:var(--muted)">' + water_parts + ' parts</td>' +
+      '<td style="padding:4px 0;font-weight:600">' + water_ml + ' ml</td></tr>');
+  }
+  out.innerHTML = '<div style="background:var(--bg2);border-radius:6px;padding:12px;font-size:13px">' +
+    '<strong>Recipe for ' + target_ml + ' ml</strong>' +
+    '<table style="width:100%;margin-top:8px;border-collapse:collapse">' +
+    rows_html.join('') +
+    '</table></div>';
+}
+
 function fmt_schedule(t) {
   if (t.dow && t.dow.length) {
     return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].filter(function(_,i){ return t.dow.indexOf(i) !== -1; }).join(', ');
@@ -4937,7 +5132,7 @@ function r_life() {
   } else h += '<p class="emsg">No livestock added yet.</p>';
   h += '</div>';
 
-  h += '<div class="card"><div class="ctitle">' + fert_label + ' <button class="btn bp bs" onclick="do_add_fert()">+ Add</button> <button class="btn bp bs" onclick="do_add_reservoir()">+ Add Reservoir</button></div>';
+  h += '<div class="card"><div class="ctitle">' + fert_label + ' <button class="btn bp bs" onclick="do_add_fert()">+ Add</button> <button class="btn bp bs" onclick="do_add_reservoir()">+ Add Reservoir</button> <button class="btn bg bs" onclick="do_reservoir_calc(null)">Calculator</button></div>';
   if (fr.length) {
     h += '<div class="tw"><table><tr><th>Name</th><th>Notes</th><th></th></tr>';
     fr.forEach(function(f) {
@@ -4959,6 +5154,7 @@ function r_life() {
         '<strong style="flex:1">' + esc(r.name) + '</strong>' +
         '<button class="btn bg bs" style="font-size:12px" data-id="' + r.id + '" onclick="do_topup_reservoir(this.dataset.id)">Top up</button>' +
         '<button class="btn bg bs" style="font-size:12px" data-id="' + r.id + '" onclick="do_log_res_dose(this.dataset.id)">Log Dose</button>' +
+        '<button class="btn bg bs" style="font-size:12px" data-id="' + r.id + '" onclick="do_reservoir_calc(this.dataset.id)">Calc</button>' +
         '<button class="btn bg bs" style="font-size:12px" data-id="' + r.id + '" onclick="do_edit_reservoir(this.dataset.id)">Edit</button>' +
         '<button class="btn bd bs" style="font-size:12px" data-id="' + r.id + '" onclick="del_reservoir(this.dataset.id)">&#x2715;</button>' +
         '</div>';
