@@ -6611,13 +6611,13 @@ function sub_add_tank(e) {
 // ===== PREVIEW TANK =====
 function upd_prev_bar() {
   var bar = document.getElementById('prev_bar');
-  var spacer = document.getElementById('prev_bar_spacer');
+  var tabs = document.querySelector('.tabs');
   if (!bar) return;
   var d = ld(), tid = at();
   var t = d.tanks.find(function(x){ return x.id === tid; });
   var show = !!(t && t.preview);
   bar.style.display = show ? '' : 'none';
-  if (spacer) spacer.style.display = show ? '' : 'none';
+  if (tabs) tabs.style.marginTop = show ? '38px' : '';
 }
 
 function copy_tank_data(src_id, dst_id) {
