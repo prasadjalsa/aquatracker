@@ -2568,6 +2568,21 @@ function upd_tank(id, name, gal, setup, notes, rt_min, rt_max, show_feed_log, le
   });
   sv(d);
 }
+function upd_tank_sched(id, sched) {
+  var d = ld();
+  d.tanks = d.tanks.map(function(t) {
+    if (t.id !== id) return t;
+    return Object.assign({}, t, {
+      sched_light_on:  sched.light_on,
+      sched_light_off: sched.light_off,
+      sched_co2_on:    sched.co2_on,
+      sched_co2_off:   sched.co2_off,
+      sched_air_on:    sched.air_on,
+      sched_air_off:   sched.air_off
+    });
+  });
+  sv(d);
+}
 function del_tank(id) {
   var d = ld();
   d.tanks = d.tanks.filter(function(x) { return x.id !== id; });
@@ -4942,6 +4957,32 @@ function r_life() {
   }
   h += '</div>';
 
+  // Daily Timer Schedule card
+  var tank_sched = d.tanks.find(function(x){return x.id===tid;});
+  h += '<div class="card"><div class="ctitle">Daily Timer Schedule <button class="btn bg bs" onclick="do_edit_schedule()">Edit</button></div>';
+  var sched_rows = [
+    {label:'Light',    on: tank_sched && tank_sched.sched_light_on, off: tank_sched && tank_sched.sched_light_off},
+    {label:'Airstone', on: tank_sched && tank_sched.sched_air_on,   off: tank_sched && tank_sched.sched_air_off}
+  ];
+  if (!salt) sched_rows.splice(1, 0, {label:'CO2', on: tank_sched && tank_sched.sched_co2_on, off: tank_sched && tank_sched.sched_co2_off});
+  var any_set = sched_rows.some(function(r){return r.on || r.off;});
+  if (!any_set) {
+    h += '<p class="emsg">No times set. Tap Edit to add on/off times for light, CO2, and airstone.</p>';
+  } else {
+    sched_rows.forEach(function(row) {
+      h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:13px">';
+      h += '<span style="font-weight:600;min-width:70px">' + row.label + ':</span>';
+      if (row.on && row.off) {
+        var dur = sched_dur_h(parse_sched_min(row.on), parse_sched_min(row.off));
+        h += '<span>' + row.on + ' &rarr; ' + row.off + '</span> <span style="color:var(--muted);font-size:12px">(' + dur + ' h)</span>';
+      } else {
+        h += '<span style="color:var(--muted)">Not set</span>';
+      }
+      h += '</div>';
+    });
+  }
+  h += '</div>';
+
   el.innerHTML = h;
 }
 
@@ -6712,6 +6753,43 @@ function sub_edit_tank(e) {
   };
   upd_tank(at(), f.name.value, gal, f.setup.value, f.notes.value, inp_t(f.room_tmin.value), inp_t(f.room_tmax.value), f.show_feed_log.checked, f.length_cm.value, f.width_cm.value, f.height_cm.value, f.tank_type.value, f.salt_subtype ? f.salt_subtype.value : 'fowlr', sched);
   cm(); init();
+}
+function do_edit_schedule() {
+  var t = ld().tanks.find(function(x){return x.id===at();}); if (!t) return;
+  var salt = is_salt(at());
+  om('<div class="mtitle">Daily Timer Schedule</div>' +
+    '<p style="font-size:12px;color:var(--muted);margin-bottom:12px">When equipment turns on and off. The Recommendations tab checks CO2 and airstone timing against light.</p>' +
+    '<form onsubmit="sub_edit_schedule(event)">' +
+    '<div style="font-size:12px;font-weight:600;color:var(--mid);margin-bottom:4px">Light</div>' +
+    '<div class="frow">' +
+    fg('On', '<input type="time" name="sched_light_on" value="' + (t.sched_light_on || '') + '">') +
+    fg('Off', '<input type="time" name="sched_light_off" value="' + (t.sched_light_off || '') + '">') +
+    '</div>' +
+    (!salt ? ('<div style="font-size:12px;font-weight:600;color:var(--mid);margin-bottom:4px;margin-top:8px">CO2</div>' +
+    '<div class="frow">' +
+    fg('On', '<input type="time" name="sched_co2_on" value="' + (t.sched_co2_on || '') + '">') +
+    fg('Off', '<input type="time" name="sched_co2_off" value="' + (t.sched_co2_off || '') + '">') +
+    '</div>') : '') +
+    '<div style="font-size:12px;font-weight:600;color:var(--mid);margin-bottom:4px;margin-top:8px">Airstone</div>' +
+    '<div class="frow">' +
+    fg('On', '<input type="time" name="sched_air_on" value="' + (t.sched_air_on || '') + '">') +
+    fg('Off', '<input type="time" name="sched_air_off" value="' + (t.sched_air_off || '') + '">') +
+    '</div>' +
+    '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Save</button></div>' +
+    '</form>');
+}
+function sub_edit_schedule(e) {
+  e.preventDefault(); var f = e.target;
+  var sched = {
+    light_on:  f.sched_light_on  ? (f.sched_light_on.value  || null) : null,
+    light_off: f.sched_light_off ? (f.sched_light_off.value || null) : null,
+    co2_on:    f.sched_co2_on    ? (f.sched_co2_on.value    || null) : null,
+    co2_off:   f.sched_co2_off   ? (f.sched_co2_off.value   || null) : null,
+    air_on:    f.sched_air_on    ? (f.sched_air_on.value    || null) : null,
+    air_off:   f.sched_air_off   ? (f.sched_air_off.value   || null) : null
+  };
+  upd_tank_sched(at(), sched);
+  cm(); r_life();
 }
 function do_del_tank() {
   var t = ld().tanks.find(function(x){ return x.id === at(); }); if (!t) return;
