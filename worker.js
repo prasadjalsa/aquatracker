@@ -3337,10 +3337,10 @@ function do_reservoir_calc(id) {
     '<div id="calc_res_info" style="font-size:12px;color:var(--muted);margin:-8px 0 10px;line-height:1.6"></div>' +
     '<div class="fg"><label>New fertilizer</label>' +
     '<select id="calc_new_fert">' + _calc_fert_opts + '</select></div>' +
-    '<div class="fg"><label>Ratio</label>' +
+    '<div class="fg"><label>Desired dose of new fertilizer</label>' +
     '<div style="display:flex;align-items:center;gap:8px">' +
-    '<input type="number" id="calc_ratio" step="0.1" min="0.01" value="1" style="width:70px"> x primary ingredient' +
-    '</div><div style="font-size:12px;color:var(--muted);margin-top:4px">0.5 = half as much; 2 = double</div></div>' +
+    '<input type="number" id="calc_new_dose" step="0.1" min="0.01" placeholder="0.5" style="width:80px"> ml/day' +
+    '</div></div>' +
     '<div style="margin-bottom:12px"><button type="button" class="btn bp bs" onclick="calc_res_add()">Calculate</button></div>' +
     '<div id="calc_add_result"></div>' +
     '</div>' +
@@ -3413,11 +3413,11 @@ function calc_res_add() {
   var d = ld();
   var res_id = document.getElementById('calc_res_sel').value;
   var fert_id = document.getElementById('calc_new_fert').value;
-  var ratio = parseFloat(document.getElementById('calc_ratio').value) || 0;
+  var new_dose = parseFloat(document.getElementById('calc_new_dose').value) || 0;
   var out = document.getElementById('calc_add_result');
   if (!out) return;
 
-  if (!res_id || !fert_id || ratio <= 0) {
+  if (!res_id || !fert_id || new_dose <= 0) {
     out.innerHTML = '<p style="color:var(--red);font-size:13px">Fill in all fields.</p>';
     return;
   }
@@ -3425,29 +3425,38 @@ function calc_res_add() {
   var fert = d.ferts.find(function(x){ return x.id === fert_id; });
   if (!r || !fert) return;
 
-  var base = (r.ingredients || []).reduce(function(a, b){
-    return (a.concentrate_ml || 0) >= (b.concentrate_ml || 0) ? a : b;
-  }, {concentrate_ml: 0});
-  var base_ml = base.concentrate_ml || 0;
-  if (!base_ml) {
-    out.innerHTML = '<p style="color:var(--red);font-size:13px">No base ingredient found.</p>';
+  var old_dose = r.daily_dose_ml || 0;
+  if (!old_dose) {
+    out.innerHTML = '<p style="color:var(--red);font-size:13px">Reservoir has no daily dose set.</p>';
     return;
   }
-  var base_fert = d.ferts.find(function(x){ return x.id === base.fert_id; });
-  var base_name = base_fert ? base_fert.name : 'primary ingredient';
-  var old_total = reservoir_total_ml(r);
-  var old_dose = r.daily_dose_ml || 0;
-  var old_doses = old_dose > 0 ? old_total / old_dose : 0;
-  var add_ml = Math.round(base_ml * ratio * 10) / 10;
-  var new_total = Math.round((old_total + add_ml) * 10) / 10;
-  var new_dose = old_doses > 0 ? Math.round(new_total / old_doses * 10) / 10 : old_dose;
 
-  out.innerHTML = '<div style="background:var(--bg2);border-radius:6px;padding:12px;font-size:13px;line-height:1.8">' +
-    'Add <strong>' + add_ml + ' ml</strong> of <strong>' + esc(fert.name) + '</strong> to the reservoir<br>' +
-    '<span style="color:var(--muted)">Ratio ' + ratio + '× ' + esc(base_name) + ' (' + base_ml + ' ml base)</span><br>' +
-    'New reservoir total: <strong>' + new_total + ' ml</strong><br>' +
-    'Update dose to: <strong>' + new_dose + ' ml/day</strong>' +
-    (old_dose && old_dose !== new_dose ? ' <span style="color:var(--muted)">(was ' + old_dose + ' ml)</span>' : '') + '<br>' +
+  var rem = reservoir_remaining(r);
+  var remaining_ml = rem ? rem.remaining_ml : (r.snapshot_ml || reservoir_total_ml(r));
+  var full_total = reservoir_total_ml(r);
+
+  // How many days worth of doses are left in the reservoir
+  var days_left = remaining_ml / old_dose;
+  var add_now = Math.round(new_dose * days_left * 10) / 10;
+
+  // For next full refill: how much to mix into the full recipe
+  var full_days = full_total / old_dose;
+  var add_full = Math.round(new_dose * full_days * 10) / 10;
+
+  var new_total_now = Math.round((remaining_ml + add_now) * 10) / 10;
+  var new_daily = Math.round((old_dose + new_dose) * 10) / 10;
+
+  out.innerHTML = '<div style="background:var(--bg2);border-radius:6px;padding:12px;font-size:13px;line-height:1.9">' +
+    '<strong>Now</strong> — add to current reservoir:<br>' +
+    'Add <strong>' + add_now + ' ml</strong> of ' + esc(fert.name) + '<br>' +
+    '<span style="color:var(--muted)">Remaining ' + remaining_ml + ' ml &divide; ' + old_dose + ' ml/day = ' + Math.round(days_left) + ' days &times; ' + new_dose + ' ml/day</span><br>' +
+    'New reservoir volume: <strong>' + new_total_now + ' ml</strong><br>' +
+    'Update daily dose to: <strong>' + new_daily + ' ml/day</strong><br><br>' +
+    '<strong>Future refills</strong> — full recipe (' + full_total + ' ml):<br>' +
+    'Add <strong>' + add_full + ' ml</strong> of ' + esc(fert.name) + ' per batch<br>' +
+    '<span style="color:var(--muted)">New full batch = ' + Math.round((full_total + add_full) * 10) / 10 + ' ml at ' + new_daily + ' ml/day</span>' +
+    '</div>';
+}
     (old_doses > 0 ? '<span style="color:var(--muted)">Doses unchanged: ' + Math.round(old_doses) + '</span>' : '') +
     '</div>';
 }
