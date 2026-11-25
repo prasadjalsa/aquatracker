@@ -3433,28 +3433,24 @@ function calc_res_add() {
 
   var rem = reservoir_remaining(r);
   var remaining_ml = rem ? rem.remaining_ml : (r.snapshot_ml || reservoir_total_ml(r));
-  var full_total = reservoir_total_ml(r);
 
-  // How many days worth of doses are left in the reservoir
   var days_left = remaining_ml / old_dose;
   var add_now = Math.round(new_dose * days_left * 10) / 10;
-
-  // For next full refill: how much to mix into the full recipe
-  var full_days = full_total / old_dose;
-  var add_full = Math.round(new_dose * full_days * 10) / 10;
-
   var new_total_now = Math.round((remaining_ml + add_now) * 10) / 10;
   var new_daily = Math.round((old_dose + new_dose) * 10) / 10;
 
+  // Simplify ratio using GCD
+  function gcd(a, b) { a = Math.round(a * 10); b = Math.round(b * 10); while (b) { var t = b; b = a % b; a = t; } return a / 10; }
+  var g = gcd(old_dose, new_dose);
+  var ratio_existing = Math.round(old_dose / g * 10) / 10;
+  var ratio_new = Math.round(new_dose / g * 10) / 10;
+
   out.innerHTML = '<div style="background:var(--bg2);border-radius:6px;padding:12px;font-size:13px;line-height:1.9">' +
-    '<strong>Now</strong> — add to current reservoir:<br>' +
-    'Add <strong>' + add_now + ' ml</strong> of ' + esc(fert.name) + '<br>' +
-    '<span style="color:var(--muted)">Remaining ' + remaining_ml + ' ml &divide; ' + old_dose + ' ml/day = ' + Math.round(days_left) + ' days &times; ' + new_dose + ' ml/day</span><br>' +
-    'New reservoir volume: <strong>' + new_total_now + ' ml</strong><br>' +
+    'Add <strong>' + add_now + ' ml</strong> of ' + esc(fert.name) + ' to the reservoir<br>' +
+    '<span style="color:var(--muted)">' + remaining_ml + ' ml &divide; ' + old_dose + ' ml/day = ' + Math.round(days_left) + ' days &times; ' + new_dose + ' ml/day</span><br>' +
+    'New volume: <strong>' + new_total_now + ' ml</strong><br>' +
     'Update daily dose to: <strong>' + new_daily + ' ml/day</strong><br><br>' +
-    '<strong>Future refills</strong> — full recipe (' + full_total + ' ml):<br>' +
-    'Add <strong>' + add_full + ' ml</strong> of ' + esc(fert.name) + ' per batch<br>' +
-    '<span style="color:var(--muted)">New full batch = ' + Math.round((full_total + add_full) * 10) / 10 + ' ml at ' + new_daily + ' ml/day</span>' +
+    '<span style="color:var(--muted)">Future recipe ratio — existing : ' + esc(fert.name) + ' = <strong>' + ratio_existing + ' : ' + ratio_new + '</strong></span>' +
     '</div>';
 }
 
