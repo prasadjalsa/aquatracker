@@ -3389,13 +3389,18 @@ function upd_calc_res_info() {
   var r = d.reservoirs.find(function(x){ return x.id === id; });
   if (!r) return;
   var total = reservoir_total_ml(r);
+  var rem = reservoir_remaining(r);
+  var remaining_ml = rem ? rem.remaining_ml : (r.snapshot_ml || total);
   var doses = r.daily_dose_ml > 0 ? Math.floor(total / r.daily_dose_ml) : '—';
-  var parts = (r.ingredients || []).map(function(ing){
+  var rows = (r.ingredients || []).map(function(ing){
     var f = d.ferts.find(function(x){ return x.id === ing.fert_id; });
-    return (f ? esc(f.name) : '?') + ': ' + ing.concentrate_ml + ' ml';
+    return '<div style="color:#3a7bd5">' + esc(f ? f.name : 'Unknown') + ': <strong>' + ing.concentrate_ml + ' ml</strong></div>';
   });
-  if (r.water_ml) parts.push('Water: ' + r.water_ml + ' ml');
-  el.innerHTML = parts.join(' &nbsp;+&nbsp; ') + ' = ' + total + ' ml &nbsp;|&nbsp; ' + (r.daily_dose_ml || '?') + ' ml/dose &nbsp;|&nbsp; ' + doses + ' doses';
+  if (r.water_ml) rows.push('<div style="color:#3a7bd5">Water: <strong>' + r.water_ml + ' ml</strong></div>');
+  el.innerHTML = '<div style="background:var(--bg2);border-radius:6px;padding:10px;margin-bottom:4px;font-size:13px">' +
+    rows.join('') +
+    '<div style="border-top:1px solid #dde;margin-top:6px;padding-top:6px;color:var(--muted)">Total: ' + total + ' ml &nbsp;|&nbsp; ' + (r.daily_dose_ml || '?') + ' ml/day &nbsp;|&nbsp; ' + doses + ' doses &nbsp;|&nbsp; ' + remaining_ml + ' ml remaining</div>' +
+    '</div>';
 }
 
 function add_calc_row() {
@@ -3441,33 +3446,36 @@ function calc_res_add() {
   var new_daily = Math.round((old_dose + new_dose) * 10) / 10;
 
   // Build future ratio from actual recipe volumes
-  var full_total = reservoir_total_ml(r);
   var full_days = old_dose > 0 ? full_total / old_dose : 0;
   var new_fert_in_full = Math.round(new_dose * full_days * 10) / 10;
 
   var ratio_items = [];
   (r.ingredients || []).forEach(function(ing) {
     var f = d.ferts.find(function(x){ return x.id === ing.fert_id; });
-    if (ing.concentrate_ml > 0) ratio_items.push({label: f ? f.name : 'Fert', val: ing.concentrate_ml});
+    if (ing.concentrate_ml > 0) ratio_items.push({label: f ? f.name : 'Fert', val: ing.concentrate_ml, is_new: false});
   });
-  if (r.water_ml > 0) ratio_items.push({label: 'Water', val: r.water_ml});
-  ratio_items.push({label: fert.name, val: new_fert_in_full});
+  if (r.water_ml > 0) ratio_items.push({label: 'Water', val: r.water_ml, is_new: false});
+  ratio_items.push({label: fert.name, val: new_fert_in_full, is_new: true});
 
-  // Integer GCD to avoid float precision issues
   function igcd(a, b) { while (b) { var t = b; b = a % b; a = t; } return a; }
   var scaled = ratio_items.map(function(x){ return Math.round(x.val * 10); });
   var g = scaled.reduce(igcd) || 1;
   var simp = scaled.map(function(x){ return x / g; });
 
-  var ratio_lbl = ratio_items.map(function(x){ return esc(x.label); }).join(' : ');
-  var ratio_str = simp.join(' : ');
+  var ratio_html = ratio_items.map(function(x, i){
+    var color = x.is_new ? '#e05252' : '#3a7bd5';
+    return '<span style="color:' + color + '">' + esc(x.label) + '</span>';
+  }).join(' : ') + ' = ' + simp.map(function(v, i){
+    var color = ratio_items[i].is_new ? '#e05252' : '#3a7bd5';
+    return '<span style="color:' + color + '"><strong>' + v + '</strong></span>';
+  }).join(' : ');
 
   out.innerHTML = '<div style="background:var(--bg2);border-radius:6px;padding:12px;font-size:13px;line-height:1.9">' +
     'Add <strong>' + add_now + ' ml</strong> of ' + esc(fert.name) + ' to the reservoir<br>' +
     '<span style="color:var(--muted)">' + remaining_ml + ' ml &divide; ' + old_dose + ' ml/day = ' + Math.round(days_left) + ' days &times; ' + new_dose + ' ml/day</span><br>' +
     'New volume: <strong>' + new_total_now + ' ml</strong><br>' +
     'Update daily dose to: <strong>' + new_daily + ' ml/day</strong><br><br>' +
-    '<span style="color:var(--muted)">Future recipe ratio (' + ratio_lbl + ') = <strong>' + ratio_str + '</strong></span>' +
+    'Future recipe ratio: ' + ratio_html +
     '</div>';
 }
 
