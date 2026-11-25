@@ -3457,9 +3457,6 @@ function calc_res_add() {
     '<span style="color:var(--muted)">New full batch = ' + Math.round((full_total + add_full) * 10) / 10 + ' ml at ' + new_daily + ' ml/day</span>' +
     '</div>';
 }
-    (old_doses > 0 ? '<span style="color:var(--muted)">Doses unchanged: ' + Math.round(old_doses) + '</span>' : '') +
-    '</div>';
-}
 
 function calc_res_new() {
   var water_parts = parseFloat(document.getElementById('calc_water_parts').value) || 0;
