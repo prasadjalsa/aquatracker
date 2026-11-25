@@ -2541,11 +2541,11 @@ function add_tank(name, gal, setup, notes, rt_min, rt_max, len_cm, wid_cm, ht_cm
            substrate_liters: 0};
   d.tanks.push(t); sv(d); sat(t.id); return t.id;
 }
-function upd_tank(id, name, gal, setup, notes, rt_min, rt_max, show_feed_log, len_cm, wid_cm, ht_cm, tank_type, salt_subtype) {
+function upd_tank(id, name, gal, setup, notes, rt_min, rt_max, show_feed_log, len_cm, wid_cm, ht_cm, tank_type, salt_subtype, sched) {
   var d = ld(), g = parseFloat(gal) || 0;
   d.tanks = d.tanks.map(function(t) {
     if (t.id !== id) return t;
-    return Object.assign({}, t, {
+    var upd = Object.assign({}, t, {
       name:name, gallons:g, liters:g2l(g), setup_date:setup, notes:notes||'',
       room_tmin: rt_min ? parseFloat(rt_min) : null,
       room_tmax: rt_max ? parseFloat(rt_max) : null,
@@ -2556,6 +2556,15 @@ function upd_tank(id, name, gal, setup, notes, rt_min, rt_max, show_feed_log, le
       tank_type: tank_type || t.tank_type || 'fresh',
       salt_subtype: salt_subtype || t.salt_subtype || 'fowlr'
     });
+    if (sched) {
+      upd.sched_light_on  = sched.light_on;
+      upd.sched_light_off = sched.light_off;
+      upd.sched_co2_on    = sched.co2_on;
+      upd.sched_co2_off   = sched.co2_off;
+      upd.sched_air_on    = sched.air_on;
+      upd.sched_air_off   = sched.air_off;
+    }
+    return upd;
   });
   sv(d);
 }
@@ -5823,6 +5832,82 @@ function sub_edit_task(e, id) {
   sv(d); cm(); r_maint();
 }
 
+function parse_sched_min(s) {
+  if (!s || s.indexOf(':') === -1) return null;
+  var p = s.split(':');
+  return parseInt(p[0]) * 60 + parseInt(p[1]);
+}
+function sched_dur_h(a, b) {
+  if (a === null || b === null) return null;
+  var d = b - a; if (d <= 0) d += 1440;
+  return Math.round(d / 6) / 10;
+}
+function sched_overlaps(a_on, a_off, b_on, b_off) {
+  function in_rng(t, on, off) { return off > on ? t >= on && t < off : t >= on || t < off; }
+  return in_rng(a_on, b_on, b_off) || in_rng(b_on, a_on, a_off);
+}
+function r_sched_check(tank, salt, co2_info) {
+  if (!tank) return '';
+  var l_on  = parse_sched_min(tank.sched_light_on);
+  var l_off = parse_sched_min(tank.sched_light_off);
+  var c_on  = parse_sched_min(tank.sched_co2_on);
+  var c_off = parse_sched_min(tank.sched_co2_off);
+  var a_on  = parse_sched_min(tank.sched_air_on);
+  var a_off = parse_sched_min(tank.sched_air_off);
+  var has_sched = l_on !== null || c_on !== null || a_on !== null;
+  if (!has_sched) return '';
+  var h = '<div style="display:flex;align-items:flex-start;gap:8px;margin-top:8px;font-size:13px">';
+  h += '<span style="font-weight:600;min-width:50px;padding-top:1px">Schedule:</span>';
+  h += '<div style="flex:1">';
+  // Light
+  if (l_on !== null && l_off !== null) {
+    var l_dur = sched_dur_h(l_on, l_off);
+    h += '<div style="margin-bottom:5px"><span style="color:var(--mid)">Light</span> <strong>' + tank.sched_light_on + ' &rarr; ' + tank.sched_light_off + '</strong> <span style="color:var(--muted)">(' + l_dur + ' h)</span> ' + pill_lbl('pok', 'Set') + '</div>';
+  } else if (tank.sched_light_on || tank.sched_light_off) {
+    h += '<div style="margin-bottom:5px"><span style="color:var(--mid)">Light</span> ' + pill_lbl('pwarn', 'Set both on + off') + '</div>';
+  }
+  // CO2 — freshwater only
+  if (!salt) {
+    if (c_on !== null && c_off !== null) {
+      if (l_on !== null && l_off !== null) {
+        var pre = l_on - c_on; if (pre < 0) pre += 1440;
+        var post = l_off - c_off; if (post < 0) post += 1440;
+        var c_issues = [];
+        if (pre === 0) c_issues.push('CO2 turns on at the same time as lights. Start CO2 30-60 min before lights so it builds up before the photoperiod begins.');
+        else if (pre < 30) c_issues.push('CO2 starts only ' + pre + ' min before lights. Aim for 30-60 min earlier so CO2 builds up before the photoperiod begins.');
+        else if (pre > 90) c_issues.push('CO2 starts ' + pre + ' min before lights. 30-60 min is plenty — turning it on this early wastes CO2 overnight.');
+        if (post === 0 || post > 1200) c_issues.push('CO2 runs until lights off or beyond. Stop CO2 30-60 min before lights go out so pH does not crash overnight.');
+        else if (post < 30) c_issues.push('CO2 stops only ' + post + ' min before lights off. Aim for 30-60 min earlier to avoid a pH crash after lights out.');
+        if (c_issues.length === 0) {
+          h += '<div style="margin-bottom:5px"><span style="color:var(--mid)">CO2</span> <strong>' + tank.sched_co2_on + ' &rarr; ' + tank.sched_co2_off + '</strong> ' + pill_lbl('pok', 'Timing OK') + '<span style="font-size:11px;color:var(--muted);margin-left:4px">+' + pre + ' min before lights on, stops ' + post + ' min before lights off</span></div>';
+        } else {
+          h += '<div style="margin-bottom:5px"><span style="color:var(--mid)">CO2</span> <strong>' + tank.sched_co2_on + ' &rarr; ' + tank.sched_co2_off + '</strong> ' + pill_lbl('pwarn', 'Check timing') + c_issues.map(function(i){ return '<div style="font-size:11px;color:var(--warn);margin-top:3px">' + i + '</div>'; }).join('') + '</div>';
+        }
+      } else {
+        h += '<div style="margin-bottom:5px"><span style="color:var(--mid)">CO2</span> <strong>' + tank.sched_co2_on + ' &rarr; ' + tank.sched_co2_off + '</strong> ' + pill_lbl('pok', 'Set') + '<span style="font-size:11px;color:var(--muted);margin-left:4px">Add light times too to check offset</span></div>';
+      }
+    } else if (tank.sched_co2_on || tank.sched_co2_off) {
+      h += '<div style="margin-bottom:5px"><span style="color:var(--mid)">CO2</span> ' + pill_lbl('pwarn', 'Set both on + off') + '</div>';
+    } else if (co2_info) {
+      h += '<div style="margin-bottom:5px;font-size:12px;color:var(--muted)">CO2 schedule not set &mdash; add CO2 on/off times in tank settings to check timing against light.</div>';
+    }
+  }
+  // Airstone
+  if (a_on !== null && a_off !== null) {
+    var a_conflict = !salt && co2_info && c_on !== null && c_off !== null && sched_overlaps(a_on, a_off, c_on, c_off);
+    if (a_conflict) {
+      h += '<div style="margin-bottom:5px"><span style="color:var(--mid)">Airstone</span> <strong>' + tank.sched_air_on + ' &rarr; ' + tank.sched_air_off + '</strong> ' + pill_lbl('pdanger', 'CO2 conflict') + '<div style="font-size:11px;color:var(--danger);margin-top:3px">Airstone overlaps with CO2 hours &mdash; this outgasses dissolved CO2 and reduces its effectiveness. Run the airstone at night when CO2 is off.</div></div>';
+    } else {
+      var a_note = (!salt && co2_info) ? '<span style="font-size:11px;color:var(--muted);margin-left:4px">No CO2 conflict</span>' : '';
+      h += '<div style="margin-bottom:5px"><span style="color:var(--mid)">Airstone</span> <strong>' + tank.sched_air_on + ' &rarr; ' + tank.sched_air_off + '</strong> ' + pill_lbl('pok', 'OK') + a_note + '</div>';
+    }
+  } else if (tank.sched_air_on || tank.sched_air_off) {
+    h += '<div style="margin-bottom:5px"><span style="color:var(--mid)">Airstone</span> ' + pill_lbl('pwarn', 'Set both on + off') + '</div>';
+  }
+  h += '</div></div>';
+  return h;
+}
+
 async function r_recs() {
   var tid = at(), d = ld(), el = document.getElementById('p-recs');
   if (!d.tanks.find(function(t){return t.id===tid;})) { el.innerHTML = no_tank(); return; }
@@ -6120,7 +6205,9 @@ async function r_recs() {
       h += '<span style="color:var(--muted)">Not required for your fish and room temperature.</span> ' + pill_lbl('pok', 'Not needed');
     }
   }
-  h += '</div></div>';
+  h += '</div>';
+  h += r_sched_check(tank, salt, co2_info);
+  h += '</div>';
   // Fertilizer / Additive Reservoirs card — dosing reservoirs with daily breakdown
   var tank_res_r = (d.reservoirs||[]).filter(function(r){return r.tank_id===tid && r.daily_dose_ml;});
   if (tank_res_r.length) {
@@ -6430,6 +6517,8 @@ function cm() { document.getElementById('ov').classList.remove('on'); }
 function upd_tank_type_ui(sel) {
   var row = document.getElementById('salt_subtype_row');
   if (row) row.style.display = sel.value === 'salt' ? '' : 'none';
+  var cs = document.getElementById('co2_sched_row');
+  if (cs) cs.style.display = sel.value === 'salt' ? 'none' : '';
 }
 function do_add_tank() {
   var td = today_str();
@@ -6590,6 +6679,21 @@ function do_edit_tank() {
     '<div class="fg"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400">' +
     '<input type="checkbox" name="show_feed_log"' + (t.show_feed_log ? ' checked' : '') + '>' +
     'Show Feeding Log in the Logs tab</label></div>' +
+    '<div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:2px;margin-top:12px">Daily Timer Schedule <span style="font-weight:400;font-size:11px">(optional)</span></div>' +
+    '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">When equipment turns on and off. Recommendations will check CO2 and airstone timing.</div>' +
+    '<div class="frow">' +
+    fg('Light On', '<input type="time" name="sched_light_on" value="' + (t.sched_light_on || '') + '">') +
+    fg('Light Off', '<input type="time" name="sched_light_off" value="' + (t.sched_light_off || '') + '">') +
+    '</div>' +
+    '<div id="co2_sched_row" style="display:' + (tt==='salt'?'none':'') + '">' +
+    '<div class="frow">' +
+    fg('CO2 On', '<input type="time" name="sched_co2_on" value="' + (t.sched_co2_on || '') + '">') +
+    fg('CO2 Off', '<input type="time" name="sched_co2_off" value="' + (t.sched_co2_off || '') + '">') +
+    '</div></div>' +
+    '<div class="frow">' +
+    fg('Airstone On', '<input type="time" name="sched_air_on" value="' + (t.sched_air_on || '') + '">') +
+    fg('Airstone Off', '<input type="time" name="sched_air_off" value="' + (t.sched_air_off || '') + '">') +
+    '</div>' +
     '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Save</button></div>' +
     '</form>');
 }
@@ -6598,7 +6702,15 @@ function sub_edit_tank(e) {
   var lit = parseFloat(f.lit.value) || 0;
   var gal = parseFloat(f.gal.value) || 0;
   if (get_pref().vol === 'L' && lit) gal = lit / 3.78541;
-  upd_tank(at(), f.name.value, gal, f.setup.value, f.notes.value, inp_t(f.room_tmin.value), inp_t(f.room_tmax.value), f.show_feed_log.checked, f.length_cm.value, f.width_cm.value, f.height_cm.value, f.tank_type.value, f.salt_subtype ? f.salt_subtype.value : 'fowlr');
+  var sched = {
+    light_on:  f.sched_light_on  ? (f.sched_light_on.value  || null) : null,
+    light_off: f.sched_light_off ? (f.sched_light_off.value || null) : null,
+    co2_on:    f.sched_co2_on    ? (f.sched_co2_on.value    || null) : null,
+    co2_off:   f.sched_co2_off   ? (f.sched_co2_off.value   || null) : null,
+    air_on:    f.sched_air_on    ? (f.sched_air_on.value    || null) : null,
+    air_off:   f.sched_air_off   ? (f.sched_air_off.value   || null) : null
+  };
+  upd_tank(at(), f.name.value, gal, f.setup.value, f.notes.value, inp_t(f.room_tmin.value), inp_t(f.room_tmax.value), f.show_feed_log.checked, f.length_cm.value, f.width_cm.value, f.height_cm.value, f.tank_type.value, f.salt_subtype ? f.salt_subtype.value : 'fowlr', sched);
   cm(); init();
 }
 function do_del_tank() {
