@@ -3440,22 +3440,27 @@ function calc_res_add() {
   var new_total_now = Math.round((remaining_ml + add_now) * 10) / 10;
   var new_daily = Math.round((old_dose + new_dose) * 10) / 10;
 
-  // Per-dose breakdown of existing reservoir
-  var conc_total = (r.ingredients || []).reduce(function(s, x){ return s + (x.concentrate_ml || 0); }, 0);
-  var water_total = r.water_ml || 0;
-  var conc_per_dose  = full_total > 0 ? Math.round(old_dose * (conc_total  / full_total) * 100) / 100 : 0;
-  var water_per_dose = full_total > 0 ? Math.round(old_dose * (water_total / full_total) * 100) / 100 : 0;
+  // Build future ratio from actual recipe volumes
+  var full_total = reservoir_total_ml(r);
+  var full_days = old_dose > 0 ? full_total / old_dose : 0;
+  var new_fert_in_full = Math.round(new_dose * full_days * 10) / 10;
 
-  // Simplify ratio across all three components using GCD
-  function gcd(a, b) { a = Math.round(a * 100); b = Math.round(b * 100); while (b) { var t = b; b = a % b; a = t; } return a / 100; }
-  var parts = [conc_per_dose, water_per_dose, new_dose].filter(function(x){ return x > 0; });
-  var g = parts.reduce(gcd) || 1;
-  var r_conc  = Math.round(conc_per_dose  / g * 100) / 100;
-  var r_water = Math.round(water_per_dose / g * 100) / 100;
-  var r_new   = Math.round(new_dose       / g * 100) / 100;
+  var ratio_items = [];
+  (r.ingredients || []).forEach(function(ing) {
+    var f = d.ferts.find(function(x){ return x.id === ing.fert_id; });
+    if (ing.concentrate_ml > 0) ratio_items.push({label: f ? f.name : 'Fert', val: ing.concentrate_ml});
+  });
+  if (r.water_ml > 0) ratio_items.push({label: 'Water', val: r.water_ml});
+  ratio_items.push({label: fert.name, val: new_fert_in_full});
 
-  var ratio_str = r_conc + ' : ' + r_water + ' : ' + r_new;
-  var ratio_lbl = 'concentrate : water : ' + esc(fert.name);
+  // Integer GCD to avoid float precision issues
+  function igcd(a, b) { while (b) { var t = b; b = a % b; a = t; } return a; }
+  var scaled = ratio_items.map(function(x){ return Math.round(x.val * 10); });
+  var g = scaled.reduce(igcd) || 1;
+  var simp = scaled.map(function(x){ return x / g; });
+
+  var ratio_lbl = ratio_items.map(function(x){ return esc(x.label); }).join(' : ');
+  var ratio_str = simp.join(' : ');
 
   out.innerHTML = '<div style="background:var(--bg2);border-radius:6px;padding:12px;font-size:13px;line-height:1.9">' +
     'Add <strong>' + add_now + ' ml</strong> of ' + esc(fert.name) + ' to the reservoir<br>' +
