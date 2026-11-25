@@ -2861,19 +2861,27 @@ function do_edit_stock(id) {
     '<input type="hidden" name="sid" value="' + s.id + '">' +
     fg('Species', '<input type="text" value="' + esc(sp ? sp.name : s.species_id) + '" disabled style="color:var(--muted)">') +
     fg('Display Name', '<input type="text" name="dname" value="' + esc(s.display_name) + '">') +
-    fg('Quantity', '<input type="number" name="qty" min="1" value="' + s.qty + '" required>') +
+    fg('Quantity', '<input type="number" name="qty" min="1" value="' + s.qty + '" required oninput="chk_gender_qty_warn()">') +
     gender_row +
+    '<div id="gender_qty_warn" style="display:none;background:#fde0e0;border-radius:5px;padding:6px 10px;font-size:12px;color:#a01818;margin-bottom:6px"></div>' +
     fg('Notes', '<input type="text" name="notes" value="' + esc(s.notes) + '">') +
     '<div class="mact"><button type="button" class="btn bg" onclick="cm()">Cancel</button><button type="submit" class="btn bp">Save</button></div>' +
     '</form>');
 }
 function sub_edit_stock(e) {
   e.preventDefault(); var f = e.target, d = ld();
+  var m = f.male ? (parseInt(f.male.value) || 0) : 0;
+  var fm = f.female ? (parseInt(f.female.value) || 0) : 0;
+  var qty = parseInt(f.qty.value) || 1;
+  if ((m > 0 || fm > 0) && m + fm !== qty) {
+    alert(m + 'M + ' + fm + 'F = ' + (m+fm) + ', but Quantity is ' + qty + '. Please make them match.');
+    return;
+  }
   d.stock = d.stock.map(function(s) {
     if (s.id !== f.sid.value) return s;
-    var upd = {qty:parseInt(f.qty.value)||1, display_name:f.dname.value||s.display_name, notes:f.notes.value};
-    if (f.male && f.male.value !== '') upd.male = parseInt(f.male.value) || 0;
-    if (f.female && f.female.value !== '') upd.female = parseInt(f.female.value) || 0;
+    var upd = {qty:qty, display_name:f.dname.value||s.display_name, notes:f.notes.value};
+    if (f.male && f.male.value !== '') upd.male = m;
+    if (f.female && f.female.value !== '') upd.female = fm;
     return Object.assign({}, s, upd);
   });
   sv(d); cm(); r_life(); r_dash();
@@ -4904,7 +4912,7 @@ function r_life() {
     if (small_tank_warns.length) {
       h += '<div style="background:#fde0e0;border-radius:6px;padding:8px 10px;font-size:12px;color:#a01818;font-weight:600;margin-bottom:10px">&#x26A0; Tank may be too small: ' + small_tank_warns.join('; ') + '</div>';
     }
-    h += '<div class="tw"><table><tr><th>Species</th><th>Name</th><th>Qty</th><th>Gender</th><th>Adult Size</th><th>Bioload</th><th>Added</th><th>Notes</th><th></th></tr>';
+    h += '<div class="tw"><table><tr><th>Species</th><th>Qty</th><th>Gender</th><th>Adult Size</th><th>Bioload</th><th>Added</th><th>Notes</th><th></th></tr>';
     sk.forEach(function(s) {
       var sp = sp_all_life[s.species_id];
       var bl = sp ? sp.bioload : 0;
@@ -4915,8 +4923,10 @@ function r_life() {
       var too_small = sp && sp.min_gal && tank_life && tank_life.gallons < sp.min_gal;
       var too_few = sp && sp.min_fish && sp.min_fish > 1 && s.qty < sp.min_fish;
       var gender_txt = (s.male || s.female) ? ((s.male||0) + 'M / ' + (s.female||0) + 'F') : (sp && sp.breeds ? '<span style="color:var(--muted);font-size:11px">—</span>' : '');
-      h += '<tr><td>' + (sp ? sp.name : 'Unknown') + (too_small ? ' <span style="color:var(--danger)" title="Tank too small">&#x26A0;</span>' : '') + '</td>' +
-           '<td>' + esc(s.display_name) + '</td><td>' + s.qty + (too_few ? ' <span style="color:var(--warn);font-size:11px" title="Recommended minimum: ' + sp.min_fish + '">&#x26A0; min ' + sp.min_fish + '</span>' : '') + '</td>' +
+      var sp_name = sp ? sp.name : 'Unknown';
+      var custom_tag = (s.display_name && s.display_name !== sp_name) ? '<div style="font-size:11px;color:var(--muted);font-style:italic">' + esc(s.display_name) + '</div>' : '';
+      h += '<tr><td>' + sp_name + (too_small ? ' <span style="color:var(--danger)" title="Tank too small">&#x26A0;</span>' : '') + custom_tag + '</td>' +
+           '<td>' + s.qty + (too_few ? ' <span style="color:var(--warn);font-size:11px" title="Recommended minimum: ' + sp.min_fish + '">&#x26A0; min ' + sp.min_fish + '</span>' : '') + '</td>' +
            '<td style="font-size:12px;white-space:nowrap">' + gender_txt + '</td>' +
            '<td style="font-size:12px">' + (sp && sp.size_in ? sp.size_in + '"' : '-') + '</td>' +
            '<td><span style="font-size:12px;font-weight:700;color:' + bl_color + '">' + bl_lbl + bl_inv_tag + ' (' + bl_contrib + ')</span></td>' +
@@ -7203,6 +7213,23 @@ function upd_gender_qty() {
     var qty_el = document.querySelector('#mb input[name=qty]');
     if (qty_el) { qty_el.value = m + f; upd_stk_qty(); }
   }
+  chk_gender_qty_warn();
+}
+function chk_gender_qty_warn() {
+  var m_el = document.querySelector('#mb input[name=male]');
+  var f_el = document.querySelector('#mb input[name=female]');
+  var qty_el = document.querySelector('#mb input[name=qty]');
+  var warn_el = document.getElementById('gender_qty_warn');
+  if (!warn_el || !qty_el) return;
+  var m = m_el ? (parseInt(m_el.value) || 0) : 0;
+  var f = f_el ? (parseInt(f_el.value) || 0) : 0;
+  var qty = parseInt(qty_el.value) || 0;
+  if ((m > 0 || f > 0) && m + f !== qty) {
+    warn_el.textContent = m + 'M + ' + f + 'F = ' + (m+f) + ', but Quantity is ' + qty + '. They must match.';
+    warn_el.style.display = '';
+  } else {
+    warn_el.style.display = 'none';
+  }
 }
 function upd_stock_compat(sel) {
   var sid = sel.value, d = ld(), tid = at(), salt = is_salt(tid), reef = is_reef(tid);
@@ -7456,12 +7483,13 @@ function do_add_stock() {
     '</div>' +
     '</div>' +
     '<div class="frow">' +
-    fg('Quantity', '<input type="number" name="qty" value="1" min="1" oninput="upd_stk_qty()">') +
+    fg('Quantity', '<input type="number" name="qty" value="1" min="1" oninput="upd_stk_qty();chk_gender_qty_warn()">') +
     fg('Date Added', '<input type="date" name="added" value="' + td + '">') +
     '</div>' +
     '<div id="stk_gender_row" style="display:none"><div class="frow">' +
     fg('Gender (optional)', '<div style="display:flex;gap:8px;align-items:center"><input type="number" name="male" min="0" placeholder="Males" style="width:80px" oninput="upd_gender_qty()"><span style="color:var(--muted)">M /</span><input type="number" name="female" min="0" placeholder="Females" style="width:80px" oninput="upd_gender_qty()"><span style="color:var(--muted)">F</span></div>') +
     '</div></div>' +
+    '<div id="gender_qty_warn" style="display:none;background:#fde0e0;border-radius:5px;padding:6px 10px;font-size:12px;color:#a01818;margin-bottom:6px"></div>' +
     fg('Notes', '<input type="text" name="notes" placeholder="Optional">') +
     '<div style="background:#fef3d5;border-radius:6px;padding:8px 10px;font-size:12px;color:#8a5a00;margin:10px 0"><strong>&#x1F41F; Acclimation:</strong> Float the sealed bag in your tank for 15-20 min to equalise temperature. Then add a small cup of tank water to the bag every 5 minutes for 30 minutes. Net the fish out — do not pour store water into your tank.</div>' +
     '<div style="background:#e8f4fb;border-radius:6px;padding:8px 10px;font-size:12px;color:#1a5a7a;margin-bottom:10px"><strong>&#x1F4A1; Quarantine tip:</strong> Ideally quarantine new fish in a separate tank for 2-4 weeks before adding to your main tank. This prevents disease from spreading to existing livestock.</div>' +
@@ -7482,7 +7510,14 @@ function sub_add_stock(e) {
       f.csp_size.value, f.csp_mingal.value, f.csp_bioload.value, f.csp_level.value, '', f.csp_zone.value, f.csp_activity.value);
     add_stock(at(), sid, cname, f.qty.value, f.added.value, f.notes.value);
   } else {
-    add_stock(at(), sid, f.dname.value, f.qty.value, f.added.value, f.notes.value, f.male ? f.male.value : '', f.female ? f.female.value : '');
+    var m = f.male ? (parseInt(f.male.value) || 0) : 0;
+    var fm = f.female ? (parseInt(f.female.value) || 0) : 0;
+    var qty = parseInt(f.qty.value) || 1;
+    if ((m > 0 || fm > 0) && m + fm !== qty) {
+      alert(m + 'M + ' + fm + 'F = ' + (m+fm) + ', but Quantity is ' + qty + '. Please make them match.');
+      return;
+    }
+    add_stock(at(), sid, f.dname.value, qty, f.added.value, f.notes.value, f.male ? f.male.value : '', f.female ? f.female.value : '');
   }
   cm(); r_life();
 }
