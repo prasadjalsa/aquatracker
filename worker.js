@@ -3390,7 +3390,7 @@ function do_reservoir_calc(id) {
     '<select id="calc_new_fert">' + _calc_fert_opts + '</select></div>' +
     '<div class="fg"><label>Desired dose of new fertilizer</label>' +
     '<div style="display:flex;align-items:center;gap:8px">' +
-    '<input type="number" id="calc_new_dose" step="0.1" min="0.01" placeholder="0.5" style="width:80px"> ml/day' +
+    '<input type="number" id="calc_new_dose" step="0.1" min="0.01" placeholder="0.5" style="width:80px"> ml/dose' +
     '</div></div>' +
     '<div style="margin-bottom:12px"><button type="button" class="btn bp bs" onclick="calc_res_add()">Calculate</button></div>' +
     '<div id="calc_add_result"></div>' +
