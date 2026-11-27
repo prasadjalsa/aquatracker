@@ -3013,6 +3013,28 @@ function next_due_dow(from_date, dow) {
 function day_diff(a, b) {
   return Math.round((new Date(a+'T00:00:00') - new Date(b+'T00:00:00')) / 86400000);
 }
+function count_dose_days(from_str, to_str, dow) {
+  if (!dow || !dow.length) return day_diff(to_str, from_str);
+  var count = 0;
+  var cur = new Date(from_str + 'T00:00:00');
+  var end = new Date(to_str + 'T00:00:00');
+  cur.setDate(cur.getDate() + 1);
+  while (cur <= end) { if (dow.indexOf(cur.getDay()) !== -1) count++; cur.setDate(cur.getDate() + 1); }
+  return count;
+}
+function doses_to_cal_days(doses, dow) {
+  if (!doses || doses <= 0) return 0;
+  if (!dow || !dow.length) return doses;
+  var count = 0, cal = 0;
+  var d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() + 1);
+  while (count < doses && cal < 730) { if (dow.indexOf(d.getDay()) !== -1) count++; cal++; d.setDate(d.getDate() + 1); }
+  return cal;
+}
+function fmt_dose_sched(r) {
+  var names = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  if (r.dose_dow && r.dose_dow.length) return r.daily_dose_ml + ' ml on ' + r.dose_dow.map(function(i){ return names[i]; }).join('/');
+  return r.daily_dose_ml + ' ml/day';
+}
 // ===== RESERVOIRS =====
 function reservoir_total_ml(r) {
   var conc = (r.ingredients||[]).reduce(function(s,x){return s+(x.concentrate_ml||0);},0);
@@ -3021,21 +3043,23 @@ function reservoir_total_ml(r) {
 function reservoir_remaining(r) {
   var total = reservoir_total_ml(r);
   if (!total || !r.daily_dose_ml || !r.snapshot_date) return null;
-  var days = day_diff(today_str(), r.snapshot_date);
-  var ml = Math.max(0, Math.round(((r.snapshot_ml || 0) - days * r.daily_dose_ml) * 10) / 10);
+  var doses_used = count_dose_days(r.snapshot_date, today_str(), r.dose_dow);
+  var ml = Math.max(0, Math.round(((r.snapshot_ml || 0) - doses_used * r.daily_dose_ml) * 10) / 10);
   var pct = Math.round(ml / total * 100);
-  var days_left = r.daily_dose_ml > 0 ? Math.floor(ml / r.daily_dose_ml) : null;
-  return {remaining_ml: ml, pct: pct, days_left: days_left, total_ml: total};
+  var doses_left = r.daily_dose_ml > 0 ? Math.floor(ml / r.daily_dose_ml) : null;
+  var days_left = doses_left !== null ? doses_to_cal_days(doses_left, r.dose_dow) : null;
+  return {remaining_ml: ml, pct: pct, doses_left: doses_left, days_left: days_left, total_ml: total};
 }
 // ===== RESERVOIRS =====
 var _res_fert_opts = '';
-function add_reservoir(tid, name, ingredients, water_ml, daily_dose_ml, timer_sec, timer_min, snapshot_ml) {
+function add_reservoir(tid, name, ingredients, water_ml, daily_dose_ml, timer_sec, timer_min, snapshot_ml, dose_dow) {
   var d = ld();
   var total = ingredients.reduce(function(s,x){return s+(x.concentrate_ml||0);},0) + (water_ml||0);
   d.reservoirs.push({
     id: gid(), tank_id: tid, name: name,
     ingredients: ingredients, water_ml: water_ml||0,
     daily_dose_ml: daily_dose_ml,
+    dose_dow: dose_dow || [],
     timer_sec: timer_sec || 0, timer_min: timer_min || 600,
     snapshot_ml: snapshot_ml != null ? snapshot_ml : total,
     snapshot_date: today_str()
@@ -3059,10 +3083,11 @@ function check_reservoir_auto_dose() {
     if (r.timer_min == null) return r;
     if (r.last_auto_dosed_date === today) return r;
     if (cur_min < r.timer_min) return r;
+    if (r.dose_dow && r.dose_dow.length && r.dose_dow.indexOf(now.getDay()) === -1) return r;
     if (!Array.isArray(d.maint_log)) d.maint_log = [];
     var dose = r.daily_dose_ml || 0;
-    var days_since = day_diff(today, r.snapshot_date || today);
-    var cur_rem = Math.max(0, Math.round(((r.snapshot_ml || 0) - days_since * dose) * 10) / 10);
+    var doses_since = count_dose_days(r.snapshot_date || today, today, r.dose_dow);
+    var cur_rem = Math.max(0, Math.round(((r.snapshot_ml || 0) - doses_since * dose) * 10) / 10);
     var new_snapshot = Math.max(0, Math.round((cur_rem - dose) * 10) / 10);
     d.maint_log.push({id:gid(), tank_id:tid, task_id:null,
       task_name:'Auto-dosed: ' + r.name, task_type:'Fertilizer', date:today,
@@ -3128,8 +3153,17 @@ function upd_res_total() {
   if (wrap) wrap.querySelectorAll('[name="res_ing_ml"]').forEach(function(inp){ total += parseFloat(inp.value)||0; });
   total += parseFloat(water_inp && water_inp.value) || 0;
   var daily = parseFloat(daily_inp && daily_inp.value) || 0;
-  var days = daily > 0 ? Math.floor(total / daily) : '—';
-  lbl.textContent = total > 0 ? '= ' + Math.round(total*10)/10 + ' ml total' + (daily > 0 ? ' — lasts ' + days + ' days' : '') : '';
+  var doses = daily > 0 ? Math.floor(total / daily) : null;
+  var dow = [];
+  document.querySelectorAll('[name="res_dose_dow"]:checked').forEach(function(cb){ dow.push(parseInt(cb.value)); });
+  var suffix = '';
+  if (doses !== null) {
+    suffix = ' — ' + doses + ' doses';
+    var cal = doses_to_cal_days(doses, dow);
+    if (cal !== doses) suffix += ' (~' + cal + ' days)';
+    else suffix += ' (' + doses + ' days)';
+  }
+  lbl.textContent = total > 0 ? '= ' + Math.round(total*10)/10 + ' ml total' + suffix : '';
 }
 function do_add_reservoir() {
   var d = ld(), tid = at();
@@ -3152,6 +3186,12 @@ function do_add_reservoir() {
     '<div class="fg"><label>Timer</label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
     '<input type="number" name="res_timer_sec" step="1" min="1" placeholder="30" style="width:70px"> seconds at' +
     ' <select name="res_timer_min">' + mk_time_opts(600) + '</select></div></div>' +
+    '<div class="fg"><label>Dose days</label>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+    ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(function(day,i){
+      return '<label style="display:flex;align-items:center;gap:3px;cursor:pointer;font-size:13px"><input type="checkbox" name="res_dose_dow" value="' + i + '" onchange="upd_res_total()"> ' + day + '</label>';
+    }).join('') +
+    '</div><div style="font-size:12px;color:var(--muted);margin-top:3px">Leave all unchecked to dose daily</div></div>' +
     '<div style="text-align:right;margin-top:12px"><button type="button" class="btn bg bs" onclick="cm()">Cancel</button> <button type="submit" class="btn bp bs">Save</button></div>' +
     '</form></div>';
   om(h);
@@ -3173,7 +3213,9 @@ function sub_reservoir() {
   var daily_ml = parseFloat(f.res_daily_ml.value) || 0;
   var timer_sec = parseInt(f.res_timer_sec.value) || 0;
   var timer_min = parseInt(f.res_timer_min.value) || 600;
-  add_reservoir(at(), name, ingredients, water_ml, daily_ml, timer_sec, timer_min, null);
+  var dose_dow = [];
+  f.querySelectorAll('[name="res_dose_dow"]:checked').forEach(function(cb){ dose_dow.push(parseInt(cb.value)); });
+  add_reservoir(at(), name, ingredients, water_ml, daily_ml, timer_sec, timer_min, null, dose_dow);
   cm();
 }
 function do_edit_reservoir(id) {
@@ -3203,6 +3245,13 @@ function do_edit_reservoir(id) {
     '<div class="fg"><label>Timer</label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
     '<input type="number" name="res_timer_sec" step="1" min="1" value="' + (r.timer_sec||'') + '" placeholder="30" style="width:70px"> seconds at' +
     ' <select name="res_timer_min">' + mk_time_opts(r.timer_min||600) + '</select></div></div>' +
+    '<div class="fg"><label>Dose days</label>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+    ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(function(day,i){
+      var chk = (r.dose_dow && r.dose_dow.indexOf(i) !== -1) ? ' checked' : '';
+      return '<label style="display:flex;align-items:center;gap:3px;cursor:pointer;font-size:13px"><input type="checkbox" name="res_dose_dow" value="' + i + '" onchange="upd_res_total()"' + chk + '> ' + day + '</label>';
+    }).join('') +
+    '</div><div style="font-size:12px;color:var(--muted);margin-top:3px">Leave all unchecked to dose daily</div></div>' +
     '<div style="text-align:right;margin-top:12px"><button type="button" class="btn bg bs" onclick="cm()">Cancel</button> <button type="submit" class="btn bp bs">Save</button></div>' +
     '</form></div>';
   om(h);
@@ -3229,6 +3278,8 @@ function sub_edit_reservoir() {
   var daily_ml = parseFloat(f.res_daily_ml.value) || 0;
   var timer_sec = parseInt(f.res_timer_sec.value) || 0;
   var timer_min = parseInt(f.res_timer_min.value) || 600;
+  var dose_dow = [];
+  f.querySelectorAll('[name="res_dose_dow"]:checked').forEach(function(cb){ dose_dow.push(parseInt(cb.value)); });
   var rem = reservoir_remaining(r_orig);
   var cur_remaining = rem ? rem.remaining_ml : (r_orig.snapshot_ml || 0);
   var snapshot_ml = cur_remaining + new_ml;
@@ -3236,7 +3287,7 @@ function sub_edit_reservoir() {
     if (r.id !== id) return r;
     return Object.assign({}, r, {name: name, ingredients: ingredients, water_ml: water_ml,
       daily_dose_ml: daily_ml, timer_sec: timer_sec, timer_min: timer_min,
-      snapshot_ml: snapshot_ml, snapshot_date: today_str()});
+      dose_dow: dose_dow, snapshot_ml: snapshot_ml, snapshot_date: today_str()});
   });
   sv(d); cm(); r_life();
 }
@@ -3392,6 +3443,7 @@ function upd_calc_res_info() {
   var rem = reservoir_remaining(r);
   var remaining_ml = rem ? rem.remaining_ml : (r.snapshot_ml || total);
   var doses = r.daily_dose_ml > 0 ? Math.floor(total / r.daily_dose_ml) : '—';
+  var sched = r.dose_dow && r.dose_dow.length ? ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].filter(function(_,i){ return r.dose_dow.indexOf(i)!==-1; }).join('/') : 'daily';
   var rows = (r.ingredients || []).map(function(ing){
     var f = d.ferts.find(function(x){ return x.id === ing.fert_id; });
     return '<div style="color:#3a7bd5">' + esc(f ? f.name : 'Unknown') + ': <strong>' + ing.concentrate_ml + ' ml</strong></div>';
@@ -3399,7 +3451,7 @@ function upd_calc_res_info() {
   if (r.water_ml) rows.push('<div style="color:#3a7bd5">Water: <strong>' + r.water_ml + ' ml</strong></div>');
   el.innerHTML = '<div style="background:var(--bg2);border-radius:6px;padding:10px;margin-bottom:4px;font-size:13px">' +
     rows.join('') +
-    '<div style="border-top:1px solid #dde;margin-top:6px;padding-top:6px;color:var(--muted)">Total: ' + total + ' ml &nbsp;|&nbsp; ' + (r.daily_dose_ml || '?') + ' ml/day &nbsp;|&nbsp; ' + doses + ' doses &nbsp;|&nbsp; ' + remaining_ml + ' ml remaining</div>' +
+    '<div style="border-top:1px solid #dde;margin-top:6px;padding-top:6px;color:var(--muted)">Total: ' + total + ' ml &nbsp;|&nbsp; ' + (r.daily_dose_ml || '?') + ' ml &nbsp;|&nbsp; ' + sched + ' &nbsp;|&nbsp; ' + doses + ' doses &nbsp;|&nbsp; ' + remaining_ml + ' ml remaining</div>' +
     '</div>';
 }
 
@@ -3440,8 +3492,8 @@ function calc_res_add() {
   var remaining_ml = rem ? rem.remaining_ml : (r.snapshot_ml || reservoir_total_ml(r));
   var full_total = reservoir_total_ml(r);
 
-  var days_left = remaining_ml / old_dose;
-  var add_now = Math.round(new_dose * days_left * 10) / 10;
+  var doses_left = remaining_ml / old_dose;
+  var add_now = Math.round(new_dose * doses_left * 10) / 10;
   var new_total_now = Math.round((remaining_ml + add_now) * 10) / 10;
   var new_daily = Math.round((old_dose + new_dose) * 10) / 10;
 
@@ -3472,7 +3524,7 @@ function calc_res_add() {
 
   out.innerHTML = '<div style="background:var(--bg2);border-radius:6px;padding:12px;font-size:13px;line-height:1.9">' +
     'Add <strong>' + add_now + ' ml</strong> of ' + esc(fert.name) + ' to the reservoir<br>' +
-    '<span style="color:var(--muted)">' + remaining_ml + ' ml &divide; ' + old_dose + ' ml/day = ' + Math.round(days_left) + ' days &times; ' + new_dose + ' ml/day</span><br>' +
+    '<span style="color:var(--muted)">' + remaining_ml + ' ml &divide; ' + old_dose + ' ml/dose = ' + Math.round(doses_left) + ' doses &times; ' + new_dose + ' ml/dose</span><br>' +
     'New volume: <strong>' + new_total_now + ' ml</strong><br>' +
     'Update daily dose to: <strong>' + new_daily + ' ml/day</strong><br><br>' +
     'Future recipe ratio: ' + ratio_html +
@@ -5750,7 +5802,7 @@ async function r_maint() {
       var is_danger = rem.days_left != null ? rem.days_left <= 2 : rem.pct <= 10;
       var bg = is_danger ? '#fff0f0' : '#fff8e6';
       var border = is_danger ? 'var(--danger)' : 'var(--warn)';
-      var days_msg = rem.days_left != null ? rem.days_left + ' days left' : rem.pct + '% remaining';
+      var days_msg = rem.doses_left != null ? rem.doses_left + ' doses left' + (rem.days_left !== rem.doses_left ? ' (~' + rem.days_left + ' days)' : '') : rem.pct + '% remaining';
       h += '<div style="font-size:13px;padding:10px 12px;margin-bottom:8px;' +
            'background:' + bg + ';border-left:3px solid ' + border + ';border-radius:0 6px 6px 0">' +
            '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
@@ -5776,7 +5828,7 @@ async function r_maint() {
       var status_col = dosed ? 'var(--ok)' : before_time ? 'var(--muted)' : 'var(--warn)';
       var status_txt = dosed ? '&#x2713; Dosed today' : (time_txt ? 'Due at ' + time_txt : 'No timer set');
       var rem = reservoir_remaining(r);
-      var rem_txt = rem ? rem.remaining_ml + ' ml left' + (rem.days_left != null ? ' (' + rem.days_left + 'd)' : '') : '';
+      var rem_txt = rem ? rem.remaining_ml + ' ml left' + (rem.doses_left != null ? ' (' + rem.doses_left + ' doses)' : '') : '';
       h += '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid #eee">' +
         '<div style="flex:1"><strong>' + esc(r.name) + '</strong>' +
         (time_txt ? '<span style="color:var(--muted);font-size:12px"> &mdash; ' + (r.timer_sec ? r.timer_sec + 's ' : '') + 'at ' + time_txt + '</span>' : '') +
@@ -6505,11 +6557,11 @@ async function r_recs() {
       h += '<div style="margin-bottom:12px">' +
         '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
         '<strong style="font-size:14px">' + esc(r.name) + '</strong>' +
-        (rem ? '<span style="font-size:12px;color:' + bar_col + ';font-weight:600">' + rem.remaining_ml + ' ml left' + (rem.days_left!=null?' &middot; '+rem.days_left+' days':'') + '</span>' : '') +
+        (rem ? '<span style="font-size:12px;color:' + bar_col + ';font-weight:600">' + rem.remaining_ml + ' ml left' + (rem.doses_left!=null?' &middot; '+rem.doses_left+' doses':'') + (rem.days_left!=null&&rem.days_left!==rem.doses_left?' (~'+rem.days_left+'d)':'') + '</span>' : '') +
         '</div>' +
         (rem ? '<div style="background:#e8edf2;border-radius:4px;height:5px;margin:4px 0"><div style="background:' + bar_col + ';border-radius:4px;height:5px;width:' + Math.min(100,pct) + '%"></div></div>' : '') +
         '<div style="font-size:12px;color:var(--muted);margin-top:2px">' +
-        r.daily_dose_ml + ' ml/day' + (time_txt ? ' at ' + time_txt : '') + (r.timer_sec ? ' (' + r.timer_sec + 's)' : '') +
+        fmt_dose_sched(r) + (time_txt ? ' at ' + time_txt : '') + (r.timer_sec ? ' (' + r.timer_sec + 's)' : '') +
         '</div>' +
         (daily_parts.length ? '<div style="font-size:12px;color:#555;margin-top:3px">Per dose: ' + daily_parts.join(' &middot; ') + ' concentrate</div>' : '') +
         '</div>';
