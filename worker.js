@@ -3035,6 +3035,28 @@ function fmt_dose_sched(r) {
   if (r.dose_dow && r.dose_dow.length) return r.daily_dose_ml + ' ml on ' + r.dose_dow.map(function(i){ return names[i]; }).join('/');
   return r.daily_dose_ml + ' ml/day';
 }
+function mk_dow_btns(active_days) {
+  var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  return '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+    days.map(function(day, i) {
+      var on = active_days && active_days.indexOf(i) !== -1;
+      return '<button type="button" data-dow-btn data-day="' + i + '" data-on="' + (on?'1':'0') + '" onclick="tog_dow_btn(this)" style="padding:5px 11px;border-radius:16px;border:1px solid ' + (on?'#3a7bd5':'#ccc') + ';background:' + (on?'#3a7bd5':'#f5f5f5') + ';color:' + (on?'#fff':'#333') + ';cursor:pointer;font-size:13px">' + day + '</button>';
+    }).join('') +
+  '</div>';
+}
+function tog_dow_btn(btn) {
+  var on = btn.dataset.on !== '1';
+  btn.dataset.on = on ? '1' : '0';
+  btn.style.background = on ? '#3a7bd5' : '#f5f5f5';
+  btn.style.color = on ? '#fff' : '#333';
+  btn.style.borderColor = on ? '#3a7bd5' : '#ccc';
+  upd_res_total();
+}
+function rd_dow_btns(scope) {
+  var dow = [];
+  (scope || document).querySelectorAll('[data-dow-btn][data-on="1"]').forEach(function(btn){ dow.push(parseInt(btn.dataset.day)); });
+  return dow;
+}
 // ===== RESERVOIRS =====
 function reservoir_total_ml(r) {
   var conc = (r.ingredients||[]).reduce(function(s,x){return s+(x.concentrate_ml||0);},0);
@@ -3155,7 +3177,7 @@ function upd_res_total() {
   var daily = parseFloat(daily_inp && daily_inp.value) || 0;
   var doses = daily > 0 ? Math.floor(total / daily) : null;
   var dow = [];
-  document.querySelectorAll('[name="res_dose_dow"]:checked').forEach(function(cb){ dow.push(parseInt(cb.value)); });
+  var dow = rd_dow_btns();
   var suffix = '';
   if (doses !== null) {
     suffix = ' — ' + doses + ' doses';
@@ -3186,12 +3208,8 @@ function do_add_reservoir() {
     '<div class="fg"><label>Timer</label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
     '<input type="number" name="res_timer_sec" step="1" min="1" placeholder="30" style="width:70px"> seconds at' +
     ' <select name="res_timer_min">' + mk_time_opts(600) + '</select></div></div>' +
-    '<div class="fg"><label>Dose days</label>' +
-    '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
-    ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(function(day,i){
-      return '<label style="display:flex;align-items:center;gap:3px;cursor:pointer;font-size:13px"><input type="checkbox" name="res_dose_dow" value="' + i + '" onchange="upd_res_total()"> ' + day + '</label>';
-    }).join('') +
-    '</div><div style="font-size:12px;color:var(--muted);margin-top:3px">Leave all unchecked to dose daily</div></div>' +
+    '<div class="fg"><label>Dose days</label>' + mk_dow_btns([]) +
+    '<div style="font-size:12px;color:var(--muted);margin-top:6px">Leave all unselected to dose daily</div></div>' +
     '<div style="text-align:right;margin-top:12px"><button type="button" class="btn bg bs" onclick="cm()">Cancel</button> <button type="submit" class="btn bp bs">Save</button></div>' +
     '</form></div>';
   om(h);
@@ -3213,8 +3231,7 @@ function sub_reservoir() {
   var daily_ml = parseFloat(f.res_daily_ml.value) || 0;
   var timer_sec = parseInt(f.res_timer_sec.value) || 0;
   var timer_min = parseInt(f.res_timer_min.value) || 600;
-  var dose_dow = [];
-  f.querySelectorAll('[name="res_dose_dow"]:checked').forEach(function(cb){ dose_dow.push(parseInt(cb.value)); });
+  var dose_dow = rd_dow_btns(f);
   add_reservoir(at(), name, ingredients, water_ml, daily_ml, timer_sec, timer_min, null, dose_dow);
   cm();
 }
@@ -3256,13 +3273,8 @@ function do_edit_reservoir(id) {
     '<div class="fg"><label>Timer</label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
     '<input type="number" name="res_timer_sec" step="1" min="1" value="' + (r.timer_sec||'') + '" placeholder="30" style="width:70px"> seconds at' +
     ' <select name="res_timer_min">' + mk_time_opts(r.timer_min||600) + '</select></div></div>' +
-    '<div class="fg"><label>Dose days</label>' +
-    '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
-    ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(function(day,i){
-      var chk = (r.dose_dow && r.dose_dow.indexOf(i) !== -1) ? ' checked' : '';
-      return '<label style="display:flex;align-items:center;gap:3px;cursor:pointer;font-size:13px"><input type="checkbox" name="res_dose_dow" value="' + i + '" onchange="upd_res_total()"' + chk + '> ' + day + '</label>';
-    }).join('') +
-    '</div><div style="font-size:12px;color:var(--muted);margin-top:3px">Leave all unchecked to dose daily</div></div>' +
+    '<div class="fg"><label>Dose days</label>' + mk_dow_btns(r.dose_dow) +
+    '<div style="font-size:12px;color:var(--muted);margin-top:6px">Leave all unselected to dose daily</div></div>' +
     '<div style="text-align:right;margin-top:12px"><button type="button" class="btn bg bs" onclick="cm()">Cancel</button> <button type="submit" class="btn bp bs">Save</button></div>' +
     '</form></div>';
   om(h);
@@ -3289,8 +3301,7 @@ function sub_edit_reservoir() {
   var daily_ml = parseFloat(f.res_daily_ml.value) || 0;
   var timer_sec = parseInt(f.res_timer_sec.value) || 0;
   var timer_min = parseInt(f.res_timer_min.value) || 600;
-  var dose_dow = [];
-  f.querySelectorAll('[name="res_dose_dow"]:checked').forEach(function(cb){ dose_dow.push(parseInt(cb.value)); });
+  var dose_dow = rd_dow_btns(f);
   var rem = reservoir_remaining(r_orig);
   var cur_remaining = rem ? rem.remaining_ml : (r_orig.snapshot_ml || 0);
   var snapshot_ml = cur_remaining + new_ml;
