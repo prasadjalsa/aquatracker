@@ -2182,6 +2182,50 @@ function get_due_tasks_s(now_utc, ud) {
   });
   return result;
 }
+// Server-side reservoir remaining calculation (mirrors client-side reservoir_remaining)
+function res_count_dose_days_s(from_str, to_str, dow) {
+  if (!dow || !dow.length) return Math.round((new Date(to_str+'T00:00:00') - new Date(from_str+'T00:00:00')) / 86400000);
+  var count = 0;
+  var cur = new Date(from_str + 'T00:00:00');
+  var end = new Date(to_str + 'T00:00:00');
+  cur.setDate(cur.getDate() + 1);
+  while (cur <= end) { if (dow.indexOf(cur.getDay()) !== -1) count++; cur.setDate(cur.getDate() + 1); }
+  return count;
+}
+function res_doses_to_cal_days_s(doses, dow, today_str) {
+  if (!doses || doses <= 0) return 0;
+  if (!dow || !dow.length) return doses;
+  var count = 0, cal = 0;
+  var d = new Date(today_str + 'T00:00:00');
+  d.setDate(d.getDate() + 1);
+  while (count < doses && cal < 730) { if (dow.indexOf(d.getDay()) !== -1) count++; cal++; d.setDate(d.getDate() + 1); }
+  return cal;
+}
+function res_remaining_s(r, today_str) {
+  var total = (r.ingredients||[]).reduce(function(s,x){return s+(x.concentrate_ml||0);},0) + (r.water_ml||0) || r.total_ml || 0;
+  if (!total || !r.daily_dose_ml || !r.snapshot_date) return null;
+  var doses_used = res_count_dose_days_s(r.snapshot_date, today_str, r.dose_dow);
+  var ml = Math.max(0, (r.snapshot_ml || 0) - doses_used * r.daily_dose_ml);
+  var doses_left = r.daily_dose_ml > 0 ? Math.floor(ml / r.daily_dose_ml) : null;
+  var days_left = doses_left !== null ? res_doses_to_cal_days_s(doses_left, r.dose_dow, today_str) : null;
+  return {ml: ml, pct: Math.round(ml / total * 100), doses_left: doses_left, days_left: days_left};
+}
+function get_low_res_s(ud, today_str) {
+  var tank_map = {};
+  (ud.tanks || []).forEach(function(t){ tank_map[t.id] = t.name; });
+  var alerts = [];
+  (ud.reservoirs || []).forEach(function(r) {
+    var rem = res_remaining_s(r, today_str);
+    if (!rem) return;
+    var is_low = (rem.days_left != null && rem.days_left <= 5) || rem.pct <= 10;
+    if (!is_low) return;
+    var days_msg = rem.doses_left != null
+      ? rem.doses_left + ' doses left' + (rem.days_left !== rem.doses_left ? ' (~' + rem.days_left + ' days)' : '')
+      : rem.pct + '% remaining';
+    alerts.push({name: r.name, tank: tank_map[r.tank_id] || 'your tank', days_msg: days_msg});
+  });
+  return alerts;
+}
 async function handle_scheduled(env) {
   var now = new Date();
   var now_utc = {
@@ -2197,19 +2241,29 @@ async function handle_scheduled(env) {
     try {
       var ud = JSON.parse(row.data);
       ud.pref = row.pref ? JSON.parse(row.pref) : {};
-      var due = get_due_tasks_s(now_utc, ud);
-      if (due.length === 0) continue;
+      var tz_offset = (ud.pref && ud.pref.tz_offset != null) ? ud.pref.tz_offset : 0;
+      var raw_local_min = now_utc.utc_hour * 60 + now_utc.utc_minute - tz_offset;
+      var local_total_min = ((raw_local_min % 1440) + 1440) % 1440;
+      var local_window = Math.floor(local_total_min / 30);
+      var local_date = date_add(now_utc.utc_date, Math.floor(raw_local_min / 1440));
       var tank_map = {};
       (ud.tanks || []).forEach(function(t){ tank_map[t.id] = t.name; });
-      var msg;
+      var due = get_due_tasks_s(now_utc, ud);
+      // fire low-reservoir alerts once per day at the 8am local slot (window 16 = 8:00–8:29am)
+      var low_res = local_window === 16 ? get_low_res_s(ud, local_date) : [];
+      var msgs = [];
       if (due.length === 1) {
-        msg = due[0].name + ' — ' + (tank_map[due[0].tank_id] || 'your tank');
-      } else {
+        msgs.push(due[0].name + ' — ' + (tank_map[due[0].tank_id] || 'your tank'));
+      } else if (due.length > 1) {
         var tnames = due.map(function(t){ return tank_map[t.tank_id]; })
           .filter(function(v,i,a){ return a.indexOf(v) === i; }).join(', ');
-        msg = due.length + ' tasks due — ' + tnames;
+        msgs.push(due.length + ' tasks due — ' + tnames);
       }
-      var status = await send_push(row, env, msg);
+      low_res.forEach(function(a) {
+        msgs.push(a.name + ' running low (' + a.days_msg + ') — ' + a.tank);
+      });
+      if (msgs.length === 0) continue;
+      var status = await send_push(row, env, msgs.join('\n'));
       if (status === 410 || status === 404) dead.push(row.id);
     } catch(e) {}
   }
@@ -2927,10 +2981,17 @@ function do_edit_fert(id) {
 }
 function sub_edit_fert(e) {
   e.preventDefault(); var f = e.target, d = ld();
+  var now_auto = !!(f.auto_enabled && f.auto_enabled.checked);
+  var orig = d.ferts.find(function(x){ return x.id === f.fid.value; });
   d.ferts = d.ferts.map(function(x) {
     if (x.id !== f.fid.value) return x;
-    return Object.assign({}, x, {name:f.name.value, notes:f.notes.value, automated:!!(f.auto_enabled && f.auto_enabled.checked)});
+    var upd = Object.assign({}, x, {name:f.name.value, notes:f.notes.value, automated:now_auto});
+    if (now_auto && x.task_id) upd.task_id = null;
+    return upd;
   });
+  if (orig && now_auto && orig.task_id) {
+    d.tasks = (d.tasks||[]).filter(function(t){ return t.id !== orig.task_id; });
+  }
   sv(d); cm(); r_life();
 }
 function upd_fert_name(sel) {
@@ -9626,6 +9687,15 @@ async function startup() {
   // Migrate existing ferts that predate auto-task creation
   var _md = ld(), _changed = false;
   (_md.ferts||[]).forEach(function(f) {
+    if (f.automated) {
+      // automated ferts are tracked via reservoirs — remove any stale schedule task
+      if (f.task_id && (_md.tasks||[]).some(function(t){ return t.id === f.task_id; })) {
+        _md.tasks = _md.tasks.filter(function(t){ return t.id !== f.task_id; });
+        f.task_id = null;
+        _changed = true;
+      }
+      return;
+    }
     var task_exists = f.task_id && (_md.tasks||[]).some(function(t){ return t.id === f.task_id; });
     if (!task_exists) {
       var task_name = 'Dose ' + f.name + (f.dose_ml ? ' — ' + f.dose_ml + ' ml' : '');
