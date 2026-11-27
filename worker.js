@@ -3227,21 +3227,32 @@ function do_edit_reservoir(id) {
   var rem = reservoir_remaining(r);
   var cur_ml = rem ? rem.remaining_ml : (r.snapshot_ml || 0);
   var total = reservoir_total_ml(r);
-  var days_lasts = r.daily_dose_ml > 0 ? Math.floor(total / r.daily_dose_ml) : '—';
+
+  var existing_rows = (r.ingredients||[]).map(function(ing){
+    var f = d.ferts.find(function(x){ return x.id === ing.fert_id; });
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;background:var(--bg2);border-radius:4px;margin-bottom:4px;font-size:13px">' +
+      '<span>' + esc(f ? f.name : 'Unknown') + '</span>' +
+      '<span style="font-weight:600;color:var(--muted)">' + ing.concentrate_ml + ' ml</span></div>';
+  }).join('');
+  if (r.water_ml) {
+    existing_rows += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;background:var(--bg2);border-radius:4px;margin-bottom:4px;font-size:13px">' +
+      '<span style="color:var(--muted)">Water (dilution)</span>' +
+      '<span style="font-weight:600;color:var(--muted)">' + r.water_ml + ' ml</span></div>';
+  }
+
   var h = '<div class="card"><div class="ctitle">Edit Reservoir</div>' +
-    '<p style="font-size:12px;color:var(--muted);margin-bottom:0">Currently ' + cur_ml + ' ml remaining. Adding new ingredients below will increase this.</p>' +
+    '<p style="font-size:12px;color:var(--muted);margin-bottom:8px">Currently ' + cur_ml + ' ml remaining.</p>' +
     '<form id="res_edit_frm" onsubmit="event.preventDefault();sub_edit_reservoir()" data-id="' + r.id + '">' +
     fg('Name', '<input type="text" name="res_name" value="' + esc(r.name) + '" required style="width:200px">') +
-    '<div class="fg"><label>Ingredients</label>' +
+    '<div class="fg"><label>Current recipe</label>' + existing_rows + '</div>' +
+    '<div class="fg"><label>Add new fertilizer</label>' +
     '<div id="res_ingredients" style="margin-bottom:6px"></div>' +
-    '<button type="button" class="btn bg bs" style="font-size:12px" onclick="add_res_ingredient()">+ Add fertilizer</button></div>' +
-    '<div class="fg"><label>Water (dilution)</label>' +
+    '<button type="button" class="btn bg bs" style="font-size:12px" onclick="add_res_ingredient()">+ Add fertilizer</button>' +
+    '<div style="font-size:12px;color:var(--muted);margin-top:4px">New ingredients will be added to the existing recipe and reflected in the current reservoir.</div></div>' +
+    '<div class="fg"><label>Dose per application</label>' +
     '<div style="display:flex;gap:8px;align-items:center">' +
-    '<input type="number" name="res_water_ml" step="0.1" min="0" value="' + (r.water_ml||0) + '" style="width:80px" oninput="upd_res_total()"> ml' +
-    ' <span id="res_total_lbl" style="color:var(--muted);font-style:italic">= ' + total + ' ml total — lasts ' + days_lasts + ' days</span></div></div>' +
-    '<div class="fg"><label>Daily dose</label>' +
-    '<div style="display:flex;gap:8px;align-items:center">' +
-    '<input type="number" name="res_daily_ml" step="0.1" min="0.1" value="' + (r.daily_dose_ml||'') + '" required style="width:70px" oninput="upd_res_total()"> ml/day</div></div>' +
+    '<input type="number" name="res_daily_ml" step="0.1" min="0.1" value="' + (r.daily_dose_ml||'') + '" required style="width:70px" oninput="upd_res_total()"> ml/dose' +
+    ' <span id="res_total_lbl" style="color:var(--muted);font-style:italic"></span></div></div>' +
     '<div class="fg"><label>Timer</label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
     '<input type="number" name="res_timer_sec" step="1" min="1" value="' + (r.timer_sec||'') + '" placeholder="30" style="width:70px"> seconds at' +
     ' <select name="res_timer_min">' + mk_time_opts(r.timer_min||600) + '</select></div></div>' +
@@ -3255,7 +3266,6 @@ function do_edit_reservoir(id) {
     '<div style="text-align:right;margin-top:12px"><button type="button" class="btn bg bs" onclick="cm()">Cancel</button> <button type="submit" class="btn bp bs">Save</button></div>' +
     '</form></div>';
   om(h);
-  (r.ingredients||[]).forEach(function(ing){ add_res_ingredient(ing.fert_id, ing.concentrate_ml, true); });
 }
 function sub_edit_reservoir() {
   var f = document.getElementById('res_edit_frm');
@@ -3263,18 +3273,19 @@ function sub_edit_reservoir() {
   var d = ld();
   var r_orig = d.reservoirs.find(function(x){return x.id===id;}); if (!r_orig) return;
   var name = f.res_name.value.trim(); if (!name) return;
-  var rows = document.querySelectorAll('#res_edit_frm .res_ing_row');
-  var seen = {}, ingredients = [], new_ml = 0;
-  rows.forEach(function(row){
+  // Start from existing ingredients unchanged — only new rows are appended
+  var ingredients = (r_orig.ingredients || []).map(function(ing){ return Object.assign({}, ing); });
+  var seen = {}; ingredients.forEach(function(ing){ seen[ing.fert_id] = ing; });
+  var new_ml = 0;
+  document.querySelectorAll('#res_edit_frm .res_ing_row').forEach(function(row){
     var fid = row.querySelector('[name="res_ing_fert"]').value;
     var ml = parseFloat(row.querySelector('[name="res_ing_ml"]').value) || 0;
     if (fid && ml > 0) {
+      new_ml += ml;
       if (seen[fid]) { seen[fid].concentrate_ml = Math.round((seen[fid].concentrate_ml + ml) * 10) / 10; }
       else { seen[fid] = {fert_id: fid, concentrate_ml: ml}; ingredients.push(seen[fid]); }
-      if (!row.dataset.existing) new_ml += ml;
     }
   });
-  var water_ml = parseFloat(f.res_water_ml.value) || 0;
   var daily_ml = parseFloat(f.res_daily_ml.value) || 0;
   var timer_sec = parseInt(f.res_timer_sec.value) || 0;
   var timer_min = parseInt(f.res_timer_min.value) || 600;
@@ -3285,7 +3296,7 @@ function sub_edit_reservoir() {
   var snapshot_ml = cur_remaining + new_ml;
   d.reservoirs = d.reservoirs.map(function(r) {
     if (r.id !== id) return r;
-    return Object.assign({}, r, {name: name, ingredients: ingredients, water_ml: water_ml,
+    return Object.assign({}, r, {name: name, ingredients: ingredients,
       daily_dose_ml: daily_ml, timer_sec: timer_sec, timer_min: timer_min,
       dose_dow: dose_dow, snapshot_ml: snapshot_ml, snapshot_date: today_str()});
   });
