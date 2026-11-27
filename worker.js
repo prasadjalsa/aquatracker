@@ -5825,14 +5825,15 @@ async function r_maint() {
       var mm_a = r.timer_min != null ? r.timer_min%60 : null;
       var time_txt = hh_a !== null ? (hh_a>12?hh_a-12:(hh_a||12))+':'+(mm_a<10?'0'+mm_a:mm_a)+(hh_a<12?' AM':' PM') : '';
       var before_time = hh_a !== null && cur_min_ad < r.timer_min;
-      var status_col = dosed ? 'var(--ok)' : before_time ? 'var(--muted)' : 'var(--warn)';
-      var status_txt = dosed ? '&#x2713; Dosed today' : (time_txt ? 'Due at ' + time_txt : 'No timer set');
+      var is_dose_day = !r.dose_dow || !r.dose_dow.length || r.dose_dow.indexOf(now_ad.getDay()) !== -1;
+      var status_col = dosed ? 'var(--ok)' : !is_dose_day ? 'var(--muted)' : before_time ? 'var(--muted)' : 'var(--warn)';
+      var status_txt = dosed ? '&#x2713; Dosed today' : !is_dose_day ? 'Not scheduled today' : (time_txt ? 'Due at ' + time_txt : 'No timer set');
       var rem = reservoir_remaining(r);
       var rem_txt = rem ? rem.remaining_ml + ' ml left' + (rem.doses_left != null ? ' (' + rem.doses_left + ' doses)' : '') : '';
       h += '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid #eee">' +
         '<div style="flex:1"><strong>' + esc(r.name) + '</strong>' +
         (time_txt ? '<span style="color:var(--muted);font-size:12px"> &mdash; ' + (r.timer_sec ? r.timer_sec + 's ' : '') + 'at ' + time_txt + '</span>' : '') +
-        '<br><small style="color:var(--muted)">' + r.daily_dose_ml + ' ml/day' + (rem_txt ? ' &middot; ' + rem_txt : '') + '</small></div>' +
+        '<br><small style="color:var(--muted)">' + fmt_dose_sched(r) + (rem_txt ? ' &middot; ' + rem_txt : '') + '</small></div>' +
         '<span style="font-weight:600;font-size:13px;color:' + status_col + '">' + status_txt + '</span>' +
         (!dosed ? '<button class="btn bp bs" style="font-size:12px" data-id="' + r.id + '" onclick="do_log_res_dose(this.dataset.id)">Log Dose</button>' : '') +
         '</div>';
